@@ -1,0 +1,9 @@
+push 10
+push 2
+add
+push 4
+sub
+push 6
+mul
+call 0
+done
