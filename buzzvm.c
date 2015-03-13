@@ -85,23 +85,17 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          vm->state = BUZZVM_STATE_DONE;
          break;
       }
-      case BUZZVM_INSTR_PUSH: {
-         get_arg(float);
-         vm->stack[vm->stack_top].f = arg;
-         inc_stack();
-         break;
-      }
-      case BUZZVM_INSTR_AT: {
-         get_arg(uint32_t);
-         assert_stack(arg);
-         vm->stack[vm->stack_top].f = vm->stack[arg].f;
-         inc_stack();
-         break;
-      }
       case BUZZVM_INSTR_POP: {
          --vm->stack_top;
          assert_stack(vm->stack_top);
          inc_pc();
+         break;
+      }
+      case BUZZVM_INSTR_RET: {
+         --vm->stack_top;
+         assert_stack(vm->stack_top);
+         vm->pc = vm->stack[vm->stack_top].i;
+         assert_pc(vm->pc);
          break;
       }
       case BUZZVM_INSTR_ADD: {
@@ -153,6 +147,19 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          binary_op_f(>=);
          break;
       }
+      case BUZZVM_INSTR_PUSH: {
+         get_arg(float);
+         vm->stack[vm->stack_top].f = arg;
+         inc_stack();
+         break;
+      }
+      case BUZZVM_INSTR_AT: {
+         get_arg(uint32_t);
+         assert_stack(arg);
+         vm->stack[vm->stack_top].f = vm->stack[arg].f;
+         inc_stack();
+         break;
+      }
       case BUZZVM_INSTR_JUMP: {
          get_arg(uint32_t);
          vm->pc = arg;
@@ -182,13 +189,6 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          vm->stack[vm->stack_top].i = vm->pc;
          inc_stack();
          vm->pc = arg;
-         assert_pc(vm->pc);
-         break;
-      }
-      case BUZZVM_INSTR_RET: {
-         --vm->stack_top;
-         assert_stack(vm->stack_top);
-         vm->pc = vm->stack[vm->stack_top].i;
          assert_pc(vm->pc);
          break;
       }

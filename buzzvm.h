@@ -29,11 +29,13 @@ static char *buzzvm_error_desc[] = { "none", "stack out of range", "pc out of ra
  * VM instructions
  */
 typedef enum {
+   /*
+    * Opcodes without argument
+    */
    BUZZVM_INSTR_NOP = 0, // No operation
    BUZZVM_INSTR_DONE,    // End of the program
-   BUZZVM_INSTR_PUSH,    // Push constant onto stack
-   BUZZVM_INSTR_AT,      // Push value in stack at given position (0 = top, >0 beneath)
    BUZZVM_INSTR_POP,     // Pop value from stack
+   BUZZVM_INSTR_RET,     // Sets PC to value at stack top, then pops it
    BUZZVM_INSTR_ADD,     // Push stack(#1) + stack(#2), pop operands
    BUZZVM_INSTR_SUB,     // Push stack(#1) - stack(#2), pop operands
    BUZZVM_INSTR_MUL,     // Push stack(#1) * stack(#2), pop operands
@@ -43,23 +45,23 @@ typedef enum {
    BUZZVM_INSTR_NOT,     // Push !stack(#1), pop operand
    BUZZVM_INSTR_EQ,      // Push stack(#1) == stack(#2), pop operands
    BUZZVM_INSTR_GT,      // Push stack(#1) > stack(#2), pop operands
-   BUZZVM_INSTR_GTE,     // Push stack(#1) >= stack(#2), pop operands
+   BUZZVM_INSTR_GTE,     // Push stack(#1) >= stack(#2), pop oper
    BUZZVM_INSTR_LT,      // Push stack(#1) < stack(#2), pop operands
    BUZZVM_INSTR_LTE,     // Push stack(#1) <= stack(#2), pop operands
+   /*
+    * Opcodes with argument
+    */
+   /* Float argument */
+   BUZZVM_INSTR_PUSH,    // Push float constant onto stack
+   /* Integer argument */
+   BUZZVM_INSTR_AT,      // Push float value in stack at given position (0 = top, >0 beneath)
    BUZZVM_INSTR_JUMP,    // Set PC to argument
    BUZZVM_INSTR_JUMPZ,   // Set PC to argument if stack top is zero
    BUZZVM_INSTR_JUMPNZ,  // Set PC to argument if stack top is not zero
    BUZZVM_INSTR_JUMPSUB, // Push current PC and sets PC to argument
-   BUZZVM_INSTR_RET,     // Sets PC to value at stack top, then pops it
    BUZZVM_INSTR_CALL     // Calls the C function pointed to by the argument
 } buzzvm_instr;
-static char *buzzvm_instr_desc[] = {
-   "nop", "done", "push", "at", "pop",
-   "add", "sub", "mul", "div", "and",
-   "or", "not", "eq", "gt", "gte",
-   "lt", "lte", "jump", "jumpz", "jumpnz",
-   "jumpsub", "ret", "call"
-};
+static char *buzzvm_instr_desc[] = {"nop", "done", "pop", "ret", "add", "sub", "mul", "div", "and", "or", "not", "eq", "gt", "gte", "lt", "lte", "push", "at", "jump", "jumpz", "jumpnz", "jumpsub", "call"};
 
 /*
  * An element in the VM stack

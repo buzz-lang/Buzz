@@ -1,6 +1,7 @@
 #include "buzzasm.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 void dump(buzzvm_t vm, const char* prefix) {
    fprintf(stderr, "%s============================================================\n", prefix);
@@ -43,6 +44,11 @@ int main(int argc, char** argv) {
       fprintf(stderr, "%s: execution terminated abnormally\n", argv[1]);
       dump(vm, "");
    }
+   /* Test deassembler */
+   char fdeasm[100];
+   strcpy(fdeasm, argv[1]);
+   strcat(fdeasm, ".tmp");
+   buzz_deasm(bcode_buf, bcode_size, fdeasm);
    /* Destroy VM*/
    free(bcode_buf);
    buzzvm_destroy(&vm);

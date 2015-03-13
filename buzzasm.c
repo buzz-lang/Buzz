@@ -106,9 +106,8 @@ int buzz_asm(const char* fname,
       /* Interpret the instruction */
       noarg_instr(BUZZVM_INSTR_NOP);
       noarg_instr(BUZZVM_INSTR_DONE);
-      f_arg_instr(BUZZVM_INSTR_PUSH);
-      i_arg_instr(BUZZVM_INSTR_AT);
       noarg_instr(BUZZVM_INSTR_POP);
+      noarg_instr(BUZZVM_INSTR_RET);
       noarg_instr(BUZZVM_INSTR_ADD);
       noarg_instr(BUZZVM_INSTR_SUB);
       noarg_instr(BUZZVM_INSTR_MUL);
@@ -121,11 +120,12 @@ int buzz_asm(const char* fname,
       noarg_instr(BUZZVM_INSTR_GTE);
       noarg_instr(BUZZVM_INSTR_LT);
       noarg_instr(BUZZVM_INSTR_LTE);
+      f_arg_instr(BUZZVM_INSTR_PUSH);
+      i_arg_instr(BUZZVM_INSTR_AT);
       i_arg_instr(BUZZVM_INSTR_JUMP);
       i_arg_instr(BUZZVM_INSTR_JUMPZ);
       i_arg_instr(BUZZVM_INSTR_JUMPNZ);
       i_arg_instr(BUZZVM_INSTR_JUMPSUB);
-      noarg_instr(BUZZVM_INSTR_RET);
       i_arg_instr(BUZZVM_INSTR_CALL);
       /* No match, error */
       fprintf(stderr, "ERROR: %s:%zu unknown instruction \"%s\"\n", fname, lineno, instr); \
@@ -139,9 +139,51 @@ int buzz_asm(const char* fname,
 /****************************************/
 /****************************************/
 
+#define write_arg(T, FMT)                                               \
+   if(i + sizeof(T) >= size) {                                          \
+      fprintf(stderr, "ERROR: %s: not enough bytes in bytecode for argument of %s at %u\n", fname, buzzvm_instr_desc[op], i); \
+      return 2;                                                         \
+   }                                                                    \
+   fprintf(fd, " " FMT, (*(T*)(buf+i+1)));                              \
+   i += sizeof(T);
+
 int buzz_deasm(const uint8_t* buf,
                uint32_t size,
                const char* fname) {
+   /* Open file */
+   FILE* fd = fopen(fname, "w");
+   if(!fd) {
+      perror(fname);
+      return 1;
+   }
+   /* Calculate max opcode */
+   uint32_t maxop = sizeof(buzzvm_instr_desc) / sizeof(char*);
+   /* Go through the bytecode */
+   for(uint32_t i = 0; i < size; ++i) {
+      /* Fetch instruction */
+      uint8_t op = buf[i];
+      /* Check that it's in the allowed range */
+      if(op >= maxop) {
+         fprintf(stderr, "ERROR: %s: unknown opcode %u at %u\n", fname, op, i);
+         return 2;
+      }
+      /* Write the op description */
+      fprintf(fd, "%s", buzzvm_instr_desc[op]);
+      /* Does the opcode have an argument? */
+      if(op == BUZZVM_INSTR_PUSH) {
+         /* Float argument */
+         write_arg(float, "%f");
+      }
+      else if(op > BUZZVM_INSTR_PUSH) {
+         /* Integer argument */
+         write_arg(uint32_t, "%u");
+      }
+      /* Newline */
+      fprintf(fd, "\n");
+   }
+   /* Close file */
+   fclose(fd);
+   return 0;
 }
 
 /****************************************/
