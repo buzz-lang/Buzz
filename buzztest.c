@@ -14,8 +14,9 @@ void dump(buzzvm_t vm, const char* prefix) {
    fprintf(stderr, "%s============================================================\n\n", prefix);
 }
 
-void hook(buzzvm_t vm) {
+int hook(buzzvm_t vm) {
    fprintf(stdout, "Hook called!\n\n");
+   return 0;
 }
 
 int main(int argc, char** argv) {

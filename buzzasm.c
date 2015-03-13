@@ -121,7 +121,7 @@ int buzz_asm(const char* fname,
       noarg_instr(BUZZVM_INSTR_LT);
       noarg_instr(BUZZVM_INSTR_LTE);
       f_arg_instr(BUZZVM_INSTR_PUSH);
-      i_arg_instr(BUZZVM_INSTR_AT);
+      i_arg_instr(BUZZVM_INSTR_DUP);
       i_arg_instr(BUZZVM_INSTR_JUMP);
       i_arg_instr(BUZZVM_INSTR_JUMPZ);
       i_arg_instr(BUZZVM_INSTR_JUMPNZ);

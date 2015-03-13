@@ -58,17 +58,9 @@ void buzzvm_set_bcode(buzzvm_t vm,
 
 #define assert_pc(IDX) if((IDX) < 0 || (IDX) >= vm->bcode_size) { vm->state = BUZZVM_STATE_ERROR; vm->error = BUZZVM_ERROR_PC; return vm->state; }
 
-#define assert_stack(IDX) if((IDX) < 0 || (IDX) >= vm->stack_size) { vm->state = BUZZVM_STATE_ERROR; vm->error = BUZZVM_ERROR_STACK; return vm->state; }
-
 #define inc_pc() ++vm->pc; assert_pc(vm->pc);
 
-#define inc_stack() ++vm->stack_top; assert_stack(vm->stack_top);
-
-#define get_arg(TYPE) assert_pc(vm->pc + sizeof(TYPE)); TYPE arg = *((TYPE*)(&(vm->bcode[vm->pc+1]))); vm->pc += sizeof(TYPE) + 1;
-
-#define binary_op_f(OP) assert_stack(vm->stack_top-2); --vm->stack_top; vm->stack[vm->stack_top-1].f = vm->stack[vm->stack_top].f OP vm->stack[vm->stack_top-1].f; inc_pc();
-
-#define binary_op_i(OP) assert_stack(vm->stack_top-2); --vm->stack_top; vm->stack[vm->stack_top-1].i = vm->stack[vm->stack_top].i OP vm->stack[vm->stack_top-1].i; inc_pc();
+#define get_arg(TYPE) assert_pc(vm->pc + sizeof(TYPE)); TYPE arg = *((TYPE*)(&(vm->bcode[vm->pc]))); vm->pc += sizeof(TYPE);
 
 buzzvm_state buzzvm_step(buzzvm_t vm) {
    /* Can't execute if not ready */
@@ -82,124 +74,131 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          break;
       }
       case BUZZVM_INSTR_DONE: {
-         vm->state = BUZZVM_STATE_DONE;
+         buzzvm_done(vm);
          break;
       }
       case BUZZVM_INSTR_POP: {
-         --vm->stack_top;
-         assert_stack(vm->stack_top);
+         buzzvm_pop(vm);
          inc_pc();
          break;
       }
       case BUZZVM_INSTR_RET: {
-         --vm->stack_top;
-         assert_stack(vm->stack_top);
-         vm->pc = vm->stack[vm->stack_top].i;
+         buzzvm_pop(vm);
+         vm->pc = buzzvm_at(vm, 0).i;
          assert_pc(vm->pc);
          break;
       }
       case BUZZVM_INSTR_ADD: {
-         binary_op_f(+);
+         buzzvm_add(vm);
+         inc_pc();
          break;
       }
       case BUZZVM_INSTR_SUB: {
-         binary_op_f(-);
+         buzzvm_sub(vm);
+         inc_pc();
          break;
       }
       case BUZZVM_INSTR_MUL: {
-         binary_op_f(*);
+         buzzvm_mul(vm);
+         inc_pc();
          break;
       }
       case BUZZVM_INSTR_DIV: {
-         binary_op_f(/);
+         buzzvm_div(vm);
+         inc_pc();
          break;
       }
       case BUZZVM_INSTR_AND: {
-         binary_op_i(&);
+         buzzvm_and(vm);
+         inc_pc();
          break;
       }
       case BUZZVM_INSTR_OR: {
-         binary_op_i(|);
+         buzzvm_or(vm);
+         inc_pc();
          break;
       }
       case BUZZVM_INSTR_NOT: {
-         vm->stack[vm->stack_top-1].i = !vm->stack[vm->stack_top-1].i;
+         buzzvm_not(vm);
          inc_pc();
          break;
       }
       case BUZZVM_INSTR_EQ: {
-         binary_op_f(==);
+         buzzvm_eq(vm);
+         inc_pc();
          break;
       }
       case BUZZVM_INSTR_GT: {
-         binary_op_f(>);
+         buzzvm_gt(vm);
+         inc_pc();
          break;
       }
       case BUZZVM_INSTR_GTE: {
-         binary_op_f(>=);
+         buzzvm_gte(vm);
+         inc_pc();
          break;
       }
       case BUZZVM_INSTR_LT: {
-         binary_op_f(>);
+         buzzvm_lt(vm);
+         inc_pc();
          break;
       }
       case BUZZVM_INSTR_LTE: {
-         binary_op_f(>=);
+         buzzvm_lte(vm);
+         inc_pc();
          break;
       }
       case BUZZVM_INSTR_PUSH: {
+         inc_pc();
          get_arg(float);
-         vm->stack[vm->stack_top].f = arg;
-         inc_stack();
+         buzzvm_pushf(vm, arg);
          break;
       }
-      case BUZZVM_INSTR_AT: {
+      case BUZZVM_INSTR_DUP: {
+         inc_pc();
          get_arg(uint32_t);
-         assert_stack(arg);
-         vm->stack[vm->stack_top].f = vm->stack[arg].f;
-         inc_stack();
+         buzzvm_dup(vm, arg);
          break;
       }
       case BUZZVM_INSTR_JUMP: {
+         inc_pc();
          get_arg(uint32_t);
          vm->pc = arg;
          assert_pc(vm->pc);
          break;
       }
       case BUZZVM_INSTR_JUMPZ: {
-         assert_stack(vm->stack_top - 1);
+         inc_pc();
          get_arg(uint32_t);
-         if(vm->stack[vm->stack_top - 1].i == 0) {
+         buzzvm_assert_stack(vm, 1);
+         if(buzzvm_at(vm, 1).i == 0) {
             vm->pc = arg;
             assert_pc(vm->pc);
          }
          break;
       }
       case BUZZVM_INSTR_JUMPNZ: {
-         assert_stack(vm->stack_top - 1);
+         inc_pc();
          get_arg(uint32_t);
-         if(vm->stack[vm->stack_top - 1].i != 0) {
+         buzzvm_assert_stack(vm, 1);
+         if(buzzvm_at(vm, 1).i != 0) {
             vm->pc = arg;
             assert_pc(vm->pc);
          }
          break;
       }
       case BUZZVM_INSTR_JUMPSUB: {
+         inc_pc();
          get_arg(uint32_t);
-         vm->stack[vm->stack_top].i = vm->pc;
-         inc_stack();
+         buzzvm_pushi(vm, arg);
          vm->pc = arg;
          assert_pc(vm->pc);
          break;
       }
       case BUZZVM_INSTR_CALL: {
+         inc_pc();
          get_arg(uint32_t);
-         if(arg >= vm->flist_entries) {
-            vm->state = BUZZVM_STATE_ERROR;
-            vm->error = BUZZVM_ERROR_FLIST;
-            return vm->state;
-         }
-         vm->flist[arg](vm);
+         buzzvm_call(vm, arg);
          break;
       }
    }

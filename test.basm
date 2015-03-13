@@ -1,9 +1,57 @@
-push 10
-push 2
+# Stack: 
+
+push 200
+# Stack: 200
+
+pop
+# Stack: 
+
+push 130
+# Stack: 130
+
+push 30
+# Stack: 30 130
+
 add
-push 4
+# Stack: 160
+
+push 60
+# Stack: 60 160
+
 sub
-push 6
+# Stack: -100
+
+push 2
+# Stack: 2 -100
+
 mul
-call 0
+# Stack: -200
+
+push 5
+# Stack: 5 -200
+
+div
+# Stack: -0.025000
+
+push -0.025000
+# Stack: -0.025000 -0.025000
+
+eq
+# Stack: 1
+
+push 17
+# Stack: 17 1
+
+push 19
+# Stack: 19 17 1
+
+eq
+# Stack: 1 1
+
+and
+# Stack: 1
+
+jumpz 0
+# Stack: 1
+
 done
