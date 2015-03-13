@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 2.8.3)
 
 project(buzz)
 
-add_library(buzzvm SHARED buzzvm.h buzzvm.c)
+add_library(buzz SHARED
+  buzzvm.h buzzvm.c
+  buzzasm.h buzzasm.c)
 
-add_executable(buzzasm buzzasm.c)
-target_link_libraries(buzzasm buzzvm)
+add_executable(buzztest buzztest.c)
+target_link_libraries(buzztest buzz)

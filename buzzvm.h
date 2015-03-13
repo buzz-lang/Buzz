@@ -128,19 +128,6 @@ extern void buzzvm_reset(buzzvm_t vm);
 extern void buzzvm_destroy(buzzvm_t* vm);
 
 /*
- * Compiles an assembly file into bytecode.
- * @param vm The VM data.
- * @param fname The file name where the code is located.
- * @param buf The buffer in which the bytecode will be stored. Created internally.
- * @param size The size of the created buffer.
- * @return 0 if no error occurred, 1 for I/O error, 2 for compilation error
- */
-extern int buzzvm_asm(buzzvm_t vm,
-                      const char* fname,
-                      uint8_t** buf,
-                      uint32_t* size);
-
-/*
  * Sets the bytecode in the VM.
  * The passed buffer cannot be deleted until the VM is done with it.
  * @param vm The VM data.
