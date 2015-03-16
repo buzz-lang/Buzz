@@ -6,7 +6,8 @@
 /****************************************/
 
 buzzvm_t buzzvm_new(uint32_t stack_size,
-                    uint32_t flist_size) {
+                    uint32_t flist_size,
+                    uint32_t gidlist_size) {
    /* Create VM state. calloc() takes care of zeroing everything */
    buzzvm_t vms = (buzzvm_t)calloc(1, sizeof(struct buzzvm_s));
    /* Create stack. calloc() takes care of zeroing everything */
@@ -15,6 +16,9 @@ buzzvm_t buzzvm_new(uint32_t stack_size,
    /* Create function list. calloc() takes care of zeroing everything */
    vms->flist_size = flist_size;
    vms->flist = calloc(flist_size, sizeof(buzzvm_funp));
+   /* Create group id list. calloc() takes care of zeroing everything */
+   vms->gidlist_size = gidlist_size;
+   vms->gidlist = calloc(gidlist_size, sizeof(buzzvm_gid));
    /* Return new vm */
    return vms;
 }
@@ -23,8 +27,10 @@ buzzvm_t buzzvm_new(uint32_t stack_size,
 /****************************************/
 
 void buzzvm_reset(buzzvm_t vm) {
-   memset(vm->stack, 0, vm->stack_size);
+   memset(vm->stack, 0, sizeof(buzzvm_stack_elem) * vm->stack_size);
+   memset(vm->gidlist, 0, sizeof(buzzvm_gid) * vm->stack_size);
    vm->stack_top = 0;
+   vm->gidlist_entries = 0;
    vm->pc = 0;
    if(vm->bcode) vm->state = BUZZVM_STATE_READY;
    else vm->state = BUZZVM_STATE_NOCODE;
@@ -36,6 +42,8 @@ void buzzvm_reset(buzzvm_t vm) {
 
 void buzzvm_destroy(buzzvm_t* vm) {
    free((*vm)->stack);
+   free((*vm)->flist);
+   free((*vm)->gidlist);
    free(*vm);
    *vm = 0;
 }
@@ -145,6 +153,21 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       }
       case BUZZVM_INSTR_LTE: {
          buzzvm_lte(vm);
+         inc_pc();
+         break;
+      }
+      case BUZZVM_INSTR_QGID: {
+         buzzvm_qgid(vm);
+         inc_pc();
+         break;
+      }
+      case BUZZVM_INSTR_SGID: {
+         buzzvm_sgid(vm);
+         inc_pc();
+         break;
+      }
+      case BUZZVM_INSTR_CGID: {
+         buzzvm_cgid(vm);
          inc_pc();
          break;
       }

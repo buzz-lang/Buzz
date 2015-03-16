@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
       return 0;
    }
    /* Create new VM */
-   buzzvm_t vm = buzzvm_new(10, 1);
+   buzzvm_t vm = buzzvm_new(10, 1, 10);
    /* Register hook function */
    buzzvm_register_function(vm, hook);
    /* Parse script */

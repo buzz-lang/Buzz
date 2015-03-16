@@ -36,7 +36,7 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
    /* Get pointers to devices */
    // TODO
    /* Create a new BuzzVM */
-   m_tBuzzVM = buzzvm_new(100, 5);
+   m_tBuzzVM = buzzvm_new(100, 5, 100);
    /* Get the script filename */
    std::string strFName;
    GetNodeAttribute(t_node, "script", strFName);

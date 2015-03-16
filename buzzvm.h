@@ -7,161 +7,181 @@
 extern "C" {
 #endif
 
-/*
- * VM states
- */
-typedef enum {
-   BUZZVM_STATE_NOCODE = 0, // No code loaded
-   BUZZVM_STATE_READY,      // Ready to execute next instruction
-   BUZZVM_STATE_DONE,       // Program finished
-   BUZZVM_STATE_ERROR       // Error occurred
-} buzzvm_state;
-static char *buzzvm_state_desc[] = { "no code", "ready", "done", "error" };
-
-/*
- * VM error codes
- */
-typedef enum {
-   BUZZVM_ERROR_NONE = 0, // No error
-   BUZZVM_ERROR_STACK,    // Stack operation out of range
-   BUZZVM_ERROR_PC,       // Program counter out of range
-   BUZZVM_ERROR_FLIST     // Function call id out of range
-} buzzvm_error;
-static char *buzzvm_error_desc[] = { "none", "stack out of range", "pc out of range", "function id out of range" };
-
-/*
- * VM instructions
- */
-typedef enum {
    /*
-    * Opcodes without argument
+    * VM states
     */
-   BUZZVM_INSTR_NOP = 0, // No operation
-   BUZZVM_INSTR_DONE,    // End of the program
-   BUZZVM_INSTR_POP,     // Pop value from stack
-   BUZZVM_INSTR_RET,     // Sets PC to value at stack top, then pops it
-   BUZZVM_INSTR_ADD,     // Push stack(#1) + stack(#2), pop operands
-   BUZZVM_INSTR_SUB,     // Push stack(#1) - stack(#2), pop operands
-   BUZZVM_INSTR_MUL,     // Push stack(#1) * stack(#2), pop operands
-   BUZZVM_INSTR_DIV,     // Push stack(#1) / stack(#2), pop operands
-   BUZZVM_INSTR_AND,     // Push stack(#1) & stack(#2), pop operands
-   BUZZVM_INSTR_OR,      // Push stack(#1) | stack(#2), pop operands
-   BUZZVM_INSTR_NOT,     // Push !stack(#1), pop operand
-   BUZZVM_INSTR_EQ,      // Push stack(#1) == stack(#2), pop operands
-   BUZZVM_INSTR_GT,      // Push stack(#1) > stack(#2), pop operands
-   BUZZVM_INSTR_GTE,     // Push stack(#1) >= stack(#2), pop oper
-   BUZZVM_INSTR_LT,      // Push stack(#1) < stack(#2), pop operands
-   BUZZVM_INSTR_LTE,     // Push stack(#1) <= stack(#2), pop operands
+   typedef enum {
+      BUZZVM_STATE_NOCODE = 0, // No code loaded
+      BUZZVM_STATE_READY,      // Ready to execute next instruction
+      BUZZVM_STATE_DONE,       // Program finished
+      BUZZVM_STATE_ERROR       // Error occurred
+   } buzzvm_state;
+   static char *buzzvm_state_desc[] = { "no code", "ready", "done", "error" };
+
    /*
-    * Opcodes with argument
+    * VM error codes
     */
-   /* Float argument */
-   BUZZVM_INSTR_PUSH,    // Push float constant onto stack
-   /* Integer argument */
-   BUZZVM_INSTR_DUP,     // Push float value in stack at given position (0 = top, >0 beneath)
-   BUZZVM_INSTR_JUMP,    // Set PC to argument
-   BUZZVM_INSTR_JUMPZ,   // Set PC to argument if stack top is zero
-   BUZZVM_INSTR_JUMPNZ,  // Set PC to argument if stack top is not zero
-   BUZZVM_INSTR_JUMPSUB, // Push current PC and sets PC to argument
-   BUZZVM_INSTR_CALL     // Calls the C function pointed to by the argument
-} buzzvm_instr;
-static char *buzzvm_instr_desc[] = {"nop", "done", "pop", "ret", "add", "sub", "mul", "div", "and", "or", "not", "eq", "gt", "gte", "lt", "lte", "push", "dup", "jump", "jumpz", "jumpnz", "jumpsub", "call"};
+   typedef enum {
+      BUZZVM_ERROR_NONE = 0, // No error
+      BUZZVM_ERROR_STACK,    // Stack operation out of range
+      BUZZVM_ERROR_PC,       // Program counter out of range
+      BUZZVM_ERROR_FLIST     // Function call id out of range
+   } buzzvm_error;
+   static char *buzzvm_error_desc[] = { "none", "stack out of range", "pc out of range", "function id out of range" };
 
-/*
- * An element in the VM stack
- */
-typedef union {
-   uint32_t i;
-   float f;
-} buzzvm_stack_elem;
+   /*
+    * VM instructions
+    */
+   typedef enum {
+      /*
+       * Opcodes without argument
+       */
+      BUZZVM_INSTR_NOP = 0, // No operation
+      BUZZVM_INSTR_DONE,    // End of the program
+      BUZZVM_INSTR_POP,     // Pop value from stack
+      BUZZVM_INSTR_RET,     // Sets PC to value at stack top, then pops it
+      BUZZVM_INSTR_ADD,     // Push stack(#1) + stack(#2), pop operands
+      BUZZVM_INSTR_SUB,     // Push stack(#1) - stack(#2), pop operands
+      BUZZVM_INSTR_MUL,     // Push stack(#1) * stack(#2), pop operands
+      BUZZVM_INSTR_DIV,     // Push stack(#1) / stack(#2), pop operands
+      BUZZVM_INSTR_AND,     // Push stack(#1) & stack(#2), pop operands
+      BUZZVM_INSTR_OR,      // Push stack(#1) | stack(#2), pop operands
+      BUZZVM_INSTR_NOT,     // Push !stack(#1), pop operand
+      BUZZVM_INSTR_EQ,      // Push stack(#1) == stack(#2), pop operands
+      BUZZVM_INSTR_GT,      // Push stack(#1) > stack(#2), pop operands
+      BUZZVM_INSTR_GTE,     // Push stack(#1) >= stack(#2), pop operands
+      BUZZVM_INSTR_LT,      // Push stack(#1) < stack(#2), pop operands
+      BUZZVM_INSTR_LTE,     // Push stack(#1) <= stack(#2), pop operands
+      BUZZVM_INSTR_QGID,    // Pushes true/false based on the group id on the stack top, pops operand
+      BUZZVM_INSTR_SGID,    // Sets the group id on the stack top, pops operand
+      BUZZVM_INSTR_CGID,    // Clears the group id on the stack top, pops operand
+      /*
+       * Opcodes with argument
+       */
+      /* Float argument */
+      BUZZVM_INSTR_PUSH,    // Push float constant onto stack
+      /* Integer argument */
+      BUZZVM_INSTR_DUP,     // Push float value in stack at given position (0 = top, >0 beneath)
+      BUZZVM_INSTR_JUMP,    // Set PC to argument
+      BUZZVM_INSTR_JUMPZ,   // Set PC to argument if stack top is zero
+      BUZZVM_INSTR_JUMPNZ,  // Set PC to argument if stack top is not zero
+      BUZZVM_INSTR_JUMPSUB, // Push current PC and sets PC to argument
+      BUZZVM_INSTR_CALL,    // Calls the C function pointed to by the argument
+   } buzzvm_instr;
+   static char *buzzvm_instr_desc[] = {"nop", "done", "pop", "ret", "add", "sub", "mul", "div", "and", "or", "not", "eq", "gt", "gte", "lt", "lte", "push", "dup", "jump", "jumpz", "jumpnz", "jumpsub", "call", "qgid", "sgid", "ugid"};
 
-/*
- * Function pointer for BUZZVM_INSTR_CALL.
- * @param vm The VM data.
- * @return The updated VM state.
- */
-struct buzzvm_s;
-typedef int (*buzzvm_funp)(struct buzzvm_s* vm);
+   /*
+    * An element in the VM stack
+    */
+   typedef union {
+      uint32_t i;
+      float f;
+   } buzzvm_stack_elem;
 
-/*
- * VM data
- */
-struct buzzvm_s {
-   /* Max size of the stack */
-   uint32_t stack_size;
-   /* Size of the loaded bytecode */
-   uint32_t bcode_size;
-   /* Max size for the function list */
-   uint32_t flist_size;
-   /* Current stack top */
-   int64_t stack_top;
-   /* Program counter */
-   int64_t pc;
-   /* Numbers of currently registered functions */
-   uint32_t flist_entries;
-   /* Stack content */
-   buzzvm_stack_elem* stack;
-   /* Bytecode content */
-   const uint8_t* bcode;
-   /* Registered functions */
-   buzzvm_funp* flist;
-   /* Current VM state */
-   buzzvm_state state;
-   /* Current VM error */
-   buzzvm_error error;
-};
-typedef struct buzzvm_s* buzzvm_t;
+   /*
+    * Function pointer for BUZZVM_INSTR_CALL.
+    * @param vm The VM data.
+    * @return The updated VM state.
+    */
+   struct buzzvm_s;
+   typedef int (*buzzvm_funp)(struct buzzvm_s* vm);
 
-/*
- * Creates a new VM.
- * @param stack_size The max size of the stack.
- * @param flist_size The max size for the function list.
- * @return The VM data.
- */
-extern buzzvm_t buzzvm_new(uint32_t stack_size,
-                           uint32_t flist_size);
+   /*
+    * Group ID list entry
+    */
+   typedef uint16_t buzzvm_gid;
 
-/*
- * Resets the VM.
- * It brings the data of the VM back to what it was right after
- * initialization. It keeps the loaded bytecode and function list,
- * if any.
- * @param vm The VM data.
- */
-extern void buzzvm_reset(buzzvm_t vm);
+   /*
+    * VM data
+    */
+   struct buzzvm_s {
+      /* Max size of the stack */
+      uint32_t stack_size;
+      /* Size of the loaded bytecode */
+      uint32_t bcode_size;
+      /* Max size of the function list */
+      uint32_t flist_size;
+      /* Max size of the group id list */
+      uint32_t gidlist_size;
+      /* Current stack top */
+      int64_t stack_top;
+      /* Program counter */
+      int64_t pc;
+      /* Numbers of currently registered functions */
+      uint32_t flist_entries;
+      /* Numbers of currently known group ids */
+      uint32_t gidlist_entries;
+      /* Stack content */
+      buzzvm_stack_elem* stack;
+      /* Bytecode content */
+      const uint8_t* bcode;
+      /* Registered functions */
+      buzzvm_funp* flist;
+      /* Group ids */
+      buzzvm_gid* gidlist;
+      /* Current VM state */
+      buzzvm_state state;
+      /* Current VM error */
+      buzzvm_error error;
+   };
+   typedef struct buzzvm_s* buzzvm_t;
 
-/*
- * Destroys the VM.
- * @param vm The VM data.
- */
-extern void buzzvm_destroy(buzzvm_t* vm);
+   /*
+    * Creates a new VM.
+    * @param stack_size The max size of the stack.
+    * @param flist_size The max size for the function list.
+    * @param gidlist_size The max size for the group id list.
+    * @return The VM data.
+    */
+   extern buzzvm_t buzzvm_new(uint32_t stack_size,
+                              uint32_t flist_size,
+                              uint32_t gidlist_size);
 
-/*
- * Sets the bytecode in the VM.
- * The passed buffer cannot be deleted until the VM is done with it.
- * @param vm The VM data.
- * @param bcode_size The size (in bytes) of the bytecode.
- * @param bcode The bytecode buffer.
- */
-extern void buzzvm_set_bcode(buzzvm_t vm,
-                             const uint8_t* bcode,
-                             uint32_t bcode_size);
+   /*
+    * Resets the VM.
+    * It brings the data of the VM back to what it was right after
+    * initialization. It keeps the loaded bytecode and function list,
+    * if any.
+    * @param vm The VM data.
+    */
+   extern void buzzvm_reset(buzzvm_t vm);
 
-/*
- * Executes the next step in the bytecode, if possible.
- * @param vm The VM data.
- * @return The updated VM state.
- */
-extern buzzvm_state buzzvm_step(buzzvm_t vm);
+   /*
+    * Destroys the VM.
+    * @param vm The VM data.
+    */
+   extern void buzzvm_destroy(buzzvm_t* vm);
 
-/*
- * Registers a function in the VM.
- * @param vm The VM data.
- * @param funp The function pointer to register.
- * @return The id associated to the function, or -1 in case of error. A valid id must be used with BUZZVM_INSTR_CALL.
- */
-extern int64_t buzzvm_register_function(buzzvm_t vm,
-                                        buzzvm_funp funp);
+   /*
+    * Sets the bytecode in the VM.
+    * The passed buffer cannot be deleted until the VM is done with it.
+    * @param vm The VM data.
+    * @param bcode_size The size (in bytes) of the bytecode.
+    * @param bcode The bytecode buffer.
+    */
+   extern void buzzvm_set_bcode(buzzvm_t vm,
+                                const uint8_t* bcode,
+                                uint32_t bcode_size);
+
+   /*
+    * Executes the next step in the bytecode, if possible.
+    * @param vm The VM data.
+    * @return The updated VM state.
+    */
+   extern buzzvm_state buzzvm_step(buzzvm_t vm);
+
+   /*
+    * Registers a function in the VM.
+    * @param vm The VM data.
+    * @param funp The function pointer to register.
+    * @return The id associated to the function, or -1 in case of error. A valid id must be used with BUZZVM_INSTR_CALL.
+    */
+   extern int64_t buzzvm_register_function(buzzvm_t vm,
+                                           buzzvm_funp funp);
+
+#ifdef __cplusplus
+}
+#endif
 
 /*
  * Checks whether the given stack idx is valid.
@@ -379,8 +399,32 @@ extern int64_t buzzvm_register_function(buzzvm_t vm,
  */
 #define buzzvm_call(vm, fid) if((fid) >= (vm)->flist_entries) {(vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_FLIST; return vm->state;} (vm)->flist[(fid)](vm);
 
-#ifdef __cplusplus
-}
-#endif
+/*
+ * Queries the group id list for the GID at the top of the stack, pushes the result and pops the operand.
+ * The result of the query is true if the GID is found. Otherwise, the result is false.
+ * Internally checks whether the operation is valid.
+ * This function is designed to be used within int-returning functions such as
+ * BuzzVM hook functions or buzzvm_step().
+ * @param vm The VM data.
+ */
+#define buzzvm_qgid(vm) { buzzvm_pop(vm); uint32_t i = 0; while(i < (vm)->gidlist_entries && (vm)->gidlist[i] != buzzvm_at(vm, 0).i) ++i; buzzvm_pushi(vm, i < (vm)->gidlist_entries); }
+
+/*
+ * Adds the group id at the top of the stack to the list and pops the operand.
+ * Internally checks whether the operation is valid.
+ * This function is designed to be used within int-returning functions such as
+ * BuzzVM hook functions or buzzvm_step().
+ * @param vm The VM data.
+ */
+#define buzzvm_sgid(vm) { buzzvm_pop(vm); uint32_t i = 0; while(i < (vm)->gidlist_entries && (vm)->gidlist[i] != buzzvm_at(vm, 0).i) ++i; if(i == (vm)->gidlist_entries && i < (vm)->gidlist_size) { (vm)->gidlist[i] = buzzvm_at(vm, 0).i; ++(vm)->gidlist_entries; } }
+
+/*
+ * Removes the group id at the top of the stack from the list and pops the operand.
+ * Internally checks whether the operation is valid.
+ * This function is designed to be used within int-returning functions such as
+ * BuzzVM hook functions or buzzvm_step().
+ * @param vm The VM data.
+ */
+#define buzzvm_cgid(vm) { buzzvm_pop(vm); if((vm)->gidlist_entries) { uint32_t i = 0; while(i < (vm)->gidlist_entries && (vm)->gidlist[i] != buzzvm_at(vm, 0).i) ++i; if(i < (vm)->gidlist_entries) { --(vm)->gidlist_entries; (vm)->gidlist[i] = (vm)->gidlist[(vm)->gidlist_entries]; } } }
 
 #endif
