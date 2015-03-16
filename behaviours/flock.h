@@ -1,7 +1,7 @@
- /* AUTHOR: Adam Lee-Brown <adamlb@live.com.au> */
+/* AUTHOR: Adam Lee-Brown <adamlb@live.com.au> */
 
-  #ifndef FLOCK_H
-  #define FLOCK_H
+#ifndef FLOCK_H
+#define FLOCK_H
 
 /* Headers */
 /* Definition of the CCI_Controller class. */
@@ -16,38 +16,38 @@ using namespace argos;
 class Flock {
     
 public:
-    /* Class constructor. */
-    Flock() {
-        /* Pointer to the range-and-bearing sensor */
-        CCI_RangeAndBearingSensor* m_pcRABSens;
-
-        /* Target robot-robot distance in cm */
-        Real rTargetDistance = 100;
-        /* Gain of the Lennard-Jones potential */
-        Real rGain = 2.5;
-        /* Exponent of the Lennard-Jones potential */
-        Real rExponent = 1.5;
-        /* Max length for the resulting interaction force vector */
-        Real rMaxInteraction = 0.025;
-        /* Range of the "range and bearing" device */
-        Real RAB = 6;
-    }
-    /* Init */
-    virtual void Init();
+    /* Public class constructor. */
+    Flock(Real rTargetDistance,
+          Real rGain,
+          Real rExponent,
+          Real rMaxInteraction,
+          Real rRAB);
+    
+    void SetFlockParams(Real rTargetDistance,
+                        Real rGain,
+                        Real rExponent,
+                        Real rMaxInteraction,
+                        Real rRAB);
     
     /* Control step */
     virtual void ControlStep();
     
-    /* Destroy */
-    virtual void Destroy() {}
-    
 private:
+    /* Private default constructor */
+    Flock() {}
+    
     /* Calculate the flocking interaction vector */
     CVector2 FlockingVector();
     
     /* Lennard-Jones: */
     Real GeneralizedLennardJones(Real TargetDistance, Real f_distance);
     
+private:
+    Real m_rTargetDistance;
+    Real m_rGain;
+    Real m_rExponent;
+    Real m_rMaxInteraction;
+    Real m_rRAB;
 };
 
 #endif

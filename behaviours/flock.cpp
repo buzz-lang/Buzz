@@ -2,6 +2,30 @@
 
 /****************************************/
 /****************************************/
+/* Constructor */
+Flock::Flock(Real rTargetDistance, Real rGain, Real rExponent, Real rMaxInteraction, Real rRAB) {
+    SetFlockParams(rTargetDistance, rGain, rExponent, rMaxInteraction, rRAB);
+}
+
+/* Constructor calls this function to set the flocking parameters */
+Flock::SetFlockParams(Real rTargetDistance,
+                      Real rGain,
+                      Real rExponent,
+                      Real rMaxInteraction,
+                      Real rRAB) {
+    /* Pointer to the range-and-bearing sensor */
+    CCI_RangeAndBearingSensor* m_pcRABSens;
+    /* Target robot-robot distance in cm */
+    m_rTargetDistance = rTargetDistance;
+    /* Gain of the Lennard-Jones potential */
+    m_rGain = rGain;
+    /* Gain of the Lennard-Jones potential */
+    m_rExponent = rExponent;
+    /* Max length for the resulting interaction force vector */
+    m_rMaxInteraction = rMaxInteraction;
+    /* Range of the "range and bearing" device */
+    m_rRAB = rRAB;
+}
 
 /* Lennard-Jones formula: (Used by FlockingVector()) */
 Real Flock::GeneralizedLennardJones(Real TargetDistance, Real f_distance) {
@@ -36,28 +60,28 @@ CVector2 Flock::FlockingVector() {
                                               tMsgs[i].Range);
             }
         }
-                
+        
         /* Sum to accumulator */
         cAccum += CVector2(fLJ, tMsgs[i].HorizontalBearing);
-                /* Count one more flocking neighbor */
-                ++unPeers;
-            }
-        }
-        if(unPeers > 0) {
-            /* Divide the accumulator by the number of flocking neighbors */
-            cAccum /= unPeers;
-            /* Limit the interaction force */
-            if(cAccum.Length() != rMaxInteraction) {
-                cAccum.Normalize();
-                cAccum *= rMaxInteraction;
-            }
-        }
-        /* All done */
-        return cAccum;
+        /* Count one more flocking neighbor */
+        ++unPeers;
     }
-    else {
-        /* No messages received, no interaction */
-        return CVector2();
+}
+if(unPeers > 0) {
+    /* Divide the accumulator by the number of flocking neighbors */
+    cAccum /= unPeers;
+    /* Limit the interaction force */
+    if(cAccum.Length() != rMaxInteraction) {
+        cAccum.Normalize();
+        cAccum *= rMaxInteraction;
     }
+}
+/* All done */
+return cAccum;
+}
+else {
+    /* No messages received, no interaction */
+    return CVector2();
+}
 }
 
