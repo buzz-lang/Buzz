@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * VM states
  */
@@ -374,5 +378,9 @@ extern int64_t buzzvm_register_function(buzzvm_t vm,
  * @param fid The function id.
  */
 #define buzzvm_call(vm, fid) if((fid) >= (vm)->flist_entries) {(vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_FLIST; return vm->state;} (vm)->flist[(fid)](vm);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

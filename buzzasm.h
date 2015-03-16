@@ -3,6 +3,10 @@
 
 #include "buzzvm.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Compiles an assembly file into bytecode.
  * @param fname The file name where the code is located.
@@ -24,5 +28,9 @@ extern int buzz_asm(const char* fname,
 extern int buzz_deasm(const uint8_t* buf,
                       uint32_t size,
                       const char* fname);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

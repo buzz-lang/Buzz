@@ -13,41 +13,46 @@
 
 using namespace argos;
 
-class Flock {
+class CFlock {
     
 public:
-    /* Public class constructor. */
-    Flock(Real rTargetDistance,
-          Real rGain,
-          Real rExponent,
-          Real rMaxInteraction,
-          Real rRAB);
+   
+   /* Public class constructor. */
+   CFlock(CCI_RangeAndBearingSensor* pc_rab_sens,
+          Real f_target_distance,
+          Real f_gain,
+          Real f_exponent,
+          Real f_max_interaction,
+          Real f_range);
     
-    void SetFlockParams(Real rTargetDistance,
-                        Real rGain,
-                        Real rExponent,
-                        Real rMaxInteraction,
-                        Real rRAB);
+   void SetFlockParams(Real f_target_distance,
+                       Real f_gain,
+                       Real f_exponent,
+                       Real f_max_interaction,
+                       Real f_range);
     
-    /* Control step */
-    virtual void ControlStep();
+   /* Control step */
+   void Do();
     
-private:
-    /* Private default constructor */
-    Flock() {}
-    
-    /* Calculate the flocking interaction vector */
-    CVector2 FlockingVector();
-    
-    /* Lennard-Jones: */
-    Real GeneralizedLennardJones(Real TargetDistance, Real f_distance);
+   /* Calculate the flocking interaction vector */
+   CVector2 FlockingVector();
     
 private:
-    Real m_rTargetDistance;
-    Real m_rGain;
-    Real m_rExponent;
-    Real m_rMaxInteraction;
-    Real m_rRAB;
+   
+   /* Lennard-Jones: */
+   Real GeneralizedLennardJones(Real f_distance);
+    
+private:
+
+   /* Pointer to the range-and-bearing sensor */
+   CCI_RangeAndBearingSensor* m_pcRABSens;
+   
+   Real m_fTargetDistance;
+   Real m_fGain;
+   Real m_fExponent;
+   Real m_fMaxInteraction;
+   Real m_fRange;
+
 };
 
 #endif
