@@ -1,0 +1,6 @@
+    d = sensor.dist_to_object()
+    while(not d) {
+        ds = neighbors.query(d)
+        m = ds.min()
+        if(m) d = neighbors.to[ds.min_idx()].length() + m
+    }
