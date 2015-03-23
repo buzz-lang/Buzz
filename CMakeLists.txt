@@ -16,7 +16,8 @@ link_directories(${ARGOS_LIBRARY_DIRS})
 add_library(buzz SHARED
   buzzvm.h buzzvm.c
   buzzasm.h buzzasm.c
-  buzzlex.h buzzlex.c)
+  buzzlex.h buzzlex.c
+  buzzparser.h buzzparser.c)
 
 # Create libbuzzargos
 add_library(buzzargos SHARED

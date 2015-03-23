@@ -37,10 +37,11 @@ extern "C" {
       BUZZTOK_DOT,
       BUZZTOK_CMP,
    } buzztok_type_e;
-   static char *buzztok_desc[] = { "ID", "CONST", "STRING", "LOCAL", "IF", "ELSE", "FUN", "FOR", "WHILE",
-                                   "ANDOR", "NOT", "BOOL", "ARITH", "BLOCKOPEN", "BLOCKCLOSE", "PAROPEN",
-                                   "PARCLOSE", "IDXOPEN", "IDXCLOSE", "STATEND", "LISTSEP", "ASSIGN", "DOT",
-                                   "CMP" };
+   static char *buzztok_desc[] = {
+      "ID", "CONST", "STRING", "LOCAL", "IF", "ELSE", "FUN", "FOR", "WHILE",
+      "ANDOR", "NOT", "BOOL", "ARITH", "BLOCKOPEN", "BLOCKCLOSE", "PAROPEN",
+      "PARCLOSE", "IDXOPEN", "IDXCLOSE", "STATEND", "LISTSEP", "ASSIGN",
+      "DOT", "CMP" };
 
    /*
     * Token data record
