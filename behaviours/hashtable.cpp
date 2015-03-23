@@ -123,11 +123,11 @@ void CHashTable::PrintTable() {
 
 void CHashTable::PrintItem(string name) {
     int index = Hash(name);
-        cout << "==========Item:=========" << endl;
-        cout << HashTable[index]->name << endl;
-        cout << HashTable[index]->value << endl;
-        cout << HashTable[index]->requestID << endl;
-        cout << HashTable[index]->hash << endl;
+    //    cout << "==========Item:=========" << endl;
+    //    cout << HashTable[index]->name << endl;
+    cout << HashTable[index]->value << endl;
+    //    cout << HashTable[index]->requestID << endl;
+    //    cout << HashTable[index]->hash << endl;
 }
 
 /****************************************/
@@ -285,7 +285,7 @@ void CHashTable::UpdateItem(string name, int value) {
         }
     }
     /* If name is not found */
-//    cout << name << " was not found" << endl;
+    //    cout << name << " was not found" << endl;
 }
 
 /****************************************/
@@ -303,5 +303,3 @@ void CHashTable::AddRequestID(string name, int requestID){
         Ptr = Ptr->next;
     }
 }
-
-

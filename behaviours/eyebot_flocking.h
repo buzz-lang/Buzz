@@ -134,7 +134,7 @@ public:
     
 private:
     
-//    void ReceiveHumanCommand();
+    //    void ReceiveHumanCommand();
     
     /* Assign groups to robots and set up hash table */
     void Grouping();

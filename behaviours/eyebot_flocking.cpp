@@ -198,16 +198,16 @@ void CEyeBotFlocking::Grouping() {
     std::string IdSubStr = IdStr.substr (2,2);
     IdNum = FromString<uint32_t>(IdSubStr);
     // std::cout << "Id num: " << IdNum << std::endl;
-    if(IdNum < (NumberOfRobots/2)) {
-        m_eColor = WHITE;
-        /* Hashing */
-        std::cout << "WHITE" << std::endl;
-    }
-    
-    else {
-        m_eColor = BLACK;
-        std::cout << "BLACK" << std::endl;
-    }
+    //    if(IdNum < (NumberOfRobots/2)) {
+    //        m_eColor = WHITE;
+    //        /* Hashing */
+    //        std::cout << "WHITE" << std::endl;
+    //    }
+    //
+    //    else {
+    //        m_eColor = BLACK;
+    //        std::cout << "BLACK" << std::endl;
+    //    }
     RobotHashTable.AddItem("a", IdNum + 10);
     //Move();
     //RobotHashTable.PrintTable();
@@ -248,20 +248,6 @@ void CEyeBotFlocking::SendNeighborhoodQuery(string name, int requestID) {
     m_pcRABAct->SetData(5, 1);
     m_pcRABAct->SetData(6, requestID);
     m_pcRABAct->SetData(7, hash);
-    
-    int value = RobotHashTable.GetValue(name);
-//    cout << "Sending query: " << IdNum << ", " << 1 << ", " << requestID << ", " << hash << endl;
-    
-    //    CByteArray ByteArray;
-    //    ByteArray << (uint32_t)0;
-    //    ByteArray << (uint8_t)IdNum;
-    //    ByteArray << (uint8_t)69;
-    //    ByteArray << (uint32_t)hash;
-    //    cout << "BA 1 = " << ByteArray[4] << endl;
-    //    cout << "BA 2 = " << ByteArray[5] << endl;
-    //    cout << "BA 3 = " << ByteArray[9] << endl;
-    //    cout << "=======" << endl;
-    //    m_pcRABAct->SetData(ByteArray);
 }
 
 /****************************************/
@@ -270,46 +256,43 @@ void CEyeBotFlocking::SendNeighborhoodQuery(string name, int requestID) {
 /* Run at the start of every control step. Listens for queries and replies */
 void CEyeBotFlocking::ReceiveNeighborhoodQuery() {
     const CCI_RangeAndBearingSensor::TReadings& tMsgs = m_pcRABSens->GetReadings();
-    /* If a message has been received */
-    int highest_id = -1;
     
+    /* Determines hightest value ID */
+    int highest_id = -1;
     for(int i = 0; i < tMsgs.size(); ++i) {
-        if(tMsgs[i].Data[4] > highest_id) {
-            highest_id = tMsgs[i].Data[4];
+        if(tMsgs[i].Data[5] == 1) {
+            if(tMsgs[i].Data[4] > highest_id) {
+                highest_id = tMsgs[i].Data[4];
+            }
+        }
+    }
+    //cout << "Highest: " << highest_id << endl;
+    
+    /* Listen for an answer */
+    for(int i = 0; i < tMsgs.size(); ++i) {
+        if(tMsgs[i].Data[4] == IdNum){
+            string name = RobotHashTable.GetName(tMsgs[i].Data[6]);
+            int value = RobotHashTable.GetValue(name);
+            int answer_value = tMsgs[i].Data[7];
+            if(answer_value > value){
+                RobotHashTable.UpdateItem(name, answer_value);
+            }
         }
     }
     
+    /* Listen for, and respond to, queries */
     for(int i = 0; i < tMsgs.size(); ++i) {
-        
-        if(! tMsgs.empty()) {
-            /* If it receives a question from another robot*/
-//            cout << "Message: " << tMsgs[i].Data[4] << ", " << tMsgs[i].Data[5] << ", " << tMsgs[i].Data[6] << ", " << tMsgs[i].Data[7] << ". " << endl;
-            
-            if(tMsgs[i].Data[4] == IdNum){
-//                cout << "I received the answer of " << tMsgs[i].Data[7] << endl;
-                string name = RobotHashTable.GetName(tMsgs[i].Data[6]);
-                int value = RobotHashTable.GetValue(name);
-                int answer_value = tMsgs[i].Data[7];
-                if(answer_value > value){
-//                    cout << "NAME TO BE UPDATED: " << name << endl;
-                    RobotHashTable.UpdateItem(name, answer_value);
-                    break;
-                }
-            }
-            
-            else if(tMsgs[i].Data[4] != IdNum && tMsgs[i].Data[5] == 1)
-            {
-                if(tMsgs[i].Data[4] > last_replied) {
-                    last_replied = tMsgs[i].Data[4];
-//                    cout << "Received message from eb" << tMsgs[i].Data[4] << " for the value of " << tMsgs[i].Data[7] << endl;
-                    int value = RobotHashTable.GetValue(tMsgs[i].Data[7]);
-                    m_pcRABAct->SetData(4, tMsgs[i].Data[4]);
-                    m_pcRABAct->SetData(5, 0);
-                    m_pcRABAct->SetData(6, tMsgs[i].Data[6]);
-                	m_pcRABAct->SetData(7, value);
-//                    cout << "Sending back: " << tMsgs[i].Data[4] << ", " << 2 << ", " << tMsgs[i].Data[6] << ", " << value << ". " << endl;
-                    break;
-                }
+        if(tMsgs[i].Data[5] == 1)
+        {
+            if(tMsgs[i].Data[4] > last_replied) {
+                last_replied = tMsgs[i].Data[4];
+                int value = RobotHashTable.GetValue(tMsgs[i].Data[7]);
+                m_pcRABAct->SetData(4, tMsgs[i].Data[4]);
+                m_pcRABAct->SetData(5, 0);
+                m_pcRABAct->SetData(6, tMsgs[i].Data[6]);
+                m_pcRABAct->SetData(7, value);
+                //cout << "Replied to: " << tMsgs[i].Data[4] << endl;
+                break;
             }
         }
     }
