@@ -1,7 +1,0 @@
-add_library(eyebot_flocking SHARED eyebot_flocking.h eyebot_flocking.cpp hashtable.h hashtable.cpp)
-target_link_libraries(eyebot_flocking
-  argos3core_simulator
-  argos3plugin_simulator_actuators
-  argos3plugin_simulator_eyebot
-  argos3plugin_simulator_genericrobot
-  argos3plugin_simulator_sensors)
