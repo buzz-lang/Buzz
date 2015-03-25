@@ -195,7 +195,7 @@ int CHashTable::GetValue(int hash) {
         Ptr = Ptr->next;
     }
     /* If the name is not found in the hash table */
-    //    cout << name << "'s info was not found in the hash table" << endl;
+        cout << name << "'s info was not found in the hash table" << endl;
     return 0;
 }
 
@@ -222,7 +222,7 @@ void CHashTable::RemoveItem(string name) {
         HashTable[index]->requestID = 0;
         HashTable[index]->hash = 0;
         
-        //cout << name << " has been removed from the hash table" << endl;
+       // cout << name << " has been removed from the hash table" << endl;
     }
     
     /* Case 2: name is found in the first name in the index, but there more items in the index */
@@ -285,7 +285,7 @@ void CHashTable::UpdateItem(string name, int value) {
         }
     }
     /* If name is not found */
-    //    cout << name << " was not found" << endl;
+        cout << name << " was not found" << endl;
 }
 
 /****************************************/
