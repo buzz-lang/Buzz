@@ -15,6 +15,7 @@ extern "C" {
       BUZZTOK_ID = 0,
       BUZZTOK_CONST,
       BUZZTOK_STRING,
+      BUZZTOK_BOOL,
       BUZZTOK_LOCAL,
       BUZZTOK_IF,
       BUZZTOK_ELSE,
@@ -23,8 +24,10 @@ extern "C" {
       BUZZTOK_WHILE,
       BUZZTOK_ANDOR,
       BUZZTOK_NOT,
-      BUZZTOK_BOOL,
-      BUZZTOK_ARITH,
+      BUZZTOK_ADDSUB,
+      BUZZTOK_MULDIV,
+      BUZZTOK_MOD,
+      BUZZTOK_POW,
       BUZZTOK_BLOCKOPEN,
       BUZZTOK_BLOCKCLOSE,
       BUZZTOK_PAROPEN,
@@ -38,10 +41,11 @@ extern "C" {
       BUZZTOK_CMP,
    } buzztok_type_e;
    static char *buzztok_desc[] = {
-      "ID", "CONST", "STRING", "LOCAL", "IF", "ELSE", "FUN", "FOR", "WHILE",
-      "ANDOR", "NOT", "BOOL", "ARITH", "BLOCKOPEN", "BLOCKCLOSE", "PAROPEN",
-      "PARCLOSE", "IDXOPEN", "IDXCLOSE", "STATEND", "LISTSEP", "ASSIGN",
-      "DOT", "CMP" };
+      "identifier", "numeric constant", "string", "true/false",
+      "local", "if", "else", "function", "for", "while",
+      "and/or", "not", "+ or -", "* or /", "%", "^",
+      "{", "}", "(", ")", "[", "]", "; or newline", ",",
+      "=", ".", "== != < <= > >=" };
 
    /*
     * Token data record

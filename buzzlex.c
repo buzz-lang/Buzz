@@ -20,7 +20,7 @@ static int buzzlex_isid(char c) {
 }
 
 static int buzzlex_isarith(char c) {
-   return (c == '+') || (c == '-') || (c == '*') || (c == '/') || (c == '^');
+   return (c == '+') || (c == '-') || (c == '*') || (c == '/') || (c == '%') || (c == '^');
 }
 
 /****************************************/
@@ -282,10 +282,34 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       char* val = (char*)malloc(2);
       strncpy(val, lex->buf + lex->cur_c - 1, 1);
       val[1] = 0;
-      return buzzlex_newtok(BUZZTOK_ARITH,
-                            val,
-                            lex->cur_line,
-                            lex->cur_col);
+      switch(c) {
+         case '+': case '-': {
+            return buzzlex_newtok(BUZZTOK_ADDSUB,
+                                  val,
+                                  lex->cur_line,
+                                  lex->cur_col);
+         }
+         case '*': case '/': {
+            return buzzlex_newtok(BUZZTOK_MULDIV,
+                                  val,
+                                  lex->cur_line,
+                                  lex->cur_col);
+         }
+         case '%': {
+            return buzzlex_newtok(BUZZTOK_MOD,
+                                  val,
+                                  lex->cur_line,
+                                  lex->cur_col);
+         }
+         case '^': {
+            return buzzlex_newtok(BUZZTOK_POW,
+                                  val,
+                                  lex->cur_line,
+                                  lex->cur_col);
+         }
+         default:
+            return NULL;
+      }
    }
    else if(c == '\'') {
       /* String - eat any character until you find the next ' */

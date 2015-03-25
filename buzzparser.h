@@ -12,7 +12,9 @@ extern "C" {
       /* The output assembler file name */
       char* fasm;
       /* The lexer */
-      buzzlex_t* lex;
+      buzzlex_t lex;
+      /* The last fetched token */
+      buzztok_t tok;
    };
    typedef struct buzzparser_s* buzzparser_t;
 
