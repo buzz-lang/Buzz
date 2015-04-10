@@ -32,3 +32,6 @@ target_link_libraries(buzztest buzz)
 
 add_executable(testbuzzlex testbuzzlex.c)
 target_link_libraries(testbuzzlex buzz)
+
+add_executable(testbuzzpar testbuzzpar.c)
+target_link_libraries(testbuzzpar buzz)

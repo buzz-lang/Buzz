@@ -1,6 +1,110 @@
+on start {
+    # Each robot stores the distance to the object, or
+    # false if the object can't be seen
+    d = sensor.dist_to_object()
+
+    # Loop until d has a value
+    while(not d) {
+        # Ask for other robots' distances
+        ds = neighbors.query(d)
+        
+        # Take the min over the distances
+        # If ds is a list of false, m is set to false
+        # Otherwise, at least one non-false value results in a non-false m
+        m = ds.min()
+        
+        # If at least one measurement is not false
+        if(m) {
+            # Get the index of the min
+            i = ds.argmin()
+            # Get the vector to the min and calculate the distance
+            l = neighbors.to[i].length()
+            # Update d
+            d = l + m
+        }
+    }
+}
+
+# Create a function to contain the logic that each group must follow
+function doit() {
+    # neighbors.kin() is a list of the neighbors in the same group as this robot
+    dir1 = neighbors.kin().keepdist(1.0)
+    # neighbors.nonkin() is a list of the neighbors in another group
+    dir2 = neighbors.nonkin().keepdist(3.0)
+    # set direction
+    go(dir1 + dir2)
+}
+
+on start {
+    # Each robot stores the measure of the sensor in x
+    # sensor.get_measure() returns a floating-point value
+    # x has a different value for each robot
+    x = sensor.get_measure()
+    
+    # Each robot collects the measures of the neighbors
+    # Neighbors are defined as the robots in direct line-of-sight
+    # This kind of request blocks the robot for a period
+    # The period (in time steps) can be passed as second parameter
+    # xs is a list of values
+    xs = neighbors.query(x)
+    
+    # Each robot calculates the min among the received values
+    y = xs.min()
+
     d = sensor.dist_to_object()
     while(not d) {
         ds = neighbors.query(d)
         m = ds.min()
-        if(m) d = neighbors.to[ds.min_idx()].length() + m
+        if(m) { d = neighbors.to[ds.min_idx()].length() + m; }
     }
+
+    while(true) {
+        # neighbors.keepdist(D) returns a vector such that a robot keeps distance D
+        # from its neighbors
+        dir = neighbors.keepdist(1.0)
+        # go() sets the motion vector of the robot
+        go(dir)
+    }
+
+    # Create a sub-swarm with all the robots with id < 10
+    s1 = swarm.select(id < 10)
+    
+    # Create a sub-swarm with the robots with id >= 10
+    s2 = s1.others()
+    
+    # Create a function to contain the logic that each group must follow
+    function doit() {
+        # neighbors.kin() is a list of the neighbors in the same group as this robot
+        dir1 = neighbors.kin().keepdist(1.0)
+        # neighbors.nonkin() is a list of the neighbors in another group
+        dir2 = neighbors.nonkin().keepdist(3.0)
+        # set direction
+        go(dir1 + dir2)
+    }
+
+    x = "this is a 'string'"
+    
+    while(true) {
+        # Execute logic for swarm 1
+        s1.exec(doit)
+
+        # Execute logic for swarm 2
+        s2.exec(doit)
+    }
+}
+
+on start {
+    # The robots are looking for an object
+    obj = false
+    # Keep looking until obj is not false
+    while(not obj) {
+        # A certain sensor returns false if the object is not seen
+        # and a non-false value if the object has been found
+        obj = sensor.getobj()
+        # Object found?
+        if(obj) {
+            # Inform the other robots
+            propagate(obj)
+        }
+    }
+}

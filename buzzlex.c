@@ -23,6 +23,14 @@ static int buzzlex_isarith(char c) {
    return (c == '+') || (c == '-') || (c == '*') || (c == '/') || (c == '%') || (c == '^');
 }
 
+static int buzzlex_isquote(char c) {
+   return (c == '\'') || (c == '"');
+}
+
+static int buzzlex_isnumber(char c) {
+   return isdigit(c) || (c == '.');
+}
+
 /****************************************/
 /****************************************/
 
@@ -186,7 +194,6 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       casetokchar('[', BUZZTOK_IDXOPEN);
       casetokchar(']', BUZZTOK_IDXCLOSE);
       casetokchar(',', BUZZTOK_LISTSEP);
-      casetokchar('=', BUZZTOK_ASSIGN);
       casetokchar('.', BUZZTOK_DOT);
    }
    /* If we get here, it's because we found either a constant, an
@@ -194,7 +201,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
     * an arithmetic operator, or an unexpected character */
    if(isdigit(c)) {
       /* It's a constant */
-      readval(isnumber);
+      readval(buzzlex_isnumber);
       return buzzlex_newtok(BUZZTOK_CONST,
                             val,
                             lex->cur_line,
@@ -204,6 +211,8 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       /* It's either a keyword or an identifier */
       readval(buzzlex_isid);
       /* Go through the possible keywords */
+      checkkeyword("on",       BUZZTOK_ON);
+      checkkeyword("emit",     BUZZTOK_EMIT);
       checkkeyword("local",    BUZZTOK_LOCAL);
       checkkeyword("if",       BUZZTOK_IF);
       checkkeyword("else",     BUZZTOK_ELSE);
@@ -272,7 +281,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       char* val = (char*)malloc(lex->cur_c - start + 1);
       strncpy(val, lex->buf + start, lex->cur_c - start);
       val[lex->cur_c - start] = 0;
-      return buzzlex_newtok(BUZZTOK_ASSIGN,
+      return buzzlex_newtok(BUZZTOK_CMP,
                             val,
                             lex->cur_line,
                             lex->cur_col);
@@ -311,12 +320,11 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
             return NULL;
       }
    }
-   else if(c == '\'') {
-      /* String - eat any character until you find the next ' */
-      nextchar();
+   else if(buzzlex_isquote(c)) {
+      /* String - eat any character until you find the next matching quote */
       size_t start = lex->cur_c;
       while(lex->cur_c < lex->buf_size &&
-            lex->buf[lex->cur_c] != '\'') {
+            lex->buf[lex->cur_c] != c) {
          if(lex->buf[lex->cur_c] != '\n') {
             nextchar();
          }
@@ -339,6 +347,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       char* val = (char*)malloc(lex->cur_c - start + 1);
       strncpy(val, lex->buf + start, lex->cur_c - start);
       val[lex->cur_c - start] = '\0';
+      nextchar();
       return buzzlex_newtok(BUZZTOK_STRING,
                             val,
                             lex->cur_line,
@@ -354,6 +363,16 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
               c, c, c);
       return NULL;
    }
+}
+
+/****************************************/
+/****************************************/
+
+buzztok_t buzzlex_clonetok(buzztok_t tok) {
+   return buzzlex_newtok(tok->type,
+                         tok->value ? strdup(tok->value) : NULL,
+                         tok->line,
+                         tok->col);
 }
 
 /****************************************/

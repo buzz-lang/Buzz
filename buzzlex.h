@@ -15,6 +15,8 @@ extern "C" {
       BUZZTOK_ID = 0,
       BUZZTOK_CONST,
       BUZZTOK_STRING,
+      BUZZTOK_ON,
+      BUZZTOK_EMIT,
       BUZZTOK_BOOL,
       BUZZTOK_LOCAL,
       BUZZTOK_IF,
@@ -41,11 +43,11 @@ extern "C" {
       BUZZTOK_CMP,
    } buzztok_type_e;
    static char *buzztok_desc[] = {
-      "identifier", "numeric constant", "string", "true/false",
-      "local", "if", "else", "function", "for", "while",
-      "and/or", "not", "+ or -", "* or /", "%", "^",
-      "{", "}", "(", ")", "[", "]", "; or newline", ",",
-      "=", ".", "== != < <= > >=" };
+      "identifier", "numeric constant", "string",
+      "true/false", "local", "if", "else", "function",
+      "for", "while", "and/or", "not", "+ or -", "* or /",
+      "%", "^", "{", "}", "(", ")", "[", "]", "; or newline",
+      ",", "=", ".", "== != < <= > >=" };
 
    /*
     * Token data record
@@ -100,6 +102,13 @@ extern "C" {
     * @return The token or NULL if EOF or an error occurred.
     */
    extern buzztok_t buzzlex_nexttok(buzzlex_t lex);
+
+   /*
+    * Clones the given token.
+    * @param tok The token to clone.
+    * @return The cloned token.
+    */
+   extern buzztok_t buzzlex_clonetok(buzztok_t tok);
 
    /*
     * Destroys a token.
