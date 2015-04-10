@@ -1,18 +1,30 @@
 /* Taken and built on the YouTube video series that starts at www.youtube.com/watch?v=MfhjkfocRR0 */
 
-#ifndef HASHTABLE_H
-#define HASHTABLE_H
+#ifndef QUERY_H
+#define QUERY_H
 
 #include <cstdlib>
 #include <iostream>
 #include <string>
 
-using namespace std;
+/* Vector2 definitions */
+#include <argos3/core/utility/math/vector2.h>
+/* Definition of the range-and-bearing actuator */
+#include <argos3/plugins/robots/generic/control_interface/ci_range_and_bearing_actuator.h>
+/* Definition of the range-and-bearing sensor */
+#include <argos3/plugins/robots/generic/control_interface/ci_range_and_bearing_sensor.h>
 
-class CHashTable {
+
+using namespace std;
+using namespace argos;
+
+class CQuery {
 public:
-    // Constructor: creates empty hash table
-    CHashTable();
+    /* Constructor: creates empty hash table */
+    CQuery(CCI_RangeAndBearingActuator& pcRABAct,
+           CCI_RangeAndBearingSensor& pcRABSens);
+    
+    void Reset();
     
     /* Associate an index value (int variable index) with a name */
     int Hash(string name);
@@ -49,8 +61,13 @@ public:
     void AddRequestID(string name, int requestID);
     
     
+    
+    void SendNeighborQuery(int IDNum, int requestID, string name);
+    void ReceiveNeighborQuery(int IdNum);
+    
 private:
-    static const int tableSize = 8; // practically, this number should be very large
+    /* Practically, tableSize should be very large */
+    static const int tableSize = 8;
     
     struct item{
         string name;
@@ -60,10 +77,18 @@ private:
         item* next;
     };
     
-    item* HashTable[tableSize]; // HashTable has [tableSize] number of indexes (aka buckets)
-    // and each of those indexes (buckets) contains a pointer that has
-    // the ability to point to an item
+    /* HashTable has [tableSize] number of indexes and each of those indexes contains a pointer that has the ability to point to an item */
+     item* HashTable[tableSize];
     
+private:
+    /* Pointer to the range-and-bearing actuator */
+    CCI_RangeAndBearingActuator& m_pcRABAct;
+    /* Pointer to the range-and-bearing sensor */
+    CCI_RangeAndBearingSensor& m_pcRABSens;
+    
+    Real m_fHighestID;
+    Real m_fReply;
+    Real m_fLastReplied;
     
 };
 
