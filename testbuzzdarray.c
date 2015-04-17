@@ -1,0 +1,62 @@
+#include "buzzdarray.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+void dai_print_elem(uint32_t pos, void* data, void* params) {
+   fprintf(stdout, "[%u] %d\n", pos, *(int*)(data));
+}
+
+void dai_print(buzzdarray_t da) {
+   fprintf(stdout, "capacity: %u\n", buzzdarray_capacity(da));
+   fprintf(stdout, "size: %u\n", buzzdarray_size(da));
+   buzzdarray_foreach(da, dai_print_elem, NULL);
+   fprintf(stdout, "\n");
+}
+
+int main() {
+   buzzdarray_t dai = buzzdarray_new(1, NULL);
+   int* x;
+   dai_print(dai);
+   for(int i = 0; i < 10; ++i) {
+      x = (int*)malloc(sizeof(int));
+      *x = i;
+      fprintf(stdout, "adding %d\n", *x);
+      buzzdarray_push(dai, x);
+      dai_print(dai);
+   }
+
+   x = (int*)malloc(sizeof(int));
+   *x = 100;
+   fprintf(stdout, "inserting %d at 0\n", *x);
+   buzzdarray_insert(dai, 0, x);
+   dai_print(dai);
+
+   x = (int*)malloc(sizeof(int));
+   *x = 200;
+   fprintf(stdout, "inserting %d at 5\n", *x);
+   buzzdarray_insert(dai, 5, x);
+   dai_print(dai);
+
+   x = (int*)malloc(sizeof(int));
+   *x = 300;
+   fprintf(stdout, "inserting %d at 7\n", *x);
+   buzzdarray_insert(dai, 7, x);
+   dai_print(dai);
+
+   fprintf(stdout, "removing at 1\n");
+   buzzdarray_remove(dai, 1);
+   dai_print(dai);
+
+   fprintf(stdout, "removing at 10\n");
+   buzzdarray_remove(dai, 10);
+   dai_print(dai);
+
+   while(! buzzdarray_is_empty(dai)) {
+      fprintf(stdout, "pop\n");      
+      buzzdarray_pop(dai);
+      dai_print(dai);
+   }
+
+   buzzdarray_destroy(&dai);
+   return 0;
+}

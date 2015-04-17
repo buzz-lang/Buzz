@@ -14,6 +14,7 @@ link_directories(${ARGOS_LIBRARY_DIRS})
 
 # Create libbuzz
 add_library(buzz SHARED
+  buzzdarray.h buzzdarray.c
   buzzvm.h buzzvm.c
   buzzasm.h buzzasm.c
   buzzlex.h buzzlex.c
@@ -21,12 +22,14 @@ add_library(buzz SHARED
 
 # Create libbuzzargos
 add_library(buzzargos SHARED
-  buzz_controller.h buzz_controller.cpp
-  behaviours/flock.h behaviours/flock.cpp)
+  buzz_controller.h buzz_controller.cpp)
 target_link_libraries(buzzargos
   argos3core_simulator buzz)
 
 # Test programs
+add_executable(testbuzzdarray testbuzzdarray.c)
+target_link_libraries(testbuzzdarray buzz)
+
 add_executable(buzztest buzztest.c)
 target_link_libraries(buzztest buzz)
 
