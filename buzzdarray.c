@@ -113,3 +113,14 @@ uint32_t buzzdarray_find(buzzdarray_t da,
 
 /****************************************/
 /****************************************/
+
+void buzzdarray_sort(buzzdarray_t da,
+                     buzzdarray_elem_cmpp cmp) {
+   qsort(da->data,
+         buzzdarray_size(da),
+         sizeof(void*),
+         cmp);
+}
+
+/****************************************/
+/****************************************/

@@ -13,6 +13,15 @@ void dai_print(buzzdarray_t da) {
    fprintf(stdout, "\n");
 }
 
+int dai_cmp(const void** a, const void** b) {
+   int o1 = **(const int**)(a);
+   int o2 = **(const int**)(b);
+   fprintf(stdout, "  comparing %d and %d\n", o1, o2);
+   if(o1 < o2) return -1;
+   else if(o1 > o2) return 1;
+   else return 0;
+}
+
 int main() {
    buzzdarray_t dai = buzzdarray_new(1, NULL);
    int* x;
@@ -41,6 +50,10 @@ int main() {
    *x = 300;
    fprintf(stdout, "inserting %d at 7\n", *x);
    buzzdarray_insert(dai, 7, x);
+   dai_print(dai);
+
+   fprintf(stdout, "sorting\n");
+   buzzdarray_sort(dai, dai_cmp);
    dai_print(dai);
 
    fprintf(stdout, "removing at 1\n");
