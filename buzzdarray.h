@@ -25,12 +25,12 @@ extern "C" {
     * int f(void* a, void* b)
     *
     * The function must return:
-    * -1 if **a < **b
-    * 0  if **a == **b
-    * 1  if **a > **b
+    * -1 if *a < *b
+    * 0  if *a == *b
+    * 1  if *a > *b
     */
    struct buzzdarray_s;
-   typedef int (*buzzdarray_elem_cmpp)(const void** a, const void** b);
+   typedef int (*buzzdarray_elem_cmpp)(const void* a, const void* b);
 
    /*
     * Buzz dynamic array data.
@@ -97,7 +97,7 @@ extern "C" {
     */
    extern uint32_t buzzdarray_find(buzzdarray_t da,
                                    buzzdarray_elem_cmpp cmp,
-                                   void* data);
+                                   const void* data);
 
    /*
     * Sorts the element in the dynamic array.

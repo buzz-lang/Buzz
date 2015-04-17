@@ -103,7 +103,7 @@ void buzzdarray_foreach(buzzdarray_t da,
 
 uint32_t buzzdarray_find(buzzdarray_t da,
                          buzzdarray_elem_cmpp cmp,
-                         void* data) {
+                         const void* data) {
    for(uint32_t i = 0; i < buzzdarray_size(da); ++i) {
       if(cmp(data, buzzdarray_get(da, i)) == 0)
          return i;
@@ -114,12 +114,38 @@ uint32_t buzzdarray_find(buzzdarray_t da,
 /****************************************/
 /****************************************/
 
+#define SWAP(a,b) { void* tmp = a; a = b; b = tmp; }
+
+uint32_t buzzdarray_part(buzzdarray_t da,
+                         buzzdarray_elem_cmpp cmp,
+                         int64_t lo,
+                         int64_t hi) {
+   /* Use last element as pivot */
+   int64_t pt = lo;
+   for(int64_t k = lo; k < hi; ++k) {
+      if(cmp(buzzdarray_get(da, k), buzzdarray_get(da, hi)) < 0) {
+         SWAP(buzzdarray_get(da, k), buzzdarray_get(da, pt));
+         ++pt;
+      }
+   }
+   SWAP(buzzdarray_get(da, pt), buzzdarray_get(da, hi));
+   return pt;
+}
+
+void buzzdarray_qsort(buzzdarray_t da,
+                      buzzdarray_elem_cmpp cmp,
+                      int64_t lo,
+                      int64_t hi) {
+   if(lo < hi) {
+      int64_t p = buzzdarray_part(da, cmp, lo, hi);
+      buzzdarray_qsort(da, cmp, lo, p - 1);
+      buzzdarray_qsort(da, cmp, p + 1, hi);
+   }
+}
+
 void buzzdarray_sort(buzzdarray_t da,
                      buzzdarray_elem_cmpp cmp) {
-   qsort(da->data,
-         buzzdarray_size(da),
-         sizeof(void*),
-         cmp);
+   buzzdarray_qsort(da, cmp, 0, buzzdarray_size(da) - 1);
 }
 
 /****************************************/
