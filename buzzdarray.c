@@ -54,7 +54,7 @@ void buzzdarray_insert(buzzdarray_t da,
       da->data = realloc(da->data, da->capacity * sizeof(void*));
    }
    /* Move elements after i one step on the right */
-   if(!buzzdarray_is_empty(da))
+   if(!buzzdarray_isempty(da))
       for(uint32_t j = buzzdarray_size(da); j > i; --j) {
          buzzdarray_set(da, j, buzzdarray_get(da, j-1));
       }

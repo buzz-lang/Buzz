@@ -15,6 +15,7 @@ link_directories(${ARGOS_LIBRARY_DIRS})
 # Create libbuzz
 add_library(buzz SHARED
   buzzdarray.h buzzdarray.c
+  buzzdict.h buzzdict.c
   buzzvm.h buzzvm.c
   buzzasm.h buzzasm.c
   buzzlex.h buzzlex.c

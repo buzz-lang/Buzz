@@ -72,7 +72,7 @@ int main() {
    buzzdarray_remove(dai, 10);
    dai_print(dai);
 
-   while(! buzzdarray_is_empty(dai)) {
+   while(! buzzdarray_isempty(dai)) {
       fprintf(stdout, "pop\n");      
       buzzdarray_pop(dai);
       dai_print(dai);

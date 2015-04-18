@@ -16,20 +16,18 @@ extern "C" {
     * buzzdarray_destroy() and in methods such as
     * buzzdarray_foreach().
     */
-   struct buzzdarray_s;
    typedef void (*buzzdarray_elem_funp)(uint32_t pos, void* data, void* params);
 
    /*
     * Function pointer to compare buzzdarray elements.
     *
-    * int f(void* a, void* b)
+    * int f(const void* a, const void* b)
     *
     * The function must return:
     * -1 if *a < *b
     * 0  if *a == *b
     * 1  if *a > *b
     */
-   struct buzzdarray_s;
    typedef int (*buzzdarray_elem_cmpp)(const void* a, const void* b);
 
    /*
@@ -147,7 +145,7 @@ extern "C" {
  * @param da The dynamic array.
  * @return <tt>true</tt> if the dynamic array is empty.
  */
-#define buzzdarray_is_empty(da) (buzzdarray_size(da) == 0)
+#define buzzdarray_isempty(da) (buzzdarray_size(da) == 0)
 
 /*
  * Pushes an element in the dynamic array.
