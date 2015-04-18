@@ -68,7 +68,7 @@ void* buzzdict_get(buzzdict_t dt,
    if(!dt->buckets[h]) return NULL;
    /* Bucket not empty - is the entry present? */
    for(uint32_t i = 0; i < buzzdarray_size(dt->buckets[h]); ++i) {
-      struct buzzdict_entry_s* e = (struct buzzdict_entry_s*)buzzdarray_get(dt->buckets[h], i);
+      struct buzzdict_entry_s* e = &buzzdarray_get(dt->buckets[h], i, struct buzzdict_entry_s);
       if(dt->keycmpf(key, e->key) == 0)
          return e->data;
    }
@@ -87,14 +87,14 @@ void buzzdict_set(buzzdict_t dt,
    /* Is the bucket empty? */
    if(!dt->buckets[h]) {
       /* Create new entry list */
-      dt->buckets[h] = buzzdarray_new(1, buzzdict_entry_destroy);
+      dt->buckets[h] = buzzdarray_new(1, sizeof(struct buzzdict_entry_s), buzzdict_entry_destroy);
       /* Add entry */
       buzzdarray_push(dt->buckets[h], buzzdict_entry_new(key, data));
    }
    else {
       /* Bucket not empty - is the entry present? */
       for(uint32_t i = 0; i < buzzdarray_size(dt->buckets[h]); ++i) {
-         struct buzzdict_entry_s* e = (struct buzzdict_entry_s*)buzzdarray_get(dt->buckets[h], i);
+         struct buzzdict_entry_s* e = buzzdarray_get(dt->buckets[h], i, struct buzzdict_entry_s*);
          if(dt->keycmpf(key, e->key) == 0) {
             free(e->data);
             e->data = data;
@@ -117,7 +117,7 @@ void buzzdict_remove(buzzdict_t dt,
    if(!dt->buckets[h]) return;
    /* Bucket not empty - is the entry present? */
    for(uint32_t i = 0; i < buzzdarray_size(dt->buckets[h]); ++i) {
-      struct buzzdict_entry_s* e = (struct buzzdict_entry_s*)buzzdarray_get(dt->buckets[h], i);
+      struct buzzdict_entry_s* e = buzzdarray_get(dt->buckets[h], i, struct buzzdict_entry_s*);
       if(dt->keycmpf(key, e->key) == 0) {
          /* Entry found - remove it */
          buzzdarray_remove(dt->buckets[h], i);
@@ -141,7 +141,7 @@ void buzzdict_foreach(buzzdict_t dt,
       if(dt->buckets[i] != NULL) {
          /* Go through elements in the bucket */
          for(uint32_t j = 0; j < buzzdarray_size(dt->buckets[i]); ++j) {
-            struct buzzdict_entry_s* e = (struct buzzdict_entry_s*)buzzdarray_get(dt->buckets[i], j);
+            struct buzzdict_entry_s* e = buzzdarray_get(dt->buckets[i], j, struct buzzdict_entry_s*);
             fun(e->key, e->data, params);
          }
       }

@@ -36,6 +36,7 @@ extern "C" {
    struct buzzdarray_s {
       void** data;
       uint32_t size;
+      uint32_t elem_size;
       uint32_t capacity;
       buzzdarray_elem_funp elem_destroy;
    };
@@ -44,9 +45,11 @@ extern "C" {
    /*
     * Creates a new Buzz dynamic array.
     * @param cap The initial capacity of the array. Must be >0.
+    * @param elem_size The size of an element.
     * @param elem_destroy The function to destroy an element. Can be NULL.
     */
    extern buzzdarray_t buzzdarray_new(uint32_t cap,
+                                      uint32_t elem_size,
                                       buzzdarray_elem_funp elem_destroy);
 
    /*
@@ -73,6 +76,18 @@ extern "C" {
     */
    extern void buzzdarray_remove(buzzdarray_t da,
                                  uint32_t pos);
+
+   /*
+    * Sets a new value for the element at the given position.
+    * If the position is out of bounds, the passed value is not
+    * set.
+    * @param da The dynamic array.
+    * @param pos The position.
+    * @param value The new value.
+    */
+   extern void buzzdarray_set(buzzdarray_t da,
+                              uint32_t pos,
+                              const void* value);
 
    /*
     * Applies a function to each element of the dynamic array.
@@ -116,15 +131,7 @@ extern "C" {
  * @param pos The position.
  * @return The element at the given position.
  */
-#define buzzdarray_get(da, pos) (da)->data[pos]
-
-/*
- * Sets a new value for the element at the given position.
- * @param da The dynamic array.
- * @param pos The position.
- * @param value The new value.
- */
-#define buzzdarray_set(da, pos, value) (da)->data[pos] = value
+#define buzzdarray_get(da, pos, type) (*((type*)((da)->data) + (pos)))
 
 /*
  * Returns the size of the dynamic array.
