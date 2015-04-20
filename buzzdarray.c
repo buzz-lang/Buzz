@@ -22,7 +22,7 @@ buzzdarray_t buzzdarray_new(uint32_t cap,
    da->elem_size = elem_size;
    da->elem_destroy = elem_destroy ? elem_destroy : buzzdarray_elem_destroy;
    /* Create initial data */
-   da->data = (void*)calloc(cap, sizeof(elem_size));
+   da->data = calloc(cap, elem_size);
    /* Done */
    return da;
 }
@@ -52,7 +52,7 @@ void buzzdarray_insert(buzzdarray_t da,
    /* Increase the capacity if necessary */
    if(i >= da->capacity) {
       do { da->capacity *= 2; } while(i >= da->capacity);
-      da->data = realloc(da->data, da->capacity * sizeof(da->elem_size));
+      da->data = realloc(da->data, da->capacity * da->elem_size);
    }
    /* Move elements from i onwards one step to the right */
    if(!buzzdarray_isempty(da) && i < buzzdarray_size(da))
@@ -86,7 +86,7 @@ void buzzdarray_remove(buzzdarray_t da,
    if((da->size > 0) &&
       (da->size <= da->capacity / 2)) {
       da->capacity /= 2;
-      da->data = realloc(da->data, da->capacity * sizeof(da->elem_size));      
+      da->data = realloc(da->data, da->capacity * da->elem_size);
    }
 }
 
@@ -137,7 +137,7 @@ uint32_t buzzdarray_part(buzzdarray_t da,
                          int64_t lo,
                          int64_t hi) {
    /* Temporary used for swapping */
-   void* t = malloc(da->elem_size); 
+   void* t = malloc(da->elem_size);
    /* Use last element as pivot */
    int64_t pt = lo;
    for(int64_t k = lo; k < hi; ++k) {

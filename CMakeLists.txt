@@ -31,6 +31,9 @@ target_link_libraries(buzzargos
 add_executable(testbuzzdarray testbuzzdarray.c)
 target_link_libraries(testbuzzdarray buzz)
 
+add_executable(testbuzzdict testbuzzdict.c)
+target_link_libraries(testbuzzdict buzz)
+
 add_executable(buzztest buzztest.c)
 target_link_libraries(buzztest buzz)
 

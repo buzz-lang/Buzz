@@ -131,7 +131,7 @@ extern "C" {
  * @param pos The position.
  * @return The element at the given position.
  */
-#define buzzdarray_get(da, pos, type) (*((type*)((da)->data) + (pos)))
+#define buzzdarray_get(da, pos, type) ((type*)((da)->data) + (pos))
 
 /*
  * Returns the size of the dynamic array.

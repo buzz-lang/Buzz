@@ -1,6 +1,5 @@
 #include "buzzdarray.h"
 #include <stdio.h>
-#include <stdlib.h>
 
 void dai_print_elem(uint32_t pos, void* data, void* params) {
    fprintf(stdout, "[%u] %d\n", pos, *(int16_t*)(data));
