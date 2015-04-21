@@ -46,12 +46,12 @@ push 19
 # Stack: 19 17 1
 
 eq
-# Stack: 1 1
+# Stack: 0 1
 
 and
-# Stack: 1
+# Stack: 0
 
-jumpz 0
-# Stack: 1
+jumpnz 0
+# Stack: 0
 
 done

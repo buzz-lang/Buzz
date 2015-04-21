@@ -35,7 +35,7 @@ extern "C" {
     */
    struct buzzdarray_s {
       void** data;
-      uint32_t size;
+      int64_t size;
       uint32_t elem_size;
       uint32_t capacity;
       buzzdarray_elem_funp elem_destroy;
@@ -60,6 +60,20 @@ extern "C" {
    extern void buzzdarray_destroy(buzzdarray_t* da);
 
    /*
+    * Adds an empty slot to the dynamic array.
+    * Differently from buzzdarray_insert(), which adds the slot
+    * and also copies the given value within it, this function
+    * just creates the slot. This way, you can add the data
+    * yourself.
+    * NOTE: The slot is not initialized in any way.
+    * @param da The dynamic array.
+    * @param pos The position.
+    * @return A pointer to the new slot, or NULL in case of error.
+    */
+   extern void* buzzdarray_makeslot(buzzdarray_t da,
+                                    uint32_t pos);
+
+   /*
     * Inserts an element at the given position.
     * @param da The dynamic array.
     * @param pos The position.
@@ -76,6 +90,14 @@ extern "C" {
     */
    extern void buzzdarray_remove(buzzdarray_t da,
                                  uint32_t pos);
+
+   /*
+    * Erases all the elements of the dynamic array.
+    * @param da The dynamic array.
+    * @param cap The capacity of the array after clearing. Must be >0.
+    */
+   extern void buzzdarray_clear(buzzdarray_t da,
+                                uint32_t cap);
 
    /*
     * Sets a new value for the element at the given position.

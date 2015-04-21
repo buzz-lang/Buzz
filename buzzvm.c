@@ -5,20 +5,13 @@
 /****************************************/
 /****************************************/
 
-buzzvm_t buzzvm_new(uint32_t stack_size,
-                    uint32_t flist_size,
-                    uint32_t gidlist_size) {
+buzzvm_t buzzvm_new() {
    /* Create VM state. calloc() takes care of zeroing everything */
    buzzvm_t vms = (buzzvm_t)calloc(1, sizeof(struct buzzvm_s));
-   /* Create stack. calloc() takes care of zeroing everything */
-   vms->stack_size = stack_size;
-   vms->stack = calloc(stack_size, sizeof(buzzvm_stack_elem));
+   /* Create stack. */
+   vms->stack = buzzdarray_new(20, sizeof(buzzvm_var_t), NULL);
    /* Create function list. calloc() takes care of zeroing everything */
-   vms->flist_size = flist_size;
-   vms->flist = calloc(flist_size, sizeof(buzzvm_funp));
-   /* Create group id list. calloc() takes care of zeroing everything */
-   vms->gidlist_size = gidlist_size;
-   vms->gidlist = calloc(gidlist_size, sizeof(buzzvm_gid));
+   vms->flist = buzzdarray_new(20, sizeof(buzzvm_funp), NULL);
    /* Return new vm */
    return vms;
 }
@@ -27,10 +20,7 @@ buzzvm_t buzzvm_new(uint32_t stack_size,
 /****************************************/
 
 void buzzvm_reset(buzzvm_t vm) {
-   memset(vm->stack, 0, sizeof(buzzvm_stack_elem) * vm->stack_size);
-   memset(vm->gidlist, 0, sizeof(buzzvm_gid) * vm->stack_size);
-   vm->stack_top = 0;
-   vm->gidlist_entries = 0;
+   buzzdarray_clear(vm->stack, 20);
    vm->pc = 0;
    if(vm->bcode) vm->state = BUZZVM_STATE_READY;
    else vm->state = BUZZVM_STATE_NOCODE;
@@ -41,9 +31,8 @@ void buzzvm_reset(buzzvm_t vm) {
 /****************************************/
 
 void buzzvm_destroy(buzzvm_t* vm) {
-   free((*vm)->stack);
-   free((*vm)->flist);
-   free((*vm)->gidlist);
+   buzzdarray_destroy(&(*vm)->stack);
+   buzzdarray_destroy(&(*vm)->flist);
    free(*vm);
    *vm = 0;
 }
@@ -68,7 +57,7 @@ void buzzvm_set_bcode(buzzvm_t vm,
 
 #define inc_pc() ++vm->pc; assert_pc(vm->pc);
 
-#define get_arg(TYPE) assert_pc(vm->pc + sizeof(TYPE)); TYPE arg = *((TYPE*)(&(vm->bcode[vm->pc]))); vm->pc += sizeof(TYPE);
+#define get_arg(TYPE) assert_pc(vm->pc + sizeof(TYPE)); TYPE arg = *((TYPE*)(vm->bcode + vm->pc)); vm->pc += sizeof(TYPE);
 
 buzzvm_state buzzvm_step(buzzvm_t vm) {
    /* Can't execute if not ready */
@@ -92,7 +81,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       }
       case BUZZVM_INSTR_RET: {
          buzzvm_pop(vm);
-         vm->pc = buzzvm_at(vm, 0).i;
+         vm->pc = buzzvm_stack_at(vm, 0).i.value;
          assert_pc(vm->pc);
          break;
       }
@@ -156,21 +145,16 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          inc_pc();
          break;
       }
-      case BUZZVM_INSTR_QGID: {
-         buzzvm_qgid(vm);
-         inc_pc();
-         break;
-      }
-      case BUZZVM_INSTR_SGID: {
-         buzzvm_sgid(vm);
-         inc_pc();
-         break;
-      }
-      case BUZZVM_INSTR_CGID: {
-         buzzvm_cgid(vm);
-         inc_pc();
-         break;
-      }
+      /* case BUZZVM_INSTR_VSPUT: { */
+      /*    buzzvm_lte(vm); */
+      /*    inc_pc(); */
+      /*    break; */
+      /* } */
+      /* case BUZZVM_INSTR_VSGET: { */
+      /*    buzzvm_lte(vm); */
+      /*    inc_pc(); */
+      /*    break; */
+      /* } */
       case BUZZVM_INSTR_PUSH: {
          inc_pc();
          get_arg(float);
@@ -194,7 +178,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          inc_pc();
          get_arg(uint32_t);
          buzzvm_assert_stack(vm, 1);
-         if(buzzvm_at(vm, 1).i == 0) {
+         if(buzzvm_stack_at(vm, 1).b.value == 0) {
             vm->pc = arg;
             assert_pc(vm->pc);
          }
@@ -204,7 +188,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          inc_pc();
          get_arg(uint32_t);
          buzzvm_assert_stack(vm, 1);
-         if(buzzvm_at(vm, 1).i != 0) {
+         if(buzzvm_stack_at(vm, 1).b.value != 0) {
             vm->pc = arg;
             assert_pc(vm->pc);
          }
@@ -224,6 +208,10 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          buzzvm_call(vm, arg);
          break;
       }
+      default:
+         vm->state = BUZZVM_STATE_ERROR;
+         vm->error = BUZZVM_ERROR_INSTR;
+         break;
    }
    return vm->state;
 }
@@ -233,12 +221,8 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
 
 int64_t buzzvm_register_function(buzzvm_t vm,
                                   buzzvm_funp funp) {
-   if(vm->flist_entries >= vm->flist_size) {
-      return -1;
-   }
-   vm->flist[vm->flist_entries] = funp;
-   ++vm->flist_entries;
-   return vm->flist_entries - 1;
+   buzzdarray_push(vm->flist, funp);
+   return buzzdarray_size(vm->flist) - 1;
 }
 
 /****************************************/

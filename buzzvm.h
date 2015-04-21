@@ -1,7 +1,8 @@
 #ifndef BUZZVM_H
 #define BUZZVM_H
 
-#include <stdint.h>
+#include "buzzdict.h"
+#include "buzztype.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -16,18 +17,19 @@ extern "C" {
       BUZZVM_STATE_DONE,       // Program finished
       BUZZVM_STATE_ERROR       // Error occurred
    } buzzvm_state;
-   static char *buzzvm_state_desc[] = { "no code", "ready", "done", "error" };
+   static const char *buzzvm_state_desc[] = { "no code", "ready", "done", "error" };
 
    /*
     * VM error codes
     */
    typedef enum {
       BUZZVM_ERROR_NONE = 0, // No error
-      BUZZVM_ERROR_STACK,    // Stack operation out of range
+      BUZZVM_ERROR_INSTR,    // Unknown instruction 
+      BUZZVM_ERROR_STACK,    // Stack top out of range
       BUZZVM_ERROR_PC,       // Program counter out of range
       BUZZVM_ERROR_FLIST     // Function call id out of range
    } buzzvm_error;
-   static char *buzzvm_error_desc[] = { "none", "stack out of range", "pc out of range", "function id out of range" };
+   static const char *buzzvm_error_desc[] = { "none", "unknown instruction", "pc out of range", "function id out of range" };
 
    /*
     * VM instructions
@@ -52,9 +54,8 @@ extern "C" {
       BUZZVM_INSTR_GTE,     // Push stack(#1) >= stack(#2), pop operands
       BUZZVM_INSTR_LT,      // Push stack(#1) < stack(#2), pop operands
       BUZZVM_INSTR_LTE,     // Push stack(#1) <= stack(#2), pop operands
-      BUZZVM_INSTR_QGID,    // Pushes true/false based on the group id on the stack top, pops operand
-      BUZZVM_INSTR_SGID,    // Sets the group id on the stack top, pops operand
-      BUZZVM_INSTR_CGID,    // Clears the group id on the stack top, pops operand
+//      BUZZVM_INSTR_VSPUT,   // Put (key stack(#1),value stack(#2)) in virtual stigmergy, pop operands
+//      BUZZVM_INSTR_VSGET,   // Push virtual stigmergy value of key stack(#1), pop operand
       /*
        * Opcodes with argument
        */
@@ -68,15 +69,7 @@ extern "C" {
       BUZZVM_INSTR_JUMPSUB, // Push current PC and sets PC to argument
       BUZZVM_INSTR_CALL,    // Calls the C function pointed to by the argument
    } buzzvm_instr;
-   static char *buzzvm_instr_desc[] = {"nop", "done", "pop", "ret", "add", "sub", "mul", "div", "and", "or", "not", "eq", "gt", "gte", "lt", "lte", "push", "dup", "jump", "jumpz", "jumpnz", "jumpsub", "call", "qgid", "sgid", "ugid"};
-
-   /*
-    * An element in the VM stack
-    */
-   typedef union {
-      uint32_t i;
-      float f;
-   } buzzvm_stack_elem;
+   static const char *buzzvm_instr_desc[] = {"nop", "done", "pop", "ret", "add", "sub", "mul", "div", "and", "or", "not", "eq", "gt", "gte", "lt", "lte", "push", "dup", "jump", "jumpz", "jumpnz", "jumpsub", "call"};
 
    /*
     * Function pointer for BUZZVM_INSTR_CALL.
@@ -87,38 +80,25 @@ extern "C" {
    typedef int (*buzzvm_funp)(struct buzzvm_s* vm);
 
    /*
-    * Group ID list entry
-    */
-   typedef uint16_t buzzvm_gid;
-
-   /*
     * VM data
     */
    struct buzzvm_s {
-      /* Max size of the stack */
-      uint32_t stack_size;
-      /* Size of the loaded bytecode */
-      uint32_t bcode_size;
-      /* Max size of the function list */
-      uint32_t flist_size;
-      /* Max size of the group id list */
-      uint32_t gidlist_size;
-      /* Current stack top */
-      int64_t stack_top;
-      /* Program counter */
-      int64_t pc;
-      /* Numbers of currently registered functions */
-      uint32_t flist_entries;
-      /* Numbers of currently known group ids */
-      uint32_t gidlist_entries;
-      /* Stack content */
-      buzzvm_stack_elem* stack;
       /* Bytecode content */
       const uint8_t* bcode;
+      /* Size of the loaded bytecode */
+      uint32_t bcode_size;
+      /* Program counter */
+      int32_t pc;
+      /* Stack content */
+      buzzdarray_t stack;
       /* Registered functions */
-      buzzvm_funp* flist;
-      /* Group ids */
-      buzzvm_gid* gidlist;
+      buzzdarray_t flist;
+      /* Input message FIFO */
+      buzzdarray_t inmsglist;
+      /* Output message FIFO */
+      buzzdarray_t outmsglist;
+      /* Virtual stigmergy */
+      buzzdict_t vstig;
       /* Current VM state */
       buzzvm_state state;
       /* Current VM error */
@@ -128,14 +108,9 @@ extern "C" {
 
    /*
     * Creates a new VM.
-    * @param stack_size The max size of the stack.
-    * @param flist_size The max size for the function list.
-    * @param gidlist_size The max size for the group id list.
     * @return The VM data.
     */
-   extern buzzvm_t buzzvm_new(uint32_t stack_size,
-                              uint32_t flist_size,
-                              uint32_t gidlist_size);
+   extern buzzvm_t buzzvm_new();
 
    /*
     * Resets the VM.
@@ -191,7 +166,14 @@ extern "C" {
  * @param vm The VM data.
  * @param idx The stack index, where 0 is the stack top and >0 goes down the stack.
  */
-#define buzzvm_assert_stack(vm, idx) if(((vm)->stack_top - (idx)) < 0 || ((vm)->stack_top - (idx)) >= (vm)->stack_size) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_STACK; return (vm)->state; }
+#define buzzvm_assert_stack(vm, idx) if(buzzvm_stack_top(vm) - (idx) < 0) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_STACK; return (vm)->state; }
+
+/*
+ * Returns the size of the stack.
+ * The most recently pushed element in the stack is at top - 1.
+ * @param vm The VM data.
+ */
+#define buzzvm_stack_top(vm) buzzdarray_size((vm)->stack)
 
 /*
  * Returns the stack element at the passed index.
@@ -199,7 +181,7 @@ extern "C" {
  * @param vm The VM data.
  * @param idx The stack index, where 0 is the stack top and >0 goes down the stack.
  */
-#define buzzvm_at(vm, idx) (vm)->stack[((vm)->stack_top - idx)]
+#define buzzvm_stack_at(vm, idx) (*buzzdarray_get((vm)->stack, (buzzvm_stack_top(vm) - idx), buzzvm_var_t))
 
 /*
  * Terminates the current Buzz script.
@@ -217,7 +199,7 @@ extern "C" {
  * @param vm The VM data.
  * @param v The value.
  */
-#define buzzvm_pushf(vm, v) buzzvm_assert_stack(vm, 0); buzzvm_at(vm, 0).f = (v); ++((vm)->stack_top);
+#define buzzvm_pushf(vm, v) buzzvm_assert_stack(vm, 0); ((buzzvm_var_t*)buzzdarray_makeslot((vm)->stack, buzzvm_stack_top(vm)))->f.value = (v);
 
 /*
  * Pushes a 32 bit unsigned int value on the stack.
@@ -227,7 +209,7 @@ extern "C" {
  * @param vm The VM data.
  * @param v The value.
  */
-#define buzzvm_pushi(vm, v) buzzvm_assert_stack(vm, 0); buzzvm_at(vm, 0).i = (v); ++((vm)->stack_top);
+#define buzzvm_pushi(vm, v) buzzvm_assert_stack(vm, 0); ((buzzvm_var_t*)buzzdarray_makeslot((vm)->stack, buzzvm_stack_top(vm)))->i.value = (v);
 
 /*
  * Pops the stack.
@@ -236,7 +218,7 @@ extern "C" {
  * BuzzVM hook functions or buzzvm_step().
  * @param vm The VM data.
  */
-#define buzzvm_pop(vm) --((vm)->stack_top); buzzvm_assert_stack(vm, 0);
+#define buzzvm_pop(vm) if(buzzdarray_isempty(vm->stack)) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_STACK; return (vm)->state; } buzzdarray_pop(vm->stack);
 
 /*
  * Pushes the float value located at the given stack index.
@@ -246,7 +228,7 @@ extern "C" {
  * @param vm The VM data.
  * @param idx The stack index, where 0 is the stack top and >0 goes down the stack.
  */
-#define buzzvm_dup(vm, idx) buzzvm_assert_stack(vm, idx); buzzvm_pushf(vm, buzzvm_at(vm, idx).f);
+#define buzzvm_dup(vm, idx) buzzvm_assert_stack(vm, idx); buzzvm_pushf(vm, buzzvm_stack_at(vm, idx).f.value);
 
 /*
  * Pops two float operands from the stack and pushes the result of a binary operation on them.
@@ -257,7 +239,7 @@ extern "C" {
  * @param vm The VM data.
  * @param oper The binary operation, e.g. + - * /
  */
-#define buzzvm_binary_op_ff(vm, oper) buzzvm_assert_stack((vm), 2); --(vm)->stack_top; buzzvm_at(vm, 1).f = (buzzvm_at(vm, 0).f oper buzzvm_at(vm, 1).f);
+#define buzzvm_binary_op_ff(vm, oper) buzzvm_assert_stack((vm), 2); buzzvm_stack_at(vm, 2).f.value = (buzzvm_stack_at(vm, 1).f.value oper buzzvm_stack_at(vm, 2).f.value); buzzdarray_pop(vm->stack);
 
 /*
  * Pops two 32 bit unsigned int operands from the stack and pushes the result of a binary operation on them.
@@ -268,7 +250,7 @@ extern "C" {
  * @param vm The VM data.
  * @param oper The binary operation, e.g. & |
  */
-#define buzzvm_binary_op_ii(vm, oper) buzzvm_assert_stack((vm), 2); --(vm)->stack_top; buzzvm_at(vm, 1).i = (buzzvm_at(vm, 0).i oper buzzvm_at(vm, 1).i);
+#define buzzvm_binary_op_ii(vm, oper) buzzvm_assert_stack((vm), 2); buzzvm_stack_at(vm, 2).i.value = (buzzvm_stack_at(vm, 1).i.value oper buzzvm_stack_at(vm, 2).i.value); buzzdarray_pop(vm->stack);
 
 /*
  * Pops two float operands from the stack and pushes the result of a binary operation on them as 32 bit unsigned int.
@@ -279,7 +261,7 @@ extern "C" {
  * @param vm The VM data.
  * @param oper The binary operation, e.g. == > >= < <=
  */
-#define buzzvm_binary_op_if(vm, oper) buzzvm_assert_stack((vm), 2); --(vm)->stack_top; buzzvm_at(vm, 1).i = (buzzvm_at(vm, 0).f oper buzzvm_at(vm, 1).f);
+#define buzzvm_binary_op_if(vm, oper) buzzvm_assert_stack((vm), 2); buzzvm_stack_at(vm, 2).i.value = (buzzvm_stack_at(vm, 1).f.value oper buzzvm_stack_at(vm, 2).f.value); buzzdarray_pop(vm->stack);
 
 /*
  * Pushes stack(#1) + stack(#2) and pops the operands.
@@ -342,7 +324,7 @@ extern "C" {
  * BuzzVM hook functions or buzzvm_step().
  * @param vm The VM data.
  */
-#define buzzvm_not(vm) buzzvm_assert_stack(vm, 1); buzzvm_at(vm, 1).i = !buzzvm_at(vm, 1).i;
+#define buzzvm_not(vm) buzzvm_assert_stack(vm, 1); buzzvm_stack_at(vm, 1).i.value = !buzzvm_stack_at(vm, 1).i.value;
 
 /*
  * Pushes stack(#1) == stack(#2) and pops the operands.
@@ -397,34 +379,6 @@ extern "C" {
  * @param vm The VM data.
  * @param fid The function id.
  */
-#define buzzvm_call(vm, fid) if((fid) >= (vm)->flist_entries) {(vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_FLIST; return vm->state;} (vm)->flist[(fid)](vm);
-
-/*
- * Queries the group id list for the GID at the top of the stack, pushes the result and pops the operand.
- * The result of the query is true if the GID is found. Otherwise, the result is false.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_qgid(vm) { buzzvm_pop(vm); uint32_t i = 0; while(i < (vm)->gidlist_entries && (vm)->gidlist[i] != buzzvm_at(vm, 0).i) ++i; buzzvm_pushi(vm, i < (vm)->gidlist_entries); }
-
-/*
- * Adds the group id at the top of the stack to the list and pops the operand.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_sgid(vm) { buzzvm_pop(vm); uint32_t i = 0; while(i < (vm)->gidlist_entries && (vm)->gidlist[i] != buzzvm_at(vm, 0).i) ++i; if(i == (vm)->gidlist_entries && i < (vm)->gidlist_size) { (vm)->gidlist[i] = buzzvm_at(vm, 0).i; ++(vm)->gidlist_entries; } }
-
-/*
- * Removes the group id at the top of the stack from the list and pops the operand.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_cgid(vm) { buzzvm_pop(vm); if((vm)->gidlist_entries) { uint32_t i = 0; while(i < (vm)->gidlist_entries && (vm)->gidlist[i] != buzzvm_at(vm, 0).i) ++i; if(i < (vm)->gidlist_entries) { --(vm)->gidlist_entries; (vm)->gidlist[i] = (vm)->gidlist[(vm)->gidlist_entries]; } } }
+#define buzzvm_call(vm, fid) if((fid) >= buzzdarray_size((vm)->flist)) {(vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_FLIST; return vm->state;} (*buzzdarray_get((vm)->flist, fid, buzzvm_funp))(vm);
 
 #endif

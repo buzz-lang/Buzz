@@ -43,9 +43,8 @@ void buzzdarray_destroy(buzzdarray_t* da) {
 /****************************************/
 /****************************************/
 
-void buzzdarray_insert(buzzdarray_t da,
-                       uint32_t pos,
-                       const void* data) {
+void* buzzdarray_makeslot(buzzdarray_t da,
+                          uint32_t pos) {
    /* Calculate actual position of the element to add
       Making sure we are not adding beyond the current size */
    uint32_t i = pos < buzzdarray_size(da) ? pos : buzzdarray_size(da);
@@ -60,10 +59,22 @@ void buzzdarray_insert(buzzdarray_t da,
          buzzdarray_rawget(da, i+1),
          buzzdarray_rawget(da, i),
          (buzzdarray_size(da) - i) * da->elem_size);
-   /* Add element at the specified position */
-   buzzdarray_set(da, i, data);
    /* Increase size */
    ++(da->size);
+   /* Return pointer to the slot */
+   return buzzdarray_rawget(da, pos);
+}
+
+/****************************************/
+/****************************************/
+
+void buzzdarray_insert(buzzdarray_t da,
+                       uint32_t pos,
+                       const void* data) {
+   /* Create the slot */
+   void* slot = buzzdarray_makeslot(da, pos);
+   /* Add element at the specified position */
+   if(slot != NULL) buzzdarray_set(da, pos, data);
 }
 
 /****************************************/
@@ -88,6 +99,20 @@ void buzzdarray_remove(buzzdarray_t da,
       da->capacity /= 2;
       da->data = realloc(da->data, da->capacity * da->elem_size);
    }
+}
+
+/****************************************/
+/****************************************/
+
+void buzzdarray_clear(buzzdarray_t da,
+                      uint32_t cap) {
+   /* Get rid of every element */
+   buzzdarray_foreach(da, da->elem_destroy, NULL);
+   /* Resize the array */
+   da->capacity = cap;
+   da->data = realloc(da->data, cap * da->elem_size);
+   /* Zero the size */
+   da->size = 0;
 }
 
 /****************************************/
