@@ -48,7 +48,7 @@
 /*
  * Adds an integer argument to the bytecode buffer
  */
-#define bcode_add_arg_i() bcode_add_arg(uint32_t, strtoul(argstr, &endptr, 10))
+#define bcode_add_arg_i() bcode_add_arg(int32_t, strtoul(argstr, &endptr, 10))
 
 /*
  * Adds a float argument to the bytecode buffer
@@ -64,8 +64,8 @@
  * Check whether the opcode matches the string label, and if so add stuff to the bytecode
  */
 #define noarg_instr(OP) if(strcmp(instr, buzzvm_instr_desc[OP]) == 0) { bcode_add_instr(OP); assert_noarg(); continue; }
-#define f_arg_instr(OP) if(strcmp(instr, buzzvm_instr_desc[OP]) == 0) { bcode_add_instr(OP); bcode_add_arg_f(); continue; }
 #define i_arg_instr(OP) if(strcmp(instr, buzzvm_instr_desc[OP]) == 0) { bcode_add_instr(OP); bcode_add_arg_i(); continue; }
+#define f_arg_instr(OP) if(strcmp(instr, buzzvm_instr_desc[OP]) == 0) { bcode_add_instr(OP); bcode_add_arg_f(); continue; }
 
 int buzz_asm(const char* fname,
              uint8_t** buf,
@@ -120,7 +120,11 @@ int buzz_asm(const char* fname,
       noarg_instr(BUZZVM_INSTR_GTE);
       noarg_instr(BUZZVM_INSTR_LT);
       noarg_instr(BUZZVM_INSTR_LTE);
-      f_arg_instr(BUZZVM_INSTR_PUSH);
+      noarg_instr(BUZZVM_INSTR_VSCREATE);
+      noarg_instr(BUZZVM_INSTR_VSPUT);
+      noarg_instr(BUZZVM_INSTR_VSGET);
+      f_arg_instr(BUZZVM_INSTR_PUSHF);
+      i_arg_instr(BUZZVM_INSTR_PUSHI);
       i_arg_instr(BUZZVM_INSTR_DUP);
       i_arg_instr(BUZZVM_INSTR_JUMP);
       i_arg_instr(BUZZVM_INSTR_JUMPZ);
@@ -170,13 +174,13 @@ int buzz_deasm(const uint8_t* buf,
       /* Write the op description */
       fprintf(fd, "%s", buzzvm_instr_desc[op]);
       /* Does the opcode have an argument? */
-      if(op == BUZZVM_INSTR_PUSH) {
+      if(op == BUZZVM_INSTR_PUSHF) {
          /* Float argument */
          write_arg(float, "%f");
       }
-      else if(op > BUZZVM_INSTR_PUSH) {
+      else if(op > BUZZVM_INSTR_PUSHF) {
          /* Integer argument */
-         write_arg(uint32_t, "%u");
+         write_arg(int32_t, "%u");
       }
       /* Newline */
       fprintf(fd, "\n");

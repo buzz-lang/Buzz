@@ -1,57 +1,99 @@
-# Stack: 
+# # Stack: 
 
-push 200
-# Stack: 200
+# pushf 200
+# # Stack: 200
 
-pop
-# Stack: 
+# pop
+# # Stack: 
 
-push 130
-# Stack: 130
+# pushf 130
+# # Stack: 130
 
-push 30
-# Stack: 30 130
+# pushf 30
+# # Stack: 30 130
 
-add
-# Stack: 160
+# add
+# # Stack: 160
 
-push 60
-# Stack: 60 160
+# pushf 60
+# # Stack: 60 160
 
-sub
-# Stack: -100
+# sub
+# # Stack: -100
 
-push 2
-# Stack: 2 -100
+# pushf 2
+# # Stack: 2 -100
 
-mul
-# Stack: -200
+# mul
+# # Stack: -200
 
-push 5
-# Stack: 5 -200
+# pushf 5
+# # Stack: 5 -200
 
-div
-# Stack: -0.025000
+# div
+# # Stack: -0.025000
 
-push -0.025000
-# Stack: -0.025000 -0.025000
+# pushf -0.025000
+# # Stack: -0.025000 -0.025000
 
-eq
+# eq
+# # Stack: 1
+
+# pushf 17
+# # Stack: 17 1
+
+# pushf 19
+# # Stack: 19 17 1
+
+# eq
+# # Stack: 0 1
+
+# and
+# # Stack: 0
+
+# jumpnz 0
+# # Stack: 0
+
+# pop
+# # Stack:
+
+pushi 1
 # Stack: 1
 
-push 17
-# Stack: 17 1
+vscreate
+# Stack:
 
-push 19
-# Stack: 19 17 1
+pushi 1
+# Stack: 1
 
-eq
-# Stack: 0 1
+pushi 2
+# Stack: 2 1
 
-and
-# Stack: 0
+pushf 3
+# Stack: 3 2 1
 
-jumpnz 0
+vsput
+# Stack:
+
+pushi 1
+# Stack: 1
+
+pushi 2
+# Stack: 2 1
+
+vsget
+# Stack: 3
+
+pop
+# Stack:
+
+pushi 1
+# Stack: 1
+
+pushi 4
+# Stack: 4 1
+
+vsget
 # Stack: 0
 
 done

@@ -67,7 +67,7 @@ void buzzdict_destroy(buzzdict_t* dt) {
 void* buzzdict_rawget(buzzdict_t dt,
                       const void* key) {
    /* Hash the key */
-   uint32_t h = dt->hashf(key);
+   uint32_t h = dt->hashf(key) % dt->num_buckets;
    /* Is the bucket empty? */
    if(!dt->buckets[h]) return NULL;
    /* Bucket not empty - is the entry present? */
@@ -87,7 +87,7 @@ void buzzdict_set(buzzdict_t dt,
                   const void* key,
                   void* data) {
    /* Hash the key */
-   uint32_t h = dt->hashf(key);
+   uint32_t h = dt->hashf(key) % dt->num_buckets;
    /* Is the bucket empty? */
    if(!dt->buckets[h]) {
       /* Create new entry list */
@@ -122,7 +122,7 @@ void buzzdict_set(buzzdict_t dt,
 void buzzdict_remove(buzzdict_t dt,
                      const void* key) {
    /* Hash the key */
-   uint32_t h = dt->hashf(key);
+   uint32_t h = dt->hashf(key) % dt->num_buckets;
    /* Is the bucket empty? */
    if(!dt->buckets[h]) return;
    /* Bucket not empty - is the entry present? */

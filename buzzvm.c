@@ -1,19 +1,74 @@
 #include "buzzvm.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+
+/****************************************/
+/****************************************/
+
+void buzzvm_dict_destroy(const void* key, void* data, void* params) {
+   buzzdict_t* x = (buzzdict_t*)data;
+   buzzdict_destroy(x);
+}
+
+/*
+ * This is the djb2() hash function presented in
+ * http://www.cse.yorku.ca/~oz/hash.html.
+ */
+uint32_t buzzvm_dict_strkeyhash(const void* key) {
+   /* Treat the key as a string */
+   const char* s = (const char*)key;
+   /* Initialize the hash to something */
+   uint32_t h = 5381;
+   /* Go through the string */
+   int c;
+   while((c = *s++)) {
+      /*
+       * This is equivalent to
+       *
+       * h = h * 33 + c
+       *   = (h * 32 + h) + c
+       *
+       * Why 33 is a good choice, nobody knows
+       * NOTE: in the Java VM they use 31 instead
+       */
+      h = ((h << 5) + h) + c;
+   }
+   return h;
+}
+
+uint32_t buzzvm_dict_intkeyhash(const void* key) {
+   return *(int32_t*)key;
+}
+
+int buzzvm_dict_strkeycmp(const void* a, const void* b) {
+   return strcmp((const char*)a, (const char*)b);
+}
+
+int buzzvm_dict_intkeycmp(const void* a, const void* b) {
+   if(*(int32_t*)a < *(int32_t*)b) return -1;
+   if(*(int32_t*)a > *(int32_t*)b) return  1;
+   return 0;
+}
 
 /****************************************/
 /****************************************/
 
 buzzvm_t buzzvm_new() {
    /* Create VM state. calloc() takes care of zeroing everything */
-   buzzvm_t vms = (buzzvm_t)calloc(1, sizeof(struct buzzvm_s));
+   buzzvm_t vm = (buzzvm_t)calloc(1, sizeof(struct buzzvm_s));
    /* Create stack. */
-   vms->stack = buzzdarray_new(20, sizeof(buzzvm_var_t), NULL);
+   vm->stack = buzzdarray_new(20, sizeof(buzzvm_var_t), NULL);
    /* Create function list. calloc() takes care of zeroing everything */
-   vms->flist = buzzdarray_new(20, sizeof(buzzvm_funp), NULL);
+   vm->flist = buzzdarray_new(20, sizeof(buzzvm_funp), NULL);
+   /* Create virtual stigmergy. */
+   vm->vstigs = buzzdict_new(1,
+                             sizeof(int32_t),
+                             sizeof(buzzdict_t),
+                             buzzvm_dict_intkeyhash,
+                             buzzvm_dict_intkeycmp);
    /* Return new vm */
-   return vms;
+   return vm;
 }
 
 /****************************************/
@@ -21,6 +76,13 @@ buzzvm_t buzzvm_new() {
 
 void buzzvm_reset(buzzvm_t vm) {
    buzzdarray_clear(vm->stack, 20);
+   buzzdict_foreach(vm->vstigs, buzzvm_dict_destroy, NULL);
+   buzzdict_destroy(&(vm->vstigs));
+   vm->vstigs = buzzdict_new(1,
+                             sizeof(int32_t),
+                             sizeof(buzzdict_t),
+                             buzzvm_dict_intkeyhash,
+                             buzzvm_dict_intkeycmp);
    vm->pc = 0;
    if(vm->bcode) vm->state = BUZZVM_STATE_READY;
    else vm->state = BUZZVM_STATE_NOCODE;
@@ -33,6 +95,8 @@ void buzzvm_reset(buzzvm_t vm) {
 void buzzvm_destroy(buzzvm_t* vm) {
    buzzdarray_destroy(&(*vm)->stack);
    buzzdarray_destroy(&(*vm)->flist);
+   buzzdict_foreach((*vm)->vstigs, buzzvm_dict_destroy, NULL);
+   buzzdict_destroy(&(*vm)->vstigs);
    free(*vm);
    *vm = 0;
 }
@@ -145,17 +209,85 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          inc_pc();
          break;
       }
-      /* case BUZZVM_INSTR_VSPUT: { */
-      /*    buzzvm_lte(vm); */
-      /*    inc_pc(); */
-      /*    break; */
-      /* } */
-      /* case BUZZVM_INSTR_VSGET: { */
-      /*    buzzvm_lte(vm); */
-      /*    inc_pc(); */
-      /*    break; */
-      /* } */
-      case BUZZVM_INSTR_PUSH: {
+      case BUZZVM_INSTR_VSCREATE: {
+         /* Get integer id from stack(#1) */
+         buzzvm_stack_assert(vm, 1);
+         int32_t id = buzzvm_stack_at(vm, 1).i.value;
+         /* Create virtual stigmergy if not present already */
+         if(!buzzdict_get(vm->vstigs, &id, buzzdict_t)) {
+            buzzdict_t vs = buzzdict_new(
+               20,
+               sizeof(int32_t),
+               sizeof(buzzvm_var_t),
+               buzzvm_dict_intkeyhash,
+               buzzvm_dict_intkeycmp);
+            buzzdict_set(vm->vstigs, &id, &vs);
+         }
+         /* Pop operands */
+         buzzvm_pop(vm);
+         /* Next instruction */
+         inc_pc();
+         break;
+      }
+      case BUZZVM_INSTR_VSPUT: {
+         buzzvm_stack_assert(vm, 3);
+         /* Get integer id from stack(#3) */
+         int32_t id = buzzvm_stack_at(vm, 3).i.value;
+         /* Get integer key from stack(#2) */
+         int32_t k = buzzvm_stack_at(vm, 2).i.value;
+         /* Get value from stack(#1) */
+         buzzvm_var_t* v = &buzzvm_stack_at(vm, 1);
+         /* Look for virtual stigmergy */
+         buzzdict_t* vs = buzzdict_get(vm->vstigs, &id, buzzdict_t);
+         /* Ignore commands for virtual stigmergy that is not there */
+         if(vs) buzzdict_set(*vs, &k, v);
+         else fprintf(stderr, "[WARNING] No virtual stigmergy with id %d\n", id);
+         /* Pop operands */
+         buzzvm_pop(vm);
+         buzzvm_pop(vm);
+         buzzvm_pop(vm);
+         /* Next instruction */
+         inc_pc();
+         break;
+      }
+      case BUZZVM_INSTR_VSGET: {
+         buzzvm_stack_assert(vm, 2);
+         /* Get integer id from stack(#2) */
+         int32_t id = buzzvm_stack_at(vm, 2).i.value;
+         /* Get integer key from stack(#1) */
+         int32_t k = buzzvm_stack_at(vm, 1).i.value;
+         /* Pop operands */
+         buzzvm_pop(vm);
+         buzzvm_pop(vm);
+         /* Look for virtual stigmergy */
+         buzzdict_t* vs = buzzdict_get(vm->vstigs, &id, buzzdict_t);
+         if(vs) {
+            /* Virtual stigmergy found, look for key */
+            buzzvm_var_t* v = buzzdict_get(*vs, &k, buzzvm_var_t);
+            if(v) {
+               /* Key found, push associated variable */
+               buzzvm_push(vm, v);
+            }
+            else {
+               /* Key not found, push false */
+               buzzvm_pushi(vm, 0);
+            }
+         }
+         else {
+            /* No virtual stigmergy found, push false */
+            buzzvm_pushi(vm, 0);
+         }
+         /* Next instruction */
+         inc_pc();
+         break;
+      }
+      case BUZZVM_INSTR_PUSHI: {
+         inc_pc();
+         get_arg(int32_t);
+         buzzvm_pushi(vm, arg);
+         break;
+      }
+      case BUZZVM_INSTR_PUSHF: {
          inc_pc();
          get_arg(float);
          buzzvm_pushf(vm, arg);
@@ -177,8 +309,8 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       case BUZZVM_INSTR_JUMPZ: {
          inc_pc();
          get_arg(uint32_t);
-         buzzvm_assert_stack(vm, 1);
-         if(buzzvm_stack_at(vm, 1).b.value == 0) {
+         buzzvm_stack_assert(vm, 1);
+         if(buzzvm_stack_at(vm, 1).i.value == 0) {
             vm->pc = arg;
             assert_pc(vm->pc);
          }
@@ -187,8 +319,8 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       case BUZZVM_INSTR_JUMPNZ: {
          inc_pc();
          get_arg(uint32_t);
-         buzzvm_assert_stack(vm, 1);
-         if(buzzvm_stack_at(vm, 1).b.value != 0) {
+         buzzvm_stack_assert(vm, 1);
+         if(buzzvm_stack_at(vm, 1).i.value != 0) {
             vm->pc = arg;
             assert_pc(vm->pc);
          }

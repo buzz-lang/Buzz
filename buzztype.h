@@ -11,21 +11,12 @@ extern "C" {
     * Variable types in Buzz
     */
    typedef enum {
-      BUZZTYPE_BOOL = 0, // boolean value (true/false)
-      BUZZTYPE_INT,      // 32 bit signed integer
+      BUZZTYPE_INT = 0,  // 32 bit signed integer
       BUZZTYPE_FLOAT,    // 32 bit float value
       BUZZTYPE_STRING,   // string
       BUZZTYPE_TABLE,    // table
       BUZZTYPE_SWARM     // swarm
    } buzz_type_e;
-
-   /*
-    * Boolean
-    */
-   typedef struct {
-      buzz_type_e type;
-      int value;
-   } buzz_bool_t;
 
    /*
     * Integer
@@ -75,7 +66,6 @@ extern "C" {
          buzz_type_e type;
          void* value;
       }             generic; // generic type info
-      buzz_bool_t   b;       // as boolean
       buzz_int_t    i;       // as integer
       buzz_float_t  f;       // as floating-point
       buzz_string_t s;       // as string
