@@ -247,6 +247,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          buzzvar_serialize(buf, *var);
          /* Append it to the out message queue */
          buzzmsg_append(vm->outmsgs, BUZZMSG_USER, (uint8_t*)buf->data, buzzdarray_size(buf));
+         buzzdarray_destroy(&buf);
          /* Next instruction */
          inc_pc();
          break;

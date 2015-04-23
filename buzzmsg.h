@@ -16,8 +16,9 @@ extern "C" {
     * Buzz message type.
     */
    typedef enum {
-      BUZZMSG_VSTIG = 0, // Virtual stigmergy-related
-      BUZZMSG_USER       // gossip() command in Buzz
+      BUZZMSG_USER = 0,    // gossip() command in Buzz
+      BUZZMSG_VSTIG_PUT,   // Virtual stigmergy PUT
+      BUZZMSG_VSTIG_QUERY, // Virtual stigmergy QUERY
    } buzzmsg_type_e;
 
    /*
@@ -73,6 +74,52 @@ extern "C" {
    extern int64_t buzzmsg_deserialize_u32(uint32_t* data,
                                           buzzdarray_t buf,
                                           uint32_t pos);
+
+   /*
+    * Serializes a float.
+    * The data is appended to the given buffer. The buffer is treated as a
+    * dynamic array of uint8_t.
+    * @param buf The output buffer where the serialized data is appended.
+    * @param data The data to serialize.
+    */
+   extern void buzzmsg_serialize_float(buzzdarray_t buf,
+                                       float data);
+
+   /*
+    * Deserializes a float.
+    * The data is read from the given buffer starting at the given position.
+    * The buffer is treated as a dynamic array of uint8_t.
+    * @param data The deserialized data of the element.
+    * @param buf The input buffer where the serialized data is stored.
+    * @param pos The position at which the data starts.
+    * @return The new position in the buffer, of -1 in case of error.
+    */
+   extern int64_t buzzmsg_deserialize_float(float* data,
+                                            buzzdarray_t buf,
+                                            uint32_t pos);
+
+   /*
+    * Serializes a string.
+    * The data is appended to the given buffer. The buffer is treated as a
+    * dynamic array of uint8_t.
+    * @param buf The output buffer where the serialized data is appended.
+    * @param data The data to serialize.
+    */
+   extern void buzzmsg_serialize_string(buzzdarray_t buf,
+                                        const char* data);
+
+   /*
+    * Deserializes a string.
+    * The data is read from the given buffer starting at the given position.
+    * The buffer is treated as a dynamic array of uint8_t.
+    * @param data The deserialized data of the element. You are in charge of freeing it.
+    * @param buf The input buffer where the serialized data is stored.
+    * @param pos The position at which the data starts.
+    * @return The new position in the buffer, of -1 in case of error.
+    */
+   extern int64_t buzzmsg_deserialize_string(char** data,
+                                             buzzdarray_t buf,
+                                             uint32_t pos);
 
 #ifdef __cplusplus
 }

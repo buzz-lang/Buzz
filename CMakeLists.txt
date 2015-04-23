@@ -39,6 +39,9 @@ target_link_libraries(testbuzzdarray buzz)
 add_executable(testbuzzdict testbuzzdict.c)
 target_link_libraries(testbuzzdict buzz)
 
+add_executable(testbuzzmsg testbuzzmsg.c)
+target_link_libraries(testbuzzmsg buzz)
+
 add_executable(buzztest buzztest.c)
 target_link_libraries(buzztest buzz)
 
