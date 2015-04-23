@@ -1,4 +1,5 @@
 #include "buzzvstig.h"
+#include "buzzmsg.h"
 #include <stdlib.h>
 
 /****************************************/
@@ -32,6 +33,45 @@ buzzvstig_t buzzvstig_new() {
       buzzvstig_intkeyhash,
       buzzvstig_intkeycmp,
       buzzvstig_elem_destroy);
+}
+
+/****************************************/
+/****************************************/
+
+void buzzvstig_elem_serialize(buzzdarray_t buf,
+                              int32_t key,
+                              buzzvstig_elem_t data) {
+   /* Serialize the key */
+   buzzmsg_serialize_u32(buf, key);
+   /* Serialize the data */
+   buzzvar_serialize(buf, data->data);
+   /* Serialize the timestamp */
+   buzzmsg_serialize_u32(buf, data->timestamp);
+   /* Serialize the robot */
+   buzzmsg_serialize_u32(buf, data->robot);
+}
+
+/****************************************/
+/****************************************/
+
+int64_t buzzvstig_elem_deserialize(int32_t* key,
+                                   buzzvstig_elem_t data,
+                                   buzzdarray_t buf,
+                                   uint32_t pos) {
+   int64_t p = pos;
+   /* Deserialize the key */
+   p = buzzmsg_deserialize_u32((uint32_t*)key, buf, p);
+   if(p < 0) return -1;
+   /* Deserialize the data */
+   p = buzzvar_deserialize(&(data->data), buf, p);
+   if(p < 0) return -1;
+   /* Deserialize the timestamp */
+   p = buzzmsg_deserialize_u32(&(data->timestamp), buf, p);
+   if(p < 0) return -1;
+   /* Deserialize the robot */
+   p = buzzmsg_deserialize_u32(&(data->robot), buf, p);
+   if(p < 0) return -1;
+   return p;
 }
 
 /****************************************/

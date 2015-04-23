@@ -7,6 +7,12 @@
 /****************************************/
 /****************************************/
 
+void buzzvm_msg_destroy(uint32_t pos, void* data, void* param) {
+   buzzmsg_data_t* m = (buzzmsg_data_t*)data;
+   free(*m);
+   *m = 0;
+}
+
 void buzzvm_vstig_destroy(const void* key, void* data, void* params) {
    free((void*)key);
    buzzvstig_t* x = (buzzvstig_t*)data;
@@ -64,6 +70,9 @@ buzzvm_t buzzvm_new() {
    vm->stack = buzzdarray_new(20, sizeof(buzzvar_t), NULL);
    /* Create function list. calloc() takes care of zeroing everything */
    vm->flist = buzzdarray_new(20, sizeof(buzzvm_funp), NULL);
+   /* Create message queues */
+   vm->inmsgs = buzzmsg_new(20);
+   vm->outmsgs = buzzmsg_new(20);
    /* Create virtual stigmergy. */
    vm->vstigs = buzzdict_new(1,
                              sizeof(int32_t),
@@ -79,7 +88,7 @@ buzzvm_t buzzvm_new() {
 /****************************************/
 
 void buzzvm_reset(buzzvm_t vm) {
-   buzzdarray_clear(vm->stack, 20);
+   /* Clear stigmergy structures */
    buzzdict_destroy(&(vm->vstigs));
    vm->vstigs = buzzdict_new(1,
                              sizeof(int32_t),
@@ -87,7 +96,16 @@ void buzzvm_reset(buzzvm_t vm) {
                              buzzvm_dict_intkeyhash,
                              buzzvm_dict_intkeycmp,
                              NULL);
+   /* Reset message queues */
+   buzzdarray_foreach(vm->inmsgs, buzzvm_msg_destroy, NULL);
+   buzzdarray_clear(vm->inmsgs, 20);
+   buzzdarray_foreach(vm->outmsgs, buzzvm_msg_destroy, NULL);
+   buzzdarray_clear(vm->outmsgs, 20);
+   /* Clear stack */
+   buzzdarray_clear(vm->stack, 20);
+   /* Reset program counter */
    vm->pc = 0;
+   /* Reset VM state */
    if(vm->bcode) vm->state = BUZZVM_STATE_READY;
    else vm->state = BUZZVM_STATE_NOCODE;
    vm->error = BUZZVM_ERROR_NONE;
@@ -97,8 +115,16 @@ void buzzvm_reset(buzzvm_t vm) {
 /****************************************/
 
 void buzzvm_destroy(buzzvm_t* vm) {
+   /* Get rid of the stack */
    buzzdarray_destroy(&(*vm)->stack);
+   /* Get rid of the function list */
    buzzdarray_destroy(&(*vm)->flist);
+   /* Get rid of the message queues */
+   buzzdarray_foreach((*vm)->inmsgs, buzzvm_msg_destroy, NULL);
+   buzzdarray_destroy(&(*vm)->inmsgs);
+   buzzdarray_foreach((*vm)->outmsgs, buzzvm_msg_destroy, NULL);
+   buzzdarray_destroy(&(*vm)->outmsgs);
+   /* Get rid of the virtual stigmergy structures */
    buzzdict_destroy(&(*vm)->vstigs);
    free(*vm);
    *vm = 0;
@@ -209,6 +235,19 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       }
       case BUZZVM_INSTR_LTE: {
          buzzvm_lte(vm);
+         inc_pc();
+         break;
+      }
+      case BUZZVM_INSTR_GOSSIP: {
+         /* Get variable from stack(#1) */
+         buzzvm_stack_assert(vm, 1);
+         buzzvar_t* var = &buzzvm_stack_at(vm, 1);
+         /* Serialize it */
+         buzzdarray_t buf = buzzdarray_new(16, sizeof(uint8_t), NULL);
+         buzzvar_serialize(buf, *var);
+         /* Append it to the out message queue */
+         buzzmsg_append(vm->outmsgs, BUZZMSG_USER, (uint8_t*)buf->data, buzzdarray_size(buf));
+         /* Next instruction */
          inc_pc();
          break;
       }

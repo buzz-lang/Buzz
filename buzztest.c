@@ -10,7 +10,7 @@ void dump(buzzvm_t vm, const char* prefix) {
    fprintf(stderr, "%sstack max: %lld\tcur: %lld\n", prefix, buzzvm_stack_top(vm), buzzvm_stack_top(vm));
    for(int64_t i = buzzvm_stack_top(vm)-1; i >= 0; --i) {
       fprintf(stderr, "%s\t%lld\t", prefix, i);
-      switch(buzzdarray_get(vm->stack, i, buzzvar_t)->generic.type) {
+      switch(buzzdarray_get(vm->stack, i, buzzvar_t)->type) {
          case BUZZTYPE_INT:
             fprintf(stderr, "[int] %d\n", buzzdarray_get(vm->stack, i, buzzvar_t)->i.value);
             break;

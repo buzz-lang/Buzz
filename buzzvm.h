@@ -1,6 +1,7 @@
 #ifndef BUZZVM_H
 #define BUZZVM_H
 
+#include <buzzmsg.h>
 #include <buzzvstig.h>
 
 #ifdef __cplusplus
@@ -53,6 +54,7 @@ extern "C" {
       BUZZVM_INSTR_GTE,      // Push stack(#1) >= stack(#2), pop operands
       BUZZVM_INSTR_LT,       // Push stack(#1) < stack(#2), pop operands
       BUZZVM_INSTR_LTE,      // Push stack(#1) <= stack(#2), pop operands
+      BUZZVM_INSTR_GOSSIP,   // Gossip variable stack(#1), pop operands
       BUZZVM_INSTR_VSCREATE, // Create virtual stigmergy from integer id stack(#1), pop operands
       BUZZVM_INSTR_VSPUT,    // Put (key stack(#2),value stack(#1)) in virtual stigmergy stack(#3), pop operands
       BUZZVM_INSTR_VSGET,    // Push virtual stigmergy stack(#2) value of key stack(#1), pop operand
@@ -70,7 +72,7 @@ extern "C" {
       BUZZVM_INSTR_JUMPSUB,  // Push current PC and sets PC to argument
       BUZZVM_INSTR_CALL,     // Calls the C function pointed to by the argument
    } buzzvm_instr;
-   static const char *buzzvm_instr_desc[] = {"nop", "done", "pop", "ret", "add", "sub", "mul", "div", "and", "or", "not", "eq", "gt", "gte", "lt", "lte", "vscreate", "vsput", "vsget", "pushf", "pushi", "dup", "jump", "jumpz", "jumpnz", "jumpsub", "call"};
+   static const char *buzzvm_instr_desc[] = {"nop", "done", "pop", "ret", "add", "sub", "mul", "div", "and", "or", "not", "eq", "gt", "gte", "lt", "lte", "gossip", "vscreate", "vsput", "vsget", "pushf", "pushi", "dup", "jump", "jumpz", "jumpnz", "jumpsub", "call"};
 
    /*
     * Function pointer for BUZZVM_INSTR_CALL.
@@ -95,9 +97,9 @@ extern "C" {
       /* Registered functions */
       buzzdarray_t flist;
       /* Input message FIFO */
-      buzzdarray_t inmsglist;
+      buzzmsg_t inmsgs;
       /* Output message FIFO */
-      buzzdarray_t outmsglist;
+      buzzmsg_t outmsgs;
       /* Virtual stigmergy maps */
       buzzdict_t vstigs;
       /* Current VM state */
@@ -138,6 +140,26 @@ extern "C" {
    extern void buzzvm_set_bcode(buzzvm_t vm,
                                 const uint8_t* bcode,
                                 uint32_t bcode_size);
+
+   /*
+    * Queues a message in the input queue.
+    * @param vm The VM data.
+    * @param payload A buffer containing the message payload.
+    * @param size The payload size.
+    */
+   extern void buzzvm_queue_inmsg(buzzvm_t vm,
+                                  uint8_t* payload,
+                                  uint32_t size);
+
+   /*
+    * Queues a message in the output queue.
+    * @param vm The VM data.
+    * @param payload A buffer containing the message payload.
+    * @param size The payload size.
+    */
+   extern void buzzvm_queue_outmsg(buzzvm_t vm,
+                                   uint8_t* payload,
+                                   uint32_t size);
 
    /*
     * Executes the next step in the bytecode, if possible.

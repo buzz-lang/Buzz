@@ -38,6 +38,33 @@ extern "C" {
    extern buzzvstig_elem_t buzzvstig_fetch(buzzvstig_t vs,
                                            int32_t key);
 
+   /*
+    * Serializes an element in the virtual stigmergy.
+    * The data is appended to the given buffer. The buffer is treated as a
+    * dynamic array of uint8_t.
+    * @param buf The output buffer where the serialized data is appended.
+    * @param key The key of the element to serialize.
+    * @param data The data of the element to serialize.
+    */
+   extern void buzzvstig_elem_serialize(buzzdarray_t buf,
+                                        int32_t key,
+                                        const buzzvstig_elem_t data);
+
+   /*
+    * Deserializes a virtual stigmergy element.
+    * The data is read from the given buffer starting at the given position.
+    * The buffer is treated as a dynamic array of uint8_t.
+    * @param key The deserialized key of the element.
+    * @param data The deserialized data of the element.
+    * @param buf The input buffer where the serialized data is stored.
+    * @param pos The position at which the data starts.
+    * @return The new position in the buffer, of -1 in case of error.
+    */
+   extern int64_t buzzvstig_elem_deserialize(int32_t* key,
+                                             buzzvstig_elem_t data,
+                                             buzzdarray_t buf,
+                                             uint32_t pos);
+   
 #ifdef __cplusplus
 }
 #endif
