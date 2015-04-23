@@ -1,8 +1,7 @@
 #ifndef BUZZVM_H
 #define BUZZVM_H
 
-#include "buzzdict.h"
-#include "buzztype.h"
+#include <buzzvstig.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -191,14 +190,14 @@ extern "C" {
  * BuzzVM hook functions or buzzvm_step().
  * @param vm The VM data.
  */
-#define buzzvm_done(vm) (vm)->state = BUZZVM_STATE_DONE; return (vm)->state;
+#define buzzvm_done(vm) { (vm)->state = BUZZVM_STATE_DONE; return (vm)->state; }
 
 /*
  * Pushes a variable on the stack.
  * @param vm The VM data.
  * @param v The variable.
  */
-#define buzzvm_push(vm, v) buzzdarray_push((vm)->stack, (v));
+#define buzzvm_push(vm, v) buzzdarray_push((vm)->stack, (v))
 
 /*
  * Pushes a 32 bit signed int value on the stack.

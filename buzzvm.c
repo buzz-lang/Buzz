@@ -6,16 +6,9 @@
 /****************************************/
 /****************************************/
 
-struct buzzvm_vstig_s {
-   buzzvar_t value;
-   uint32_t timestamp;
-   uint32_t robot;
-};
-typedef struct buzzvm_vstig_s* buzzvm_vstig_t;
-
-void buzzvm_dict_destroy(const void* key, void* data, void* params) {
-   buzzdict_t* x = (buzzdict_t*)data;
-   buzzdict_destroy(x);
+void buzzvm_vstig_destroy(const void* key, void* data, void* params) {
+   buzzvstig_t* x = (buzzvstig_t*)data;
+   buzzvstig_destroy(x);
 }
 
 /*
@@ -71,7 +64,7 @@ buzzvm_t buzzvm_new() {
    /* Create virtual stigmergy. */
    vm->vstigs = buzzdict_new(1,
                              sizeof(int32_t),
-                             sizeof(buzzdict_t),
+                             sizeof(buzzvstig_t),
                              buzzvm_dict_intkeyhash,
                              buzzvm_dict_intkeycmp);
    /* Return new vm */
@@ -83,11 +76,11 @@ buzzvm_t buzzvm_new() {
 
 void buzzvm_reset(buzzvm_t vm) {
    buzzdarray_clear(vm->stack, 20);
-   buzzdict_foreach(vm->vstigs, buzzvm_dict_destroy, NULL);
+   buzzdict_foreach(vm->vstigs, buzzvm_vstig_destroy, NULL);
    buzzdict_destroy(&(vm->vstigs));
    vm->vstigs = buzzdict_new(1,
                              sizeof(int32_t),
-                             sizeof(buzzdict_t),
+                             sizeof(buzzvstig_t),
                              buzzvm_dict_intkeyhash,
                              buzzvm_dict_intkeycmp);
    vm->pc = 0;
@@ -102,7 +95,7 @@ void buzzvm_reset(buzzvm_t vm) {
 void buzzvm_destroy(buzzvm_t* vm) {
    buzzdarray_destroy(&(*vm)->stack);
    buzzdarray_destroy(&(*vm)->flist);
-   buzzdict_foreach((*vm)->vstigs, buzzvm_dict_destroy, NULL);
+   buzzdict_foreach((*vm)->vstigs, buzzvm_vstig_destroy, NULL);
    buzzdict_destroy(&(*vm)->vstigs);
    free(*vm);
    *vm = 0;
@@ -222,12 +215,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          int32_t id = buzzvm_stack_at(vm, 1).i.value;
          /* Create virtual stigmergy if not present already */
          if(!buzzdict_get(vm->vstigs, &id, buzzdict_t)) {
-            buzzdict_t vs = buzzdict_new(
-               20,
-               sizeof(int32_t),
-               sizeof(buzzvar_t),
-               buzzvm_dict_intkeyhash,
-               buzzvm_dict_intkeycmp);
+            buzzvstig_t vs = buzzvstig_new();
             buzzdict_set(vm->vstigs, &id, &vs);
          }
          /* Pop operands */
@@ -243,12 +231,27 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          /* Get integer key from stack(#2) */
          int32_t k = buzzvm_stack_at(vm, 2).i.value;
          /* Get value from stack(#1) */
-         buzzvar_t* v = &buzzvm_stack_at(vm, 1);
+         buzzvar_t v = buzzvm_stack_at(vm, 1);
          /* Look for virtual stigmergy */
-         buzzdict_t* vs = buzzdict_get(vm->vstigs, &id, buzzdict_t);
-         /* Ignore commands for virtual stigmergy that is not there */
-         if(vs) buzzdict_set(*vs, &k, v);
-         else fprintf(stderr, "[WARNING] No virtual stigmergy with id %d\n", id);
+         buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
+         if(vs) {
+            /* Found, update it */
+            buzzvstig_elem_t x = buzzvstig_fetch(*vs, k);
+            if(x) {
+               x->data = v;
+               ++(x->timestamp);
+               // TODO set robot id
+            }
+            else {
+               // TODO set robot id
+               x = buzzvstig_newelem(v, 1, 0);
+            }
+            buzzvstig_store(*vs, k, x);
+         }
+         else {
+            /* Ignore commands for virtual stigmergy that is not there */
+            fprintf(stderr, "[WARNING] No virtual stigmergy with id %d\n", id);
+         }
          /* Pop operands */
          buzzvm_pop(vm);
          buzzvm_pop(vm);
@@ -269,16 +272,10 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          /* Look for virtual stigmergy */
          buzzdict_t* vs = buzzdict_get(vm->vstigs, &id, buzzdict_t);
          if(vs) {
-            /* Virtual stigmergy found, look for key */
-            buzzvar_t* v = buzzdict_get(*vs, &k, buzzvar_t);
-            if(v) {
-               /* Key found, push associated variable */
-               buzzvm_push(vm, v);
-            }
-            else {
-               /* Key not found, push false */
-               buzzvm_pushi(vm, 0);
-            }
+            /* Virtual stigmergy found, look for key and push result */
+            buzzvstig_elem_t e = buzzvstig_fetch(*vs, k);
+            if(e) buzzvm_push(vm, &(e->data));
+            else buzzvm_pushi(vm, 0);
          }
          else {
             /* No virtual stigmergy found, push false */

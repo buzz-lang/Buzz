@@ -1,6 +1,7 @@
 #ifndef BUZZTYPE_H
 #define BUZZTYPE_H
 
+#include <buzzdict.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
