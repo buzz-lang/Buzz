@@ -119,12 +119,12 @@ void buzzdict_set(buzzdict_t dt,
 /****************************************/
 /****************************************/
 
-void buzzdict_remove(buzzdict_t dt,
-                     const void* key) {
+int buzzdict_remove(buzzdict_t dt,
+                    const void* key) {
    /* Hash the key */
    uint32_t h = dt->hashf(key) % dt->num_buckets;
    /* Is the bucket empty? */
-   if(!dt->buckets[h]) return;
+   if(!dt->buckets[h]) return 0;
    /* Bucket not empty - is the entry present? */
    for(uint32_t i = 0; i < buzzdarray_size(dt->buckets[h]); ++i) {
       struct buzzdict_entry_s* e = buzzdarray_get(dt->buckets[h], i, struct buzzdict_entry_s);
@@ -136,9 +136,12 @@ void buzzdict_remove(buzzdict_t dt,
             buzzdarray_destroy(&(dt->buckets[h]));
          /* Increase size */
          --(dt->size);
+         /* Done */
+         return 1;
       }
    }
    /* Entry not found, nothing to do */
+   return 0;
 }
 
 /****************************************/

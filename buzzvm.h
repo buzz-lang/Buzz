@@ -183,7 +183,7 @@ extern "C" {
  * @param vm The VM data.
  * @param idx The stack index, where 0 is the stack top and >0 goes down the stack.
  */
-#define buzzvm_stack_at(vm, idx) (*buzzdarray_get((vm)->stack, (buzzvm_stack_top(vm) - idx), buzzvm_var_t))
+#define buzzvm_stack_at(vm, idx) (*buzzdarray_get((vm)->stack, (buzzvm_stack_top(vm) - idx), buzzvar_t))
 
 /*
  * Terminates the current Buzz script.
@@ -205,14 +205,14 @@ extern "C" {
  * @param vm The VM data.
  * @param v The value.
  */
-#define buzzvm_pushi(vm, v) { buzzvm_var_t* var = (buzzvm_var_t*)buzzdarray_makeslot((vm)->stack, buzzvm_stack_top(vm)); var->i.type = BUZZTYPE_INT; var->i.value = (v); }
+#define buzzvm_pushi(vm, v) { buzzvar_t* var = (buzzvar_t*)buzzdarray_makeslot((vm)->stack, buzzvm_stack_top(vm)); var->i.type = BUZZTYPE_INT; var->i.value = (v); }
 
 /*
  * Pushes a float value on the stack.
  * @param vm The VM data.
  * @param v The value.
  */
-#define buzzvm_pushf(vm, v) { buzzvm_var_t* var = (buzzvm_var_t*)buzzdarray_makeslot((vm)->stack, buzzvm_stack_top(vm)); var->f.type = BUZZTYPE_FLOAT; var->f.value = (v); }
+#define buzzvm_pushf(vm, v) { buzzvar_t* var = (buzzvar_t*)buzzdarray_makeslot((vm)->stack, buzzvm_stack_top(vm)); var->f.type = BUZZTYPE_FLOAT; var->f.value = (v); }
 
 /*
  * Pops the stack.

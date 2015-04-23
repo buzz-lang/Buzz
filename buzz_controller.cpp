@@ -12,7 +12,7 @@ void dump(buzzvm_t vm, const char* prefix) {
    fprintf(stderr, "%scode size: %u\tpc: %d\n", prefix, vm->bcode_size, vm->pc);
    fprintf(stderr, "%sstack max: %lld\tcur: %lld\n", prefix, buzzvm_stack_top(vm), buzzvm_stack_top(vm));
    for(int64_t i = buzzvm_stack_top(vm)-1; i >= 0; --i) {
-      fprintf(stderr, "%s\t%lld\t%u\t%f\n", prefix, i, buzzdarray_get(vm->stack, i, buzzvm_var_t)->i.value, buzzdarray_get(vm->stack, i, buzzvm_var_t)->f.value);
+      fprintf(stderr, "%s\t%lld\t%u\t%f\n", prefix, i, buzzdarray_get(vm->stack, i, buzzvar_t)->i.value, buzzdarray_get(vm->stack, i, buzzvar_t)->f.value);
    }
    fprintf(stderr, "%s============================================================\n\n", prefix);
 }

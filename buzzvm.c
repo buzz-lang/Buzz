@@ -6,6 +6,13 @@
 /****************************************/
 /****************************************/
 
+struct buzzvm_vstig_s {
+   buzzvar_t value;
+   uint32_t timestamp;
+   uint32_t robot;
+};
+typedef struct buzzvm_vstig_s* buzzvm_vstig_t;
+
 void buzzvm_dict_destroy(const void* key, void* data, void* params) {
    buzzdict_t* x = (buzzdict_t*)data;
    buzzdict_destroy(x);
@@ -58,7 +65,7 @@ buzzvm_t buzzvm_new() {
    /* Create VM state. calloc() takes care of zeroing everything */
    buzzvm_t vm = (buzzvm_t)calloc(1, sizeof(struct buzzvm_s));
    /* Create stack. */
-   vm->stack = buzzdarray_new(20, sizeof(buzzvm_var_t), NULL);
+   vm->stack = buzzdarray_new(20, sizeof(buzzvar_t), NULL);
    /* Create function list. calloc() takes care of zeroing everything */
    vm->flist = buzzdarray_new(20, sizeof(buzzvm_funp), NULL);
    /* Create virtual stigmergy. */
@@ -218,7 +225,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
             buzzdict_t vs = buzzdict_new(
                20,
                sizeof(int32_t),
-               sizeof(buzzvm_var_t),
+               sizeof(buzzvar_t),
                buzzvm_dict_intkeyhash,
                buzzvm_dict_intkeycmp);
             buzzdict_set(vm->vstigs, &id, &vs);
@@ -236,7 +243,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          /* Get integer key from stack(#2) */
          int32_t k = buzzvm_stack_at(vm, 2).i.value;
          /* Get value from stack(#1) */
-         buzzvm_var_t* v = &buzzvm_stack_at(vm, 1);
+         buzzvar_t* v = &buzzvm_stack_at(vm, 1);
          /* Look for virtual stigmergy */
          buzzdict_t* vs = buzzdict_get(vm->vstigs, &id, buzzdict_t);
          /* Ignore commands for virtual stigmergy that is not there */
@@ -263,7 +270,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          buzzdict_t* vs = buzzdict_get(vm->vstigs, &id, buzzdict_t);
          if(vs) {
             /* Virtual stigmergy found, look for key */
-            buzzvm_var_t* v = buzzdict_get(*vs, &k, buzzvm_var_t);
+            buzzvar_t* v = buzzdict_get(*vs, &k, buzzvar_t);
             if(v) {
                /* Key found, push associated variable */
                buzzvm_push(vm, v);

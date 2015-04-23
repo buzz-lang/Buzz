@@ -16,62 +16,62 @@ extern "C" {
       BUZZTYPE_STRING,   // string
       BUZZTYPE_TABLE,    // table
       BUZZTYPE_SWARM     // swarm
-   } buzz_type_e;
+   } buzztype_e;
 
    /*
     * Integer
     */
    typedef struct {
-      buzz_type_e type;
+      buzztype_e type;
       int32_t value;
-   } buzz_int_t;
+   } buzzint_t;
 
    /*
     * Floating-point
     */
    typedef struct {
-      buzz_type_e type;
+      buzztype_e type;
       float value;
-   } buzz_float_t;
+   } buzzfloat_t;
 
    /*
     * String
     */
    typedef struct {
-      buzz_type_e type;
+      buzztype_e type;
       char* value;
-   } buzz_string_t;
+   } buzzstring_t;
 
    /*
     * Table
     */
    typedef struct {
-      buzz_type_e type;
+      buzztype_e type;
       buzzdict_t value;
-   } buzz_table_t;
+   } buzztable_t;
 
    /*
     * Swarm
     */
    typedef struct {
-      buzz_type_e type;
+      buzztype_e type;
       buzzdict_t value;
-   } buzz_swarm_t;
+   } buzzswarm_t;
 
    /*
     * A handle for a variable
     */
    typedef union {
       struct {
-         buzz_type_e type;
+         buzztype_e type;
          void* value;
       }             generic; // generic type info
-      buzz_int_t    i;       // as integer
-      buzz_float_t  f;       // as floating-point
-      buzz_string_t s;       // as string
-      buzz_table_t  t;       // as table
-      buzz_swarm_t  g;       // as swarm (group)
-   } buzzvm_var_t;
+      buzzint_t    i;        // as integer
+      buzzfloat_t  f;        // as floating-point
+      buzzstring_t s;        // as string
+      buzztable_t  t;        // as table
+      buzzswarm_t  g;        // as swarm (group)
+   } buzzvar_t;
 
 #ifdef __cplusplus
 }

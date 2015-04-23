@@ -41,13 +41,13 @@ extern "C" {
     * The Buzz dictionary.
     */
    struct buzzdict_s {
-      buzzdarray_t* buckets;
-      uint32_t size;
-      uint32_t num_buckets;
-      buzzdict_hashfunp hashf;
-      buzzdict_key_cmpp keycmpf;
-      uint32_t key_size;
-      uint32_t data_size;
+      buzzdarray_t* buckets;     // Bucket data
+      uint32_t size;             // Number of inserted elements
+      uint32_t num_buckets;      // Number of buckets
+      buzzdict_hashfunp hashf;   // Key hashing function
+      buzzdict_key_cmpp keycmpf; // Key comparison function
+      uint32_t key_size;         // Key size in bytes
+      uint32_t data_size;        // Data size in bytes
    };
    typedef struct buzzdict_s* buzzdict_t;
 
@@ -66,18 +66,48 @@ extern "C" {
                                   buzzdict_hashfunp hashf,
                                   buzzdict_key_cmpp keycmpf);
 
+   /*
+    * Destroys the given dictionary.
+    * @param dt The dictionary.
+    */
    extern void buzzdict_destroy(buzzdict_t* dt);
 
+   /*
+    * Looks for the element with the given key.
+    * @param dt The dictionary.
+    * @param key The key.
+    * @return A void pointer to the element if found, or NULL.
+    * @see buzzdict_get
+    */
    extern void* buzzdict_rawget(buzzdict_t dt,
                                 const void* key);
 
+   /*
+    * Sets a (key, data) pair.
+    * @param dt The dictionary.
+    * @param key The key.
+    * @param data The data.
+    */
    extern void buzzdict_set(buzzdict_t dt,
                             const void* key,
                             void* data);
 
-   extern void buzzdict_remove(buzzdict_t dt,
-                               const void* key);
+   /*
+    * Removes the element with the given key.
+    * If the element is not found, nothing is done.
+    * @param dt The dictionary.
+    * @param key The key.
+    * @return 1 if the element was found and removed; 0 otherwise
+    */
+   extern int buzzdict_remove(buzzdict_t dt,
+                              const void* key);
 
+   /*
+    * Applies the given function to each element in the dictionary.
+    * @param dt The dictionary.
+    * @param The function.
+    * @param A buffer to pass along.
+    */
    extern void buzzdict_foreach(buzzdict_t dt,
                                 buzzdict_elem_funp fun,
                                 void* params);
@@ -86,12 +116,33 @@ extern "C" {
 }
 #endif
 
+/*
+ * Returns the number of elements in the dictionary.
+ * @param dt The dictionary.
+ */
 #define buzzdict_size(dt) (dt)->size
 
+/*
+ * Returns 1 if the dictionary is empty, 0 otherwise.
+ * @param dt The dictionary.
+ */
 #define buzzdict_isempty(dt) ((dt)->size == 0)
 
+/*
+ * Returns 1 if an element with the given key exists, 0 otherwise.
+ * @param dt The dictionary.
+ * @param key The key.
+ */
 #define buzzdict_exists(dt, key) (buzzdict_rawget(dt, key) != NULL)
 
+/*
+ * Returns the element corresponding to the given key.
+ * The returned element is casted to a pointer to the given type.
+ * @param dt The dictionary.
+ * @param key The key.
+ * @param type The element type.
+ * @see buzzdict_rawget
+ */
 #define buzzdict_get(dt, key, type) ((type*)buzzdict_rawget(dt, key))
 
 #endif
