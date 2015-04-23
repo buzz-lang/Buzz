@@ -46,6 +46,7 @@ extern "C" {
       uint32_t num_buckets;      // Number of buckets
       buzzdict_hashfunp hashf;   // Key hashing function
       buzzdict_key_cmpp keycmpf; // Key comparison function
+      buzzdict_elem_funp dstryf; // Element destroy function
       uint32_t key_size;         // Key size in bytes
       uint32_t data_size;        // Data size in bytes
    };
@@ -58,13 +59,15 @@ extern "C" {
     * @param data_size The size of a data element.
     * @param hashf The function to hash the keys.
     * @param keycmpf The function to compare the keys.
+    * @param dstryf The function to destroy an element. Can be NULL.
     * @return A new dictionary.
     */
    extern buzzdict_t buzzdict_new(uint32_t buckets,
                                   uint32_t key_size,
                                   uint32_t data_size,
                                   buzzdict_hashfunp hashf,
-                                  buzzdict_key_cmpp keycmpf);
+                                  buzzdict_key_cmpp keycmpf,
+                                  buzzdict_elem_funp dstryf);
 
    /*
     * Destroys the given dictionary.

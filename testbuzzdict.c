@@ -30,7 +30,8 @@ int main() {
                                 sizeof(int16_t),
                                 sizeof(float),
                                 di_hash,
-                                di_cmp);
+                                di_cmp,
+                                NULL);
    int16_t k;
    float d;
    di_print(di);

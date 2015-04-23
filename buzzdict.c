@@ -17,10 +17,9 @@ struct buzzdict_entry_s {
    e.data = malloc(dt->data_size);              \
    memcpy(e.data, d, dt->data_size);
 
-void buzzdict_entry_destroy(uint32_t pos, void* data, void* params) {
-   struct buzzdict_entry_s* e = (struct buzzdict_entry_s*)data;
-   free(e->key);
-   free(e->data);
+void buzzdict_entry_destroy(const void* key, void* data, void* params) {
+   free((void*)key);
+   free(data);
 }
 
 /****************************************/
@@ -30,13 +29,15 @@ buzzdict_t buzzdict_new(uint32_t buckets,
                         uint32_t key_size,
                         uint32_t data_size,
                         buzzdict_hashfunp hashf,
-                        buzzdict_key_cmpp keycmpf) {
+                        buzzdict_key_cmpp keycmpf,
+                        buzzdict_elem_funp dstryf) {
    /* Create new dict. calloc() zeroes everything */
    buzzdict_t dt = (buzzdict_t)calloc(1, sizeof(struct buzzdict_s));
    /* Fill in the info */
    dt->num_buckets = buckets;
    dt->hashf = hashf;
    dt->keycmpf = keycmpf;
+   dt->dstryf = dstryf ? dstryf : buzzdict_entry_destroy;
    dt->key_size = key_size;
    dt->data_size = data_size;
    /* Create buckets. Unused buckets are NULL by default. */
@@ -51,7 +52,14 @@ buzzdict_t buzzdict_new(uint32_t buckets,
 void buzzdict_destroy(buzzdict_t* dt) {
    /* Destroy buckets */
    for(uint32_t i = 0; i < (*dt)->num_buckets; ++i) {
+      /* Is the bucket used? */
       if((*dt)->buckets[i] != NULL) {
+         /* Destroy elements in the bucket */
+         for(uint32_t j = 0; j < buzzdarray_size((*dt)->buckets[i]); ++j) {
+            struct buzzdict_entry_s* e = buzzdarray_get((*dt)->buckets[i], j, struct buzzdict_entry_s);
+            (*dt)->dstryf(e->key, e->data, *dt);
+         }
+         /* Destroy bucket */
          buzzdarray_destroy(&((*dt)->buckets[i]));
       }
    }
@@ -91,7 +99,7 @@ void buzzdict_set(buzzdict_t dt,
    /* Is the bucket empty? */
    if(!dt->buckets[h]) {
       /* Create new entry list */
-      dt->buckets[h] = buzzdarray_new(1, sizeof(struct buzzdict_entry_s), buzzdict_entry_destroy);
+      dt->buckets[h] = buzzdarray_new(1, sizeof(struct buzzdict_entry_s), NULL);
       /* Add entry */
       buzzdict_entry_new(dt, e, key, data);
       buzzdarray_push(dt->buckets[h], &e);

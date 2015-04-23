@@ -1,4 +1,5 @@
 #include "buzzvm.h"
+#include "buzzvstig.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -7,8 +8,10 @@
 /****************************************/
 
 void buzzvm_vstig_destroy(const void* key, void* data, void* params) {
+   free((void*)key);
    buzzvstig_t* x = (buzzvstig_t*)data;
    buzzvstig_destroy(x);
+   free(x);
 }
 
 /*
@@ -66,7 +69,8 @@ buzzvm_t buzzvm_new() {
                              sizeof(int32_t),
                              sizeof(buzzvstig_t),
                              buzzvm_dict_intkeyhash,
-                             buzzvm_dict_intkeycmp);
+                             buzzvm_dict_intkeycmp,
+                             buzzvm_vstig_destroy);
    /* Return new vm */
    return vm;
 }
@@ -76,13 +80,13 @@ buzzvm_t buzzvm_new() {
 
 void buzzvm_reset(buzzvm_t vm) {
    buzzdarray_clear(vm->stack, 20);
-   buzzdict_foreach(vm->vstigs, buzzvm_vstig_destroy, NULL);
    buzzdict_destroy(&(vm->vstigs));
    vm->vstigs = buzzdict_new(1,
                              sizeof(int32_t),
                              sizeof(buzzvstig_t),
                              buzzvm_dict_intkeyhash,
-                             buzzvm_dict_intkeycmp);
+                             buzzvm_dict_intkeycmp,
+                             NULL);
    vm->pc = 0;
    if(vm->bcode) vm->state = BUZZVM_STATE_READY;
    else vm->state = BUZZVM_STATE_NOCODE;
@@ -95,7 +99,6 @@ void buzzvm_reset(buzzvm_t vm) {
 void buzzvm_destroy(buzzvm_t* vm) {
    buzzdarray_destroy(&(*vm)->stack);
    buzzdarray_destroy(&(*vm)->flist);
-   buzzdict_foreach((*vm)->vstigs, buzzvm_vstig_destroy, NULL);
    buzzdict_destroy(&(*vm)->vstigs);
    free(*vm);
    *vm = 0;
@@ -241,12 +244,15 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
                x->data = v;
                ++(x->timestamp);
                // TODO set robot id
+               buzzvstig_store(*vs, k, x);
             }
             else {
-               // TODO set robot id
-               x = buzzvstig_newelem(v, 1, 0);
+               struct buzzvstig_elem_s y;
+               y.data = v;
+               y.timestamp = 1;
+               y.robot = 0; // TODO set robot id
+               buzzvstig_store(*vs, k, &y);
             }
-            buzzvstig_store(*vs, k, x);
          }
          else {
             /* Ignore commands for virtual stigmergy that is not there */
