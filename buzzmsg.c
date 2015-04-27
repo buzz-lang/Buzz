@@ -12,26 +12,60 @@ static int32_t MAX_MANTISSA = 2147483646; // 2 << 31 - 2;
 /****************************************/
 /****************************************/
 
-void buzzmsg_append(buzzmsg_t msgq,
-                    buzzmsg_type_e type,
-                    uint8_t* payload,
-                    uint32_t size) {
-   buzzmsg_data_t* m = buzzdarray_makeslot(msgq, buzzmsg_size(msgq));
-   *m = malloc(sizeof(struct buzzmsg_data_s));
-   (*m)->type = type;
-   (*m)->size = size;
-   (*m)->payload = (uint8_t*)malloc(size);
-   memcpy((*m)->payload, payload, size);
+void buzzmsg_queue_append(buzzmsg_queue_t msgq,
+                     buzzmsg_t payload) {
+   buzzmsg_t* m = buzzdarray_makeslot(msgq, buzzmsg_queue_size(msgq));
+   *m = payload;
 }
 
 /****************************************/
 /****************************************/
 
-buzzmsg_data_t buzzmsg_extract(buzzmsg_t msgq) {
-   if(buzzmsg_isempty(msgq)) return NULL;
-   buzzmsg_data_t m = *buzzdarray_get(msgq, 0, buzzmsg_data_t);
+buzzmsg_t buzzmsg_queue_extract(buzzmsg_queue_t msgq) {
+   if(buzzmsg_queue_isempty(msgq)) return NULL;
+   buzzmsg_t m = *buzzdarray_get(msgq, 0, buzzmsg_t);
    buzzdarray_remove(msgq, 0);
    return m;
+}
+
+void buzzmsg_serialize_u8(buzzdarray_t buf,
+                          uint8_t data) {
+   buzzdarray_push(buf, &data);
+}
+
+/****************************************/
+/****************************************/
+
+int64_t buzzmsg_deserialize_u8(uint8_t* data,
+                               buzzdarray_t buf,
+                               uint32_t pos) {
+   if(pos + sizeof(uint8_t) > buzzdarray_size(buf)) return -1;
+   *data = (*buzzdarray_get(buf, pos,   uint8_t));
+   return pos + sizeof(uint8_t);
+}
+
+/****************************************/
+/****************************************/
+
+void buzzmsg_serialize_u16(buzzdarray_t buf,
+                           uint16_t data) {
+   uint16_t x = htons(data);
+   buzzdarray_push(buf, (uint8_t*)(&x));
+   buzzdarray_push(buf, (uint8_t*)(&x)+1);
+}
+
+/****************************************/
+/****************************************/
+
+int64_t buzzmsg_deserialize_u16(uint16_t* data,
+                                buzzdarray_t buf,
+                                uint32_t pos) {
+   if(pos + sizeof(uint16_t) > buzzdarray_size(buf)) return -1;
+   *data =
+      (*buzzdarray_get(buf, pos,   uint8_t)     ) +
+      (*buzzdarray_get(buf, pos+1, uint8_t) << 8);
+   *data = ntohs(*data);
+   return pos + sizeof(uint16_t);
 }
 
 /****************************************/
@@ -132,7 +166,7 @@ int64_t buzzmsg_deserialize_float(float* data,
        * 2. Subtract 1, so it's in [0, MAX_MANTISSA]
        * 3. divide by MAX_MANTISSA, so it's in [0,1)
        * 4. divide by 2, so it's in [0,0.5)
-       * 4. Add 0.5, so it's in [0.5,1)
+       * 5. Add 0.5, so it's in [0.5,1)
        */
       *data = (float)(abs(mant) - 1) / (2.0f * MAX_MANTISSA) + 0.5f;
       /* Now use ldexpf() to calculate the absolute value */
@@ -149,9 +183,9 @@ int64_t buzzmsg_deserialize_float(float* data,
 void buzzmsg_serialize_string(buzzdarray_t buf,
                               const char* data) {
    /* Get the length of the string */
-   uint32_t len = strlen(data);
+   uint16_t len = strlen(data);
    /* Push that into the buffer */
-   buzzmsg_serialize_u32(buf, len);
+   buzzmsg_serialize_u16(buf, len);
    /* Go through the characters and push them into the buffer */
    const char* c = data;
    while(*c) {
@@ -167,10 +201,10 @@ extern int64_t buzzmsg_deserialize_string(char** data,
                                           buzzdarray_t buf,
                                           uint32_t pos) {
    /* Make sure there are enough bytes to read the string length */
-   if(pos + sizeof(uint32_t) > buzzdarray_size(buf)) return -1;
+   if(pos + sizeof(uint16_t) > buzzdarray_size(buf)) return -1;
    /* Read the string length */
-   uint32_t len;
-   pos = buzzmsg_deserialize_u32(&len, buf, pos);
+   uint16_t len;
+   pos = buzzmsg_deserialize_u16(&len, buf, pos);
    /* Make sure there are enough bytes to read the string itself */   
    if(pos + len > buzzdarray_size(buf)) return -1;
    /* Create a buffer for the string */

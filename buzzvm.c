@@ -8,56 +8,43 @@
 /****************************************/
 
 void buzzvm_msg_destroy(uint32_t pos, void* data, void* param) {
-   buzzmsg_data_t* m = (buzzmsg_data_t*)data;
-   free(*m);
-   *m = 0;
+   buzzmsg_t* m = (buzzmsg_t*)data;
+   buzzmsg_destroy(m);
 }
+
+void buzzvm_process_inmsgs(buzzvm_t vm) {
+   /* Go through the messages */
+   while(!buzzmsg_queue_isempty(vm->inmsgs)) {
+      /* Extract the message data */
+      buzzmsg_t msg = buzzmsg_queue_extract(vm->inmsgs);
+      /* Dispatch the message wrt its type in msg->payload[0] */
+      switch(buzzmsg_get(msg, 0)) {
+         case BUZZMSG_USER: {
+            fprintf(stderr, "[TODO] %s:%d\n", __FILE__, __LINE__);
+            break;
+         }
+         case BUZZMSG_VSTIG_PUT: {
+            fprintf(stderr, "[TODO] %s:%d\n", __FILE__, __LINE__);
+            break;
+         }
+         case BUZZMSG_VSTIG_QUERY: {
+            fprintf(stderr, "[TODO] %s:%d\n", __FILE__, __LINE__);
+            break;
+         }
+      }
+      /* Get rid of the message */
+      buzzmsg_destroy(&msg);
+   }
+}
+
+/****************************************/
+/****************************************/
 
 void buzzvm_vstig_destroy(const void* key, void* data, void* params) {
    free((void*)key);
    buzzvstig_t* x = (buzzvstig_t*)data;
    buzzvstig_destroy(x);
    free(x);
-}
-
-/*
- * This is the djb2() hash function presented in
- * http://www.cse.yorku.ca/~oz/hash.html.
- */
-uint32_t buzzvm_dict_strkeyhash(const void* key) {
-   /* Treat the key as a string */
-   const char* s = (const char*)key;
-   /* Initialize the hash to something */
-   uint32_t h = 5381;
-   /* Go through the string */
-   int c;
-   while((c = *s++)) {
-      /*
-       * This is equivalent to
-       *
-       * h = h * 33 + c
-       *   = (h * 32 + h) + c
-       *
-       * Why 33 is a good choice, nobody knows
-       * NOTE: in the Java VM they use 31 instead
-       */
-      h = ((h << 5) + h) + c;
-   }
-   return h;
-}
-
-uint32_t buzzvm_dict_intkeyhash(const void* key) {
-   return *(int32_t*)key;
-}
-
-int buzzvm_dict_strkeycmp(const void* a, const void* b) {
-   return strcmp((const char*)a, (const char*)b);
-}
-
-int buzzvm_dict_intkeycmp(const void* a, const void* b) {
-   if(*(int32_t*)a < *(int32_t*)b) return -1;
-   if(*(int32_t*)a > *(int32_t*)b) return  1;
-   return 0;
 }
 
 /****************************************/
@@ -71,14 +58,14 @@ buzzvm_t buzzvm_new() {
    /* Create function list. calloc() takes care of zeroing everything */
    vm->flist = buzzdarray_new(20, sizeof(buzzvm_funp), NULL);
    /* Create message queues */
-   vm->inmsgs = buzzmsg_new(20);
-   vm->outmsgs = buzzmsg_new(20);
+   vm->inmsgs = buzzmsg_queue_new(20);
+   vm->outmsgs = buzzmsg_queue_new(20);
    /* Create virtual stigmergy. */
    vm->vstigs = buzzdict_new(1,
                              sizeof(int32_t),
                              sizeof(buzzvstig_t),
-                             buzzvm_dict_intkeyhash,
-                             buzzvm_dict_intkeycmp,
+                             buzzdict_intkeyhash,
+                             buzzdict_intkeycmp,
                              buzzvm_vstig_destroy);
    /* Return new vm */
    return vm;
@@ -93,8 +80,8 @@ void buzzvm_reset(buzzvm_t vm) {
    vm->vstigs = buzzdict_new(1,
                              sizeof(int32_t),
                              sizeof(buzzvstig_t),
-                             buzzvm_dict_intkeyhash,
-                             buzzvm_dict_intkeycmp,
+                             buzzdict_intkeyhash,
+                             buzzdict_intkeycmp,
                              NULL);
    /* Reset message queues */
    buzzdarray_foreach(vm->inmsgs, buzzvm_msg_destroy, NULL);
@@ -155,6 +142,8 @@ void buzzvm_set_bcode(buzzvm_t vm,
 buzzvm_state buzzvm_step(buzzvm_t vm) {
    /* Can't execute if not ready */
    if(vm->state != BUZZVM_STATE_READY) return vm->state;
+   /* Process messages */
+   buzzvm_process_inmsgs(vm);
    /* Fetch instruction and (potential) argument */
    uint8_t instr = vm->bcode[vm->pc];
    /* Execute instruction */
@@ -238,16 +227,16 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          inc_pc();
          break;
       }
-      case BUZZVM_INSTR_GOSSIP: {
+      case BUZZVM_INSTR_SHOUT: {
          /* Get variable from stack(#1) */
          buzzvm_stack_assert(vm, 1);
-         buzzvar_t* var = &buzzvm_stack_at(vm, 1);
-         /* Serialize it */
+         buzzvar_t var = buzzvm_stack_at(vm, 1);
+         /* Serialize the message */
          buzzdarray_t buf = buzzdarray_new(16, sizeof(uint8_t), NULL);
-         buzzvar_serialize(buf, *var);
+         buzzmsg_serialize_u8(buf, BUZZMSG_USER);
+         buzzvar_serialize(buf, var);
          /* Append it to the out message queue */
-         buzzmsg_append(vm->outmsgs, BUZZMSG_USER, (uint8_t*)buf->data, buzzdarray_size(buf));
-         buzzdarray_destroy(&buf);
+         buzzmsg_queue_append(vm->outmsgs, buf);
          /* Next instruction */
          inc_pc();
          break;

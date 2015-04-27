@@ -7,7 +7,7 @@ void dai_print_elem(uint32_t pos, void* data, void* params) {
 
 void dai_print(buzzdarray_t da) {
    fprintf(stdout, "capacity: %u\n", buzzdarray_capacity(da));
-   fprintf(stdout, "size: %u\n", buzzdarray_size(da));
+   fprintf(stdout, "size: %lld\n", buzzdarray_size(da));
    buzzdarray_foreach(da, dai_print_elem, NULL);
    fprintf(stdout, "\n");
 }

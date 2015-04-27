@@ -1,5 +1,13 @@
 cmake_minimum_required(VERSION 2.8.3)
 
+# Debug flags
+set(CMAKE_C_FLAGS_DEBUG "-g -gdwarf-4")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -gdwarf-4")
+set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-gdwarf-4")
+set(CMAKE_MODULE_LINKER_FLAGS_DEBUG "-gdwarf-4")
+set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "-gdwarf-4")
+
+# Project name
 project(buzz)
 
 # Find the ARGoS package

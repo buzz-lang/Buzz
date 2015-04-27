@@ -30,6 +30,26 @@ buzzdarray_t buzzdarray_new(uint32_t cap,
 /****************************************/
 /****************************************/
 
+buzzdarray_t buzzdarray_frombuffer(void* buf,
+                                   uint32_t buf_size,
+                                   uint32_t elem_size,
+                                   buzzdarray_elem_funp elem_destroy) {
+   /* Create the dynamic array. calloc() zeroes everything. */
+   buzzdarray_t da = (buzzdarray_t)calloc(1, sizeof(struct buzzdarray_s));
+   /* Set info */
+   da->capacity = buf_size / elem_size;
+   da->elem_size = elem_size;
+   da->elem_destroy = elem_destroy ? elem_destroy : buzzdarray_elem_destroy;
+   /* Create initial data */
+   da->data = malloc(buf_size);
+   memcpy(da->data, buf, buf_size);
+   /* Done */
+   return da;
+}
+
+/****************************************/
+/****************************************/
+
 void buzzdarray_destroy(buzzdarray_t* da) {
    /* Get rid of every element */
    buzzdarray_foreach(*da, (*da)->elem_destroy, NULL);

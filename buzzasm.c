@@ -120,7 +120,7 @@ int buzz_asm(const char* fname,
       noarg_instr(BUZZVM_INSTR_GTE);
       noarg_instr(BUZZVM_INSTR_LT);
       noarg_instr(BUZZVM_INSTR_LTE);
-      noarg_instr(BUZZVM_INSTR_GOSSIP);
+      noarg_instr(BUZZVM_INSTR_SHOUT);
       noarg_instr(BUZZVM_INSTR_VSCREATE);
       noarg_instr(BUZZVM_INSTR_VSPUT);
       noarg_instr(BUZZVM_INSTR_VSGET);

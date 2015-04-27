@@ -66,9 +66,25 @@ void CBuzzController::Reset() {
 
 void CBuzzController::ControlStep() {
    /* Go through RAB messages and add them to the FIFO */
-   // m_pcRABS
-   /* Process messages */
-   // TODO
+   const CCI_RangeAndBearingSensor::TReadings& tPackets = m_pcRABS->GetReadings();
+   for(size_t i = 0; i < tPackets.size(); ++i) {
+      /* Copy packet into temporary buffer */
+      CByteArray cData = tPackets[i].Data;
+      /* Go through the messages until there's nothing else to read */
+      UInt16 unMsgSize;
+      do {
+         /* Get payload size */
+         unMsgSize = cData.PopFront<UInt16>();
+         /* Append message to the Buzz input message queue */
+         if(unMsgSize > 0 && cData.Size() >= unMsgSize) {
+            buzzmsg_queue_append(m_tBuzzVM->inmsgs,
+                                 buzzmsg_frombuffer(cData.ToCArray(), unMsgSize));
+            /* Get rid of the data read */
+            for(size_t i = 0; i < unMsgSize; ++i) cData.PopFront<UInt8>();
+         }
+      }
+      while(cData.Size() >= sizeof(UInt16) && unMsgSize > 0);
+   }
    /* Step the VM */
    buzzvm_step(m_tBuzzVM);
    dump(m_tBuzzVM, "[DEBUG] ");

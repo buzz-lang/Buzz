@@ -173,3 +173,51 @@ void buzzdict_foreach(buzzdict_t dt,
 
 /****************************************/
 /****************************************/
+
+uint32_t buzzdict_strkeyhash(const void* key) {
+   /* Treat the key as a string */
+   const char* s = (const char*)key;
+   /* Initialize the hash to something (e.g. a prime number) */
+   uint32_t h = 5381;
+   /* Go through the string */
+   int c;
+   while((c = *s++)) {
+      /*
+       * This is equivalent to
+       *
+       * h = h * 33 + c
+       *   = (h * 32 + h) + c
+       *
+       * Why 33 is a good choice, nobody knows
+       * NOTE: in the Java VM they use 31 instead
+       */
+      h = ((h << 5) + h) + c;
+   }
+   return h;
+}
+
+/****************************************/
+/****************************************/
+
+uint32_t buzzdict_intkeyhash(const void* key) {
+   return *(int32_t*)key;
+}
+
+/****************************************/
+/****************************************/
+
+int buzzdict_strkeycmp(const void* a, const void* b) {
+   return strcmp((const char*)a, (const char*)b);
+}
+
+/****************************************/
+/****************************************/
+
+int buzzdict_intkeycmp(const void* a, const void* b) {
+   if(*(int32_t*)a < *(int32_t*)b) return -1;
+   if(*(int32_t*)a > *(int32_t*)b) return  1;
+   return 0;
+}
+
+/****************************************/
+/****************************************/

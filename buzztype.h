@@ -17,7 +17,8 @@ extern "C" {
       BUZZTYPE_FLOAT,    // 32 bit float value
       BUZZTYPE_STRING,   // string
       BUZZTYPE_TABLE,    // table
-      BUZZTYPE_SWARM     // swarm
+      BUZZTYPE_SWARM,    // swarm
+      BUZZTYPE_CLOSURE,  // closure
    } buzztype_e;
 
    /*
@@ -61,15 +62,24 @@ extern "C" {
    } buzzswarm_t;
 
    /*
+    * Closure
+    */
+   typedef struct {
+      buzztype_e type;
+      uint8_t* value;
+   } buzzclosure_t;
+
+   /*
     * A handle for a variable
     */
    typedef union {
-      buzztype_e type; // variable type
-      buzzint_t    i;  // as integer
-      buzzfloat_t  f;  // as floating-point
-      buzzstring_t s;  // as string
-      buzztable_t  t;  // as table
-      buzzswarm_t  g;  // as swarm (group)
+      buzztype_e    type; // variable type
+      buzzint_t     i;    // as integer
+      buzzfloat_t   f;    // as floating-point
+      buzzstring_t  s;    // as string
+      buzztable_t   t;    // as table
+      buzzswarm_t   g;    // as swarm (group)
+      buzzclosure_t c;    // as closure
    } buzzvar_t;
 
    /*

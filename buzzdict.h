@@ -7,6 +7,10 @@
 extern "C" {
 #endif
 
+   // TODO
+   // CONSIDER USING BRENT'S VARIATION ON HASH COLLISION SOLVING
+   // TODO
+
    /*
     * Function pointer for an element-wise function:
     *
@@ -17,7 +21,7 @@ extern "C" {
     * buzzdict_foreach().
     */
    typedef void (*buzzdict_elem_funp)(const void* key, void* data, void* params);
-   
+
    /*
     * Function pointer for key hashing.
     *
@@ -114,6 +118,39 @@ extern "C" {
    extern void buzzdict_foreach(buzzdict_t dt,
                                 buzzdict_elem_funp fun,
                                 void* params);
+
+   /*
+    * Hash functions for strings.
+    * This is the djb2() hash function presented in
+    * http://www.cse.yorku.ca/~oz/hash.html.
+    * @param key The key to hash, cast to string.
+    * @return A hash for the given key.
+    */
+   uint32_t buzzdict_strkeyhash(const void* key);
+
+   /*
+    * Comparison function for string keys.
+    * @param a The first string key.
+    * @param b The second string key.
+    * @return -1 if a < b; 1 if a > b; 0 if a == b.
+    */
+   int buzzdict_strkeycmp(const void* a, const void* b);
+
+   /*
+    * Hash functions for integers.
+    * TODO
+    * @param key The key to hash, cast to int32_t.
+    * @return A hash for the given key.
+    */
+   uint32_t buzzdict_intkeyhash(const void* key);
+
+   /*
+    * Comparison function for integer keys.
+    * @param a The first key, cast to int32_t.
+    * @param b The second key, cast to int32_t.
+    * @return -1 if a < b; 1 if a > b; 0 if a == b.
+    */
+   int buzzdict_intkeycmp(const void* a, const void* b);
 
 #ifdef __cplusplus
 }
