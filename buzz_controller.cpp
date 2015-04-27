@@ -83,7 +83,7 @@ void CBuzzController::ControlStep() {
             for(size_t i = 0; i < unMsgSize; ++i) cData.PopFront<UInt8>();
          }
       }
-      while(cData.Size() >= sizeof(UInt16) && unMsgSize > 0);
+      while(cData.Size() > sizeof(UInt16) && unMsgSize > 0);
    }
    /* Step the VM */
    buzzvm_step(m_tBuzzVM);
@@ -91,7 +91,26 @@ void CBuzzController::ControlStep() {
    /* Apply actuation */
    // TODO
    /* Send messages from FIFO */
-   // m_pcRABA
+   CByteArray cData;
+   do {
+      /* Are there more messages? */
+      if(buzzmsg_queue_isempty(m_tBuzzVM->outmsgs)) break;
+      /* Make sure the next message fits the data buffer */
+      if(buzzmsg_size(buzzmsg_queue_get(m_tBuzzVM->outmsgs, 0)) +
+         sizeof(UInt16) > m_pcRABA->GetSize()) break;
+      /* Extract message */
+      buzzmsg_t m = buzzmsg_queue_extract(m_tBuzzVM->outmsgs);
+      /* Add message length to data buffer */
+      cData << static_cast<UInt16>(buzzmsg_size(m));
+      /* Add payload to data buffer */
+      cData.AddBuffer(reinterpret_cast<UInt8*>(m->data), buzzmsg_size(m));
+      /* Get rid of message */
+      buzzmsg_destroy(&m);
+   } while(1);
+   /* Pad the rest of the data with zeroes */
+   while(cData.Size() < m_pcRABA->GetSize()) cData << static_cast<UInt8>(0);
+   /* Send message */
+   m_pcRABA->SetData(cData);
 }
 
 /****************************************/

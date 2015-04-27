@@ -190,6 +190,14 @@ extern "C" {
 #define buzzmsg_queue_isempty(msgq) buzzdarray_isempty(msgq)
 
 /*
+ * Returns the message at the given position in the queue.
+ * @param msg The message queue.
+ * @param pos The position.
+ * @return The message at the given position.
+ */
+#define buzzmsg_queue_get(msg, pos) (*buzzdarray_get(msg, pos, buzzmsg_t))
+
+/*
  * Create a new message.
  * @param cap The initial capacity of the message payload. Must be >0.
  */
@@ -221,6 +229,6 @@ extern "C" {
  * @param pos The position.
  * @return The byte at the given position.
  */
-#define buzzmsg_get(msg, pos) *buzzdarray_get(msg, pos, uint8_t)
+#define buzzmsg_get(msg, pos) (*buzzdarray_get(msg, pos, uint8_t))
 
 #endif
