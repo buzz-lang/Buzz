@@ -6,7 +6,7 @@
 /****************************************/
 
 void buzzvstig_elem_destroy(const void* key, void* data, void* params) {
-   buzzvstig_elem_t x = (buzzvstig_elem_t)data;
+   buzzvstig_elem_t* x = (buzzvstig_elem_t*)data;
    // TODO: take care of string, table, and swarm
    free((void*)key);
    free(data);
@@ -19,7 +19,7 @@ buzzvstig_t buzzvstig_new() {
    return buzzdict_new(
       20,
       sizeof(int32_t),
-      sizeof(struct buzzvstig_elem_s),
+      sizeof(buzzvstig_elem_t),
       buzzdict_intkeyhash,
       buzzdict_intkeycmp,
       buzzvstig_elem_destroy);
@@ -30,7 +30,7 @@ buzzvstig_t buzzvstig_new() {
 
 void buzzvstig_elem_serialize(buzzdarray_t buf,
                               int32_t key,
-                              buzzvstig_elem_t data) {
+                              const buzzvstig_elem_t* data) {
    /* Serialize the key */
    buzzmsg_serialize_u32(buf, key);
    /* Serialize the data */
@@ -45,7 +45,7 @@ void buzzvstig_elem_serialize(buzzdarray_t buf,
 /****************************************/
 
 int64_t buzzvstig_elem_deserialize(int32_t* key,
-                                   buzzvstig_elem_t data,
+                                   buzzvstig_elem_t* data,
                                    buzzdarray_t buf,
                                    uint32_t pos) {
    int64_t p = pos;

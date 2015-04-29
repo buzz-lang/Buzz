@@ -16,7 +16,7 @@ extern "C" {
       uint32_t timestamp;
       uint32_t robot;
    };
-   typedef struct buzzvstig_elem_s* buzzvstig_elem_t;
+   typedef struct buzzvstig_elem_s buzzvstig_elem_t;
 
    /*
     * The virtual stigmergy data.
@@ -30,15 +30,6 @@ extern "C" {
    extern buzzvstig_t buzzvstig_new();
 
    /*
-    * Looks for an element in a virtual stigmergy structure.
-    * @param vs The virtual stigmergy structure.
-    * @param key The key to look for.
-    * @return The data associated to the key, or NULL if not found.
-    */
-   extern buzzvstig_elem_t buzzvstig_fetch(buzzvstig_t vs,
-                                           int32_t key);
-
-   /*
     * Serializes an element in the virtual stigmergy.
     * The data is appended to the given buffer. The buffer is treated as a
     * dynamic array of uint8_t.
@@ -46,9 +37,9 @@ extern "C" {
     * @param key The key of the element to serialize.
     * @param data The data of the element to serialize.
     */
-   extern void buzzvstig_elem_serialize(buzzdarray_t buf,
+   extern void buzzvstig_elem_serialize(buzzmsg_t buf,
                                         int32_t key,
-                                        const buzzvstig_elem_t data);
+                                        const buzzvstig_elem_t* data);
 
    /*
     * Deserializes a virtual stigmergy element.
@@ -61,8 +52,8 @@ extern "C" {
     * @return The new position in the buffer, of -1 in case of error.
     */
    extern int64_t buzzvstig_elem_deserialize(int32_t* key,
-                                             buzzvstig_elem_t data,
-                                             buzzdarray_t buf,
+                                             buzzvstig_elem_t* data,
+                                             buzzmsg_t buf,
                                              uint32_t pos);
    
 #ifdef __cplusplus
@@ -81,7 +72,7 @@ extern "C" {
  * @param key The key to look for.
  * @return The data associated to the key, or NULL if not found.
  */
-#define buzzvstig_fetch(vs, key) buzzdict_get((vs), &(key), struct buzzvstig_elem_s)
+#define buzzvstig_fetch(vs, key) buzzdict_get((vs), &(key), buzzvstig_elem_t)
 
 /*
  * Puts data into a virtual stigmergy structure.

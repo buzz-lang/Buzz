@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
    strcat(fdeasm, ".tmp");
    buzz_deasm(bcode_buf, bcode_size, fdeasm);
    /* Create new VM */
-   buzzvm_t vm = buzzvm_new();
+   buzzvm_t vm = buzzvm_new(1);
    /* Register hook function */
    buzzvm_register_function(vm, hook);
    /* Set byte code */

@@ -13,13 +13,21 @@ extern "C" {
     * Variable types in Buzz
     */
    typedef enum {
-      BUZZTYPE_INT = 0,  // 32 bit signed integer
-      BUZZTYPE_FLOAT,    // 32 bit float value
-      BUZZTYPE_STRING,   // string
-      BUZZTYPE_TABLE,    // table
-      BUZZTYPE_SWARM,    // swarm
-      BUZZTYPE_CLOSURE,  // closure
+      BUZZTYPE_NIL = 0, // nil
+      BUZZTYPE_INT,     // 32 bit signed integer
+      BUZZTYPE_FLOAT,   // 32 bit float value
+      BUZZTYPE_STRING,  // string
+      BUZZTYPE_TABLE,   // table
+      BUZZTYPE_SWARM,   // swarm
+      BUZZTYPE_CLOSURE, // closure
    } buzztype_e;
+
+   /*
+    * Nil
+    */
+   typedef struct {
+      buzztype_e type;
+   } buzznil_t;
 
    /*
     * Integer
@@ -74,6 +82,7 @@ extern "C" {
     */
    typedef union {
       buzztype_e    type; // variable type
+      buzznil_t     n;    // as nil
       buzzint_t     i;    // as integer
       buzzfloat_t   f;    // as floating-point
       buzzstring_t  s;    // as string

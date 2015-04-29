@@ -106,6 +106,7 @@ int buzz_asm(const char* fname,
       /* Interpret the instruction */
       noarg_instr(BUZZVM_INSTR_NOP);
       noarg_instr(BUZZVM_INSTR_DONE);
+      noarg_instr(BUZZVM_INSTR_PUSHNIL);
       noarg_instr(BUZZVM_INSTR_POP);
       noarg_instr(BUZZVM_INSTR_RET);
       noarg_instr(BUZZVM_INSTR_ADD);

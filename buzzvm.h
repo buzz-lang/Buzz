@@ -40,6 +40,7 @@ extern "C" {
        */
       BUZZVM_INSTR_NOP = 0,  // No operation
       BUZZVM_INSTR_DONE,     // End of the program
+      BUZZVM_INSTR_PUSHNIL,  // Push nil onto stack
       BUZZVM_INSTR_POP,      // Pop value from stack
       BUZZVM_INSTR_RET,      // Sets PC to value at stack top, then pops it
       BUZZVM_INSTR_ADD,      // Push stack(#1) + stack(#2), pop operands
@@ -72,7 +73,7 @@ extern "C" {
       BUZZVM_INSTR_JUMPSUB,  // Push current PC and sets PC to argument
       BUZZVM_INSTR_CALL,     // Calls the C function pointed to by the argument
    } buzzvm_instr;
-   static const char *buzzvm_instr_desc[] = {"nop", "done", "pop", "ret", "add", "sub", "mul", "div", "and", "or", "not", "eq", "gt", "gte", "lt", "lte", "shout", "vscreate", "vsput", "vsget", "pushf", "pushi", "dup", "jump", "jumpz", "jumpnz", "jumpsub", "call"};
+   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret", "add", "sub", "mul", "div", "and", "or", "not", "eq", "gt", "gte", "lt", "lte", "shout", "vscreate", "vsput", "vsget", "pushf", "pushi", "dup", "jump", "jumpz", "jumpnz", "jumpsub", "call"};
 
    /*
     * Function pointer for BUZZVM_INSTR_CALL.
@@ -106,14 +107,17 @@ extern "C" {
       buzzvm_state state;
       /* Current VM error */
       buzzvm_error error;
+      /* Robot id */
+      uint32_t robot;
    };
    typedef struct buzzvm_s* buzzvm_t;
 
    /*
     * Creates a new VM.
+    * @param robot The robot id.
     * @return The VM data.
     */
-   extern buzzvm_t buzzvm_new();
+   extern buzzvm_t buzzvm_new(uint32_t robot);
 
    /*
     * Resets the VM.
@@ -200,6 +204,12 @@ extern "C" {
  * @param v The variable.
  */
 #define buzzvm_push(vm, v) buzzdarray_push((vm)->stack, (v))
+
+/*
+ * Pushes nil on the stack.
+ * @param vm The VM data.
+ */
+#define buzzvm_pushnil(vm) { buzzvar_t* var = (buzzvar_t*)buzzdarray_makeslot((vm)->stack, buzzvm_stack_top(vm)); var->i.type = BUZZTYPE_NIL; }
 
 /*
  * Pushes a 32 bit signed int value on the stack.

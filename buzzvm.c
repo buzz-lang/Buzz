@@ -20,23 +20,107 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
       /* Dispatch the message wrt its type in msg->payload[0] */
       switch(buzzmsg_get(msg, 0)) {
          case BUZZMSG_USER: {
-            fprintf(stderr, "[TODO] %s:%d\n", __FILE__, __LINE__);
+            fprintf(stderr, "[TODO] [ROBOT %u] %s:%d\n", vm->robot, __FILE__, __LINE__);
             break;
          }
          case BUZZMSG_VSTIG_PUT: {
-            fprintf(stderr, "[TODO] %s:%d\n", __FILE__, __LINE__);
+            /* Deserialize the vstig id */
+            int32_t id;
+            int64_t pos = buzzmsg_deserialize_u32((uint32_t*)(&id), msg, 1);
+            if(pos < 0) {
+               fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_VSTIG_PUT message received\n", vm->robot);
+               break;
+            }
+            /* Look for virtual stigmergy */
+            buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
+            if(vs) {
+               /* Virtual stigmergy found */
+               /* Deserialize key and value from msg */
+               int32_t k;                 // key
+               buzzvstig_elem_t v; // value
+               if(buzzvstig_elem_deserialize(&k, &v, msg, pos) > 0) {
+                  /* Deserialization successful */
+                  /* Fetch local vstig element */
+                  buzzvstig_elem_t* l = buzzvstig_fetch(*vs, k);
+                  if((!l) ||                     /* Element not found */
+                     l->timestamp <= v.timestamp /* Local element might be equal age or older */
+                     ) {
+                     if(l->timestamp < v.timestamp) {
+                        /* Local element is older */
+                        /* Store element */
+                        buzzvstig_store(*vs, k, &v);
+                        /* Broadcast PUT */
+                        buzzdarray_t buf = buzzmsg_new(16);
+                        buzzmsg_serialize_u8(buf, BUZZMSG_VSTIG_PUT);
+                        buzzmsg_serialize_u32(buf, id);
+                        buzzvstig_elem_serialize(buf, k, &v);
+                        /* Append the message to the out message queue */
+                        buzzmsg_queue_append(vm->outmsgs, buf);
+                     }
+                     else if(l->robot != v.robot) {
+                        /* Local element conflicts with received one */
+                        // TODO
+                     }
+                  }
+               }
+               else {
+                  fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_VSTIG_PUT message received\n", vm->robot);
+               }
+            }
             break;
          }
          case BUZZMSG_VSTIG_QUERY: {
-            fprintf(stderr, "[TODO] %s:%d\n", __FILE__, __LINE__);
+            /* Deserialize the vstig id */
+            int32_t id;
+            int64_t pos = buzzmsg_deserialize_u32((uint32_t*)(&id), msg, 1);
+            if(pos < 0) {
+               fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_VSTIG_PUT message received\n", vm->robot);
+               break;
+            }
+            /* Look for virtual stigmergy */
+            buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
+            if(vs) {
+               /* Virtual stigmergy found */
+               /* Deserialize key and value from msg */
+               int32_t k;                 // key
+               buzzvstig_elem_t v; // value
+               if(buzzvstig_elem_deserialize(&k, &v, msg, pos) > 0) {
+                  /* Deserialization successful */
+                  /* Fetch local vstig element */
+                  buzzvstig_elem_t* l = buzzvstig_fetch(*vs, k);
+                  if((!l) ||                    /* Element not found */
+                     l->timestamp < v.timestamp /* Local element is older */
+                     ) {
+                     /* Store element */
+                     buzzvstig_store(*vs, k, &v);
+                     /* Broadcast PUT */
+                     buzzdarray_t buf = buzzmsg_new(16);
+                     buzzmsg_serialize_u8(buf, BUZZMSG_VSTIG_PUT);
+                     buzzmsg_serialize_u32(buf, id);
+                     buzzvstig_elem_serialize(buf, k, &v);
+                     /* Append the message to the out message queue */
+                     buzzmsg_queue_append(vm->outmsgs, buf);
+                  }
+                  else if(l->timestamp > v.timestamp) {
+                     /* Local element is newer */
+                     /* Broadcast PUT */
+                     buzzdarray_t buf = buzzmsg_new(16);
+                     buzzmsg_serialize_u8(buf, BUZZMSG_VSTIG_PUT);
+                     buzzmsg_serialize_u32(buf, id);
+                     buzzvstig_elem_serialize(buf, k, l);
+                     /* Append the message to the out message queue */
+                     buzzmsg_queue_append(vm->outmsgs, buf);
+                  }
+               }
+            }
             break;
          }
+         /* Get rid of the message */
+         buzzmsg_destroy(&msg);
       }
-      /* Get rid of the message */
-      buzzmsg_destroy(&msg);
    }
 }
-
+   
 /****************************************/
 /****************************************/
 
@@ -50,7 +134,7 @@ void buzzvm_vstig_destroy(const void* key, void* data, void* params) {
 /****************************************/
 /****************************************/
 
-buzzvm_t buzzvm_new() {
+buzzvm_t buzzvm_new(uint32_t robot) {
    /* Create VM state. calloc() takes care of zeroing everything */
    buzzvm_t vm = (buzzvm_t)calloc(1, sizeof(struct buzzvm_s));
    /* Create stack. */
@@ -67,6 +151,8 @@ buzzvm_t buzzvm_new() {
                              buzzdict_intkeyhash,
                              buzzdict_intkeycmp,
                              buzzvm_vstig_destroy);
+   /* Take care of the robot id */
+   vm->robot = robot;
    /* Return new vm */
    return vm;
 }
@@ -156,6 +242,11 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          buzzvm_done(vm);
          break;
       }
+      case BUZZVM_INSTR_PUSHNIL: {
+         inc_pc();
+         buzzvm_pushnil(vm);
+         break;
+      }
       case BUZZVM_INSTR_POP: {
          buzzvm_pop(vm);
          inc_pc();
@@ -232,7 +323,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          buzzvm_stack_assert(vm, 1);
          buzzvar_t var = buzzvm_stack_at(vm, 1);
          /* Serialize the message */
-         buzzdarray_t buf = buzzdarray_new(16, sizeof(uint8_t), NULL);
+         buzzdarray_t buf = buzzmsg_new(16);
          buzzmsg_serialize_u8(buf, BUZZMSG_USER);
          buzzvar_serialize(buf, var);
          /* Append it to the out message queue */
@@ -267,25 +358,33 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          /* Look for virtual stigmergy */
          buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
          if(vs) {
-            /* Found, update it */
-            buzzvstig_elem_t x = buzzvstig_fetch(*vs, k);
+            /* Found, prepare the PUT message */
+            buzzdarray_t buf = buzzmsg_new(16);
+            buzzmsg_serialize_u8(buf, BUZZMSG_VSTIG_PUT);
+            buzzmsg_serialize_u32(buf, id);
+            /* Update the element */
+            buzzvstig_elem_t* x = buzzvstig_fetch(*vs, k);
             if(x) {
                x->data = v;
                ++(x->timestamp);
-               // TODO set robot id
+               x->robot = vm->robot;
                buzzvstig_store(*vs, k, x);
+               buzzvstig_elem_serialize(buf, k, x);
             }
             else {
-               struct buzzvstig_elem_s y;
+               buzzvstig_elem_t y;
                y.data = v;
                y.timestamp = 1;
-               y.robot = 0; // TODO set robot id
+               y.robot = vm->robot;
                buzzvstig_store(*vs, k, &y);
+               buzzvstig_elem_serialize(buf, k, &y);
             }
+            /* Append the message to the out message queue */
+            buzzmsg_queue_append(vm->outmsgs, buf);
          }
          else {
             /* Ignore commands for virtual stigmergy that is not there */
-            fprintf(stderr, "[WARNING] No virtual stigmergy with id %d\n", id);
+            fprintf(stderr, "[WARNING] [ROBOT %u] No virtual stigmergy with id %d\n", vm->robot, id);
          }
          /* Pop operands */
          buzzvm_pop(vm);
@@ -304,18 +403,39 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          /* Pop operands */
          buzzvm_pop(vm);
          buzzvm_pop(vm);
+         /* Prepare the QUERY message */
+         buzzdarray_t buf = buzzmsg_new(16);
+         buzzmsg_serialize_u8(buf, BUZZMSG_VSTIG_QUERY);         
+         buzzmsg_serialize_u32(buf, id);
          /* Look for virtual stigmergy */
          buzzdict_t* vs = buzzdict_get(vm->vstigs, &id, buzzdict_t);
          if(vs) {
             /* Virtual stigmergy found, look for key and push result */
-            buzzvstig_elem_t e = buzzvstig_fetch(*vs, k);
-            if(e) buzzvm_push(vm, &(e->data));
-            else buzzvm_pushi(vm, 0);
+            buzzvstig_elem_t* e = buzzvstig_fetch(*vs, k);
+            if(e) {
+               buzzvm_push(vm, &(e->data));
+               buzzvstig_elem_serialize(buf, k, e);
+            }
+            else {
+               buzzvm_pushnil(vm);
+               buzzvstig_elem_t x;
+               x.data.type = BUZZTYPE_NIL;
+               x.timestamp = 1;
+               x.robot = vm->robot;
+               buzzvstig_elem_serialize(buf, k, &x);
+            }
          }
          else {
             /* No virtual stigmergy found, push false */
-            buzzvm_pushi(vm, 0);
+            buzzvm_pushnil(vm);
+            buzzvstig_elem_t x;
+            x.data.type = BUZZTYPE_NIL;
+            x.timestamp = 1;
+            x.robot = vm->robot;
+            buzzvstig_elem_serialize(buf, k, &x);
          }
+         /* Append the message to the out message queue */
+         buzzmsg_queue_append(vm->outmsgs, buf);
          /* Next instruction */
          inc_pc();
          break;
@@ -391,7 +511,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
 /****************************************/
 
 int64_t buzzvm_register_function(buzzvm_t vm,
-                                  buzzvm_funp funp) {
+                                 buzzvm_funp funp) {
    buzzdarray_push(vm->flist, funp);
    return buzzdarray_size(vm->flist) - 1;
 }

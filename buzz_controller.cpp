@@ -39,7 +39,7 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
    m_pcRABA = GetActuator<CCI_RangeAndBearingActuator>("range_and_bearing");
    m_pcRABS = GetSensor  <CCI_RangeAndBearingSensor  >("range_and_bearing");
    /* Create a new BuzzVM */
-   m_tBuzzVM = buzzvm_new();
+   m_tBuzzVM = buzzvm_new(1); // TODO
    /* Get the bytecode filename */
    std::string strFName;
    GetNodeAttribute(t_node, "script", strFName);
