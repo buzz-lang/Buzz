@@ -5,59 +5,67 @@
 #include <buzzmsg.h>
 #include <stdint.h>
 
+/*
+ * Object types in Buzz
+ */
+#define BUZZTYPE_NIL     0
+#define BUZZTYPE_INT     1
+#define BUZZTYPE_FLOAT   2
+#define BUZZTYPE_STRING  3
+#define BUZZTYPE_TABLE   4
+#define BUZZTYPE_SWARM   5
+#define BUZZTYPE_CLOSURE 6
+
+/*
+ * Info extraction from an object
+ */
+#define buzzobj_type(v)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
    /*
-    * Variable types in Buzz
-    */
-   typedef enum {
-      BUZZTYPE_NIL = 0, // nil
-      BUZZTYPE_INT,     // 32 bit signed integer
-      BUZZTYPE_FLOAT,   // 32 bit float value
-      BUZZTYPE_STRING,  // string
-      BUZZTYPE_TABLE,   // table
-      BUZZTYPE_SWARM,   // swarm
-      BUZZTYPE_CLOSURE, // closure
-   } buzztype_e;
-
-   /*
     * Nil
     */
    typedef struct {
-      buzztype_e type;
+      uint16_t type;
+      uint8_t  marked;
    } buzznil_t;
 
    /*
-    * Integer
+    * 32-bit signed integer
     */
    typedef struct {
-      buzztype_e type;
-      int32_t value;
+      uint16_t type;
+      uint8_t  marked;
+      int32_t  value;
    } buzzint_t;
 
    /*
-    * Floating-point
+    * 32-bit floating-point
     */
    typedef struct {
-      buzztype_e type;
-      float value;
+      uint16_t type;
+      uint8_t  marked;
+      float    value;
    } buzzfloat_t;
 
    /*
     * String
     */
    typedef struct {
-      buzztype_e type;
-      char* value;
+      uint16_t type;
+      uint8_t  marked;
+      char*    value;
    } buzzstring_t;
 
    /*
     * Table
     */
    typedef struct {
-      buzztype_e type;
+      uint16_t   type;
+      uint8_t    marked;
       buzzdict_t value;
    } buzztable_t;
 
@@ -65,7 +73,8 @@ extern "C" {
     * Swarm
     */
    typedef struct {
-      buzztype_e type;
+      uint16_t   type;
+      uint8_t    marked;
       buzzdict_t value;
    } buzzswarm_t;
 
@@ -73,36 +82,38 @@ extern "C" {
     * Closure
     */
    typedef struct {
-      buzztype_e type;
+      uint16_t type;
       uint8_t* value;
    } buzzclosure_t;
 
    /*
-    * A handle for a variable
+    * A handle for a object
     */
-   typedef union {
-      buzztype_e    type; // variable type
-      buzznil_t     n;    // as nil
-      buzzint_t     i;    // as integer
-      buzzfloat_t   f;    // as floating-point
-      buzzstring_t  s;    // as string
-      buzztable_t   t;    // as table
-      buzzswarm_t   g;    // as swarm (group)
-      buzzclosure_t c;    // as closure
-   } buzzvar_t;
+   union buzzobj_u {
+      uint16_t      type;   // object type
+      uint8_t       marked; // marked in GC
+      buzznil_t     n;      // as nil
+      buzzint_t     i;      // as integer
+      buzzfloat_t   f;      // as floating-point
+      buzzstring_t  s;      // as string
+      buzztable_t   t;      // as table
+      buzzswarm_t   g;      // as swarm (group)
+      buzzclosure_t c;      // as closure
+   };
+   typedef union buzzobj_u* buzzobj_t;
 
    /*
-    * Serializes a Buzz variable.
+    * Serializes a Buzz object.
     * The data is appended to the given buffer. The buffer is treated as a
     * dynamic array of uint8_t.
     * @param buf The output buffer where the serialized data is appended.
     * @param data The data to serialize.
     */
-   extern void buzzvar_serialize(buzzdarray_t buf,
-                                 buzzvar_t data);
+   extern void buzzobj_serialize(buzzdarray_t buf,
+                                 const buzzobj_t data);
 
    /*
-    * Deserializes a Buzz variable.
+    * Deserializes a Buzz object.
     * The data is read from the given buffer starting at the given position.
     * The buffer is treated as a dynamic array of uint8_t.
     * @param data The deserialized data of the element.
@@ -110,7 +121,7 @@ extern "C" {
     * @param pos The position at which the data starts.
     * @return The new position in the buffer, of -1 in case of error.
     */
-   extern int64_t buzzvar_deserialize(buzzvar_t* data,
+   extern int64_t buzzobj_deserialize(buzzobj_t data,
                                       buzzdarray_t buf,
                                       uint32_t pos);
    

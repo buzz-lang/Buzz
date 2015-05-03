@@ -10,12 +10,16 @@ void dump(buzzvm_t vm, const char* prefix) {
    fprintf(stderr, "%sstack max: %lld\tcur: %lld\n", prefix, buzzvm_stack_top(vm), buzzvm_stack_top(vm));
    for(int64_t i = buzzvm_stack_top(vm)-1; i >= 0; --i) {
       fprintf(stderr, "%s\t%lld\t", prefix, i);
-      switch(buzzdarray_get(vm->stack, i, buzzvar_t)->type) {
+      buzzobj_t o = buzzdarray_get(vm->stack, i, buzzobj_t);
+      switch(o->type) {
+         case BUZZTYPE_NIL:
+            fprintf(stderr, "[nil]\n");
+            break;
          case BUZZTYPE_INT:
-            fprintf(stderr, "[int] %d\n", buzzdarray_get(vm->stack, i, buzzvar_t)->i.value);
+            fprintf(stderr, "[int] %d\n", o->i.value);
             break;
          case BUZZTYPE_FLOAT:
-            fprintf(stderr, "[float] %f\n", buzzdarray_get(vm->stack, i, buzzvar_t)->f.value);
+            fprintf(stderr, "[float] %f\n", o->f.value);
             break;
          default:
             fprintf(stderr, "[TODO]\n");

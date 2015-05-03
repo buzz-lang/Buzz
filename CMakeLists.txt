@@ -25,6 +25,7 @@ add_library(buzz SHARED
   buzzdarray.h buzzdarray.c
   buzzdict.h buzzdict.c
   buzztype.h buzztype.c
+  buzzheap.h buzzheap.c
   buzzmsg.h buzzmsg.c
   buzzvstig.h buzzvstig.c
   buzzvm.h buzzvm.c

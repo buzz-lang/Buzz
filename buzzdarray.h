@@ -87,9 +87,11 @@ extern "C" {
 
    /*
     * Inserts an element at the given position.
+    * The element must be passed as a pointer. The pointed data is copied
+    * into the data structure.
     * @param da The dynamic array.
     * @param pos The position.
-    * @param data The element to add.
+    * @param data A pointer to the element to add.
     */
    extern void buzzdarray_insert(buzzdarray_t da,
                                  uint32_t pos,
@@ -165,7 +167,7 @@ extern "C" {
  * @param pos The position.
  * @return The element at the given position.
  */
-#define buzzdarray_get(da, pos, type) ((type*)((da)->data) + (pos))
+#define buzzdarray_get(da, pos, type) (*((type*)((da)->data) + (pos)))
 
 /*
  * Returns the size of the dynamic array.
@@ -191,8 +193,10 @@ extern "C" {
 /*
  * Pushes an element in the dynamic array.
  * The element is appended.
+ * Internally calls buzzdarray_insert().
  * @param da The dynamic array.
  * @param data The element to add.
+ * @see buzzdarray_insert()
  */
 #define buzzdarray_push(da, data) buzzdarray_insert(da, buzzdarray_size(da), data)
 

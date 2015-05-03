@@ -137,8 +137,10 @@ void buzzvm_vstig_destroy(const void* key, void* data, void* params) {
 buzzvm_t buzzvm_new(uint32_t robot) {
    /* Create VM state. calloc() takes care of zeroing everything */
    buzzvm_t vm = (buzzvm_t)calloc(1, sizeof(struct buzzvm_s));
-   /* Create stack. */
-   vm->stack = buzzdarray_new(20, sizeof(buzzvar_t), NULL);
+   /* Create stack */
+   vm->stack = buzzdarray_new(20, sizeof(buzzobj_t), NULL);
+   /* Create heap */
+   vm->heap = buzzheap_new();
    /* Create function list. calloc() takes care of zeroing everything */
    vm->flist = buzzdarray_new(20, sizeof(buzzvm_funp), NULL);
    /* Create message queues */
@@ -190,6 +192,8 @@ void buzzvm_reset(buzzvm_t vm) {
 void buzzvm_destroy(buzzvm_t* vm) {
    /* Get rid of the stack */
    buzzdarray_destroy(&(*vm)->stack);
+   /* Get rid of the heap */
+   buzzheap_destroy(&(*vm)->heap);
    /* Get rid of the function list */
    buzzdarray_destroy(&(*vm)->flist);
    /* Get rid of the message queues */
@@ -254,7 +258,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       }
       case BUZZVM_INSTR_RET: {
          buzzvm_pop(vm);
-         vm->pc = buzzvm_stack_at(vm, 0).i.value;
+         vm->pc = buzzvm_stack_at(vm, 0)->i.value;
          assert_pc(vm->pc);
          break;
       }
@@ -321,11 +325,11 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       case BUZZVM_INSTR_SHOUT: {
          /* Get variable from stack(#1) */
          buzzvm_stack_assert(vm, 1);
-         buzzvar_t var = buzzvm_stack_at(vm, 1);
+         buzzobj_t var = buzzvm_stack_at(vm, 1);
          /* Serialize the message */
          buzzdarray_t buf = buzzmsg_new(16);
          buzzmsg_serialize_u8(buf, BUZZMSG_USER);
-         buzzvar_serialize(buf, var);
+         buzzobj_serialize(buf, var);
          /* Append it to the out message queue */
          buzzmsg_queue_append(vm->outmsgs, buf);
          /* Next instruction */
@@ -335,7 +339,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       case BUZZVM_INSTR_VSCREATE: {
          /* Get integer id from stack(#1) */
          buzzvm_stack_assert(vm, 1);
-         int32_t id = buzzvm_stack_at(vm, 1).i.value;
+         int32_t id = buzzvm_stack_at(vm, 1)->i.value;
          /* Create virtual stigmergy if not present already */
          if(!buzzdict_get(vm->vstigs, &id, buzzdict_t)) {
             buzzvstig_t vs = buzzvstig_new();
@@ -350,11 +354,11 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       case BUZZVM_INSTR_VSPUT: {
          buzzvm_stack_assert(vm, 3);
          /* Get integer id from stack(#3) */
-         int32_t id = buzzvm_stack_at(vm, 3).i.value;
+         int32_t id = buzzvm_stack_at(vm, 3)->i.value;
          /* Get integer key from stack(#2) */
-         int32_t k = buzzvm_stack_at(vm, 2).i.value;
+         int32_t k = buzzvm_stack_at(vm, 2)->i.value;
          /* Get value from stack(#1) */
-         buzzvar_t v = buzzvm_stack_at(vm, 1);
+         buzzobj_t v = buzzvm_stack_at(vm, 1);
          /* Look for virtual stigmergy */
          buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
          if(vs) {
@@ -397,9 +401,9 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       case BUZZVM_INSTR_VSGET: {
          buzzvm_stack_assert(vm, 2);
          /* Get integer id from stack(#2) */
-         int32_t id = buzzvm_stack_at(vm, 2).i.value;
+         int32_t id = buzzvm_stack_at(vm, 2)->i.value;
          /* Get integer key from stack(#1) */
-         int32_t k = buzzvm_stack_at(vm, 1).i.value;
+         int32_t k = buzzvm_stack_at(vm, 1)->i.value;
          /* Pop operands */
          buzzvm_pop(vm);
          buzzvm_pop(vm);
@@ -413,23 +417,25 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
             /* Virtual stigmergy found, look for key and push result */
             buzzvstig_elem_t* e = buzzvstig_fetch(*vs, k);
             if(e) {
-               buzzvm_push(vm, &(e->data));
+               buzzvm_push(vm, e->data);
                buzzvstig_elem_serialize(buf, k, e);
             }
             else {
                buzzvm_pushnil(vm);
                buzzvstig_elem_t x;
-               x.data.type = BUZZTYPE_NIL;
+               x.data = (buzzobj_t)malloc(sizeof(union buzzobj_u));
+               x.data->type = BUZZTYPE_NIL;
                x.timestamp = 1;
                x.robot = vm->robot;
                buzzvstig_elem_serialize(buf, k, &x);
+               free(x.data);
             }
          }
          else {
             /* No virtual stigmergy found, push false */
             buzzvm_pushnil(vm);
             buzzvstig_elem_t x;
-            x.data.type = BUZZTYPE_NIL;
+            x.data->type = BUZZTYPE_NIL;
             x.timestamp = 1;
             x.robot = vm->robot;
             buzzvstig_elem_serialize(buf, k, &x);
@@ -469,7 +475,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          inc_pc();
          get_arg(uint32_t);
          buzzvm_stack_assert(vm, 1);
-         if(buzzvm_stack_at(vm, 1).i.value == 0) {
+         if(buzzvm_stack_at(vm, 1)->i.value == 0) {
             vm->pc = arg;
             assert_pc(vm->pc);
          }
@@ -479,7 +485,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          inc_pc();
          get_arg(uint32_t);
          buzzvm_stack_assert(vm, 1);
-         if(buzzvm_stack_at(vm, 1).i.value != 0) {
+         if(buzzvm_stack_at(vm, 1)->i.value != 0) {
             vm->pc = arg;
             assert_pc(vm->pc);
          }

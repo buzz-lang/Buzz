@@ -3,6 +3,7 @@
 
 #include <buzzmsg.h>
 #include <buzzvstig.h>
+#include <buzzheap.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -95,6 +96,8 @@ extern "C" {
       int32_t pc;
       /* Stack content */
       buzzdarray_t stack;
+      /* Heap content */
+      buzzheap_t heap;
       /* Registered functions */
       buzzdarray_t flist;
       /* Input message FIFO */
@@ -188,7 +191,7 @@ extern "C" {
  * @param vm The VM data.
  * @param idx The stack index, where 0 is the stack top and >0 goes down the stack.
  */
-#define buzzvm_stack_at(vm, idx) (*buzzdarray_get((vm)->stack, (buzzvm_stack_top(vm) - idx), buzzvar_t))
+#define buzzvm_stack_at(vm, idx) buzzdarray_get((vm)->stack, (buzzvm_stack_top(vm) - idx), buzzobj_t)
 
 /*
  * Terminates the current Buzz script.
@@ -203,27 +206,27 @@ extern "C" {
  * @param vm The VM data.
  * @param v The variable.
  */
-#define buzzvm_push(vm, v) buzzdarray_push((vm)->stack, (v))
+#define buzzvm_push(vm, v) buzzdarray_push((vm)->stack, &(v))
 
 /*
  * Pushes nil on the stack.
  * @param vm The VM data.
  */
-#define buzzvm_pushnil(vm) { buzzvar_t* var = (buzzvar_t*)buzzdarray_makeslot((vm)->stack, buzzvm_stack_top(vm)); var->i.type = BUZZTYPE_NIL; }
+#define buzzvm_pushnil(vm) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_NIL); buzzvm_push(vm, o); }
 
 /*
  * Pushes a 32 bit signed int value on the stack.
  * @param vm The VM data.
  * @param v The value.
  */
-#define buzzvm_pushi(vm, v) { buzzvar_t* var = (buzzvar_t*)buzzdarray_makeslot((vm)->stack, buzzvm_stack_top(vm)); var->i.type = BUZZTYPE_INT; var->i.value = (v); }
+#define buzzvm_pushi(vm, v) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_INT); o->i.value = (v); buzzvm_push(vm, o); }
 
 /*
  * Pushes a float value on the stack.
  * @param vm The VM data.
  * @param v The value.
  */
-#define buzzvm_pushf(vm, v) { buzzvar_t* var = (buzzvar_t*)buzzdarray_makeslot((vm)->stack, buzzvm_stack_top(vm)); var->f.type = BUZZTYPE_FLOAT; var->f.value = (v); }
+#define buzzvm_pushf(vm, v) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_FLOAT); o->f.value = (v); buzzvm_push(vm, o); }
 
 /*
  * Pops the stack.
@@ -242,7 +245,7 @@ extern "C" {
  * @param vm The VM data.
  * @param idx The stack index, where 0 is the stack top and >0 goes down the stack.
  */
-#define buzzvm_dup(vm, idx) buzzvm_stack_assert(vm, idx); buzzvm_pushf(vm, buzzvm_stack_at(vm, idx).f.value);
+#define buzzvm_dup(vm, idx) buzzvm_stack_assert(vm, idx); buzzvm_push(vm, buzzvm_stack_at(vm, idx));
 
 /*
  * Pops two float operands from the stack and pushes the result of a binary operation on them.
@@ -253,7 +256,7 @@ extern "C" {
  * @param vm The VM data.
  * @param oper The binary operation, e.g. + - * /
  */
-#define buzzvm_binary_op_ff(vm, oper) buzzvm_stack_assert((vm), 2); buzzvm_stack_at(vm, 2).f.value = (buzzvm_stack_at(vm, 1).f.value oper buzzvm_stack_at(vm, 2).f.value); buzzdarray_pop(vm->stack);
+#define buzzvm_binary_op_ff(vm, oper) buzzvm_stack_assert((vm), 2); buzzvm_stack_at(vm, 2)->f.value = (buzzvm_stack_at(vm, 1)->f.value oper buzzvm_stack_at(vm, 2)->f.value); buzzdarray_pop(vm->stack);
 
 /*
  * Pops two 32 bit unsigned int operands from the stack and pushes the result of a binary operation on them.
@@ -264,7 +267,7 @@ extern "C" {
  * @param vm The VM data.
  * @param oper The binary operation, e.g. & |
  */
-#define buzzvm_binary_op_ii(vm, oper) buzzvm_stack_assert((vm), 2); buzzvm_stack_at(vm, 2).i.value = (buzzvm_stack_at(vm, 1).i.value oper buzzvm_stack_at(vm, 2).i.value); buzzdarray_pop(vm->stack);
+#define buzzvm_binary_op_ii(vm, oper) buzzvm_stack_assert((vm), 2); buzzvm_stack_at(vm, 2)->i.value = (buzzvm_stack_at(vm, 1)->i.value oper buzzvm_stack_at(vm, 2)->i.value); buzzdarray_pop(vm->stack);
 
 /*
  * Pops two float operands from the stack and pushes the result of a binary operation on them as an integer.
@@ -275,7 +278,7 @@ extern "C" {
  * @param vm The VM data.
  * @param oper The binary operation, e.g. == > >= < <=
  */
-#define buzzvm_binary_op_if(vm, oper) buzzvm_stack_assert((vm), 2); buzzvm_stack_at(vm, 2).i.type = BUZZTYPE_INT; buzzvm_stack_at(vm, 2).i.value = (buzzvm_stack_at(vm, 1).f.value oper buzzvm_stack_at(vm, 2).f.value); buzzdarray_pop(vm->stack);
+#define buzzvm_binary_op_if(vm, oper) buzzvm_stack_assert((vm), 2); buzzvm_stack_at(vm, 2)->i.type = BUZZTYPE_INT; buzzvm_stack_at(vm, 2)->i.value = (buzzvm_stack_at(vm, 1)->f.value oper buzzvm_stack_at(vm, 2)->f.value); buzzdarray_pop(vm->stack);
 
 /*
  * Pushes stack(#1) + stack(#2) and pops the operands.
@@ -338,7 +341,7 @@ extern "C" {
  * BuzzVM hook functions or buzzvm_step().
  * @param vm The VM data.
  */
-#define buzzvm_not(vm) buzzvm_stack_assert(vm, 1); buzzvm_stack_at(vm, 1).i.value = !buzzvm_stack_at(vm, 1).i.value;
+#define buzzvm_not(vm) buzzvm_stack_assert(vm, 1); buzzvm_stack_at(vm, 1)->i.value = !buzzvm_stack_at(vm, 1)->i.value;
 
 /*
  * Pushes stack(#1) == stack(#2) and pops the operands.
@@ -393,6 +396,6 @@ extern "C" {
  * @param vm The VM data.
  * @param fid The function id.
  */
-#define buzzvm_call(vm, fid) if((fid) >= buzzdarray_size((vm)->flist)) {(vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_FLIST; return vm->state;} (*buzzdarray_get((vm)->flist, fid, buzzvm_funp))(vm);
+#define buzzvm_call(vm, fid) if((fid) >= buzzdarray_size((vm)->flist)) {(vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_FLIST; return vm->state;} buzzdarray_get((vm)->flist, fid, buzzvm_funp)(vm);
 
 #endif

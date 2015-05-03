@@ -7,7 +7,7 @@
 
 void buzzvstig_elem_destroy(const void* key, void* data, void* params) {
    buzzvstig_elem_t* x = (buzzvstig_elem_t*)data;
-   // TODO: take care of string, table, and swarm
+   // TODO: take care of string, table, swarm, and closure
    free((void*)key);
    free(data);
 }
@@ -34,7 +34,7 @@ void buzzvstig_elem_serialize(buzzdarray_t buf,
    /* Serialize the key */
    buzzmsg_serialize_u32(buf, key);
    /* Serialize the data */
-   buzzvar_serialize(buf, data->data);
+   buzzobj_serialize(buf, data->data);
    /* Serialize the timestamp */
    buzzmsg_serialize_u32(buf, data->timestamp);
    /* Serialize the robot */
@@ -53,7 +53,7 @@ int64_t buzzvstig_elem_deserialize(int32_t* key,
    p = buzzmsg_deserialize_u32((uint32_t*)key, buf, p);
    if(p < 0) return -1;
    /* Deserialize the data */
-   p = buzzvar_deserialize(&(data->data), buf, p);
+   p = buzzobj_deserialize(data->data, buf, p);
    if(p < 0) return -1;
    /* Deserialize the timestamp */
    p = buzzmsg_deserialize_u32(&(data->timestamp), buf, p);

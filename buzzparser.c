@@ -50,10 +50,8 @@ int match(buzzparser_t par,
 
 int parse_script(buzzparser_t par);
 
-int parse_eventlist(buzzparser_t par);
-int parse_eventrest(buzzparser_t par);
-int parse_event(buzzparser_t par);
-
+int parse_blocklist(buzzparser_t par);
+int parse_blocklistrest(buzzparser_t par);
 int parse_block(buzzparser_t par);
 int parse_blockrest(buzzparser_t par);
 
@@ -106,51 +104,27 @@ int parse_script(buzzparser_t par) {
               par->lex->fname);
       return PARSE_ERROR;
    }
-   return parse_eventlist(par);
+   return parse_blocklist(par);
 }
 
 /****************************************/
 /****************************************/
 
-int parse_eventlist(buzzparser_t par) {
-   fprintf(stderr, "Parsing event list start\n");
-   return parse_event(par) && parse_eventrest(par);
+int parse_blocklist(buzzparser_t par) {
+   fprintf(stderr, "Parsing block list start\n");
+   return parse_block(par) && parse_blocklistrest(par);
 }
 
-int parse_eventrest(buzzparser_t par) {
-   fprintf(stderr, "Parsing event list rest\n");
-   if(par->tok->type == BUZZTOK_ON) {
-      return parse_eventlist(par);
+int parse_blocklistrest(buzzparser_t par) {
+   fprintf(stderr, "Parsing block list rest\n");
+   if(par->tok->type == BUZZTOK_BLOCKOPEN) {
+      return parse_blocklist(par);
    }
    else {
       fprintf(stderr, "Event list end\n");
       return PARSE_OK;
    }
 }
-
-int parse_event(buzzparser_t par) {
-   fprintf(stderr, "Parsing event\n");
-   if(par->tok->type == BUZZTOK_ON) {
-      fetchtok();
-      tokmatch(BUZZTOK_ID);
-      return parse_block(par);
-   }
-   else if(par->tok->type == BUZZTOK_FUN) {
-      return parse_fun(par);
-   }
-   fprintf(stderr,
-           "%s:%llu:%llu: Syntax error: expected %s or %s, found %s\n",
-           par->lex->fname,
-           par->tok->line,
-           par->tok->col,
-           buzztok_desc[BUZZTOK_ON],
-           buzztok_desc[BUZZTOK_FUN],
-           buzztok_desc[par->tok->type]);
-   return PARSE_ERROR;
-}
-
-/****************************************/
-/****************************************/
 
 int parse_block(buzzparser_t par) {
    fprintf(stderr, "Parsing block start\n");
@@ -440,12 +414,6 @@ int parse_operand(buzzparser_t par) {
 
 int parse_command(buzzparser_t par) {
    fprintf(stderr, "Parsing command start\n");
-   if(par->tok->type == BUZZTOK_EMIT) {
-      fetchtok();
-      tokmatch(BUZZTOK_ID);
-      tokmatch(BUZZTOK_STATEND);
-      return PARSE_OK;
-   }
    return parse_idref(par) && parse_commandrest(par);
 }
 

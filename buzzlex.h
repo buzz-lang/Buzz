@@ -15,8 +15,6 @@ extern "C" {
       BUZZTOK_ID = 0,
       BUZZTOK_CONST,
       BUZZTOK_STRING,
-      BUZZTOK_ON,
-      BUZZTOK_EMIT,
       BUZZTOK_BOOL,
       BUZZTOK_LOCAL,
       BUZZTOK_IF,

@@ -23,7 +23,7 @@ void buzzmsg_queue_append(buzzmsg_queue_t msgq,
 
 buzzmsg_t buzzmsg_queue_extract(buzzmsg_queue_t msgq) {
    if(buzzmsg_queue_isempty(msgq)) return NULL;
-   buzzmsg_t m = *buzzdarray_get(msgq, 0, buzzmsg_t);
+   buzzmsg_t m = buzzdarray_get(msgq, 0, buzzmsg_t);
    buzzdarray_remove(msgq, 0);
    return m;
 }
@@ -40,7 +40,7 @@ int64_t buzzmsg_deserialize_u8(uint8_t* data,
                                buzzdarray_t buf,
                                uint32_t pos) {
    if(pos + sizeof(uint8_t) > buzzdarray_size(buf)) return -1;
-   *data = (*buzzdarray_get(buf, pos,   uint8_t));
+   *data = buzzdarray_get(buf, pos, uint8_t);
    return pos + sizeof(uint8_t);
 }
 
@@ -62,8 +62,8 @@ int64_t buzzmsg_deserialize_u16(uint16_t* data,
                                 uint32_t pos) {
    if(pos + sizeof(uint16_t) > buzzdarray_size(buf)) return -1;
    *data =
-      (*buzzdarray_get(buf, pos,   uint8_t)     ) +
-      (*buzzdarray_get(buf, pos+1, uint8_t) << 8);
+      buzzdarray_get(buf, pos,   uint8_t)       +
+      (buzzdarray_get(buf, pos+1, uint8_t) << 8);
    *data = ntohs(*data);
    return pos + sizeof(uint16_t);
 }
@@ -88,10 +88,10 @@ int64_t buzzmsg_deserialize_u32(uint32_t* data,
                                 uint32_t pos) {
    if(pos + sizeof(uint32_t) > buzzdarray_size(buf)) return -1;
    *data =
-      (*buzzdarray_get(buf, pos,   uint8_t)     ) +
-      (*buzzdarray_get(buf, pos+1, uint8_t) << 8) +
-      (*buzzdarray_get(buf, pos+2, uint8_t) << 16) +
-      (*buzzdarray_get(buf, pos+3, uint8_t) << 24);
+      buzzdarray_get(buf, pos,   uint8_t)         +
+      (buzzdarray_get(buf, pos+1, uint8_t) << 8)  +
+      (buzzdarray_get(buf, pos+2, uint8_t) << 16) +
+      (buzzdarray_get(buf, pos+3, uint8_t) << 24);
    *data = ntohl(*data);
    return pos + sizeof(uint32_t);
 }

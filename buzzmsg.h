@@ -195,7 +195,7 @@ extern "C" {
  * @param pos The position.
  * @return The message at the given position.
  */
-#define buzzmsg_queue_get(msg, pos) (*buzzdarray_get(msg, pos, buzzmsg_t))
+#define buzzmsg_queue_get(msg, pos) buzzdarray_get(msg, pos, buzzmsg_t)
 
 /*
  * Create a new message.
@@ -229,6 +229,6 @@ extern "C" {
  * @param pos The position.
  * @return The byte at the given position.
  */
-#define buzzmsg_get(msg, pos) (*buzzdarray_get(msg, pos, uint8_t))
+#define buzzmsg_get(msg, pos) buzzdarray_get(msg, pos, uint8_t)
 
 #endif

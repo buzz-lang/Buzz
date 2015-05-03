@@ -12,7 +12,7 @@ extern "C" {
     * An entry in virtual stigmergy.
     */
    struct buzzvstig_elem_s {
-      buzzvar_t data;
+      buzzobj_t data;
       uint32_t timestamp;
       uint32_t robot;
    };

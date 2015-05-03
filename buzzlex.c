@@ -63,7 +63,7 @@ buzzlex_t buzzlex_new(const char* fname) {
    retval->buf_size = lseek(fd, 0, SEEK_END);
    lseek(fd, 0, SEEK_SET);
    /* Create a buffer large enough to contain the data */
-   retval->buf = (char*)malloc(retval->buf_size);
+   retval->buf = (char*)malloc(retval->buf_size + 1);
    /* Copy the content of the file in the buffer */
    ssize_t readnow;
    size_t readsofar = 0;
@@ -211,8 +211,6 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       /* It's either a keyword or an identifier */
       readval(buzzlex_isid);
       /* Go through the possible keywords */
-      checkkeyword("on",       BUZZTOK_ON);
-      checkkeyword("emit",     BUZZTOK_EMIT);
       checkkeyword("local",    BUZZTOK_LOCAL);
       checkkeyword("if",       BUZZTOK_IF);
       checkkeyword("else",     BUZZTOK_ELSE);
