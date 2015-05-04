@@ -112,8 +112,8 @@ extern "C" {
    /*
     * Applies the given function to each element in the dictionary.
     * @param dt The dictionary.
-    * @param The function.
-    * @param A buffer to pass along.
+ * @param fun The function.
+ * @param params A buffer to pass along.
     */
    extern void buzzdict_foreach(buzzdict_t dt,
                                 buzzdict_elem_funp fun,

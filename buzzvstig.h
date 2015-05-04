@@ -82,4 +82,13 @@ extern "C" {
  */
 #define buzzvstig_store(vs, key, el) buzzdict_set((vs), &(key), (el));
 
+/*
+ * Applies the given function to each element in the virtual stigmergy structure.
+ * @param vs The virtual stigmergy structure.
+ * @param fun The function.
+ * @param params A buffer to pass along.
+ * @see buzzdict_foreach()
+ */
+#define buzzvstig_foreach(vs, fun, params) buzzdict_foreach(vs, fun, params);
+
 #endif

@@ -6,7 +6,7 @@
 
 void buzzobj_serialize(buzzdarray_t buf,
                        const buzzobj_t data) {
-   switch(data->type) {
+   switch(data->o.type) {
       case BUZZTYPE_NIL: {
          buzzmsg_serialize_u16(buf, data->n.type);
          break;
@@ -37,7 +37,7 @@ void buzzobj_serialize(buzzdarray_t buf,
 int64_t buzzobj_deserialize(buzzobj_t data,
                             buzzdarray_t buf,
                             uint32_t pos) {
-   switch(data->type) {
+   switch(data->o.type) {
       case BUZZTYPE_NIL: {
          int64_t p = pos;
          p = buzzmsg_deserialize_u16(&data->n.type, buf, p);

@@ -21,6 +21,8 @@ extern "C" {
       buzzdarray_t objs;
       /* The maximum number of vars after which GC is triggered */
       uint32_t max_objs;
+      /* Current marker for garbage collection */
+      uint16_t marker;
    };
    typedef struct buzzheap_s* buzzheap_t;
 

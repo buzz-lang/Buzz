@@ -11,7 +11,7 @@ void dump(buzzvm_t vm, const char* prefix) {
    for(int64_t i = buzzvm_stack_top(vm)-1; i >= 0; --i) {
       fprintf(stderr, "%s\t%lld\t", prefix, i);
       buzzobj_t o = buzzdarray_get(vm->stack, i, buzzobj_t);
-      switch(o->type) {
+      switch(o->o.type) {
          case BUZZTYPE_NIL:
             fprintf(stderr, "[nil]\n");
             break;

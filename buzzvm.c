@@ -424,7 +424,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
                buzzvm_pushnil(vm);
                buzzvstig_elem_t x;
                x.data = (buzzobj_t)malloc(sizeof(union buzzobj_u));
-               x.data->type = BUZZTYPE_NIL;
+               x.data->o.type = BUZZTYPE_NIL;
                x.timestamp = 1;
                x.robot = vm->robot;
                buzzvstig_elem_serialize(buf, k, &x);
@@ -435,7 +435,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
             /* No virtual stigmergy found, push false */
             buzzvm_pushnil(vm);
             buzzvstig_elem_t x;
-            x.data->type = BUZZTYPE_NIL;
+            x.data->o.type = BUZZTYPE_NIL;
             x.timestamp = 1;
             x.robot = vm->robot;
             buzzvstig_elem_serialize(buf, k, &x);

@@ -30,7 +30,7 @@ extern "C" {
     */
    typedef struct {
       uint16_t type;
-      uint8_t  marked;
+      uint16_t marker;
    } buzznil_t;
 
    /*
@@ -38,7 +38,7 @@ extern "C" {
     */
    typedef struct {
       uint16_t type;
-      uint8_t  marked;
+      uint16_t marker;
       int32_t  value;
    } buzzint_t;
 
@@ -47,7 +47,7 @@ extern "C" {
     */
    typedef struct {
       uint16_t type;
-      uint8_t  marked;
+      uint16_t marker;
       float    value;
    } buzzfloat_t;
 
@@ -56,7 +56,7 @@ extern "C" {
     */
    typedef struct {
       uint16_t type;
-      uint8_t  marked;
+      uint16_t marker;
       char*    value;
    } buzzstring_t;
 
@@ -65,7 +65,7 @@ extern "C" {
     */
    typedef struct {
       uint16_t   type;
-      uint8_t    marked;
+      uint16_t   marker;
       buzzdict_t value;
    } buzztable_t;
 
@@ -74,7 +74,7 @@ extern "C" {
     */
    typedef struct {
       uint16_t   type;
-      uint8_t    marked;
+      uint16_t   marker;
       buzzdict_t value;
    } buzzswarm_t;
 
@@ -83,6 +83,7 @@ extern "C" {
     */
    typedef struct {
       uint16_t type;
+      uint16_t marker;
       uint8_t* value;
    } buzzclosure_t;
 
@@ -90,8 +91,10 @@ extern "C" {
     * A handle for a object
     */
    union buzzobj_u {
-      uint16_t      type;   // object type
-      uint8_t       marked; // marked in GC
+      struct {
+         uint16_t   type;   // object type
+         uint16_t    marker; // marker for garbage collection
+      }             o;      // as a generic object
       buzznil_t     n;      // as nil
       buzzint_t     i;      // as integer
       buzzfloat_t   f;      // as floating-point
