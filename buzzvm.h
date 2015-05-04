@@ -60,6 +60,10 @@ extern "C" {
       BUZZVM_INSTR_VSCREATE, // Create virtual stigmergy from integer id stack(#1), pop operands
       BUZZVM_INSTR_VSPUT,    // Put (key stack(#2),value stack(#1)) in virtual stigmergy stack(#3), pop operands
       BUZZVM_INSTR_VSGET,    // Push virtual stigmergy stack(#2) value of key stack(#1), pop operand
+      BUZZVM_INSTR_CALLCN,   // Calls the native closure on top of the stack
+      BUZZVM_INSTR_CALLCC,   // Calls the c-function closure on top the stack
+      BUZZVM_INSTR_PUSHCN,   // Push native closure, pop operands (jump addr, argnum stack(#2), args (stack #3-#(3+argnum)))
+      BUZZVM_INSTR_PUSHCC,   // Push c-function closure, pop operands (ref, argnum stack(#2), args (stack #3-#(3+argnum)))
       /*
        * Opcodes with argument
        */
@@ -72,9 +76,8 @@ extern "C" {
       BUZZVM_INSTR_JUMPZ,    // Set PC to argument if stack top is zero
       BUZZVM_INSTR_JUMPNZ,   // Set PC to argument if stack top is not zero
       BUZZVM_INSTR_JUMPSUB,  // Push current PC and sets PC to argument
-      BUZZVM_INSTR_CALL,     // Calls the C function pointed to by the argument
    } buzzvm_instr;
-   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret", "add", "sub", "mul", "div", "and", "or", "not", "eq", "gt", "gte", "lt", "lte", "shout", "vscreate", "vsput", "vsget", "pushf", "pushi", "dup", "jump", "jumpz", "jumpnz", "jumpsub", "call"};
+   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret", "add", "sub", "mul", "div", "and", "or", "not", "eq", "gt", "gte", "lt", "lte", "shout", "vscreate", "vsput", "vsget", "callcn", "callcc", "pushcn", "pushcc", "pushf", "pushi", "dup", "jump", "jumpz", "jumpnz", "jumpsub"};
 
    /*
     * Function pointer for BUZZVM_INSTR_CALL.
@@ -94,8 +97,10 @@ extern "C" {
       uint32_t bcode_size;
       /* Program counter */
       int32_t pc;
-      /* Stack content */
+      /* Current stack content */
       buzzdarray_t stack;
+      /* Stack list */
+      buzzdarray_t stacks;
       /* Heap content */
       buzzheap_t heap;
       /* Registered functions */
@@ -202,6 +207,15 @@ extern "C" {
 #define buzzvm_done(vm) { (vm)->state = BUZZVM_STATE_DONE; return (vm)->state; }
 
 /*
+ * Pops the stack.
+ * Internally checks whether the operation is valid.
+ * This function is designed to be used within int-returning functions such as
+ * BuzzVM hook functions or buzzvm_step().
+ * @param vm The VM data.
+ */
+#define buzzvm_pop(vm) if(buzzdarray_isempty((vm)->stack)) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_STACK; return (vm)->state; } buzzdarray_pop(vm->stack);
+
+/*
  * Pushes a variable on the stack.
  * @param vm The VM data.
  * @param v The variable.
@@ -229,13 +243,66 @@ extern "C" {
 #define buzzvm_pushf(vm, v) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_FLOAT); o->f.value = (v); buzzvm_push(vm, o); }
 
 /*
- * Pops the stack.
+ * Pushes a native closure on the stack.
  * Internally checks whether the operation is valid.
  * This function is designed to be used within int-returning functions such as
  * BuzzVM hook functions or buzzvm_step().
+ * Expects the following objects in the stack:
+ * #1   jump address
+ * #2   number of arguments N
+ * #3   arg1
+ * ...
+ * #2+N argN
+ * This function pops all the above elements and leaves a native closure
+ * object on the stack top.
  * @param vm The VM data.
  */
-#define buzzvm_pop(vm) if(buzzdarray_isempty((vm)->stack)) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_STACK; return (vm)->state; } buzzdarray_pop(vm->stack);
+#define buzzvm_pushcn(vm) {                                             \
+      buzzvm_stack_assert(vm, 2);                                       \
+      buzzobj_t o = buzzheap_newobj(((vm)->heap), BUZZTYPE_CLOSURE);    \
+      o->c.isnative = 1;                                                \
+      o->c.value.native.addr = buzzvm_stack_at(vm, 1)->i.value;         \
+      int32_t nargs = buzzvm_stack_at(vm, 2)->i.value;                  \
+      buzzvm_pop(vm);                                                   \
+      buzzvm_pop(vm);                                                   \
+      buzzvm_stack_assert(vm, nargs);                                   \
+      for(int i = 0; i < nargs; ++i) {                                  \
+         buzzdarray_push(o->c.value.native.actrec, &buzzvm_stack_at(vm, 1)); \
+         buzzvm_pop(vm);                                                \
+      }                                                                 \
+      buzzvm_push(vm, o);                                               \
+   }
+
+/*
+ * Pushes a c-function closure on the stack.
+ * Internally checks whether the operation is valid.
+ * This function is designed to be used within int-returning functions such as
+ * BuzzVM hook functions or buzzvm_step().
+ * Expects the following objects in the stack:
+ * #1   function id
+ * #2   number of arguments N
+ * #3   arg1
+ * ...
+ * #2+N argN
+ * This function pops all the above elements and leaves a c-function closure
+ * object on the stack top.
+ * @param vm The VM data.
+ */
+#define buzzvm_pushcc(vm) {                                             \
+      buzzvm_stack_assert(vm, 2);                                       \
+      buzzobj_t o = buzzheap_newobj(((vm)->heap), BUZZTYPE_CLOSURE);    \
+      o->c.isnative = 0;                                                \
+      o->c.value.cfun.id = buzzvm_stack_at(vm, 1)->i.value;             \
+      int32_t nargs = buzzvm_stack_at(vm, 2)->i.value;                  \
+      buzzvm_pop(vm);                                                   \
+      buzzvm_pop(vm);                                                   \
+      buzzvm_stack_assert(vm, nargs);                                   \
+      for(int i = 0; i < nargs; ++i) {                                  \
+         buzzdarray_push(o->c.value.cfun.actrec, &buzzvm_stack_at(vm, 1)); \
+         buzzvm_pop(vm);                                                \
+      }                                                                 \
+      buzzvm_push(vm, o);                                               \
+   }
 
 /*
  * Pushes the float value located at the given stack index.
@@ -389,13 +456,122 @@ extern "C" {
 #define buzzvm_lte(vm) buzzvm_binary_op_if(vm, <=);
 
 /*
- * Calls the c function with the given identifier.
+ * Returns from a closure without setting a return value.
  * Internally checks whether the operation is valid.
  * This function is designed to be used within int-returning functions such as
  * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- * @param fid The function id.
+ * This function expects at least two stacks to be present. The first stack
+ * is popped. The stack beneath, now the top stack, is expect to have at least
+ * two elements: the return address at #1 and the return value at #2. The
+ * return address is popped and used to update the program counter. The
+ * return value is left untouched.
  */
-#define buzzvm_call(vm, fid) if((fid) >= buzzdarray_size((vm)->flist)) {(vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_FLIST; return vm->state;} buzzdarray_get((vm)->flist, fid, buzzvm_funp)(vm);
+#define buzz_ret0(vm) {                                           \
+      buzzdarray_pop((vm)->stacks);                               \
+      (vm)->stack = buzzdarray_last((vm)->stacks, buzzdarray_t);  \
+      buzzvm_stack_assert(vm, 2);                                 \
+      (vm)->pc = buzzvm_stack_at(vm, 1);                          \
+      buzzvm_pop(vm);                                             \
+   }
+
+/*
+ * Returns from a closure setting a return value.
+ * Internally checks whether the operation is valid.
+ * This function is designed to be used within int-returning functions such as
+ * BuzzVM hook functions or buzzvm_step().
+ * This function expects at least two stacks to be present. The first stack
+ * is popped. The stack beneath, now the top stack, is expect to have at least
+ * two elements: the return address at #1 and the return value at #2. The
+ * return address is popped and used to update the program counter. The
+ * return value is set in stack #2.
+ */
+#define buzz_ret1(vm, obj) {                                      \
+      buzzobj_t o = (obj);                                        \
+      buzzdarray_pop((vm)->stacks);                               \
+      (vm)->stack = buzzdarray_last((vm)->stacks, buzzdarray_t);  \
+      buzzvm_stack_assert(vm, 2);                                 \
+      (vm)->pc = buzzvm_stack_at(vm, 1);                          \
+      buzzvm_pop(vm);                                             \
+      buzzdarray_set((vm)->stack, buzzvm_stack_top(vm) - 2, o);   \
+   }
+
+/**
+ * Calls a native closure.
+ * Internally checks whether the operation is valid.
+ * This function is designed to be used within int-returning functions such as
+ * BuzzVM hook functions or buzzvm_step().
+ * This function expects the stack to be as follows:
+ * #1   The closure
+ * #2   An integer for the number of closure parameters N
+ * #3   Closure arg1
+ * ...
+ * #2+N Closure argN
+ * #3+N A nil object for the return value
+ * This function pushes a new stack filled with the activation record entries
+ * and the closure arguments. In addition, it leaves the stack beneath as follows:
+ * #1 An integer for the return address
+ * #2 A nil object for the return value
+ */
+#define buzzvm_callcn(vm) {                                             \
+      buzzvm_stack_assert(vm, 2);                                       \
+      buzzobj_t c = buzzvm_stack_at(vm, 1);                             \
+      int32_t argn = buzzvm_stack_at(vm, 2)->i.value;                   \
+      buzzvm_pop(vm);                                                   \
+      buzzvm_pop(vm);                                                   \
+      buzzvm_stack_assert(vm, argn);                                    \
+      buzzdarray_t prstack = (vm)->stack;                               \
+      (vm)->stack = buzzdarray_clone(c->c.value.native.actrec);         \
+      buzzdarray_push((vm)->stacks, &((vm)->stack));                    \
+      for(int32_t i = 0; i < argn; ++i) {                               \
+         buzzvm_push(vm, buzzdarray_last(prstack, buzzobj_t));          \
+         buzzdarray_pop(prstack);                                       \
+      }                                                                 \
+      buzzobj_t retaddr = buzzheap_newobj((vm)->heap, BUZZTYPE_INT);    \
+      retaddr->i.value = (vm)->pc;                                      \
+      buzzdarray_push(prstack, retaddr);                                \
+      (vm)->pc = c->c.value.native.addr;                                \
+   }
+
+/**
+ * Calls a c-function closure.
+ * Internally checks whether the operation is valid.
+ * This function is designed to be used within int-returning functions such as
+ * BuzzVM hook functions or buzzvm_step().
+ * This function expects the stack to be as follows:
+ * #1   The closure
+ * #2   An integer for the number of closure parameters N
+ * #3   Closure arg1
+ * ...
+ * #2+N Closure argN
+ * #3+N A nil object for the return value
+ * This function pushes a new stack filled with the activation record entries
+ * and the closure arguments. In addition, it leaves the stack beneath as follows:
+ * #1 An integer for the return address
+ * #2 A nil object for the return value
+ */
+#define buzzvm_callcc(vm) {                                             \
+      buzzvm_stack_assert(vm, 2);                                       \
+      buzzobj_t c = buzzvm_stack_at(vm, 1);                             \
+      if((c->c.value.cfun.id) >= buzzdarray_size((vm)->flist)) {        \
+         (vm)->state = BUZZVM_STATE_ERROR;                              \
+         (vm)->error = BUZZVM_ERROR_FLIST;                              \
+         return vm->state;                                              \
+      }                                                                 \
+      int32_t argn = buzzvm_stack_at(vm, 2)->i.value;                   \
+      buzzvm_pop(vm);                                                   \
+      buzzvm_pop(vm);                                                   \
+      buzzvm_stack_assert(vm, argn);                                    \
+      buzzdarray_t prstack = (vm)->stack;                               \
+      (vm)->stack = buzzdarray_clone(c->c.value.cfun.actrec);           \
+      buzzdarray_push((vm)->stacks, &((vm)->stack));                    \
+      for(int32_t i = 0; i < argn; ++i) {                               \
+         buzzvm_push(vm, buzzdarray_last(prstack, buzzobj_t));          \
+         buzzdarray_pop(prstack);                                       \
+      }                                                                 \
+      buzzobj_t retaddr = buzzheap_newobj((vm)->heap, BUZZTYPE_INT);    \
+      retaddr->i.value = (vm)->pc;                                      \
+      buzzdarray_push(prstack, retaddr);                                \
+      buzzdarray_get((vm)->flist, c->c.value.cfun.id, buzzvm_funp)(vm); \
+   }
 
 #endif

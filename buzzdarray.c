@@ -30,6 +30,24 @@ buzzdarray_t buzzdarray_new(uint32_t cap,
 /****************************************/
 /****************************************/
 
+buzzdarray_t buzzdarray_clone(const buzzdarray_t da) {
+   /* Create the dynamic array. */
+   buzzdarray_t clone = (buzzdarray_t)malloc(sizeof(struct buzzdarray_s));
+   /* Copy info */
+   clone->size = da->size;
+   clone->capacity = clone->size;
+   clone->elem_size = da->elem_size;
+   clone->elem_destroy = da->elem_destroy;
+   /* Create data buffer */
+   clone->data = malloc(clone->capacity * clone->elem_size);
+   memcpy(clone->data, da->data, clone->capacity * clone->elem_size);
+   /* Done */
+   return clone;
+}
+
+/****************************************/
+/****************************************/
+
 buzzdarray_t buzzdarray_frombuffer(void* buf,
                                    uint32_t buf_size,
                                    uint32_t elem_size,
@@ -40,6 +58,7 @@ buzzdarray_t buzzdarray_frombuffer(void* buf,
    da->capacity = buf_size / elem_size;
    da->elem_size = elem_size;
    da->elem_destroy = elem_destroy ? elem_destroy : buzzdarray_elem_destroy;
+   da->size = da->capacity;
    /* Create initial data */
    da->data = malloc(buf_size);
    memcpy(da->data, buf, buf_size);

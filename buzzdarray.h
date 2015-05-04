@@ -47,10 +47,18 @@ extern "C" {
     * @param cap The initial capacity of the array. Must be >0.
     * @param elem_size The size of an element.
     * @param elem_destroy The function to destroy an element. Can be NULL.
+    * @return A new dynamic array.
     */
    extern buzzdarray_t buzzdarray_new(uint32_t cap,
                                       uint32_t elem_size,
                                       buzzdarray_elem_funp elem_destroy);
+
+   /*
+    * Creates a new Buzz dynamic array from the given dynamic array.
+    * @param da The dynamic array.
+    * @return A new dynamic array.
+    */
+   extern buzzdarray_t buzzdarray_clone(const buzzdarray_t da);
 
    /*
     * Creates a new Buzz dynamic array from the given buffer.
@@ -165,6 +173,7 @@ extern "C" {
  * Returns the element at the given position.
  * @param da The dynamic array.
  * @param pos The position.
+ * @param type The type of the element to return.
  * @return The element at the given position.
  */
 #define buzzdarray_get(da, pos, type) (*((type*)((da)->data) + (pos)))
@@ -175,6 +184,14 @@ extern "C" {
  * @return The size of the dynamic array.
  */
 #define buzzdarray_size(da) (da)->size
+
+/*
+ * Returns the last element in the dynamic array.
+ * @param da The dynamic array.
+ * @param type The type of the element to return.
+ * @return The last element in the dynamic array.
+ */
+#define buzzdarray_last(da, type) buzzdarray_get(da, buzzdarray_size(da)-1, type)
 
 /*
  * Returns the capacity of the dynamic array.

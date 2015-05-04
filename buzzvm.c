@@ -7,6 +7,12 @@
 /****************************************/
 /****************************************/
 
+#define BUZZVM_STACKS_INIT_CAPACITY 20
+#define BUZZVM_STACK_INIT_CAPACITY  20
+
+/****************************************/
+/****************************************/
+
 void buzzvm_msg_destroy(uint32_t pos, void* data, void* param) {
    buzzmsg_t* m = (buzzmsg_t*)data;
    buzzmsg_destroy(m);
@@ -134,11 +140,24 @@ void buzzvm_vstig_destroy(const void* key, void* data, void* params) {
 /****************************************/
 /****************************************/
 
+void buzzvm_stack_destroy(uint32_t pos,
+                          void* data,
+                          void* params) {
+   buzzdarray_t* s = (buzzdarray_t*)data;
+   buzzdarray_destroy(s);
+}
+
 buzzvm_t buzzvm_new(uint32_t robot) {
    /* Create VM state. calloc() takes care of zeroing everything */
    buzzvm_t vm = (buzzvm_t)calloc(1, sizeof(struct buzzvm_s));
-   /* Create stack */
-   vm->stack = buzzdarray_new(20, sizeof(buzzobj_t), NULL);
+   /* Create stacks */
+   vm->stacks = buzzdarray_new(BUZZVM_STACKS_INIT_CAPACITY,
+                               sizeof(buzzdarray_t),
+                               buzzvm_stack_destroy);
+   vm->stack = buzzdarray_new(BUZZVM_STACK_INIT_CAPACITY,
+                              sizeof(buzzobj_t),
+                              NULL);
+   buzzdarray_push(vm->stacks, &(vm->stack));
    /* Create heap */
    vm->heap = buzzheap_new();
    /* Create function list. calloc() takes care of zeroing everything */
@@ -176,8 +195,12 @@ void buzzvm_reset(buzzvm_t vm) {
    buzzdarray_clear(vm->inmsgs, 20);
    buzzdarray_foreach(vm->outmsgs, buzzvm_msg_destroy, NULL);
    buzzdarray_clear(vm->outmsgs, 20);
-   /* Clear stack */
-   buzzdarray_clear(vm->stack, 20);
+   /* Clear stacks */
+   buzzdarray_clear(vm->stacks, BUZZVM_STACKS_INIT_CAPACITY);
+   vm->stack = buzzdarray_new(BUZZVM_STACK_INIT_CAPACITY,
+                              sizeof(buzzobj_t),
+                              buzzvm_stack_destroy);
+   buzzdarray_push(vm->stacks, &(vm->stack));
    /* Reset program counter */
    vm->pc = 0;
    /* Reset VM state */
@@ -191,7 +214,7 @@ void buzzvm_reset(buzzvm_t vm) {
 
 void buzzvm_destroy(buzzvm_t* vm) {
    /* Get rid of the stack */
-   buzzdarray_destroy(&(*vm)->stack);
+   buzzdarray_destroy(&(*vm)->stacks);
    /* Get rid of the heap */
    buzzheap_destroy(&(*vm)->heap);
    /* Get rid of the function list */
@@ -448,6 +471,26 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          inc_pc();
          break;
       }
+      case BUZZVM_INSTR_CALLCN: {
+         inc_pc();
+         buzzvm_callcn(vm);
+         break;
+      }
+      case BUZZVM_INSTR_CALLCC: {
+         inc_pc();
+         buzzvm_callcc(vm);
+         break;
+      }
+      case BUZZVM_INSTR_PUSHCN: {
+         inc_pc();
+         buzzvm_pushcn(vm);
+         break;
+      }
+      case BUZZVM_INSTR_PUSHCC: {
+         inc_pc();
+         buzzvm_pushcc(vm);
+         break;
+      }
       case BUZZVM_INSTR_PUSHI: {
          inc_pc();
          get_arg(int32_t);
@@ -499,12 +542,6 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          buzzvm_pushi(vm, arg);
          vm->pc = arg;
          assert_pc(vm->pc);
-         break;
-      }
-      case BUZZVM_INSTR_CALL: {
-         inc_pc();
-         get_arg(uint32_t);
-         buzzvm_call(vm, arg);
          break;
       }
       default:

@@ -51,6 +51,10 @@ buzzobj_t buzzheap_newobj(buzzheap_t h,
    o->o.type = type;
    /* Set the object marker */
    o->o.marker = h->marker;
+   /* Take care of special initialization for specific types */
+   if(type == BUZZTYPE_CLOSURE) {
+      o->c.value.native.actrec = buzzdarray_new(1, sizeof(buzzobj_t), NULL);
+   }
    /* Add object to list */
    buzzdarray_push(h->objs, &o);
    /* All done */
@@ -60,13 +64,22 @@ buzzobj_t buzzheap_newobj(buzzheap_t h,
 /****************************************/
 /****************************************/
 
+void buzzheap_stackobj_mark(uint32_t pos, void* data, void* params);
+
 void buzzheap_objmark(buzzobj_t o,
-                      uint16_t m) {
-   if(o->o.marker == m) return;
-   else {
-      o->o.marker = m;
-      /* Take care of composite types */
-      // TODO
+                      buzzheap_t h) {
+   /*
+    * Nothing to do if the object is already marked
+    * This avoids infinite looping when cycles are present
+    */
+   if(o->o.marker == h->marker) return;
+   /* Update marker */
+   o->o.marker = h->marker;
+   /* Take care of composite types */
+   if(o->o.type == BUZZTYPE_CLOSURE) {
+      buzzdarray_foreach(o->c.value.native.actrec,
+                         buzzheap_stackobj_mark,
+                         h);
    }
 }
 
@@ -75,7 +88,15 @@ void buzzheap_stackobj_mark(uint32_t pos,
                             void* params) {
    buzzobj_t o = *(buzzobj_t*)data;
    buzzheap_t h = (buzzheap_t)params;
-   buzzheap_objmark(o, h->marker);
+   buzzheap_objmark(o, h);
+}
+
+void buzzheap_stack_mark(uint32_t pos,
+                         void* data,
+                         void* params) {
+   buzzdarray_foreach(*(buzzdarray_t*)data,
+                      buzzheap_stackobj_mark,
+                      params);
 }
 
 void buzzheap_vstigobj_mark(const void* key,
@@ -83,13 +104,15 @@ void buzzheap_vstigobj_mark(const void* key,
                             void* params) {
    buzzobj_t o = ((buzzvstig_elem_t*)data)->data;
    buzzheap_t h = (buzzheap_t)params;
-   buzzheap_objmark(o, h->marker);
+   buzzheap_objmark(o, h);
 }
 
 void buzzheap_vstig_mark(const void* key,
                          void* data,
                          void* params) {
-   buzzvstig_foreach(*(buzzvstig_t*)data, buzzheap_vstigobj_mark, params);
+   buzzvstig_foreach(*(buzzvstig_t*)data,
+                     buzzheap_vstigobj_mark,
+                     params);
 }
 
 void buzzheap_gc(struct buzzvm_s* vm) {
@@ -99,7 +122,7 @@ void buzzheap_gc(struct buzzvm_s* vm) {
    /* Increase the marker */
    ++h->marker;
    /* Go through all the objects in the VM stack and mark them */
-   buzzdarray_foreach(vm->stack, buzzheap_stackobj_mark, h);
+   buzzdarray_foreach(vm->stacks, buzzheap_stack_mark, h);
    /* Go through all the objects in the virtual stigmergy and mark them */
    buzzdict_foreach(vm->vstigs, buzzheap_vstig_mark, h);
    /* Go through all the objects in the object list and delete the unmarked ones */
