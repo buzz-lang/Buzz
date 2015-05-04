@@ -1,0 +1,40 @@
+pushi 1
+# Stack: 1
+
+vscreate
+# Stack:
+
+pushi 1
+# Stack: 1
+
+pushi 2
+# Stack: 2 1
+
+pushf 3
+# Stack: 3.0 2 1
+
+vsput
+# Stack:
+
+pushi 1
+# Stack: 1
+
+pushi 2
+# Stack: 2 1
+
+vsget
+# Stack: 3.0
+
+pop
+# Stack:
+
+pushi 1
+# Stack: 1
+
+pushi 4
+# Stack: 4 1
+
+vsget
+# Stack: 0
+
+done
