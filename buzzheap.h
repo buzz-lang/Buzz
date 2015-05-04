@@ -53,8 +53,7 @@ extern "C" {
     * @param vm The Buzz VM.
     * @param h The heap.
     */
-   void buzzheap_gc(struct buzzvm_s* vm,
-                    buzzheap_t h);
+   void buzzheap_gc(struct buzzvm_s* vm);
 
 #ifdef __cplusplus
 }

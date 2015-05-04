@@ -5,7 +5,7 @@
 /****************************************/
 /****************************************/
 
-#define BUZZHEAP_GC_INIT_MAXOBJS 20
+#define BUZZHEAP_GC_INIT_MAXOBJS 1
 
 /****************************************/
 /****************************************/
@@ -22,6 +22,8 @@ buzzheap_t buzzheap_new() {
    h->objs = buzzdarray_new(10, sizeof(buzzobj_t), buzzheap_destroy_obj);
    /* Initialize GC max object threshold */
    h->max_objs = BUZZHEAP_GC_INIT_MAXOBJS;
+   /* Initialize the marker */
+   h->marker = 0;
    /* All done */
    return h;
 }
@@ -47,6 +49,8 @@ buzzobj_t buzzheap_newobj(buzzheap_t h,
    buzzobj_t o = (buzzobj_t)calloc(1, sizeof(union buzzobj_u));
    /* Set the object type */
    o->o.type = type;
+   /* Set the object marker */
+   o->o.marker = h->marker;
    /* Add object to list */
    buzzdarray_push(h->objs, &o);
    /* All done */
@@ -82,20 +86,22 @@ void buzzheap_vstigobj_mark(const void* key,
    buzzheap_objmark(o, h->marker);
 }
 
-void buzzheap_vstig_mark(uint32_t pos,
-                          void* data,
-                          void* params) {
+void buzzheap_vstig_mark(const void* key,
+                         void* data,
+                         void* params) {
    buzzvstig_foreach(*(buzzvstig_t*)data, buzzheap_vstigobj_mark, params);
 }
 
-void buzzheap_gc(struct buzzvm_s* vm,
-                 buzzheap_t h) {
+void buzzheap_gc(struct buzzvm_s* vm) {
+   buzzheap_t h = vm->heap;
+   /* Is GC necessary? */
+   if(buzzdarray_size(h->objs) < h->max_objs) return;
    /* Increase the marker */
    ++h->marker;
    /* Go through all the objects in the VM stack and mark them */
    buzzdarray_foreach(vm->stack, buzzheap_stackobj_mark, h);
    /* Go through all the objects in the virtual stigmergy and mark them */
-   buzzdarray_foreach(vm->stack, buzzheap_vstig_mark, h);
+   buzzdict_foreach(vm->vstigs, buzzheap_vstig_mark, h);
    /* Go through all the objects in the object list and delete the unmarked ones */
    int64_t i = buzzdarray_size(h->objs) - 1;
    while(i >= 0) {
@@ -107,6 +113,8 @@ void buzzheap_gc(struct buzzvm_s* vm,
       /* Next element */
       --i;
    }
+   /* Update the max objects threshold */
+   h->max_objs = buzzdarray_isempty(h->objs) ? BUZZHEAP_GC_INIT_MAXOBJS : 2 * buzzdarray_size(h->objs);
 }
 
 /****************************************/

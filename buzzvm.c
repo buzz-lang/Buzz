@@ -232,6 +232,8 @@ void buzzvm_set_bcode(buzzvm_t vm,
 buzzvm_state buzzvm_step(buzzvm_t vm) {
    /* Can't execute if not ready */
    if(vm->state != BUZZVM_STATE_READY) return vm->state;
+   /* Execute GC */
+   buzzheap_gc(vm);
    /* Process messages */
    buzzvm_process_inmsgs(vm);
    /* Fetch instruction and (potential) argument */
