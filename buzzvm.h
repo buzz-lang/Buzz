@@ -466,11 +466,11 @@ extern "C" {
  * return address is popped and used to update the program counter. The
  * return value is left untouched.
  */
-#define buzz_ret0(vm) {                                           \
+#define buzzvm_ret0(vm) {                                         \
       buzzdarray_pop((vm)->stacks);                               \
       (vm)->stack = buzzdarray_last((vm)->stacks, buzzdarray_t);  \
       buzzvm_stack_assert(vm, 2);                                 \
-      (vm)->pc = buzzvm_stack_at(vm, 1);                          \
+      (vm)->pc = buzzvm_stack_at(vm, 1)->i.value;                 \
       buzzvm_pop(vm);                                             \
    }
 
@@ -485,12 +485,12 @@ extern "C" {
  * return address is popped and used to update the program counter. The
  * return value is set in stack #2.
  */
-#define buzz_ret1(vm, obj) {                                      \
+#define buzzvm_ret1(vm, obj) {                                    \
       buzzobj_t o = (obj);                                        \
       buzzdarray_pop((vm)->stacks);                               \
       (vm)->stack = buzzdarray_last((vm)->stacks, buzzdarray_t);  \
       buzzvm_stack_assert(vm, 2);                                 \
-      (vm)->pc = buzzvm_stack_at(vm, 1);                          \
+      (vm)->pc = buzzvm_stack_at(vm, 1)->i.value;                 \
       buzzvm_pop(vm);                                             \
       buzzdarray_set((vm)->stack, buzzvm_stack_top(vm) - 2, o);   \
    }
@@ -522,13 +522,16 @@ extern "C" {
       buzzdarray_t prstack = (vm)->stack;                               \
       (vm)->stack = buzzdarray_clone(c->c.value.native.actrec);         \
       buzzdarray_push((vm)->stacks, &((vm)->stack));                    \
-      for(int32_t i = 0; i < argn; ++i) {                               \
-         buzzvm_push(vm, buzzdarray_last(prstack, buzzobj_t));          \
+      for(int32_t i = argn; i > 0; --i)                                 \
+         buzzvm_push(vm,                                                \
+                     buzzdarray_get(prstack,                            \
+                                    buzzdarray_size(prstack) - i,       \
+                                    buzzobj_t));                        \
+      for(int32_t i = argn; i > 0; --i)                                 \
          buzzdarray_pop(prstack);                                       \
-      }                                                                 \
       buzzobj_t retaddr = buzzheap_newobj((vm)->heap, BUZZTYPE_INT);    \
       retaddr->i.value = (vm)->pc;                                      \
-      buzzdarray_push(prstack, retaddr);                                \
+      buzzdarray_push(prstack, &retaddr);                               \
       (vm)->pc = c->c.value.native.addr;                                \
    }
 
@@ -564,13 +567,16 @@ extern "C" {
       buzzdarray_t prstack = (vm)->stack;                               \
       (vm)->stack = buzzdarray_clone(c->c.value.cfun.actrec);           \
       buzzdarray_push((vm)->stacks, &((vm)->stack));                    \
-      for(int32_t i = 0; i < argn; ++i) {                               \
-         buzzvm_push(vm, buzzdarray_last(prstack, buzzobj_t));          \
+      for(int32_t i = argn; i > 0; --i)                                 \
+         buzzvm_push(vm,                                                \
+                     buzzdarray_get(prstack,                            \
+                                    buzzdarray_size(prstack) - i,       \
+                                    buzzobj_t));                        \
+      for(int32_t i = argn; i > 0; --i)                                 \
          buzzdarray_pop(prstack);                                       \
-      }                                                                 \
       buzzobj_t retaddr = buzzheap_newobj((vm)->heap, BUZZTYPE_INT);    \
       retaddr->i.value = (vm)->pc;                                      \
-      buzzdarray_push(prstack, retaddr);                                \
+      buzzdarray_push(prstack, &retaddr);                               \
       buzzdarray_get((vm)->flist, c->c.value.cfun.id, buzzvm_funp)(vm); \
    }
 

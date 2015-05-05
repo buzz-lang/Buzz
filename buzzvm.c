@@ -126,7 +126,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
       }
    }
 }
-   
+
 /****************************************/
 /****************************************/
 
@@ -282,8 +282,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          break;
       }
       case BUZZVM_INSTR_RET: {
-         buzzvm_pop(vm);
-         vm->pc = buzzvm_stack_at(vm, 0)->i.value;
+         buzzvm_ret0(vm);
          assert_pc(vm->pc);
          break;
       }
@@ -434,7 +433,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          buzzvm_pop(vm);
          /* Prepare the QUERY message */
          buzzdarray_t buf = buzzmsg_new(16);
-         buzzmsg_serialize_u8(buf, BUZZMSG_VSTIG_QUERY);         
+         buzzmsg_serialize_u8(buf, BUZZMSG_VSTIG_QUERY);
          buzzmsg_serialize_u32(buf, id);
          /* Look for virtual stigmergy */
          buzzdict_t* vs = buzzdict_get(vm->vstigs, &id, buzzdict_t);
@@ -474,11 +473,13 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       case BUZZVM_INSTR_CALLCN: {
          inc_pc();
          buzzvm_callcn(vm);
+         assert_pc(vm->pc);
          break;
       }
       case BUZZVM_INSTR_CALLCC: {
          inc_pc();
          buzzvm_callcc(vm);
+         assert_pc(vm->pc);
          break;
       }
       case BUZZVM_INSTR_PUSHCN: {

@@ -21,6 +21,9 @@ void dump(buzzvm_t vm, const char* prefix) {
          case BUZZTYPE_FLOAT:
             fprintf(stderr, "[float] %f\n", o->f.value);
             break;
+         case BUZZTYPE_CLOSURE:
+            fprintf(stderr, "[closure] %d\n", o->c.value.native.addr);
+            break;
          default:
             fprintf(stderr, "[TODO]\n");
       }
