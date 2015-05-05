@@ -12,6 +12,9 @@
 
 void buzzheap_destroy_obj(uint32_t pos, void* data, void* params) {
    buzzobj_t o = *(buzzobj_t*)data;
+   if(o->o.type == BUZZTYPE_CLOSURE) {
+      buzzdarray_destroy(&(o->c.value.native.actrec));
+   }
    free(o);
 }
 
