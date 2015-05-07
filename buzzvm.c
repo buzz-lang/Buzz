@@ -42,7 +42,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
             if(vs) {
                /* Virtual stigmergy found */
                /* Deserialize key and value from msg */
-               int32_t k;                 // key
+               int32_t k;          // key
                buzzvstig_elem_t v; // value
                if(buzzvstig_elem_deserialize(&k, &v, msg, pos) > 0) {
                   /* Deserialization successful */
@@ -281,8 +281,13 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          inc_pc();
          break;
       }
-      case BUZZVM_INSTR_RET: {
+      case BUZZVM_INSTR_RET0: {
          buzzvm_ret0(vm);
+         assert_pc(vm->pc);
+         break;
+      }
+      case BUZZVM_INSTR_RET1: {
+         buzzvm_ret1(vm);
          assert_pc(vm->pc);
          break;
       }
@@ -535,14 +540,6 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
             vm->pc = arg;
             assert_pc(vm->pc);
          }
-         break;
-      }
-      case BUZZVM_INSTR_JUMPSUB: {
-         inc_pc();
-         get_arg(uint32_t);
-         buzzvm_pushi(vm, arg);
-         vm->pc = arg;
-         assert_pc(vm->pc);
          break;
       }
       default:

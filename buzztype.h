@@ -116,6 +116,35 @@ extern "C" {
    typedef union buzzobj_u* buzzobj_t;
 
    /*
+    * Returns 1 if two Buzz objects are equal, 0 otherwise.
+    * To be equal, two objects must have the same type and equal value.
+    * For numeric types, value equality is as expected; for closures,
+    * equality means pointing to the same code; for tables, equality
+    * means having the same reference (no deep check).
+    * @param a The first object.
+    * @param b The second object.
+    * @return 1 if two Buzz objects are equal, 0 otherwise.
+    */
+   extern int buzzobj_eq(const buzzobj_t a,
+                         const buzzobj_t b);
+
+   /*
+    * Compares two Buzz objects.
+    * Returns:
+    * -1 if a  < b
+    *  1 if a  > b
+    *  0 if a == b
+    * To be comparable, two objects must have the same type and equal value.
+    * For numeric types, value comparison is as expected; for closures and
+    * tables, equality is undefined and an error is issued.
+    * @param a The first object.
+    * @param b The second object.
+    * @return 1 if two Buzz objects are equal, 0 otherwise.
+    */
+   extern int buzzobj_cmp(const buzzobj_t a,
+                          const buzzobj_t b);
+
+   /*
     * Serializes a Buzz object.
     * The data is appended to the given buffer. The buffer is treated as a
     * dynamic array of uint8_t.

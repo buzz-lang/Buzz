@@ -1,18 +1,23 @@
 #include "buzzheap.h"
 #include "buzzvm.h"
+#include <stdio.h>
 #include <stdlib.h>
 
 /****************************************/
 /****************************************/
 
 #define BUZZHEAP_GC_INIT_MAXOBJS 1
+#define BUZZHEAP_TABLE_BUCKETS   100
 
 /****************************************/
 /****************************************/
 
 void buzzheap_destroy_obj(uint32_t pos, void* data, void* params) {
    buzzobj_t o = *(buzzobj_t*)data;
-   if(o->o.type == BUZZTYPE_CLOSURE) {
+   if(o->o.type == BUZZTYPE_TABLE) {
+      buzzdict_destroy(&(o->t.value));
+   }
+   else if(o->o.type == BUZZTYPE_CLOSURE) {
       buzzdarray_destroy(&(o->c.value.native.actrec));
    }
    free(o);
@@ -46,6 +51,25 @@ void buzzheap_destroy(buzzheap_t* h) {
 /****************************************/
 /****************************************/
 
+uint32_t buzzheap_table_hash(const void* key) {
+   buzzobj_t k = *(buzzobj_t*)key;
+   switch(k->o.type) {
+      case BUZZTYPE_INT: {
+         return (k->i.value % BUZZHEAP_TABLE_BUCKETS);
+      }
+      case BUZZTYPE_FLOAT: {
+         return ((uint32_t)(k->f.value) % BUZZHEAP_TABLE_BUCKETS);
+      }
+      default:
+         fprintf(stderr, "[TODO] %s:%d\n", __FILE__, __LINE__);
+         exit(1);
+   }
+}
+
+int buzzheap_table_keycmp(const void* a, const void* b) {
+   return buzzobj_cmp(*(buzzobj_t*)a, *(buzzobj_t*)b);
+}
+
 buzzobj_t buzzheap_newobj(buzzheap_t h,
                           uint16_t type) {
    /* Create a new object. calloc() filles it with zeroes */
@@ -55,7 +79,15 @@ buzzobj_t buzzheap_newobj(buzzheap_t h,
    /* Set the object marker */
    o->o.marker = h->marker;
    /* Take care of special initialization for specific types */
-   if(type == BUZZTYPE_CLOSURE) {
+   if(type == BUZZTYPE_TABLE) {
+      o->t.value = buzzdict_new(BUZZHEAP_TABLE_BUCKETS,
+                                sizeof(buzzobj_t),
+                                sizeof(buzzobj_t),
+                                buzzheap_table_hash,
+                                buzzheap_table_keycmp,
+                                NULL);
+   }
+   else if(type == BUZZTYPE_CLOSURE) {
       o->c.value.native.actrec = buzzdarray_new(1, sizeof(buzzobj_t), NULL);
    }
    /* Add object to list */

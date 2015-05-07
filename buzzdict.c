@@ -176,7 +176,7 @@ void buzzdict_foreach(buzzdict_t dt,
 
 uint32_t buzzdict_strkeyhash(const void* key) {
    /* Treat the key as a string */
-   const char* s = (const char*)key;
+   const char* s = *(const char**)key;
    /* Initialize the hash to something (e.g. a prime number) */
    uint32_t h = 5381;
    /* Go through the string */
@@ -207,7 +207,7 @@ uint32_t buzzdict_intkeyhash(const void* key) {
 /****************************************/
 
 int buzzdict_strkeycmp(const void* a, const void* b) {
-   return strcmp((const char*)a, (const char*)b);
+   return strcmp(*(const char**)a, *(const char**)b);
 }
 
 /****************************************/

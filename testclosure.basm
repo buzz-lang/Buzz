@@ -1,65 +1,45 @@
-# Stack:
-
-# pc 0
-pushnil
-# Stack: nil
-
-# pc 1
 pushi 100
-# Stack: i100 nil
+# Stack: i100
 
-# pc 6
 pushf 200.0
-# Stack: f200 i100 nil
+# Stack: f200 i100
 
-# pc 11
 pushi 300
-# Stack: i300 f200 i100 nil
+# Stack: i300 f200 i100
 
-# pc 16
 pushi 3
-# Stack: i3 i300 f200 i100 nil
+# Stack: i3 i300 f200 i100
 
-# pc 21
 pushi 1
-# Stack: i1 i3 i300 f200 i100 nil
+# Stack: i1 i3 i300 f200 i100
 
-# pc 26
 pushf 2.0
-# Stack: f2.0 i1 i3 i300 f200 i100 nil
+# Stack: f2.0 i1 i3 i300 f200 i100
 
-# pc 31
 pushi -6
-# Stack: i-6 f2.0 i1 i3 i300 f200 i100 nil
+# Stack: i-6 f2.0 i1 i3 i300 f200 i100
 
-# pc 36
 pushf -17.0
-# Stack: f-17.0 i-6 f2.0 i1 i3 i300 f200 i100 nil
+# Stack: f-17.0 i-6 f2.0 i1 i3 i300 f200 i100
 
-# pc 41
 pushi 4
-# Stack: i4 f-17.0 i-6 f2.0 i1 i3 i300 f200 i100 nil
+# Stack: i4 f-17.0 i-6 f2.0 i1 i3 i300 f200 i100
 
-# pc 46
-pushi 54
-# Stack: i54 i4 f-17.0 i-6 f2.0 i1 i3 i300 f200 i100 nil
+pushi @subroutine
+# Stack: i54 i4 f-17.0 i-6 f2.0 i1 i3 i300 f200 i100
 
-# pc 51
 pushcn
-# Stack: c54 i3 i300 f200 i100 nil
+# Stack: c54 i3 i300 f200 i100
 
-# pc 52
 callcn
 # Stack: i300 f200 i100 f-17.0 i-6 f2.0 i1
 
-# pc 53
 done
-# Stack: nil
+# Stack:
 
-# pc 54
+@subroutine
 nop
 # Stack: i300 f200 i100 f-17.0 i-6 f2.0 i1
 
-# pc 55
-ret
-# Stack: nil
+ret1
+# Stack:

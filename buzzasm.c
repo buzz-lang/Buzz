@@ -1,4 +1,5 @@
 #include "buzzasm.h"
+#include "buzzdict.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -39,8 +40,8 @@
    char* endptr;                                                        \
    T arg = CONVFUN;                                                     \
    if((arg == 0) && (argstr == endptr)) {                               \
-      fprintf(stderr, "ERROR: %s:%zu can't convert \"%s\" to number\n", fname, lineno, argstr); \
-      return 2;                                                         \
+      char* label = strdup(argstr);                                     \
+      buzzdict_set(labsubs, size, &label);                              \
    }                                                                    \
    memcpy((*buf) + (*size), (uint8_t*)(&arg), sizeof(T));               \
    (*size) += sizeof(T);
@@ -56,6 +57,11 @@
 #define bcode_add_arg_f() bcode_add_arg(float, strtof(argstr, &endptr))
 
 /*
+ * Adds a label argument to the bytecode buffer
+ */
+#define bcode_add_arg_l() bcode_add_arg(int32_t, 0); { char* label = strdup(argstr); buzzdict_set(labsubs, size, &label); }
+
+/*
  * Prints a warning if an argument is passed for an opcode that doesn't want one
  */
 #define assert_noarg() if(argstr != 0 && *argstr != 0) fprintf(stderr, "WARNING: %s:%zu ignored argument \"%s\"\n", fname, lineno, argstr);
@@ -66,10 +72,74 @@
 #define noarg_instr(OP) if(strcmp(instr, buzzvm_instr_desc[OP]) == 0) { bcode_add_instr(OP); assert_noarg(); continue; }
 #define i_arg_instr(OP) if(strcmp(instr, buzzvm_instr_desc[OP]) == 0) { bcode_add_instr(OP); bcode_add_arg_i(); continue; }
 #define f_arg_instr(OP) if(strcmp(instr, buzzvm_instr_desc[OP]) == 0) { bcode_add_instr(OP); bcode_add_arg_f(); continue; }
+#define l_arg_instr(OP) if(strcmp(instr, buzzvm_instr_desc[OP]) == 0) { bcode_add_instr(OP); bcode_add_arg_l(); continue; }
+
+void strkeydstryf(const void* key, void* data, void* params) {
+   char* k = (char*)key;
+   free(k);
+   free(data);
+}
+
+void strdatadstryf(const void* key, void* data, void* params) {
+   char* d = (char*)data;
+   free((int32_t*)key);
+   free(d);
+}
+
+struct buzz_asm_info_s {
+   const char* fname;
+   uint8_t* buf;
+   uint32_t size;
+   buzzdict_t labpos;
+   int retval;
+};
+
+void buzz_asm_labsub(const void* key, void* data, void* params) {
+   /* Get compilation state */
+   struct buzz_asm_info_s* state = (struct buzz_asm_info_s*)params;
+   /* Error found? Don't continue */
+   if(state->retval != 0) return;
+   /* Get sub position and label */
+   int32_t subpos = *(const int32_t*)key;
+   char* sublab = *(char**)data;
+   /* Look for the sub label in the list of labels */
+   int32_t* labpos = buzzdict_get(state->labpos, &sublab, int32_t);
+   if(!labpos) {
+      /* Label not found, error */
+      fprintf(stderr, "ERROR: %s: unknown label \"%s\"\n", state->fname, sublab);
+      state->retval = 2;
+   }
+   else if((*labpos) >= state->size) {
+      /* Label beyond bytecode size, error */
+      fprintf(stderr, "ERROR: %s: label \"%s\" at %d is beyond the bytecode size %u\n", state->fname, sublab, (*labpos), state->size);
+      state->retval = 2;
+   }
+   else {
+      /* Put the label value at its bytecode position */
+      memcpy(state->buf + subpos, labpos, sizeof(int32_t));
+   }
+}
 
 int buzz_asm(const char* fname,
              uint8_t** buf,
              uint32_t* size) {
+   /* Make new label position dictionary */
+   buzzdict_t labpos = buzzdict_new(100,
+                                    sizeof(char*),
+                                    sizeof(int32_t),
+                                    buzzdict_strkeyhash,
+                                    buzzdict_strkeycmp,
+                                    strkeydstryf);
+   /* Make new label substitution dictionary */
+   buzzdict_t labsubs = buzzdict_new(100,
+                                     sizeof(int32_t),
+                                     sizeof(char*),
+                                     buzzdict_intkeyhash,
+                                     buzzdict_intkeycmp,
+                                     strdatadstryf);
+   /*
+    * Perform first pass - compilation and label collection
+    */
    /* Open file */
    FILE* fd = fopen(fname, "r");
    if(!fd) {
@@ -98,6 +168,13 @@ int buzz_asm(const char* fname,
       char* endc = trimline + strlen(trimline) - 1;
       while(endc > trimline && isspace(*endc)) --endc;
       *(endc + 1) = 0;
+      /* Is the line a label? */
+      if(*trimline == '@') {
+         char* label = strdup(trimline);
+         buzzdict_set(labpos, &label, size);
+         fprintf(stderr, "[DEBUG] %s:%zu %s\tLABEL at %u (%p)\n", fname, lineno, label, *size, label);
+         continue;
+      }
       /* Fetch the instruction */
       fprintf(stderr, "[DEBUG] %s:%zu %s", fname, lineno, trimline);
       char* instr = strsep(&trimline, " \n\t");
@@ -108,7 +185,8 @@ int buzz_asm(const char* fname,
       noarg_instr(BUZZVM_INSTR_DONE);
       noarg_instr(BUZZVM_INSTR_PUSHNIL);
       noarg_instr(BUZZVM_INSTR_POP);
-      noarg_instr(BUZZVM_INSTR_RET);
+      noarg_instr(BUZZVM_INSTR_RET0);
+      noarg_instr(BUZZVM_INSTR_RET1);
       noarg_instr(BUZZVM_INSTR_ADD);
       noarg_instr(BUZZVM_INSTR_SUB);
       noarg_instr(BUZZVM_INSTR_MUL);
@@ -122,6 +200,9 @@ int buzz_asm(const char* fname,
       noarg_instr(BUZZVM_INSTR_LT);
       noarg_instr(BUZZVM_INSTR_LTE);
       noarg_instr(BUZZVM_INSTR_SHOUT);
+      noarg_instr(BUZZVM_INSTR_PUSHT);
+      noarg_instr(BUZZVM_INSTR_TPUT);
+      noarg_instr(BUZZVM_INSTR_TGET);
       noarg_instr(BUZZVM_INSTR_VSCREATE);
       noarg_instr(BUZZVM_INSTR_VSPUT);
       noarg_instr(BUZZVM_INSTR_VSGET);
@@ -132,17 +213,32 @@ int buzz_asm(const char* fname,
       f_arg_instr(BUZZVM_INSTR_PUSHF);
       i_arg_instr(BUZZVM_INSTR_PUSHI);
       i_arg_instr(BUZZVM_INSTR_DUP);
-      i_arg_instr(BUZZVM_INSTR_JUMP);
-      i_arg_instr(BUZZVM_INSTR_JUMPZ);
-      i_arg_instr(BUZZVM_INSTR_JUMPNZ);
-      i_arg_instr(BUZZVM_INSTR_JUMPSUB);
+      l_arg_instr(BUZZVM_INSTR_JUMP);
+      l_arg_instr(BUZZVM_INSTR_JUMPZ);
+      l_arg_instr(BUZZVM_INSTR_JUMPNZ);
       /* No match, error */
-      fprintf(stderr, "ERROR: %s:%zu unknown instruction \"%s\"\n", fname, lineno, instr); \
+      fprintf(stderr, "ERROR: %s:%zu unknown instruction \"%s\"\n", fname, lineno, instr);
       return 2;
    }
    /* Close file */
    fclose(fd);
-   return 0;
+   /*
+    * Perform second pass: label substitution
+    */
+   /* Go through the substitutions */
+   struct buzz_asm_info_s state = {
+      .fname = fname,
+      .buf = *buf,
+      .size = *size,
+      .labpos = labpos,
+      .retval = 0
+   };
+   buzzdict_foreach(labsubs, buzz_asm_labsub, &state);
+   /* Cleanup */
+   free(rawline);
+   buzzdict_destroy(&labpos);
+   buzzdict_destroy(&labsubs);
+   return state.retval;
 }
 
 /****************************************/

@@ -1,5 +1,62 @@
 #include "buzztype.h"
 #include <stdio.h>
+#include <stdlib.h>
+
+/****************************************/
+/****************************************/
+
+int buzzobj_eq(const buzzobj_t a,
+               const buzzobj_t b) {
+   /* Make sure the type is the same */
+   if(a->o.type != a->o.type) return 0;
+   /* Equality means different things for different types */
+   switch(a->o.type) {
+      case BUZZTYPE_NIL:     return 1;
+      case BUZZTYPE_INT:     return (a->i.value == b->i.value);
+      case BUZZTYPE_FLOAT:   return (a->f.value == b->f.value);
+      case BUZZTYPE_STRING:  return 0; // TODO
+      case BUZZTYPE_TABLE:   return (a->t.value == b->t.value);
+      case BUZZTYPE_SWARM:   return 0; // TODO
+      case BUZZTYPE_CLOSURE:
+         return((a->c.isnative            == b->c.isnative)              &&
+                (a->c.value.native.addr   == b->c.value.native.addr)     &&
+                (a->c.value.native.actrec == b->c.value.native.actrec));
+      default:
+         fprintf(stderr, "[BUG] %s:%d: Equality test between wrong Buzz objects types %d and %d\n", __FILE__, __LINE__, a->o.type, b->o.type);
+         exit(1);
+   }
+}
+
+/****************************************/
+/****************************************/
+
+int buzzobj_cmp(const buzzobj_t a,
+                const buzzobj_t b) {
+   /* Numeric types */
+   if(a->o.type == BUZZTYPE_INT && b->o.type == BUZZTYPE_INT) {
+      if(a->i.value < b->i.value) return -1;
+      if(a->i.value > b->i.value) return 1;
+      return 0;
+   }
+   if(a->o.type == BUZZTYPE_INT && b->o.type == BUZZTYPE_FLOAT) {
+      if(a->i.value < b->f.value) return -1;
+      if(a->i.value > b->f.value) return 1;
+      return 0;
+   }
+   if(a->o.type == BUZZTYPE_FLOAT && b->o.type == BUZZTYPE_INT) {
+      if(a->f.value < b->i.value) return -1;
+      if(a->f.value > b->i.value) return 1;
+      return 0;
+   }
+   if(a->o.type == BUZZTYPE_FLOAT && b->o.type == BUZZTYPE_FLOAT) {
+      if(a->f.value < b->f.value) return -1;
+      if(a->f.value > b->f.value) return 1;
+      return 0;
+   }
+   // TODO better error management
+   fprintf(stderr, "[TODO] %s:%d: raise error for comparison between Buzz objects of types %d and %d\n", __FILE__, __LINE__, a->o.type, b->o.type);
+   exit(1);
+}
 
 /****************************************/
 /****************************************/

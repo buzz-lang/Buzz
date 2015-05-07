@@ -43,7 +43,8 @@ extern "C" {
       BUZZVM_INSTR_DONE,     // End of the program
       BUZZVM_INSTR_PUSHNIL,  // Push nil onto stack
       BUZZVM_INSTR_POP,      // Pop value from stack
-      BUZZVM_INSTR_RET,      // Sets PC to value at stack top, then pops it
+      BUZZVM_INSTR_RET0,     // Returns from closure call, see buzzvm_ret0()
+      BUZZVM_INSTR_RET1,     // Returns from closure call, see buzzvm_ret1()
       BUZZVM_INSTR_ADD,      // Push stack(#1) + stack(#2), pop operands
       BUZZVM_INSTR_SUB,      // Push stack(#1) - stack(#2), pop operands
       BUZZVM_INSTR_MUL,      // Push stack(#1) * stack(#2), pop operands
@@ -57,6 +58,9 @@ extern "C" {
       BUZZVM_INSTR_LT,       // Push stack(#1) < stack(#2), pop operands
       BUZZVM_INSTR_LTE,      // Push stack(#1) <= stack(#2), pop operands
       BUZZVM_INSTR_SHOUT,    // Broadcast variable stack(#1), pop operands
+      BUZZVM_INSTR_PUSHT,    // Push empty table
+      BUZZVM_INSTR_TPUT,     // Put key (stack(#2)), value (stack #1) in table (stack #3), pop key and value
+      BUZZVM_INSTR_TGET,     // Push value for key (stack(#1)) in table (stack #2), pop key
       BUZZVM_INSTR_VSCREATE, // Create virtual stigmergy from integer id stack(#1), pop operands
       BUZZVM_INSTR_VSPUT,    // Put (key stack(#2),value stack(#1)) in virtual stigmergy stack(#3), pop operands
       BUZZVM_INSTR_VSGET,    // Push virtual stigmergy stack(#2) value of key stack(#1), pop operand
@@ -75,9 +79,8 @@ extern "C" {
       BUZZVM_INSTR_JUMP,     // Set PC to argument
       BUZZVM_INSTR_JUMPZ,    // Set PC to argument if stack top is zero
       BUZZVM_INSTR_JUMPNZ,   // Set PC to argument if stack top is not zero
-      BUZZVM_INSTR_JUMPSUB,  // Push current PC and sets PC to argument
    } buzzvm_instr;
-   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret", "add", "sub", "mul", "div", "and", "or", "not", "eq", "gt", "gte", "lt", "lte", "shout", "vscreate", "vsput", "vsget", "callcn", "callcc", "pushcn", "pushcc", "pushf", "pushi", "dup", "jump", "jumpz", "jumpnz", "jumpsub"};
+   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "and", "or", "not", "eq", "gt", "gte", "lt", "lte", "shout", "pusht", "tput", "tget", "vscreate", "vsput", "vsget", "callcn", "callcc", "pushcn", "pushcc", "pushf", "pushi", "dup", "jump", "jumpz", "jumpnz", "jumpsub"};
 
    /*
     * Function pointer for BUZZVM_INSTR_CALL.
@@ -457,42 +460,43 @@ extern "C" {
 
 /*
  * Returns from a closure without setting a return value.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * This function expects at least two stacks to be present. The first stack
- * is popped. The stack beneath, now the top stack, is expect to have at least
- * two elements: the return address at #1 and the return value at #2. The
- * return address is popped and used to update the program counter. The
- * return value is left untouched.
+ * Internally checks whether the operation is valid.  This function is
+ * designed to be used within int-returning functions such as BuzzVM
+ * hook functions or buzzvm_step().  This function expects at least
+ * two stacks to be present. The first stack is popped. The stack
+ * beneath, now the top stack, is expected to have at least one
+ * element: the return address at #1. The return address is popped and
+ * used to update the program counter.
  */
 #define buzzvm_ret0(vm) {                                         \
       buzzdarray_pop((vm)->stacks);                               \
       (vm)->stack = buzzdarray_last((vm)->stacks, buzzdarray_t);  \
-      buzzvm_stack_assert(vm, 2);                                 \
+      buzzvm_stack_assert(vm, 1);                                 \
       (vm)->pc = buzzvm_stack_at(vm, 1)->i.value;                 \
       buzzvm_pop(vm);                                             \
    }
 
 /*
  * Returns from a closure setting a return value.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * This function expects at least two stacks to be present. The first stack
- * is popped. The stack beneath, now the top stack, is expect to have at least
- * two elements: the return address at #1 and the return value at #2. The
- * return address is popped and used to update the program counter. The
- * return value is set in stack #2.
+ * Internally checks whether the operation is valid.  This function is
+ * designed to be used within int-returning functions such as BuzzVM
+ * hook functions or buzzvm_step().
+ * This function expects at least two stacks to be present. The first
+ * stack must have at least one element, which is saved as the return
+ * value of the call. The stack is then popped. The stack beneath, now
+ * the top stack, is expected to have at least one element: the return
+ * address at #1. The return address is popped and used to update the
+ * program counter. Then, the saved return value is pushed on the
+ * stack.
  */
-#define buzzvm_ret1(vm, obj) {                                    \
-      buzzobj_t o = (obj);                                        \
+#define buzzvm_ret1(vm) {                                         \
+      buzzobj_t ret = buzzvm_stack_at(vm, 1);                     \
       buzzdarray_pop((vm)->stacks);                               \
       (vm)->stack = buzzdarray_last((vm)->stacks, buzzdarray_t);  \
-      buzzvm_stack_assert(vm, 2);                                 \
+      buzzvm_stack_assert(vm, 1);                                 \
       (vm)->pc = buzzvm_stack_at(vm, 1)->i.value;                 \
       buzzvm_pop(vm);                                             \
-      buzzdarray_set((vm)->stack, buzzvm_stack_top(vm) - 2, o);   \
+      buzzvm_push(vm, ret);                                       \
    }
 
 /**
@@ -506,11 +510,9 @@ extern "C" {
  * #3   Closure arg1
  * ...
  * #2+N Closure argN
- * #3+N A nil object for the return value
  * This function pushes a new stack filled with the activation record entries
  * and the closure arguments. In addition, it leaves the stack beneath as follows:
  * #1 An integer for the return address
- * #2 A nil object for the return value
  */
 #define buzzvm_callcn(vm) {                                             \
       buzzvm_stack_assert(vm, 2);                                       \
@@ -546,11 +548,9 @@ extern "C" {
  * #3   Closure arg1
  * ...
  * #2+N Closure argN
- * #3+N A nil object for the return value
  * This function pushes a new stack filled with the activation record entries
  * and the closure arguments. In addition, it leaves the stack beneath as follows:
  * #1 An integer for the return address
- * #2 A nil object for the return value
  */
 #define buzzvm_callcc(vm) {                                             \
       buzzvm_stack_assert(vm, 2);                                       \
