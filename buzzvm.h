@@ -199,7 +199,7 @@ extern "C" {
  * @param vm The VM data.
  * @param idx The stack index, where 0 is the stack top and >0 goes down the stack.
  */
-#define buzzvm_stack_at(vm, idx) buzzdarray_get((vm)->stack, (buzzvm_stack_top(vm) - idx), buzzobj_t)
+#define buzzvm_stack_at(vm, idx) buzzdarray_get((vm)->stack, (buzzvm_stack_top(vm) - (idx)), buzzobj_t)
 
 /*
  * Terminates the current Buzz script.
@@ -505,22 +505,21 @@ extern "C" {
  * This function is designed to be used within int-returning functions such as
  * BuzzVM hook functions or buzzvm_step().
  * This function expects the stack to be as follows:
- * #1   The closure
- * #2   An integer for the number of closure parameters N
- * #3   Closure arg1
+ * #1   An integer for the number of closure parameters N
+ * #2   Closure arg1
  * ...
- * #2+N Closure argN
+ * #1+N Closure argN
+ * #2+N The closure
  * This function pushes a new stack filled with the activation record entries
  * and the closure arguments. In addition, it leaves the stack beneath as follows:
  * #1 An integer for the return address
  */
 #define buzzvm_callcn(vm) {                                             \
-      buzzvm_stack_assert(vm, 2);                                       \
-      buzzobj_t c = buzzvm_stack_at(vm, 1);                             \
-      int32_t argn = buzzvm_stack_at(vm, 2)->i.value;                   \
+      buzzvm_stack_assert(vm, 1);                                       \
+      int32_t argn = buzzvm_stack_at(vm, 1)->i.value;                   \
       buzzvm_pop(vm);                                                   \
-      buzzvm_pop(vm);                                                   \
-      buzzvm_stack_assert(vm, argn);                                    \
+      buzzvm_stack_assert(vm, argn+1);                                  \
+      buzzobj_t c = buzzvm_stack_at(vm, argn+1);                        \
       buzzdarray_t prstack = (vm)->stack;                               \
       (vm)->stack = buzzdarray_clone(c->c.value.native.actrec);         \
       buzzdarray_push((vm)->stacks, &((vm)->stack));                    \
@@ -529,7 +528,7 @@ extern "C" {
                      buzzdarray_get(prstack,                            \
                                     buzzdarray_size(prstack) - i,       \
                                     buzzobj_t));                        \
-      for(int32_t i = argn; i > 0; --i)                                 \
+      for(int32_t i = argn+1; i > 0; --i)                               \
          buzzdarray_pop(prstack);                                       \
       buzzobj_t retaddr = buzzheap_newobj((vm)->heap, BUZZTYPE_INT);    \
       retaddr->i.value = (vm)->pc;                                      \
@@ -543,26 +542,25 @@ extern "C" {
  * This function is designed to be used within int-returning functions such as
  * BuzzVM hook functions or buzzvm_step().
  * This function expects the stack to be as follows:
- * #1   The closure
- * #2   An integer for the number of closure parameters N
- * #3   Closure arg1
+ * #1   An integer for the number of closure parameters N
+ * #2   Closure arg1
  * ...
- * #2+N Closure argN
+ * #1+N Closure argN
+ * #2+N The closure
  * This function pushes a new stack filled with the activation record entries
  * and the closure arguments. In addition, it leaves the stack beneath as follows:
  * #1 An integer for the return address
  */
 #define buzzvm_callcc(vm) {                                             \
-      buzzvm_stack_assert(vm, 2);                                       \
-      buzzobj_t c = buzzvm_stack_at(vm, 1);                             \
+      buzzvm_stack_assert(vm, 1);                                       \
+      int32_t argn = buzzvm_stack_at(vm, 1)->i.value;                   \
+      buzzvm_pop(vm);                                                   \
+      buzzobj_t c = buzzvm_stack_at(vm, argn+1);                        \
       if((c->c.value.cfun.id) >= buzzdarray_size((vm)->flist)) {        \
          (vm)->state = BUZZVM_STATE_ERROR;                              \
          (vm)->error = BUZZVM_ERROR_FLIST;                              \
          return vm->state;                                              \
       }                                                                 \
-      int32_t argn = buzzvm_stack_at(vm, 2)->i.value;                   \
-      buzzvm_pop(vm);                                                   \
-      buzzvm_pop(vm);                                                   \
       buzzvm_stack_assert(vm, argn);                                    \
       buzzdarray_t prstack = (vm)->stack;                               \
       (vm)->stack = buzzdarray_clone(c->c.value.cfun.actrec);           \
@@ -572,12 +570,57 @@ extern "C" {
                      buzzdarray_get(prstack,                            \
                                     buzzdarray_size(prstack) - i,       \
                                     buzzobj_t));                        \
-      for(int32_t i = argn; i > 0; --i)                                 \
+      for(int32_t i = argn+1; i > 0; --i)                               \
          buzzdarray_pop(prstack);                                       \
       buzzobj_t retaddr = buzzheap_newobj((vm)->heap, BUZZTYPE_INT);    \
       retaddr->i.value = (vm)->pc;                                      \
       buzzdarray_push(prstack, &retaddr);                               \
       buzzdarray_get((vm)->flist, c->c.value.cfun.id, buzzvm_funp)(vm); \
    }
+
+/*
+ * Pushes an empty table onto the stack.
+ * @param vm The VM data.
+ */
+#define buzzvm_pusht(vm) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_TABLE); buzzvm_push(vm, o); }
+
+/*
+ * Stores a (key,value) pair in a table.
+ * The stack is expected to be as follows:
+ * #1 value
+ * #2 key
+ * #3 table
+ * This operation pops #1 and #2, leaving the table at the stack top.
+ * @param vm The VM data.
+ */
+#define buzzvm_tput(vm) {                       \
+   buzzvm_stack_assert(vm, 3);                  \
+   buzzobj_t v = buzzvm_stack_at(vm, 1);        \
+   buzzobj_t k = buzzvm_stack_at(vm, 2);        \
+   buzzobj_t t = buzzvm_stack_at(vm, 3);        \
+   buzzdict_set(t->t.value, &k, &v);            \
+   buzzvm_pop(vm);                              \
+   buzzvm_pop(vm);                              \
+}
+
+/*
+ * Fetches a (key,value) pair from a table.
+ * The stack is expected to be as follows:
+ * #1 key
+ * #2 table
+ * This operation pops #1 and pushes the value, leaving the table at
+ * stack #2. If the element for the given key is not found, nil is
+ * pushed as value.
+ * @param vm The VM data.
+ */
+#define buzzvm_tget(vm) {                                    \
+   buzzvm_stack_assert(vm, 2);                               \
+   buzzobj_t  k = buzzvm_stack_at(vm, 1);                    \
+   buzzobj_t  t = buzzvm_stack_at(vm, 2);                    \
+   buzzobj_t* v = buzzdict_get(t->t.value, &k, buzzobj_t);   \
+   buzzvm_pop(vm);                                           \
+   if(v) buzzvm_push(vm, *v);                                \
+   else buzzvm_pushnil(vm);                                  \
+}
 
 #endif

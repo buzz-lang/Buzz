@@ -1,0 +1,64 @@
+# Stack:
+
+pusht
+# Stack: t
+
+pushi 17
+# Stack: i17 t
+
+pushf 6
+# Stack: f6 i17 t
+
+tput
+# Stack: t
+
+pushi 17
+# Stack: i17 t
+
+tget
+# Stack: f6 t
+
+pop
+# Stack: t
+
+pushi 5
+# Stack: i5 t
+
+tget
+# Stack: nil t
+
+pop
+# Stack: t
+
+pushi 77
+# Stack: i77 t
+
+pushi 0
+# Stack: i0 i77 t
+
+pushi @subroutine
+# Stack: i@ i0 i77 t
+
+pushcn
+# Stack: c@ i77 t
+
+tput
+# Stack: t
+
+pushi 77
+# Stack: i77 t
+
+tget
+# Stack: c@ t
+
+pushi 0
+# Stack: 0 c@ t
+
+callcn
+# Stack: 67 t
+
+done
+
+@subroutine
+pushi 67
+ret1

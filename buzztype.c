@@ -54,7 +54,7 @@ int buzzobj_cmp(const buzzobj_t a,
       return 0;
    }
    // TODO better error management
-   fprintf(stderr, "[TODO] %s:%d: raise error for comparison between Buzz objects of types %d and %d\n", __FILE__, __LINE__, a->o.type, b->o.type);
+   fprintf(stderr, "[TODO] %s:%d: error for comparison between Buzz objects of types %d and %d\n", __FILE__, __LINE__, a->o.type, b->o.type);
    exit(1);
 }
 

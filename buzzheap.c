@@ -99,7 +99,9 @@ buzzobj_t buzzheap_newobj(buzzheap_t h,
 /****************************************/
 /****************************************/
 
+void buzzheap_objmark(buzzobj_t o, buzzheap_t h);
 void buzzheap_stackobj_mark(uint32_t pos, void* data, void* params);
+void buzzheap_dictobj_mark(const void* key, void* data, void* params);
 
 void buzzheap_objmark(buzzobj_t o,
                       buzzheap_t h) {
@@ -111,11 +113,21 @@ void buzzheap_objmark(buzzobj_t o,
    /* Update marker */
    o->o.marker = h->marker;
    /* Take care of composite types */
-   if(o->o.type == BUZZTYPE_CLOSURE) {
+   if(o->o.type == BUZZTYPE_TABLE) {
+      buzzdict_foreach(o->t.value,
+                       buzzheap_dictobj_mark,
+                       h);
+   }
+   else if(o->o.type == BUZZTYPE_CLOSURE) {
       buzzdarray_foreach(o->c.value.native.actrec,
                          buzzheap_stackobj_mark,
                          h);
    }
+}
+
+void buzzheap_dictobj_mark(const void* key, void* data, void* params) {
+   buzzheap_objmark(*(buzzobj_t*)key, (buzzheap_t)params);
+   buzzheap_objmark(*(buzzobj_t*)data, (buzzheap_t)params);
 }
 
 void buzzheap_stackobj_mark(uint32_t pos,

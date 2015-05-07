@@ -35,7 +35,7 @@ buzzdarray_t buzzdarray_clone(const buzzdarray_t da) {
    buzzdarray_t clone = (buzzdarray_t)malloc(sizeof(struct buzzdarray_s));
    /* Copy info */
    clone->size = da->size;
-   clone->capacity = clone->size;
+   clone->capacity = clone->size > 0 ? clone->size : 1;
    clone->elem_size = da->elem_size;
    clone->elem_destroy = da->elem_destroy;
    /* Create data buffer */

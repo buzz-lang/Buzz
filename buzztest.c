@@ -24,8 +24,11 @@ void dump(buzzvm_t vm, const char* prefix) {
          case BUZZTYPE_CLOSURE:
             fprintf(stderr, "[closure] %d\n", o->c.value.native.addr);
             break;
+         case BUZZTYPE_TABLE:
+            fprintf(stderr, "[table] %d\n", buzzdict_size(o->t.value));
+            break;
          default:
-            fprintf(stderr, "[TODO]\n");
+            fprintf(stderr, "[TODO] type = %d\n", o->o.type);
       }
    }
    fprintf(stderr, "%s============================================================\n\n", prefix);
