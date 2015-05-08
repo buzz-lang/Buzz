@@ -16,6 +16,7 @@ int buzzobj_eq(const buzzobj_t a,
       case BUZZTYPE_FLOAT:   return (a->f.value == b->f.value);
       case BUZZTYPE_STRING:  return 0; // TODO
       case BUZZTYPE_TABLE:   return (a->t.value == b->t.value);
+      case BUZZTYPE_ARRAY:   return (a->a.value == b->a.value);
       case BUZZTYPE_SWARM:   return 0; // TODO
       case BUZZTYPE_CLOSURE:
          return((a->c.isnative            == b->c.isnative)              &&

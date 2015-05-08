@@ -160,11 +160,17 @@ void buzzdarray_clear(buzzdarray_t da,
 void buzzdarray_set(buzzdarray_t da,
                     uint32_t pos,
                     const void* value) {
-   /* Copy value */
-   memcpy(
-      buzzdarray_rawget(da, pos),
-      value,
-      da->elem_size);
+   if(pos < buzzdarray_size(da)) {
+      /* Copy value */
+      memcpy(
+         buzzdarray_rawget(da, pos),
+         value,
+         da->elem_size);
+   }
+   else {
+      /* Insert value */
+      buzzdarray_insert(da, pos, value);
+   }
 }
 
 /****************************************/

@@ -380,6 +380,21 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          inc_pc();
          break;
       }
+      case BUZZVM_INSTR_PUSHA: {
+         buzzvm_pusha(vm);
+         inc_pc();
+         break;
+      }
+      case BUZZVM_INSTR_APUT: {
+         buzzvm_aput(vm);
+         inc_pc();
+         break;
+      }
+      case BUZZVM_INSTR_AGET: {
+         buzzvm_aget(vm);
+         inc_pc();
+         break;
+      }
       case BUZZVM_INSTR_VSCREATE: {
          /* Get integer id from stack(#1) */
          buzzvm_stack_assert(vm, 1);

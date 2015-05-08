@@ -13,8 +13,9 @@
 #define BUZZTYPE_FLOAT   2
 #define BUZZTYPE_STRING  3
 #define BUZZTYPE_TABLE   4
-#define BUZZTYPE_SWARM   5
-#define BUZZTYPE_CLOSURE 6
+#define BUZZTYPE_ARRAY   5
+#define BUZZTYPE_SWARM   6
+#define BUZZTYPE_CLOSURE 7
 
 /*
  * Info extraction from an object
@@ -70,6 +71,15 @@ extern "C" {
    } buzztable_t;
 
    /*
+    * Array
+    */
+   typedef struct {
+      uint16_t     type;
+      uint16_t     marker;
+      buzzdarray_t value;
+   } buzzarray_t;
+
+   /*
     * Swarm
     */
    typedef struct {
@@ -110,6 +120,7 @@ extern "C" {
       buzzfloat_t   f;      // as floating-point
       buzzstring_t  s;      // as string
       buzztable_t   t;      // as table
+      buzzarray_t   a;      // as array
       buzzswarm_t   g;      // as swarm (group)
       buzzclosure_t c;      // as closure
    };

@@ -61,6 +61,9 @@ extern "C" {
       BUZZVM_INSTR_PUSHT,    // Push empty table
       BUZZVM_INSTR_TPUT,     // Put key (stack(#2)), value (stack #1) in table (stack #3), pop key and value
       BUZZVM_INSTR_TGET,     // Push value for key (stack(#1)) in table (stack #2), pop key
+      BUZZVM_INSTR_PUSHA,    // Push empty array
+      BUZZVM_INSTR_APUT,     // Put idx (stack(#2)), value (stack #1) in array (stack #3), pop idx and value
+      BUZZVM_INSTR_AGET,     // Push value for idx (stack(#1)) in array (stack #2), pop idx
       BUZZVM_INSTR_VSCREATE, // Create virtual stigmergy from integer id stack(#1), pop operands
       BUZZVM_INSTR_VSPUT,    // Put (key stack(#2),value stack(#1)) in virtual stigmergy stack(#3), pop operands
       BUZZVM_INSTR_VSGET,    // Push virtual stigmergy stack(#2) value of key stack(#1), pop operand
@@ -80,7 +83,7 @@ extern "C" {
       BUZZVM_INSTR_JUMPZ,    // Set PC to argument if stack top is zero
       BUZZVM_INSTR_JUMPNZ,   // Set PC to argument if stack top is not zero
    } buzzvm_instr;
-   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "and", "or", "not", "eq", "gt", "gte", "lt", "lte", "shout", "pusht", "tput", "tget", "vscreate", "vsput", "vsget", "callcn", "callcc", "pushcn", "pushcc", "pushf", "pushi", "dup", "jump", "jumpz", "jumpnz", "jumpsub"};
+   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "and", "or", "not", "eq", "gt", "gte", "lt", "lte", "shout", "pusht", "tput", "tget", "pusha", "aput", "aget", "vscreate", "vsput", "vsget", "callcn", "callcc", "pushcn", "pushcc", "pushf", "pushi", "dup", "jump", "jumpz", "jumpnz", "jumpsub"};
 
    /*
     * Function pointer for BUZZVM_INSTR_CALL.
@@ -489,15 +492,15 @@ extern "C" {
  * program counter. Then, the saved return value is pushed on the
  * stack.
  */
-#define buzzvm_ret1(vm) {                                         \
-      buzzobj_t ret = buzzvm_stack_at(vm, 1);                     \
-      buzzdarray_pop((vm)->stacks);                               \
-      (vm)->stack = buzzdarray_last((vm)->stacks, buzzdarray_t);  \
-      buzzvm_stack_assert(vm, 1);                                 \
-      (vm)->pc = buzzvm_stack_at(vm, 1)->i.value;                 \
-      buzzvm_pop(vm);                                             \
-      buzzvm_push(vm, ret);                                       \
-   }
+#define buzzvm_ret1(vm) {                                               \
+                         buzzobj_t ret = buzzvm_stack_at(vm, 1);        \
+                         buzzdarray_pop((vm)->stacks);                  \
+                         (vm)->stack = buzzdarray_last((vm)->stacks, buzzdarray_t); \
+                         buzzvm_stack_assert(vm, 1);                    \
+                         (vm)->pc = buzzvm_stack_at(vm, 1)->i.value;    \
+                         buzzvm_pop(vm);                                \
+                         buzzvm_push(vm, ret);                          \
+                         }
 
 /**
  * Calls a native closure.
@@ -514,26 +517,26 @@ extern "C" {
  * and the closure arguments. In addition, it leaves the stack beneath as follows:
  * #1 An integer for the return address
  */
-#define buzzvm_callcn(vm) {                                             \
-      buzzvm_stack_assert(vm, 1);                                       \
-      int32_t argn = buzzvm_stack_at(vm, 1)->i.value;                   \
-      buzzvm_pop(vm);                                                   \
-      buzzvm_stack_assert(vm, argn+1);                                  \
-      buzzobj_t c = buzzvm_stack_at(vm, argn+1);                        \
-      buzzdarray_t prstack = (vm)->stack;                               \
-      (vm)->stack = buzzdarray_clone(c->c.value.native.actrec);         \
-      buzzdarray_push((vm)->stacks, &((vm)->stack));                    \
-      for(int32_t i = argn; i > 0; --i)                                 \
-         buzzvm_push(vm,                                                \
-                     buzzdarray_get(prstack,                            \
-                                    buzzdarray_size(prstack) - i,       \
-                                    buzzobj_t));                        \
-      for(int32_t i = argn+1; i > 0; --i)                               \
-         buzzdarray_pop(prstack);                                       \
-      buzzobj_t retaddr = buzzheap_newobj((vm)->heap, BUZZTYPE_INT);    \
-      retaddr->i.value = (vm)->pc;                                      \
-      buzzdarray_push(prstack, &retaddr);                               \
-      (vm)->pc = c->c.value.native.addr;                                \
+#define buzzvm_callcn(vm) {                                           \
+      buzzvm_stack_assert(vm, 1);                                     \
+      int32_t argn = buzzvm_stack_at(vm, 1)->i.value;                 \
+      buzzvm_pop(vm);                                                 \
+      buzzvm_stack_assert(vm, argn+1);                                \
+      buzzobj_t c = buzzvm_stack_at(vm, argn+1);                      \
+      buzzdarray_t prstack = (vm)->stack;                             \
+      (vm)->stack = buzzdarray_clone(c->c.value.native.actrec);       \
+      buzzdarray_push((vm)->stacks, &((vm)->stack));                  \
+      for(int32_t i = argn; i > 0; --i)                               \
+         buzzvm_push(vm,                                              \
+                     buzzdarray_get(prstack,                          \
+                                    buzzdarray_size(prstack) - i,     \
+                                    buzzobj_t));                      \
+      for(int32_t i = argn+1; i > 0; --i)                             \
+         buzzdarray_pop(prstack);                                     \
+      buzzobj_t retaddr = buzzheap_newobj((vm)->heap, BUZZTYPE_INT);  \
+      retaddr->i.value = (vm)->pc;                                    \
+      buzzdarray_push(prstack, &retaddr);                             \
+      (vm)->pc = c->c.value.native.addr;                              \
    }
 
 /**
@@ -552,31 +555,31 @@ extern "C" {
  * #1 An integer for the return address
  */
 #define buzzvm_callcc(vm) {                                             \
-      buzzvm_stack_assert(vm, 1);                                       \
-      int32_t argn = buzzvm_stack_at(vm, 1)->i.value;                   \
-      buzzvm_pop(vm);                                                   \
-      buzzobj_t c = buzzvm_stack_at(vm, argn+1);                        \
-      if((c->c.value.cfun.id) >= buzzdarray_size((vm)->flist)) {        \
+                           buzzvm_stack_assert(vm, 1);                  \
+                           int32_t argn = buzzvm_stack_at(vm, 1)->i.value; \
+                           buzzvm_pop(vm);                              \
+                           buzzobj_t c = buzzvm_stack_at(vm, argn+1);   \
+                           if((c->c.value.cfun.id) >= buzzdarray_size((vm)->flist)) { \
          (vm)->state = BUZZVM_STATE_ERROR;                              \
          (vm)->error = BUZZVM_ERROR_FLIST;                              \
          return vm->state;                                              \
-      }                                                                 \
-      buzzvm_stack_assert(vm, argn);                                    \
-      buzzdarray_t prstack = (vm)->stack;                               \
-      (vm)->stack = buzzdarray_clone(c->c.value.cfun.actrec);           \
-      buzzdarray_push((vm)->stacks, &((vm)->stack));                    \
-      for(int32_t i = argn; i > 0; --i)                                 \
-         buzzvm_push(vm,                                                \
-                     buzzdarray_get(prstack,                            \
-                                    buzzdarray_size(prstack) - i,       \
-                                    buzzobj_t));                        \
-      for(int32_t i = argn+1; i > 0; --i)                               \
-         buzzdarray_pop(prstack);                                       \
-      buzzobj_t retaddr = buzzheap_newobj((vm)->heap, BUZZTYPE_INT);    \
-      retaddr->i.value = (vm)->pc;                                      \
-      buzzdarray_push(prstack, &retaddr);                               \
-      buzzdarray_get((vm)->flist, c->c.value.cfun.id, buzzvm_funp)(vm); \
-   }
+         }                                                              \
+                           buzzvm_stack_assert(vm, argn);               \
+                           buzzdarray_t prstack = (vm)->stack;          \
+                           (vm)->stack = buzzdarray_clone(c->c.value.cfun.actrec); \
+                           buzzdarray_push((vm)->stacks, &((vm)->stack)); \
+                           for(int32_t i = argn; i > 0; --i)            \
+                              buzzvm_push(vm,                           \
+                                             buzzdarray_get(prstack,    \
+                                                               buzzdarray_size(prstack) - i, \
+                                                               buzzobj_t)); \
+                           for(int32_t i = argn+1; i > 0; --i)          \
+                              buzzdarray_pop(prstack);                  \
+                           buzzobj_t retaddr = buzzheap_newobj((vm)->heap, BUZZTYPE_INT); \
+                           retaddr->i.value = (vm)->pc;                 \
+                           buzzdarray_push(prstack, &retaddr);          \
+                           buzzdarray_get((vm)->flist, c->c.value.cfun.id, buzzvm_funp)(vm); \
+                           }
 
 /*
  * Pushes an empty table onto the stack.
@@ -585,42 +588,89 @@ extern "C" {
 #define buzzvm_pusht(vm) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_TABLE); buzzvm_push(vm, o); }
 
 /*
- * Stores a (key,value) pair in a table.
+ * Stores a (idx,value) pair in a table.
  * The stack is expected to be as follows:
  * #1 value
- * #2 key
+ * #2 idx
  * #3 table
  * This operation pops #1 and #2, leaving the table at the stack top.
  * @param vm The VM data.
  */
 #define buzzvm_tput(vm) {                       \
-   buzzvm_stack_assert(vm, 3);                  \
-   buzzobj_t v = buzzvm_stack_at(vm, 1);        \
-   buzzobj_t k = buzzvm_stack_at(vm, 2);        \
-   buzzobj_t t = buzzvm_stack_at(vm, 3);        \
-   buzzdict_set(t->t.value, &k, &v);            \
-   buzzvm_pop(vm);                              \
-   buzzvm_pop(vm);                              \
-}
+      buzzvm_stack_assert(vm, 3);               \
+      buzzobj_t v = buzzvm_stack_at(vm, 1);     \
+      buzzobj_t k = buzzvm_stack_at(vm, 2);     \
+      buzzobj_t t = buzzvm_stack_at(vm, 3);     \
+      buzzdict_set(t->t.value, &k, &v);         \
+      buzzvm_pop(vm);                           \
+      buzzvm_pop(vm);                           \
+   }
 
 /*
- * Fetches a (key,value) pair from a table.
+ * Fetches a (idx,value) pair from a table.
  * The stack is expected to be as follows:
- * #1 key
+ * #1 idx
  * #2 table
  * This operation pops #1 and pushes the value, leaving the table at
- * stack #2. If the element for the given key is not found, nil is
+ * stack #2. If the element for the given idx is not found, nil is
  * pushed as value.
  * @param vm The VM data.
  */
-#define buzzvm_tget(vm) {                                    \
-   buzzvm_stack_assert(vm, 2);                               \
-   buzzobj_t  k = buzzvm_stack_at(vm, 1);                    \
-   buzzobj_t  t = buzzvm_stack_at(vm, 2);                    \
-   buzzobj_t* v = buzzdict_get(t->t.value, &k, buzzobj_t);   \
-   buzzvm_pop(vm);                                           \
-   if(v) buzzvm_push(vm, *v);                                \
-   else buzzvm_pushnil(vm);                                  \
-}
+#define buzzvm_tget(vm) {                                     \
+      buzzvm_stack_assert(vm, 2);                             \
+      buzzobj_t  k = buzzvm_stack_at(vm, 1);                  \
+      buzzobj_t  t = buzzvm_stack_at(vm, 2);                  \
+      buzzobj_t* v = buzzdict_get(t->t.value, &k, buzzobj_t); \
+      buzzvm_pop(vm);                                         \
+      if(v) buzzvm_push(vm, *v);                              \
+      else buzzvm_pushnil(vm);                                \
+   }
+
+/*
+ * Pushes an empty array onto the stack.
+ * @param vm The VM data.
+ */
+#define buzzvm_pusha(vm) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_ARRAY); buzzvm_push(vm, o); }
+
+/*
+ * Stores a (idx,value) pair in a array.
+ * The stack is expected to be as follows:
+ * #1 value
+ * #2 idx
+ * #3 array
+ * This operation pops #1 and #2, leaving the array at the stack top.
+ * @param vm The VM data.
+ */
+#define buzzvm_aput(vm) {                         \
+      buzzvm_stack_assert(vm, 3);                 \
+      buzzobj_t v = buzzvm_stack_at(vm, 1);       \
+      buzzobj_t i = buzzvm_stack_at(vm, 2);       \
+      buzzobj_t a = buzzvm_stack_at(vm, 3);       \
+      buzzdarray_set(a->a.value, i->i.value, &v); \
+      buzzvm_pop(vm);                             \
+      buzzvm_pop(vm);                             \
+   }
+
+/*
+ * Fetches a (idx,value) pair from a array.
+ * The stack is expected to be as follows:
+ * #1 idx
+ * #2 array
+ * This operation pops #1 and pushes the value, leaving the array at
+ * stack #2. If the element for the given idx is not found, nil is
+ * pushed as value.
+ * @param vm The VM data.
+ */
+#define buzzvm_aget(vm) {                                               \
+      buzzvm_stack_assert(vm, 2);                                       \
+      buzzobj_t i = buzzvm_stack_at(vm, 1);                             \
+      buzzobj_t a = buzzvm_stack_at(vm, 2);                             \
+      buzzvm_pop(vm);                                                   \
+      if(i->i.value < buzzdarray_size(a->a.value)) {                    \
+         buzzobj_t v = buzzdarray_get(a->a.value, i->i.value, buzzobj_t); \
+         buzzvm_push(vm, v);                                            \
+      }                                                                 \
+      else buzzvm_pushnil(vm);                                          \
+   }
 
 #endif

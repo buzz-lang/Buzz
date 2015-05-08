@@ -21,11 +21,14 @@ void dump(buzzvm_t vm, const char* prefix) {
          case BUZZTYPE_FLOAT:
             fprintf(stderr, "[float] %f\n", o->f.value);
             break;
-         case BUZZTYPE_CLOSURE:
-            fprintf(stderr, "[closure] %d\n", o->c.value.native.addr);
-            break;
          case BUZZTYPE_TABLE:
             fprintf(stderr, "[table] %d\n", buzzdict_size(o->t.value));
+            break;
+         case BUZZTYPE_ARRAY:
+            fprintf(stderr, "[array] %lld\n", buzzdarray_size(o->a.value));
+            break;
+         case BUZZTYPE_CLOSURE:
+            fprintf(stderr, "[closure] %d\n", o->c.value.native.addr);
             break;
          default:
             fprintf(stderr, "[TODO] type = %d\n", o->o.type);

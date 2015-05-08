@@ -17,6 +17,9 @@ void buzzheap_destroy_obj(uint32_t pos, void* data, void* params) {
    if(o->o.type == BUZZTYPE_TABLE) {
       buzzdict_destroy(&(o->t.value));
    }
+   else if(o->o.type == BUZZTYPE_ARRAY) {
+      buzzdarray_destroy(&(o->a.value));
+   }
    else if(o->o.type == BUZZTYPE_CLOSURE) {
       buzzdarray_destroy(&(o->c.value.native.actrec));
    }
@@ -87,6 +90,9 @@ buzzobj_t buzzheap_newobj(buzzheap_t h,
                                 buzzheap_table_keycmp,
                                 NULL);
    }
+   else if(type == BUZZTYPE_ARRAY) {
+      o->a.value = buzzdarray_new(1, sizeof(buzzobj_t), NULL);
+   }
    else if(type == BUZZTYPE_CLOSURE) {
       o->c.value.native.actrec = buzzdarray_new(1, sizeof(buzzobj_t), NULL);
    }
@@ -100,7 +106,7 @@ buzzobj_t buzzheap_newobj(buzzheap_t h,
 /****************************************/
 
 void buzzheap_objmark(buzzobj_t o, buzzheap_t h);
-void buzzheap_stackobj_mark(uint32_t pos, void* data, void* params);
+void buzzheap_darrayobj_mark(uint32_t pos, void* data, void* params);
 void buzzheap_dictobj_mark(const void* key, void* data, void* params);
 
 void buzzheap_objmark(buzzobj_t o,
@@ -118,9 +124,14 @@ void buzzheap_objmark(buzzobj_t o,
                        buzzheap_dictobj_mark,
                        h);
    }
+   else if(o->o.type == BUZZTYPE_ARRAY) {
+      buzzdarray_foreach(o->a.value,
+                         buzzheap_darrayobj_mark,
+                         h);
+   }
    else if(o->o.type == BUZZTYPE_CLOSURE) {
       buzzdarray_foreach(o->c.value.native.actrec,
-                         buzzheap_stackobj_mark,
+                         buzzheap_darrayobj_mark,
                          h);
    }
 }
@@ -130,9 +141,9 @@ void buzzheap_dictobj_mark(const void* key, void* data, void* params) {
    buzzheap_objmark(*(buzzobj_t*)data, (buzzheap_t)params);
 }
 
-void buzzheap_stackobj_mark(uint32_t pos,
-                            void* data,
-                            void* params) {
+void buzzheap_darrayobj_mark(uint32_t pos,
+                             void* data,
+                             void* params) {
    buzzobj_t o = *(buzzobj_t*)data;
    buzzheap_t h = (buzzheap_t)params;
    buzzheap_objmark(o, h);
@@ -142,7 +153,7 @@ void buzzheap_stack_mark(uint32_t pos,
                          void* data,
                          void* params) {
    buzzdarray_foreach(*(buzzdarray_t*)data,
-                      buzzheap_stackobj_mark,
+                      buzzheap_darrayobj_mark,
                       params);
 }
 
