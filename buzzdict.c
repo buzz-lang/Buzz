@@ -199,13 +199,6 @@ uint32_t buzzdict_strkeyhash(const void* key) {
 /****************************************/
 /****************************************/
 
-uint32_t buzzdict_intkeyhash(const void* key) {
-   return *(int32_t*)key;
-}
-
-/****************************************/
-/****************************************/
-
 int buzzdict_strkeycmp(const void* a, const void* b) {
    return strcmp(*(const char**)a, *(const char**)b);
 }
@@ -213,7 +206,30 @@ int buzzdict_strkeycmp(const void* a, const void* b) {
 /****************************************/
 /****************************************/
 
-int buzzdict_intkeycmp(const void* a, const void* b) {
+uint32_t buzzdict_int16keyhash(const void* key) {
+   return *(int16_t*)key;
+}
+
+/****************************************/
+/****************************************/
+
+int buzzdict_int16keycmp(const void* a, const void* b) {
+   if(*(int16_t*)a < *(int16_t*)b) return -1;
+   if(*(int16_t*)a > *(int16_t*)b) return  1;
+   return 0;
+}
+
+/****************************************/
+/****************************************/
+
+uint32_t buzzdict_int32keyhash(const void* key) {
+   return *(int32_t*)key;
+}
+
+/****************************************/
+/****************************************/
+
+int buzzdict_int32keycmp(const void* a, const void* b) {
    if(*(int32_t*)a < *(int32_t*)b) return -1;
    if(*(int32_t*)a > *(int32_t*)b) return  1;
    return 0;

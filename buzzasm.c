@@ -134,8 +134,8 @@ int buzz_asm(const char* fname,
    buzzdict_t labsubs = buzzdict_new(100,
                                      sizeof(int32_t),
                                      sizeof(char*),
-                                     buzzdict_intkeyhash,
-                                     buzzdict_intkeycmp,
+                                     buzzdict_int32keyhash,
+                                     buzzdict_int32keycmp,
                                      strdatadstryf);
    /*
     * Perform first pass - compilation and label collection
@@ -191,10 +191,14 @@ int buzz_asm(const char* fname,
       noarg_instr(BUZZVM_INSTR_SUB);
       noarg_instr(BUZZVM_INSTR_MUL);
       noarg_instr(BUZZVM_INSTR_DIV);
+      noarg_instr(BUZZVM_INSTR_MOD);
+      noarg_instr(BUZZVM_INSTR_POW);
+      noarg_instr(BUZZVM_INSTR_UNM);
       noarg_instr(BUZZVM_INSTR_AND);
       noarg_instr(BUZZVM_INSTR_OR);
       noarg_instr(BUZZVM_INSTR_NOT);
       noarg_instr(BUZZVM_INSTR_EQ);
+      noarg_instr(BUZZVM_INSTR_NEQ);
       noarg_instr(BUZZVM_INSTR_GT);
       noarg_instr(BUZZVM_INSTR_GTE);
       noarg_instr(BUZZVM_INSTR_LT);
@@ -213,6 +217,9 @@ int buzz_asm(const char* fname,
       noarg_instr(BUZZVM_INSTR_CALLCC);
       noarg_instr(BUZZVM_INSTR_PUSHCN);
       noarg_instr(BUZZVM_INSTR_PUSHCC);
+      noarg_instr(BUZZVM_INSTR_JOINSWARM);
+      noarg_instr(BUZZVM_INSTR_LEAVESWARM);
+      noarg_instr(BUZZVM_INSTR_INSWARM);
       f_arg_instr(BUZZVM_INSTR_PUSHF);
       i_arg_instr(BUZZVM_INSTR_PUSHI);
       i_arg_instr(BUZZVM_INSTR_DUP);

@@ -14,8 +14,7 @@
 #define BUZZTYPE_STRING  3
 #define BUZZTYPE_TABLE   4
 #define BUZZTYPE_ARRAY   5
-#define BUZZTYPE_SWARM   6
-#define BUZZTYPE_CLOSURE 7
+#define BUZZTYPE_CLOSURE 6
 
 /*
  * Info extraction from an object
@@ -80,15 +79,6 @@ extern "C" {
    } buzzarray_t;
 
    /*
-    * Swarm
-    */
-   typedef struct {
-      uint16_t   type;
-      uint16_t   marker;
-      buzzdict_t value;
-   } buzzswarm_t;
-
-   /*
     * Closure
     */
    typedef struct {
@@ -112,17 +102,16 @@ extern "C" {
     */
    union buzzobj_u {
       struct {
-         uint16_t   type;   // object type
-         uint16_t    marker; // marker for garbage collection
-      }             o;      // as a generic object
-      buzznil_t     n;      // as nil
-      buzzint_t     i;      // as integer
-      buzzfloat_t   f;      // as floating-point
-      buzzstring_t  s;      // as string
-      buzztable_t   t;      // as table
-      buzzarray_t   a;      // as array
-      buzzswarm_t   g;      // as swarm (group)
-      buzzclosure_t c;      // as closure
+         uint16_t type;   // object type
+         uint16_t marker; // marker for garbage collection
+      }             o;    // as a generic object
+      buzznil_t     n;    // as nil
+      buzzint_t     i;    // as integer
+      buzzfloat_t   f;    // as floating-point
+      buzzstring_t  s;    // as string
+      buzztable_t   t;    // as table
+      buzzarray_t   a;    // as array
+      buzzclosure_t c;    // as closure
    };
    typedef union buzzobj_u* buzzobj_t;
 

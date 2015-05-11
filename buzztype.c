@@ -17,7 +17,6 @@ int buzzobj_eq(const buzzobj_t a,
       case BUZZTYPE_STRING:  return 0; // TODO
       case BUZZTYPE_TABLE:   return (a->t.value == b->t.value);
       case BUZZTYPE_ARRAY:   return (a->a.value == b->a.value);
-      case BUZZTYPE_SWARM:   return 0; // TODO
       case BUZZTYPE_CLOSURE:
          return((a->c.isnative            == b->c.isnative)              &&
                 (a->c.value.native.addr   == b->c.value.native.addr)     &&
@@ -62,6 +61,10 @@ int buzzobj_cmp(const buzzobj_t a,
 /****************************************/
 /****************************************/
 
+void buzzobj_serialize_darrayelem(uint32_t pos, void* data, void* params) {
+   buzzobj_serialize((buzzdarray_t)params, *(buzzobj_t*)data);
+}
+
 void buzzobj_serialize(buzzdarray_t buf,
                        const buzzobj_t data) {
    switch(data->o.type) {
@@ -84,8 +87,14 @@ void buzzobj_serialize(buzzdarray_t buf,
          buzzmsg_serialize_string(buf, data->s.value);
          break;
       }
+      case BUZZTYPE_ARRAY: {
+         buzzmsg_serialize_u16(buf, data->a.type);
+         buzzmsg_serialize_u32(buf, buzzdarray_size(data->a.value));
+         buzzdarray_foreach(data->a.value, buzzobj_serialize_darrayelem, buf);
+         break;
+      }
       default:
-         fprintf(stderr, "TODO: %s %u\n", __FILE__, __LINE__);
+         fprintf(stderr, "[TODO] %s %u\n", __FILE__, __LINE__);
    }
 }
 

@@ -1,0 +1,33 @@
+# Stack: 
+
+pushi 10
+# Stack: i10
+
+joinswarm
+# Stack: 
+
+pushi 10
+# Stack: i10
+
+inswarm
+# Stack: i1
+
+pushi 11
+# Stack: i11 i1
+
+inswarm
+# Stack: i0 i1
+
+pushi 10
+# Stack: i10 i0 i1
+
+leaveswarm
+# Stack: i0 i1
+
+pushi 10
+# Stack: i10 i0 i1
+
+inswarm
+# Stack: i0 i0 i1
+
+done

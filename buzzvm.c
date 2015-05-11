@@ -31,8 +31,8 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
          }
          case BUZZMSG_VSTIG_PUT: {
             /* Deserialize the vstig id */
-            int32_t id;
-            int64_t pos = buzzmsg_deserialize_u32((uint32_t*)(&id), msg, 1);
+            int16_t id;
+            int64_t pos = buzzmsg_deserialize_u16((uint16_t*)(&id), msg, 1);
             if(pos < 0) {
                fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_VSTIG_PUT message received\n", vm->robot);
                break;
@@ -58,7 +58,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                         /* Broadcast PUT */
                         buzzdarray_t buf = buzzmsg_new(16);
                         buzzmsg_serialize_u8(buf, BUZZMSG_VSTIG_PUT);
-                        buzzmsg_serialize_u32(buf, id);
+                        buzzmsg_serialize_u16(buf, id);
                         buzzvstig_elem_serialize(buf, k, &v);
                         /* Append the message to the out message queue */
                         buzzmsg_queue_append(vm->outmsgs, buf);
@@ -77,8 +77,8 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
          }
          case BUZZMSG_VSTIG_QUERY: {
             /* Deserialize the vstig id */
-            int32_t id;
-            int64_t pos = buzzmsg_deserialize_u32((uint32_t*)(&id), msg, 1);
+            int16_t id;
+            int64_t pos = buzzmsg_deserialize_u16((uint16_t*)(&id), msg, 1);
             if(pos < 0) {
                fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_VSTIG_PUT message received\n", vm->robot);
                break;
@@ -102,7 +102,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                      /* Broadcast PUT */
                      buzzdarray_t buf = buzzmsg_new(16);
                      buzzmsg_serialize_u8(buf, BUZZMSG_VSTIG_PUT);
-                     buzzmsg_serialize_u32(buf, id);
+                     buzzmsg_serialize_u16(buf, id);
                      buzzvstig_elem_serialize(buf, k, &v);
                      /* Append the message to the out message queue */
                      buzzmsg_queue_append(vm->outmsgs, buf);
@@ -112,12 +112,40 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                      /* Broadcast PUT */
                      buzzdarray_t buf = buzzmsg_new(16);
                      buzzmsg_serialize_u8(buf, BUZZMSG_VSTIG_PUT);
-                     buzzmsg_serialize_u32(buf, id);
+                     buzzmsg_serialize_u16(buf, id);
                      buzzvstig_elem_serialize(buf, k, l);
                      /* Append the message to the out message queue */
                      buzzmsg_queue_append(vm->outmsgs, buf);
                   }
                }
+            }
+            break;
+         }
+         case BUZZMSG_SWARMS: {
+            /* Deserialize robot id */
+            int16_t rid;
+            int64_t pos = buzzmsg_deserialize_u16((uint16_t*)(&rid), msg, 1);
+            if(pos < 0) {
+               fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARMS message received\n", vm->robot);
+               break;
+            }
+            /* Deserialize number of swarm ids */
+            uint16_t numsids;
+            pos = buzzmsg_deserialize_u16(&numsids, msg, pos);
+            if(pos < 0) {
+               fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARMS message received\n", vm->robot);
+               break;
+            }
+            /* Go through swarm ids and deserialize them */
+            uint8_t sid;
+            for(uint16_t i = 0; i < numsids; ++i) {
+               pos = buzzmsg_deserialize_u8(&sid, msg, pos);
+               if(pos < 0) {
+                  fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARMS message received\n", vm->robot);
+                  break;
+               }
+               /* Add the swarm id to the list of swarm ids of the robot with id rid */
+               // TODO
             }
             break;
          }
@@ -160,17 +188,24 @@ buzzvm_t buzzvm_new(uint32_t robot) {
    buzzdarray_push(vm->stacks, &(vm->stack));
    /* Create heap */
    vm->heap = buzzheap_new();
-   /* Create function list. calloc() takes care of zeroing everything */
+   /* Create function list */
    vm->flist = buzzdarray_new(20, sizeof(buzzvm_funp), NULL);
+   /* Create swarm list */
+   vm->swarms = buzzdict_new(10,
+                             sizeof(int16_t),
+                             sizeof(uint8_t),
+                             buzzdict_int16keyhash,
+                             buzzdict_int16keycmp,
+                             NULL);
    /* Create message queues */
    vm->inmsgs = buzzmsg_queue_new(20);
    vm->outmsgs = buzzmsg_queue_new(20);
    /* Create virtual stigmergy. */
    vm->vstigs = buzzdict_new(1,
-                             sizeof(int32_t),
+                             sizeof(int16_t),
                              sizeof(buzzvstig_t),
-                             buzzdict_intkeyhash,
-                             buzzdict_intkeycmp,
+                             buzzdict_int16keyhash,
+                             buzzdict_int16keycmp,
                              buzzvm_vstig_destroy);
    /* Take care of the robot id */
    vm->robot = robot;
@@ -182,13 +217,21 @@ buzzvm_t buzzvm_new(uint32_t robot) {
 /****************************************/
 
 void buzzvm_reset(buzzvm_t vm) {
+   /* Clear swarm list */
+   buzzdict_destroy(&(vm->swarms));
+   vm->swarms = buzzdict_new(10,
+                             sizeof(int16_t),
+                             sizeof(uint8_t),
+                             buzzdict_int16keyhash,
+                             buzzdict_int16keycmp,
+                             NULL);
    /* Clear stigmergy structures */
    buzzdict_destroy(&(vm->vstigs));
    vm->vstigs = buzzdict_new(1,
-                             sizeof(int32_t),
+                             sizeof(int16_t),
                              sizeof(buzzvstig_t),
-                             buzzdict_intkeyhash,
-                             buzzdict_intkeycmp,
+                             buzzdict_int16keyhash,
+                             buzzdict_int16keycmp,
                              NULL);
    /* Reset message queues */
    buzzdarray_foreach(vm->inmsgs, buzzvm_msg_destroy, NULL);
@@ -219,6 +262,8 @@ void buzzvm_destroy(buzzvm_t* vm) {
    buzzheap_destroy(&(*vm)->heap);
    /* Get rid of the function list */
    buzzdarray_destroy(&(*vm)->flist);
+   /* Get rid of the swarm list */
+   buzzdict_destroy(&(*vm)->swarms);
    /* Get rid of the message queues */
    buzzdarray_foreach((*vm)->inmsgs, buzzvm_msg_destroy, NULL);
    buzzdarray_destroy(&(*vm)->inmsgs);
@@ -311,6 +356,16 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          inc_pc();
          break;
       }
+      case BUZZVM_INSTR_MOD: {
+         buzzvm_mod(vm);
+         inc_pc();
+         break;
+      }
+      case BUZZVM_INSTR_POW: {
+         buzzvm_pow(vm);
+         inc_pc();
+         break;
+      }
       case BUZZVM_INSTR_AND: {
          buzzvm_and(vm);
          inc_pc();
@@ -328,6 +383,11 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       }
       case BUZZVM_INSTR_EQ: {
          buzzvm_eq(vm);
+         inc_pc();
+         break;
+      }
+      case BUZZVM_INSTR_NEQ: {
+         buzzvm_neq(vm);
          inc_pc();
          break;
       }
@@ -413,7 +473,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       case BUZZVM_INSTR_VSPUT: {
          buzzvm_stack_assert(vm, 3);
          /* Get integer id from stack(#3) */
-         int32_t id = buzzvm_stack_at(vm, 3)->i.value;
+         int16_t id = buzzvm_stack_at(vm, 3)->i.value;
          /* Get integer key from stack(#2) */
          int32_t k = buzzvm_stack_at(vm, 2)->i.value;
          /* Get value from stack(#1) */
@@ -424,7 +484,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
             /* Found, prepare the PUT message */
             buzzdarray_t buf = buzzmsg_new(16);
             buzzmsg_serialize_u8(buf, BUZZMSG_VSTIG_PUT);
-            buzzmsg_serialize_u32(buf, id);
+            buzzmsg_serialize_u16(buf, id);
             /* Update the element */
             buzzvstig_elem_t* x = buzzvstig_fetch(*vs, k);
             if(x) {
@@ -460,7 +520,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       case BUZZVM_INSTR_VSGET: {
          buzzvm_stack_assert(vm, 2);
          /* Get integer id from stack(#2) */
-         int32_t id = buzzvm_stack_at(vm, 2)->i.value;
+         int16_t id = buzzvm_stack_at(vm, 2)->i.value;
          /* Get integer key from stack(#1) */
          int32_t k = buzzvm_stack_at(vm, 1)->i.value;
          /* Pop operands */
@@ -469,7 +529,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          /* Prepare the QUERY message */
          buzzdarray_t buf = buzzmsg_new(16);
          buzzmsg_serialize_u8(buf, BUZZMSG_VSTIG_QUERY);
-         buzzmsg_serialize_u32(buf, id);
+         buzzmsg_serialize_u16(buf, id);
          /* Look for virtual stigmergy */
          buzzdict_t* vs = buzzdict_get(vm->vstigs, &id, buzzdict_t);
          if(vs) {
@@ -525,6 +585,21 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       case BUZZVM_INSTR_PUSHCC: {
          inc_pc();
          buzzvm_pushcc(vm);
+         break;
+      }
+      case BUZZVM_INSTR_JOINSWARM: {
+         inc_pc();
+         buzzvm_joinswarm(vm);
+         break;
+      }
+      case BUZZVM_INSTR_LEAVESWARM: {
+         inc_pc();
+         buzzvm_leaveswarm(vm);
+         break;
+      }
+      case BUZZVM_INSTR_INSWARM: {
+         inc_pc();
+         buzzvm_inswarm(vm);
          break;
       }
       case BUZZVM_INSTR_PUSHI: {

@@ -7,6 +7,7 @@ int main(int argc, char* argv[]) {
       return 0;
    }
    buzzparser_t p = buzzparser_new(argv[1], argv[2]);
+   if(!p) return 1;
    int retval = buzzparser_parse(p);
    buzzparser_destroy(&p);
    if(retval)

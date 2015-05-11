@@ -20,8 +20,8 @@ buzzvstig_t buzzvstig_new() {
       20,
       sizeof(int32_t),
       sizeof(buzzvstig_elem_t),
-      buzzdict_intkeyhash,
-      buzzdict_intkeycmp,
+      buzzdict_int32keyhash,
+      buzzdict_int32keycmp,
       buzzvstig_elem_destroy);
 }
 

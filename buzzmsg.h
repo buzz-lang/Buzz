@@ -24,6 +24,7 @@ extern "C" {
       BUZZMSG_USER = 0,    // shout() command in Buzz
       BUZZMSG_VSTIG_PUT,   // Virtual stigmergy PUT
       BUZZMSG_VSTIG_QUERY, // Virtual stigmergy QUERY
+      BUZZMSG_SWARMS,      // Swarm advertisement
    } buzzmsg_type_e;
 
    /*
@@ -34,7 +35,7 @@ extern "C" {
     * @param payload The message payload.
     */
    extern void buzzmsg_queue_append(buzzmsg_queue_t msgq,
-                               buzzmsg_t payload);
+                                    buzzmsg_t payload);
 
    /*
     * Extracts a message from the queue.
