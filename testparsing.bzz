@@ -1,9 +1,6 @@
-{
-  if(not (3 > 2 and 4 == 8)) {
-    x = - 2 ^ (3 % 4)  
+function f(x,y) {
+  return function(y) {
+    return x + y
   }
-  else {
-    y = 17 + 19
-  }
-  z = 0.4 / 0.3
 }
+

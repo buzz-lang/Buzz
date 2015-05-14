@@ -3,6 +3,7 @@
 
 #include <buzzlex.h>
 #include <buzzdarray.h>
+#include "buzzdict.h"
 #include <stdio.h>
 
 #ifdef __cplusplus
@@ -28,6 +29,8 @@ extern "C" {
       BUZZNODE_IDREF
    } buzzptree_nodetype_e;
 
+   struct chunk_s;
+
    /* The parser state */
    struct buzzparser_s {
       /* The output assembler file name */
@@ -38,10 +41,16 @@ extern "C" {
       buzzlex_t lex;
       /* The last fetched token */
       buzztok_t tok;
+      /* The list of chunks */
+      buzzdarray_t chunks;
+      /* The current chunk being written */
+      struct chunk_s* chunk;
       /* Symbol table stack */
       buzzdarray_t symstack;
+      /* The top of the symbol table stack */
+      buzzdict_t syms;
       /* Label counter */
-      uint64_t labels;
+      uint32_t labels;
    };
    typedef struct buzzparser_s* buzzparser_t;
 

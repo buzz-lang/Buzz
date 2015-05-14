@@ -16,10 +16,10 @@ extern "C" {
       BUZZTOK_CONST,
       BUZZTOK_STRING,
       BUZZTOK_BOOL,
-      BUZZTOK_LOCAL,
       BUZZTOK_IF,
       BUZZTOK_ELSE,
       BUZZTOK_FUN,
+      BUZZTOK_RETURN,
       BUZZTOK_FOR,
       BUZZTOK_WHILE,
       BUZZTOK_ANDOR,
@@ -42,7 +42,7 @@ extern "C" {
    } buzztok_type_e;
    static char *buzztok_desc[] = {
       "identifier", "numeric constant", "string",
-      "true/false", "local", "if", "else", "function",
+      "true or false", "if", "else", "function", "return",
       "for", "while", "and/or", "not", "+ or -", "* or /",
       "%", "^", "{", "}", "(", ")", "[", "]", "; or newline",
       ",", "=", ".", "== != < <= > >=" };

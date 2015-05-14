@@ -86,12 +86,13 @@ extern "C" {
       BUZZVM_INSTR_PUSHF,    // Push float constant onto stack
       /* Integer argument */
       BUZZVM_INSTR_PUSHI,    // Push integer constant onto stack
-      BUZZVM_INSTR_DUP,      // Push variable in stack at given position (0 = top, >0 beneath)
+      BUZZVM_INSTR_LLOAD,    // Push local variable at given position
+      BUZZVM_INSTR_LSTORE,   // Store stack-top value into local variable at given position, pop operand
       BUZZVM_INSTR_JUMP,     // Set PC to argument
-      BUZZVM_INSTR_JUMPZ,    // Set PC to argument if stack top is zero
-      BUZZVM_INSTR_JUMPNZ,   // Set PC to argument if stack top is not zero
+      BUZZVM_INSTR_JUMPZ,    // Set PC to argument if stack top is zero, pop operand
+      BUZZVM_INSTR_JUMPNZ,   // Set PC to argument if stack top is not zero, pop operand
    } buzzvm_instr;
-   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "shout", "pusht", "tput", "tget", "pusha", "aput", "aget", "vscreate", "vsput", "vsget", "callcn", "callcc", "pushcn", "pushcc", "joinswarm", "leaveswarm", "inswarm", "pushf", "pushi", "dup", "jump", "jumpz", "jumpnz", "jumpsub"};
+   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "shout", "pusht", "tput", "tget", "pusha", "aput", "aget", "vscreate", "vsput", "vsget", "callcn", "callcc", "pushcn", "pushcc", "joinswarm", "leaveswarm", "inswarm", "pushf", "pushi", "lload", "lstore", "jump", "jumpz", "jumpnz", "jumpsub"};
 
    /*
     * Function pointer for BUZZVM_INSTR_CALL.
@@ -321,14 +322,41 @@ extern "C" {
    }
 
 /*
- * Pushes the float value located at the given stack index.
+ * Pushes the object located at the given stack index.
  * Internally checks whether the operation is valid.
  * This function is designed to be used within int-returning functions such as
  * BuzzVM hook functions or buzzvm_step().
  * @param vm The VM data.
- * @param idx The stack index, where 0 is the stack top and >0 goes down the stack.
+ * @param idx The stack index, where 0 is the stack top and >0 goes up the stack.
  */
-#define buzzvm_dup(vm, idx) buzzvm_stack_assert(vm, idx); buzzvm_push(vm, buzzvm_stack_at(vm, idx));
+#define buzzvm_lload(vm, idx) {                                         \
+      if((idx) >= buzzdarray_size((vm)->stack)) {                       \
+         (vm)->state = BUZZVM_STATE_ERROR;                              \
+         (vm)->error = BUZZVM_ERROR_STACK;                              \
+         return (vm)->state;                                            \
+      }                                                                 \
+      buzzvm_push(vm, buzzdarray_get((vm)->stack, (idx), buzzobj_t));   \
+   }
+
+/*
+ * Stores the object located at the stack top into the given stack index, pops operand.
+ * Internally checks whether the operation is valid.
+ * This function is designed to be used within int-returning functions such as
+ * BuzzVM hook functions or buzzvm_step().
+ * @param vm The VM data.
+ * @param idx The stack index, where 0 is the stack top and >0 goes up the stack.
+ */
+#define buzzvm_lstore(vm, idx) {                                         \
+      if((idx) >= buzzdarray_size((vm)->stack)) {                       \
+         (vm)->state = BUZZVM_STATE_ERROR;                              \
+         (vm)->error = BUZZVM_ERROR_STACK;                              \
+         return (vm)->state;                                            \
+      }                                                                 \
+      buzzdarray_set((vm)->stack,                                       \
+                     (idx),                                             \
+                     buzzvm_stack_at((vm), buzzvm_stack_top(vm)));      \
+      buzzvm_pop(vm);                                                   \
+   }
 
 /*
  * Pops two float operands from the stack and pushes the result of a binary operation on them.

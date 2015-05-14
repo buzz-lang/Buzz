@@ -614,10 +614,16 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          buzzvm_pushf(vm, arg);
          break;
       }
-      case BUZZVM_INSTR_DUP: {
+      case BUZZVM_INSTR_LLOAD: {
          inc_pc();
          get_arg(uint32_t);
-         buzzvm_dup(vm, arg);
+         buzzvm_lload(vm, arg);
+         break;
+      }
+      case BUZZVM_INSTR_LSTORE: {
+         inc_pc();
+         get_arg(uint32_t);
+         buzzvm_lstore(vm, arg);
          break;
       }
       case BUZZVM_INSTR_JUMP: {
@@ -635,6 +641,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
             vm->pc = arg;
             assert_pc(vm->pc);
          }
+         buzzvm_pop(vm);
          break;
       }
       case BUZZVM_INSTR_JUMPNZ: {
@@ -645,6 +652,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
             vm->pc = arg;
             assert_pc(vm->pc);
          }
+         buzzvm_pop(vm);
          break;
       }
       default:

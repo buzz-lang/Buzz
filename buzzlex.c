@@ -211,10 +211,10 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       /* It's either a keyword or an identifier */
       readval(buzzlex_isid);
       /* Go through the possible keywords */
-      checkkeyword("local",    BUZZTOK_LOCAL);
       checkkeyword("if",       BUZZTOK_IF);
       checkkeyword("else",     BUZZTOK_ELSE);
       checkkeyword("function", BUZZTOK_FUN);
+      checkkeyword("return",   BUZZTOK_RETURN);
       checkkeyword("for",      BUZZTOK_FOR);
       checkkeyword("while",    BUZZTOK_WHILE);
       checkkeyword("and",      BUZZTOK_ANDOR);

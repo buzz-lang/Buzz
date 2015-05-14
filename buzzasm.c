@@ -222,7 +222,8 @@ int buzz_asm(const char* fname,
       noarg_instr(BUZZVM_INSTR_INSWARM);
       f_arg_instr(BUZZVM_INSTR_PUSHF);
       i_arg_instr(BUZZVM_INSTR_PUSHI);
-      i_arg_instr(BUZZVM_INSTR_DUP);
+      i_arg_instr(BUZZVM_INSTR_LLOAD);
+      i_arg_instr(BUZZVM_INSTR_LSTORE);
       l_arg_instr(BUZZVM_INSTR_JUMP);
       l_arg_instr(BUZZVM_INSTR_JUMPZ);
       l_arg_instr(BUZZVM_INSTR_JUMPNZ);
