@@ -28,7 +28,7 @@ void dump(buzzvm_t vm, const char* prefix) {
             fprintf(stderr, "[array] %lld\n", buzzdarray_size(o->a.value));
             break;
          case BUZZTYPE_CLOSURE:
-            fprintf(stderr, "[closure] %d\n", o->c.value.native.addr);
+            fprintf(stderr, "[closure] %d\n", o->c.value.ref);
             break;
          default:
             fprintf(stderr, "[TODO] type = %d\n", o->o.type);

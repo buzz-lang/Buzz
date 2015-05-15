@@ -84,19 +84,13 @@ extern "C" {
    typedef struct {
       uint16_t type;
       uint16_t marker;
-      union {
-         struct {
-            int32_t addr;        // jump address
-            buzzdarray_t actrec; // activation record
-         } native; // as native closure
-         struct {
-            uint32_t id;         // function id
-            buzzdarray_t actrec; // activation record
-         } cfun; // as c-function closure
+      struct {
+         int32_t ref;         // jump address or function id
+         buzzdarray_t actrec; // activation record
+         uint8_t isnative;    // 1 for native closure, 0 for c closure
       } value;
-      uint8_t isnative; // 1 for native closure, 0 for c closure
    } buzzclosure_t;
-
+   
    /*
     * A handle for a object
     */

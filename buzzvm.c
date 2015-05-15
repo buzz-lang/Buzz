@@ -9,6 +9,8 @@
 
 #define BUZZVM_STACKS_INIT_CAPACITY 20
 #define BUZZVM_STACK_INIT_CAPACITY  20
+#define BUZZVM_LSYMTS_INIT_CAPACITY 20
+#define BUZZVM_SYMS_INIT_CAPACITY   20
 
 /****************************************/
 /****************************************/
@@ -168,9 +170,9 @@ void buzzvm_vstig_destroy(const void* key, void* data, void* params) {
 /****************************************/
 /****************************************/
 
-void buzzvm_stack_destroy(uint32_t pos,
-                          void* data,
-                          void* params) {
+void buzzvm_darray_destroy(uint32_t pos,
+                           void* data,
+                           void* params) {
    buzzdarray_t* s = (buzzdarray_t*)data;
    buzzdarray_destroy(s);
 }
@@ -181,11 +183,23 @@ buzzvm_t buzzvm_new(uint32_t robot) {
    /* Create stacks */
    vm->stacks = buzzdarray_new(BUZZVM_STACKS_INIT_CAPACITY,
                                sizeof(buzzdarray_t),
-                               buzzvm_stack_destroy);
+                               buzzvm_darray_destroy);
    vm->stack = buzzdarray_new(BUZZVM_STACK_INIT_CAPACITY,
                               sizeof(buzzobj_t),
                               NULL);
    buzzdarray_push(vm->stacks, &(vm->stack));
+   /* Create local variable tables */
+   vm->lsymts = buzzdarray_new(BUZZVM_LSYMTS_INIT_CAPACITY,
+                               sizeof(buzzdarray_t),
+                               buzzvm_darray_destroy);
+   vm->lsyms = buzzdarray_new(BUZZVM_SYMS_INIT_CAPACITY,
+                              sizeof(buzzobj_t),
+                              NULL);
+   buzzdarray_push(vm->lsymts, &(vm->lsyms));
+   /* Create global variable tables */
+   vm->gsyms = buzzdarray_new(BUZZVM_SYMS_INIT_CAPACITY,
+                              sizeof(buzzobj_t),
+                              NULL);
    /* Create heap */
    vm->heap = buzzheap_new();
    /* Create function list */
@@ -242,8 +256,16 @@ void buzzvm_reset(buzzvm_t vm) {
    buzzdarray_clear(vm->stacks, BUZZVM_STACKS_INIT_CAPACITY);
    vm->stack = buzzdarray_new(BUZZVM_STACK_INIT_CAPACITY,
                               sizeof(buzzobj_t),
-                              buzzvm_stack_destroy);
+                              NULL);
    buzzdarray_push(vm->stacks, &(vm->stack));
+   /* Clear local variable tables */
+   buzzdarray_clear(vm->lsymts, BUZZVM_LSYMTS_INIT_CAPACITY);
+   vm->lsyms = buzzdarray_new(BUZZVM_LSYMTS_INIT_CAPACITY,
+                              sizeof(buzzobj_t),
+                              NULL);
+   buzzdarray_push(vm->lsymts, &(vm->lsyms));
+   /* Clear global variable table */
+   buzzdarray_clear(vm->gsyms, BUZZVM_SYMS_INIT_CAPACITY);
    /* Reset program counter */
    vm->pc = 0;
    /* Reset VM state */
@@ -256,6 +278,10 @@ void buzzvm_reset(buzzvm_t vm) {
 /****************************************/
 
 void buzzvm_destroy(buzzvm_t* vm) {
+   /* Get rid of the global variable table */
+   buzzdarray_destroy(&(*vm)->gsyms);
+   /* Get rid of the local variable tables */
+   buzzdarray_destroy(&(*vm)->lsymts);
    /* Get rid of the stack */
    buzzdarray_destroy(&(*vm)->stacks);
    /* Get rid of the heap */
@@ -332,7 +358,17 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          break;
       }
       case BUZZVM_INSTR_RET1: {
-         buzzvm_ret1(vm);
+//         buzzvm_ret1(vm);
+         buzzdarray_pop((vm)->lsyms);
+         (vm)->lsyms = buzzdarray_last((vm)->lsymts, buzzdarray_t);
+         buzzobj_t ret = buzzvm_stack_at(vm, 1);
+         buzzdarray_pop((vm)->stacks);
+         (vm)->stack = buzzdarray_last((vm)->stacks, buzzdarray_t);
+         buzzvm_stack_assert(vm, 1);
+         buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+         (vm)->pc = buzzvm_stack_at(vm, 1)->i.value;
+         buzzvm_pop(vm);
+         buzzvm_push(vm, ret);
          assert_pc(vm->pc);
          break;
       }
@@ -565,15 +601,9 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          inc_pc();
          break;
       }
-      case BUZZVM_INSTR_CALLCN: {
+      case BUZZVM_INSTR_CALLC: {
          inc_pc();
-         buzzvm_callcn(vm);
-         assert_pc(vm->pc);
-         break;
-      }
-      case BUZZVM_INSTR_CALLCC: {
-         inc_pc();
-         buzzvm_callcc(vm);
+         buzzvm_callc(vm);
          assert_pc(vm->pc);
          break;
       }
@@ -624,6 +654,18 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          inc_pc();
          get_arg(uint32_t);
          buzzvm_lstore(vm, arg);
+         break;
+      }
+      case BUZZVM_INSTR_GLOAD: {
+         inc_pc();
+         get_arg(uint32_t);
+         buzzvm_gload(vm, arg);
+         break;
+      }
+      case BUZZVM_INSTR_GSTORE: {
+         inc_pc();
+         get_arg(uint32_t);
+         buzzvm_gstore(vm, arg);
          break;
       }
       case BUZZVM_INSTR_JUMP: {

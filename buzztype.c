@@ -18,9 +18,9 @@ int buzzobj_eq(const buzzobj_t a,
       case BUZZTYPE_TABLE:   return (a->t.value == b->t.value);
       case BUZZTYPE_ARRAY:   return (a->a.value == b->a.value);
       case BUZZTYPE_CLOSURE:
-         return((a->c.isnative            == b->c.isnative)              &&
-                (a->c.value.native.addr   == b->c.value.native.addr)     &&
-                (a->c.value.native.actrec == b->c.value.native.actrec));
+         return((a->c.value.isnative == b->c.value.isnative) &&
+                (a->c.value.ref      == b->c.value.ref)      &&
+                (a->c.value.actrec   == b->c.value.actrec));
       default:
          fprintf(stderr, "[BUG] %s:%d: Equality test between wrong Buzz objects types %d and %d\n", __FILE__, __LINE__, a->o.type, b->o.type);
          exit(1);

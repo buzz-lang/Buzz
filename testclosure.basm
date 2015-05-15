@@ -31,14 +31,14 @@ pushi 300
 pushi 3
 # Stack: i3 i300 f200 i100 c54
 
-callcn
+callc
 # Stack: i300 f200 i100 f-17.0 i-6 f2.0 i1
 
 done
 # Stack:
 
 @subroutine
-nop
+pushi 1
 # Stack: i300 f200 i100 f-17.0 i-6 f2.0 i1
 
 ret1

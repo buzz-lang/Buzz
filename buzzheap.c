@@ -21,7 +21,7 @@ void buzzheap_destroy_obj(uint32_t pos, void* data, void* params) {
       buzzdarray_destroy(&(o->a.value));
    }
    else if(o->o.type == BUZZTYPE_CLOSURE) {
-      buzzdarray_destroy(&(o->c.value.native.actrec));
+      buzzdarray_destroy(&(o->c.value.actrec));
    }
    free(o);
 }
@@ -94,7 +94,7 @@ buzzobj_t buzzheap_newobj(buzzheap_t h,
       o->a.value = buzzdarray_new(1, sizeof(buzzobj_t), NULL);
    }
    else if(type == BUZZTYPE_CLOSURE) {
-      o->c.value.native.actrec = buzzdarray_new(1, sizeof(buzzobj_t), NULL);
+      o->c.value.actrec = buzzdarray_new(1, sizeof(buzzobj_t), NULL);
    }
    /* Add object to list */
    buzzdarray_push(h->objs, &o);
@@ -130,7 +130,7 @@ void buzzheap_objmark(buzzobj_t o,
                          h);
    }
    else if(o->o.type == BUZZTYPE_CLOSURE) {
-      buzzdarray_foreach(o->c.value.native.actrec,
+      buzzdarray_foreach(o->c.value.actrec,
                          buzzheap_darrayobj_mark,
                          h);
    }

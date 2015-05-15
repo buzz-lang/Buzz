@@ -213,8 +213,7 @@ int buzz_asm(const char* fname,
       noarg_instr(BUZZVM_INSTR_VSCREATE);
       noarg_instr(BUZZVM_INSTR_VSPUT);
       noarg_instr(BUZZVM_INSTR_VSGET);
-      noarg_instr(BUZZVM_INSTR_CALLCN);
-      noarg_instr(BUZZVM_INSTR_CALLCC);
+      noarg_instr(BUZZVM_INSTR_CALLC);
       noarg_instr(BUZZVM_INSTR_PUSHCN);
       noarg_instr(BUZZVM_INSTR_PUSHCC);
       noarg_instr(BUZZVM_INSTR_JOINSWARM);
@@ -224,6 +223,8 @@ int buzz_asm(const char* fname,
       i_arg_instr(BUZZVM_INSTR_PUSHI);
       i_arg_instr(BUZZVM_INSTR_LLOAD);
       i_arg_instr(BUZZVM_INSTR_LSTORE);
+      i_arg_instr(BUZZVM_INSTR_GLOAD);
+      i_arg_instr(BUZZVM_INSTR_GSTORE);
       l_arg_instr(BUZZVM_INSTR_JUMP);
       l_arg_instr(BUZZVM_INSTR_JUMPZ);
       l_arg_instr(BUZZVM_INSTR_JUMPNZ);

@@ -73,9 +73,8 @@ extern "C" {
       BUZZVM_INSTR_VSCREATE,   // Create virtual stigmergy from integer id stack(#1), pop operands
       BUZZVM_INSTR_VSPUT,      // Put (key stack(#2),value stack(#1)) in virtual stigmergy stack(#3), pop operands
       BUZZVM_INSTR_VSGET,      // Push virtual stigmergy stack(#2) value of key stack(#1), pop operand
-      BUZZVM_INSTR_CALLCN,     // Calls the native closure on top of the stack
-      BUZZVM_INSTR_CALLCC,     // Calls the c-function closure on top the stack
-      BUZZVM_INSTR_PUSHCN,     // Push native closure, pop operands (jump addr, argnum stack(#2), args (stack #3-#(3+argnum)))
+      BUZZVM_INSTR_CALLC,      // Calls the closure on top of the stack
+      BUZZVM_INSTR_PUSHCN,     // Push closure, pop operands (jump addr, argnum stack(#2), args (stack #3-#(3+argnum)))
       BUZZVM_INSTR_PUSHCC,     // Push c-function closure, pop operands (ref, argnum stack(#2), args (stack #3-#(3+argnum)))
       BUZZVM_INSTR_JOINSWARM,  // Joins the swarm with id at stack #1, pops operand
       BUZZVM_INSTR_LEAVESWARM, // Leaves the swarm with id at stack #1, pops operand
@@ -89,11 +88,13 @@ extern "C" {
       BUZZVM_INSTR_PUSHI,    // Push integer constant onto stack
       BUZZVM_INSTR_LLOAD,    // Push local variable at given position
       BUZZVM_INSTR_LSTORE,   // Store stack-top value into local variable at given position, pop operand
+      BUZZVM_INSTR_GLOAD,    // Push global variable at given position
+      BUZZVM_INSTR_GSTORE,   // Store stack-top value into global variable at given position, pop operand
       BUZZVM_INSTR_JUMP,     // Set PC to argument
       BUZZVM_INSTR_JUMPZ,    // Set PC to argument if stack top is zero, pop operand
       BUZZVM_INSTR_JUMPNZ,   // Set PC to argument if stack top is not zero, pop operand
    } buzzvm_instr;
-   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "shout", "pusht", "tput", "tget", "pusha", "aput", "aget", "vscreate", "vsput", "vsget", "callcn", "callcc", "pushcn", "pushcc", "joinswarm", "leaveswarm", "inswarm", "pushf", "pushi", "lload", "lstore", "jump", "jumpz", "jumpnz", "jumpsub"};
+   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "shout", "pusht", "tput", "tget", "pusha", "aput", "aget", "vscreate", "vsput", "vsget", "callc", "pushcn", "pushcc", "joinswarm", "leaveswarm", "inswarm", "pushf", "pushi", "lload", "lstore", "gload", "gstore", "jump", "jumpz", "jumpnz", "jumpsub"};
 
    /*
     * Function pointer for BUZZVM_INSTR_CALL.
@@ -117,6 +118,12 @@ extern "C" {
       buzzdarray_t stack;
       /* Stack list */
       buzzdarray_t stacks;
+      /* Current local variable table */
+      buzzdarray_t lsyms;
+      /* Local variable table list */
+      buzzdarray_t lsymts;
+      /* Global symbols */
+      buzzdarray_t gsyms;
       /* Heap content */
       buzzheap_t heap;
       /* Registered functions */
@@ -210,7 +217,7 @@ extern "C" {
  * @param idx The stack index, where 0 is the stack top and >0 goes down the stack.
  * @param type The type to check
  */
-#define buzzvm_type_assert(vm, idx, type) if(buzzvm_stack_at(vm, idx)->o.type != type) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_TYPE; return (vm)->state; }
+#define buzzvm_type_assert(vm, idx, tpe) if(buzzvm_stack_at(vm, idx)->o.type != tpe) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_TYPE; return (vm)->state; }
 
 /*
  * Returns the size of the stack.
@@ -276,30 +283,22 @@ extern "C" {
  * Internally checks whether the operation is valid.
  * This function is designed to be used within int-returning functions such as
  * BuzzVM hook functions or buzzvm_step().
- * Expects the following objects in the stack:
- * #1   jump address
- * #2   number of arguments N
- * #3   arg1
- * ...
- * #2+N argN
- * This function pops all the above elements and leaves a native closure
+ * This function expects the jump address in the stack top.
+ * It pops the jump address and pushes the native closure.
  * object on the stack top.
  * @param vm The VM data.
  */
-#define buzzvm_pushcn(vm) {                                             \
-      buzzvm_stack_assert(vm, 2);                                       \
-      buzzobj_t o = buzzheap_newobj(((vm)->heap), BUZZTYPE_CLOSURE);    \
-      o->c.isnative = 1;                                                \
-      o->c.value.native.addr = buzzvm_stack_at(vm, 1)->i.value;         \
-      int32_t nargs = buzzvm_stack_at(vm, 2)->i.value;                  \
-      buzzvm_pop(vm);                                                   \
-      buzzvm_pop(vm);                                                   \
-      buzzvm_stack_assert(vm, nargs);                                   \
-      for(int i = 0; i < nargs; ++i) {                                  \
-         buzzdarray_push(o->c.value.native.actrec, &buzzvm_stack_at(vm, 1)); \
-         buzzvm_pop(vm);                                                \
-      }                                                                 \
-      buzzvm_push(vm, o);                                               \
+#define buzzvm_pushcn(vm) {                                           \
+      buzzvm_stack_assert(vm, 1);                                     \
+      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);                        \
+      buzzobj_t o = buzzheap_newobj(((vm)->heap), BUZZTYPE_CLOSURE);  \
+      o->c.value.isnative = 1;                                        \
+      o->c.value.ref = buzzvm_stack_at(vm, 1)->i.value;               \
+      buzzvm_pop(vm);                                                 \
+      for(int i = 0; i < buzzdarray_size((vm)->lsyms); ++i)           \
+         buzzdarray_push(o->c.value.actrec,                           \
+                         &buzzdarray_get((vm)->lsyms, i, buzzobj_t)); \
+      buzzvm_push(vm, o);                                             \
    }
 
 /*
@@ -307,67 +306,67 @@ extern "C" {
  * Internally checks whether the operation is valid.
  * This function is designed to be used within int-returning functions such as
  * BuzzVM hook functions or buzzvm_step().
- * Expects the following objects in the stack:
- * #1   function id
- * #2   number of arguments N
- * #3   arg1
- * ...
- * #2+N argN
- * This function pops all the above elements and leaves a c-function closure
- * object on the stack top.
+ * This function expects the function id in the stack top.
+ * It pops the function id and pushes the c-function closure.
  * @param vm The VM data.
  */
-#define buzzvm_pushcc(vm) {                                             \
-      buzzvm_stack_assert(vm, 2);                                       \
-      buzzobj_t o = buzzheap_newobj(((vm)->heap), BUZZTYPE_CLOSURE);    \
-      o->c.isnative = 0;                                                \
-      o->c.value.cfun.id = buzzvm_stack_at(vm, 1)->i.value;             \
-      int32_t nargs = buzzvm_stack_at(vm, 2)->i.value;                  \
-      buzzvm_pop(vm);                                                   \
-      buzzvm_pop(vm);                                                   \
-      buzzvm_stack_assert(vm, nargs);                                   \
-      for(int i = 0; i < nargs; ++i) {                                  \
-         buzzdarray_push(o->c.value.cfun.actrec, &buzzvm_stack_at(vm, 1)); \
-         buzzvm_pop(vm);                                                \
-      }                                                                 \
-      buzzvm_push(vm, o);                                               \
+#define buzzvm_pushcc(vm) {                                           \
+      buzzvm_stack_assert(vm, 1);                                     \
+      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);                        \
+      buzzobj_t o = buzzheap_newobj(((vm)->heap), BUZZTYPE_CLOSURE);  \
+      o->c.value.isnative = 0;                                        \
+      o->c.value.ref = buzzvm_stack_at(vm, 1)->i.value;               \
+      buzzvm_pop(vm);                                                 \
+      for(int i = 0; i < buzzdarray_size((vm)->lsyms); ++i)           \
+         buzzdarray_push(o->c.value.actrec,                           \
+                         &buzzdarray_get((vm)->lsyms, i, buzzobj_t)); \
+      buzzvm_push(vm, o);                                             \
    }
 
 /*
- * Pushes the object located at the given stack index.
+ * Pushes the local variable located at the given stack index.
  * Internally checks whether the operation is valid.
  * This function is designed to be used within int-returning functions such as
  * BuzzVM hook functions or buzzvm_step().
  * @param vm The VM data.
- * @param idx The stack index, where 0 is the stack top and >0 goes up the stack.
+ * @param idx The local variable index.
  */
-#define buzzvm_lload(vm, idx) {                                       \
-      if((idx) >= buzzdarray_size((vm)->stack)) {                     \
-         (vm)->state = BUZZVM_STATE_ERROR;                            \
-         (vm)->error = BUZZVM_ERROR_STACK;                            \
-         return (vm)->state;                                          \
-      }                                                               \
-      buzzvm_push(vm, buzzdarray_get((vm)->stack, (idx), buzzobj_t)); \
-   }
-
+#define buzzvm_lload(vm, idx) buzzvm_push(vm, buzzdarray_get((vm)->lsyms, idx, buzzobj_t));
+   
 /*
- * Stores the object located at the stack top into the given stack index, pops operand.
+ * Stores the object located at the stack top into the a local variable, pops operand.
  * Internally checks whether the operation is valid.
  * This function is designed to be used within int-returning functions such as
  * BuzzVM hook functions or buzzvm_step().
  * @param vm The VM data.
- * @param idx The stack index, where 0 is the stack top and >0 goes up the stack.
+ * @param idx The local variable index.
  */
-#define buzzvm_lstore(vm, idx) {                                    \
-      if((idx) >= buzzdarray_size((vm)->stack)) {                   \
-         (vm)->state = BUZZVM_STATE_ERROR;                          \
-         (vm)->error = BUZZVM_ERROR_STACK;                          \
-         return (vm)->state;                                        \
-      }                                                             \
-      buzzdarray_set((vm)->stack,                                   \
-                     (idx),                                         \
-                     buzzvm_stack_at((vm), buzzvm_stack_top(vm)));  \
-      buzzvm_pop(vm);                                               \
+#define buzzvm_lstore(vm, idx) {                                \
+      buzzdarray_set((vm)->lsyms, idx, buzzvm_stack_at(vm, 1)); \
+      buzzvm_pop(vm);                                           \
+   }
+
+/*
+ * Pushes the global variable located at the given stack index.
+ * Internally checks whether the operation is valid.
+ * This function is designed to be used within int-returning functions such as
+ * BuzzVM hook functions or buzzvm_step().
+ * @param vm The VM data.
+ * @param idx The local variable index.
+ */
+#define buzzvm_gload(vm, idx) buzzvm_push(vm, buzzdarray_get((vm)->gsyms, idx, buzzobj_t));
+   
+/*
+ * Stores the object located at the stack top into the a global variable, pops operand.
+ * Internally checks whether the operation is valid.
+ * This function is designed to be used within int-returning functions such as
+ * BuzzVM hook functions or buzzvm_step().
+ * @param vm The VM data.
+ * @param idx The local variable index.
+ */
+#define buzzvm_gstore(vm, idx) {                                \
+      buzzdarray_set((vm)->gsyms, idx, buzzvm_stack_at(vm, 1)); \
+      buzzvm_pop(vm);                                           \
    }
 
 /*
@@ -381,29 +380,39 @@ extern "C" {
  */
 #define buzzvm_binary_op_arith(vm, oper)                                \
    buzzvm_stack_assert((vm), 2);                                        \
-   if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_INT &&                 \
-      buzzvm_stack_at(vm, 2)->o.type == BUZZTYPE_INT) {                 \
-      buzzvm_stack_at(vm, 2)->i.value = (buzzvm_stack_at(vm, 2)->i.value oper buzzvm_stack_at(vm, 1)->i.value); \
+   buzzobj_t op1 = buzzvm_stack_at(vm, 1);                              \
+   buzzobj_t op2 = buzzvm_stack_at(vm, 2);                              \
+   buzzdarray_pop(vm->stack);                                           \
+   buzzdarray_pop(vm->stack);                                           \
+   if(op1->o.type == BUZZTYPE_INT &&                                    \
+      op2->o.type == BUZZTYPE_INT) {                                    \
+      buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_INT);        \
+      res->i.value = op2->i.value oper op1->i.value;                    \
+      buzzvm_push(vm, res);                                             \
    }                                                                    \
-   else if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_FLOAT &&          \
-           buzzvm_stack_at(vm, 2)->o.type == BUZZTYPE_FLOAT) {          \
-      buzzvm_stack_at(vm, 2)->f.value = (buzzvm_stack_at(vm, 2)->f.value oper buzzvm_stack_at(vm, 1)->f.value); \
+   else if(op1->o.type == BUZZTYPE_INT &&                               \
+           op2->o.type == BUZZTYPE_FLOAT) {                             \
+      buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_FLOAT);      \
+      res->f.value = op2->f.value oper op1->i.value;                    \
+      buzzvm_push(vm, res);                                             \
    }                                                                    \
-   else if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_INT &&            \
-           buzzvm_stack_at(vm, 2)->o.type == BUZZTYPE_FLOAT) {          \
-      buzzvm_stack_at(vm, 2)->f.value = (buzzvm_stack_at(vm, 2)->f.value oper buzzvm_stack_at(vm, 1)->i.value); \
+   else if(op1->o.type == BUZZTYPE_FLOAT &&                             \
+           op2->o.type == BUZZTYPE_INT) {                               \
+      buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_FLOAT);      \
+      res->f.value = op2->i.value oper op1->f.value;                    \
+      buzzvm_push(vm, res);                                             \
    }                                                                    \
-   else if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_FLOAT &&          \
-           buzzvm_stack_at(vm, 2)->o.type == BUZZTYPE_INT) {            \
-      buzzvm_stack_at(vm, 2)->f.value = (buzzvm_stack_at(vm, 2)->i.value oper buzzvm_stack_at(vm, 1)->f.value); \
-      buzzvm_stack_at(vm, 2)->o.type = BUZZTYPE_FLOAT;                 \
+   else if(op1->o.type == BUZZTYPE_FLOAT &&                             \
+           op2->o.type == BUZZTYPE_FLOAT) {                             \
+      buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_FLOAT);      \
+      res->f.value = op2->f.value oper op1->f.value;                    \
+      buzzvm_push(vm, res);                                             \
    }                                                                    \
    else {                                                               \
       (vm)->state = BUZZVM_STATE_ERROR;                                 \
       (vm)->error = BUZZVM_ERROR_TYPE;                                  \
       return (vm)->state;                                               \
-   }                                                                    \
-   buzzdarray_pop(vm->stack);
+   }
 
 /*
  * Pops two operands from the stack and pushes the result of a binary logic operation on them.
@@ -416,14 +425,19 @@ extern "C" {
  */
 #define buzzvm_binary_op_logic(vm, oper)                                \
    buzzvm_stack_assert((vm), 2);                                        \
-   buzzvm_stack_at(vm, 2)->i.value =                                    \
-      !(buzzvm_stack_at(vm, 2)->o.type == BUZZTYPE_NIL ||               \
-        (buzzvm_stack_at(vm, 2)->i.type == BUZZTYPE_INT && buzzvm_stack_at(vm, 2)->i.value == 0)) \
+   buzzobj_t op1 = buzzvm_stack_at(vm, 1);                              \
+   buzzobj_t op2 = buzzvm_stack_at(vm, 2);                              \
+   buzzdarray_pop(vm->stack);                                           \
+   buzzdarray_pop(vm->stack);                                           \
+   buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_INT);           \
+   res->i.value =                                                       \
+      !(op2->o.type == BUZZTYPE_NIL ||                                  \
+        (op2->i.type == BUZZTYPE_INT && op2->i.value == 0))             \
       oper                                                              \
-      !(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_NIL ||               \
-        (buzzvm_stack_at(vm, 1)->i.type == BUZZTYPE_INT && buzzvm_stack_at(vm, 1)->i.value == 0)); \
-   buzzvm_stack_at(vm, 2)->o.type = BUZZTYPE_INT;                       \
-   buzzdarray_pop(vm->stack);
+      !(op1->o.type == BUZZTYPE_NIL ||                                  \
+        (op1->i.type == BUZZTYPE_INT && op1->i.value == 0));            \
+   res->o.type = BUZZTYPE_INT;                                          \
+   buzzvm_push(vm, res);
 
 /*
  * Pops two numeric operands from the stack and pushes the result of a comparison operation on them.
@@ -434,32 +448,35 @@ extern "C" {
  * @param vm The VM data.
  * @param oper The binary operation, e.g. == > >= < <=
  */
-#define buzzvm_binary_op_cmp(vm, oper) \
-   buzzvm_stack_assert((vm), 2); \
-   if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_INT &&                 \
-      buzzvm_stack_at(vm, 2)->o.type == BUZZTYPE_INT) {                 \
-      buzzvm_stack_at(vm, 2)->i.value = (buzzvm_stack_at(vm, 2)->i.value oper buzzvm_stack_at(vm, 1)->i.value); \
+#define buzzvm_binary_op_cmp(vm, oper)                                  \
+   buzzvm_stack_assert((vm), 2);                                        \
+   buzzobj_t op1 = buzzvm_stack_at(vm, 1);                              \
+   buzzobj_t op2 = buzzvm_stack_at(vm, 2);                              \
+   buzzdarray_pop(vm->stack);                                           \
+   buzzdarray_pop(vm->stack);                                           \
+   buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_INT);           \
+   if(op1->o.type == BUZZTYPE_INT &&                                    \
+      op2->o.type == BUZZTYPE_INT) {                                    \
+      res->i.value = op2->i.value oper op1->i.value;                    \
    }                                                                    \
-   else if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_FLOAT &&          \
-           buzzvm_stack_at(vm, 2)->o.type == BUZZTYPE_INT) {            \
-      buzzvm_stack_at(vm, 2)->i.value = (buzzvm_stack_at(vm, 2)->i.value oper buzzvm_stack_at(vm, 1)->f.value); \
+   else if(op1->o.type == BUZZTYPE_INT &&                               \
+           op2->o.type == BUZZTYPE_FLOAT) {                             \
+      res->i.value = op2->f.value oper op1->i.value;                    \
    }                                                                    \
-   else if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_FLOAT &&          \
-           buzzvm_stack_at(vm, 2)->o.type == BUZZTYPE_FLOAT) {          \
-      buzzvm_stack_at(vm, 2)->i.value = (buzzvm_stack_at(vm, 2)->f.value oper buzzvm_stack_at(vm, 1)->f.value); \
-      buzzvm_stack_at(vm, 2)->o.type = BUZZTYPE_INT;                    \
+   else if(op1->o.type == BUZZTYPE_FLOAT &&                             \
+           op2->o.type == BUZZTYPE_INT) {                               \
+      res->i.value = op2->i.value oper op1->f.value;                    \
    }                                                                    \
-   else if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_INT &&            \
-           buzzvm_stack_at(vm, 2)->o.type == BUZZTYPE_FLOAT) {          \
-      buzzvm_stack_at(vm, 2)->i.value = (buzzvm_stack_at(vm, 2)->f.value oper buzzvm_stack_at(vm, 1)->i.value); \
-      buzzvm_stack_at(vm, 2)->o.type = BUZZTYPE_INT;                    \
+   else if(op1->o.type == BUZZTYPE_FLOAT &&                             \
+           op2->o.type == BUZZTYPE_FLOAT) {                             \
+      res->i.value = op2->f.value oper op1->f.value;                    \
    }                                                                    \
    else {                                                               \
       (vm)->state = BUZZVM_STATE_ERROR;                                 \
       (vm)->error = BUZZVM_ERROR_TYPE;                                  \
       return (vm)->state;                                               \
    }                                                                    \
-   buzzdarray_pop(vm->stack);
+   buzzvm_push(vm, res);
 
 /*
  * Pushes stack(#2) + stack(#1) and pops the operands.
@@ -506,29 +523,39 @@ extern "C" {
  */
 #define buzzvm_mod(vm)                                                  \
    buzzvm_stack_assert((vm), 2);                                        \
-   if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_INT &&                 \
-      buzzvm_stack_at(vm, 2)->o.type == BUZZTYPE_INT) {                 \
-      buzzvm_stack_at(vm, 2)->i.value = buzzvm_stack_at(vm, 2)->i.value % buzzvm_stack_at(vm, 1)->i.value; \
+   buzzobj_t op1 = buzzvm_stack_at(vm, 1);                              \
+   buzzobj_t op2 = buzzvm_stack_at(vm, 2);                              \
+   buzzdarray_pop(vm->stack);                                           \
+   buzzdarray_pop(vm->stack);                                           \
+   if(op1->o.type == BUZZTYPE_INT &&                                    \
+      op2->o.type == BUZZTYPE_INT) {                                    \
+      buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_INT);        \
+      res->i.value = op2->i.value % op1->i.value;                       \
+      buzzvm_push(vm, res);                                             \
    }                                                                    \
-   else if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_FLOAT &&          \
-           buzzvm_stack_at(vm, 2)->o.type == BUZZTYPE_FLOAT) {          \
-      buzzvm_stack_at(vm, 2)->f.value = fmodf(buzzvm_stack_at(vm, 2)->f.value, buzzvm_stack_at(vm, 1)->f.value); \
+   else if(op1->o.type == BUZZTYPE_FLOAT &&                             \
+           op2->o.type == BUZZTYPE_FLOAT) {                             \
+      buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_FLOAT);      \
+      res->f.value = fmodf(op2->f.value, op1->f.value);                 \
+      buzzvm_push(vm, res);                                             \
    }                                                                    \
-   else if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_INT &&            \
-           buzzvm_stack_at(vm, 2)->o.type == BUZZTYPE_FLOAT) {          \
-      buzzvm_stack_at(vm, 2)->f.value = fmodf(buzzvm_stack_at(vm, 2)->f.value, buzzvm_stack_at(vm, 1)->i.value); \
+   else if(op1->o.type == BUZZTYPE_INT &&                               \
+           op2->o.type == BUZZTYPE_FLOAT) {                             \
+      buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_FLOAT);      \
+      res->f.value = fmodf(op2->f.value, op1->i.value);                 \
+      buzzvm_push(vm, res);                                             \
    }                                                                    \
-   else if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_FLOAT &&          \
-           buzzvm_stack_at(vm, 2)->o.type == BUZZTYPE_INT) {            \
-      buzzvm_stack_at(vm, 2)->f.value = fmodf(buzzvm_stack_at(vm, 2)->i.value, buzzvm_stack_at(vm, 1)->f.value); \
-      buzzvm_stack_at(vm, 2)->o.type = BUZZTYPE_FLOAT;                 \
+   else if(op1->o.type == BUZZTYPE_FLOAT &&                             \
+           op2->o.type == BUZZTYPE_INT) {                               \
+      buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_FLOAT);      \
+      res->f.value = fmodf(op2->i.value, op1->f.value);                 \
+      buzzvm_push(vm, res);                                             \
    }                                                                    \
    else {                                                               \
       (vm)->state = BUZZVM_STATE_ERROR;                                 \
       (vm)->error = BUZZVM_ERROR_TYPE;                                  \
       return (vm)->state;                                               \
-   }                                                                    \
-   buzzdarray_pop(vm->stack);
+   }
 
 /*
  * Pushes stack(#2) ^ stack(#1) and pops the operands.
@@ -539,29 +566,39 @@ extern "C" {
  */
 #define buzzvm_pow(vm)                                                  \
    buzzvm_stack_assert((vm), 2);                                        \
-   if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_INT &&                 \
-      buzzvm_stack_at(vm, 2)->o.type == BUZZTYPE_INT) {                 \
-      buzzvm_stack_at(vm, 2)->i.value = buzzvm_stack_at(vm, 2)->i.value % buzzvm_stack_at(vm, 1)->i.value; \
+   buzzobj_t op1 = buzzvm_stack_at(vm, 1);                              \
+   buzzobj_t op2 = buzzvm_stack_at(vm, 2);                              \
+   buzzdarray_pop(vm->stack);                                           \
+   buzzdarray_pop(vm->stack);                                           \
+   if(op1->o.type == BUZZTYPE_INT &&                                    \
+      op2->o.type == BUZZTYPE_INT) {                                    \
+      buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_FLOAT);      \
+      res->f.value = powf(op2->i.value, op1->i.value);                  \
+      buzzvm_push(vm, res);                                             \
    }                                                                    \
-   else if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_FLOAT &&          \
-           buzzvm_stack_at(vm, 2)->o.type == BUZZTYPE_FLOAT) {          \
-      buzzvm_stack_at(vm, 2)->f.value = fmodf(buzzvm_stack_at(vm, 2)->f.value, buzzvm_stack_at(vm, 1)->f.value); \
+   else if(op1->o.type == BUZZTYPE_FLOAT &&                             \
+           op2->o.type == BUZZTYPE_FLOAT) {                             \
+      buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_FLOAT);      \
+      res->f.value = powf(op2->f.value, op1->f.value);                  \
+      buzzvm_push(vm, res);                                             \
    }                                                                    \
-   else if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_INT &&            \
-           buzzvm_stack_at(vm, 2)->o.type == BUZZTYPE_FLOAT) {          \
-      buzzvm_stack_at(vm, 2)->f.value = fmodf(buzzvm_stack_at(vm, 2)->f.value, buzzvm_stack_at(vm, 1)->i.value); \
+   else if(op1->o.type == BUZZTYPE_INT &&                               \
+           op2->o.type == BUZZTYPE_FLOAT) {                             \
+      buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_FLOAT);      \
+      res->f.value = powf(op2->f.value, op1->i.value);                  \
+      buzzvm_push(vm, res);                                             \
    }                                                                    \
-   else if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_FLOAT &&          \
-           buzzvm_stack_at(vm, 2)->o.type == BUZZTYPE_INT) {            \
-      buzzvm_stack_at(vm, 2)->f.value = fmodf(buzzvm_stack_at(vm, 2)->i.value, buzzvm_stack_at(vm, 1)->f.value); \
-      buzzvm_stack_at(vm, 2)->o.type = BUZZTYPE_FLOAT;                  \
+   else if(op1->o.type == BUZZTYPE_FLOAT &&                             \
+           op2->o.type == BUZZTYPE_INT) {                               \
+      buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_FLOAT);      \
+      res->f.value = powf(op2->i.value, op1->f.value);                  \
+      buzzvm_push(vm, res);                                             \
    }                                                                    \
    else {                                                               \
       (vm)->state = BUZZVM_STATE_ERROR;                                 \
       (vm)->error = BUZZVM_ERROR_TYPE;                                  \
       return (vm)->state;                                               \
-   }                                                                    \
-   buzzdarray_pop(vm->stack);
+   }
 
 /*
  * Unary minus operator of the value currently at the top of the stack.
@@ -572,10 +609,18 @@ extern "C" {
  */
 #define buzzvm_unm(vm)                                                  \
    buzzvm_stack_assert(vm, 1);                                          \
-   if(buzzvm_stack_at(vm, 1)->o.type == BUZZVM_INT)                     \
-      buzzvm_stack_at(vm, 1)->i.value = -buzzvm_stack_at(vm, 1)->i.value; \
-   else if(buzzvm_stack_at(vm, 1)->o.type == BUZZVM_FLOAT)              \
-      buzzvm_stack_at(vm, 1)->f.value = -buzzvm_stack_at(vm, 1)->f.value; \
+   buzzobj_t op = buzzvm_stack_at(vm, 1);                               \
+   buzzdarray_pop(vm->stack);                                           \
+   if(op->o.type == BUZZVM_INT) {                                       \
+      buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_INT);        \
+      res->i.value = -op->i.value;                                      \
+      buzzvm_push(vm, res);                                             \
+   }                                                                    \
+   else if(op->o.type == BUZZVM_FLOAT) {                                \
+      buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_FLOAT);      \
+      res->f.value = -op->f.value;                                      \
+      buzzvm_push(vm, res);                                             \
+   }                                                                    \
    else {                                                               \
       (vm)->state = BUZZVM_STATE_ERROR;                                 \
       (vm)->error = BUZZVM_ERROR_TYPE;                                  \
@@ -609,10 +654,13 @@ extern "C" {
  */
 #define buzzvm_not(vm)                                                  \
    buzzvm_stack_assert((vm), 1);                                        \
-   buzzvm_stack_at(vm, 1)->i.value =                                    \
-      (buzzvm_stack_at(vm, 2)->o.type == BUZZTYPE_NIL ||                \
-       (buzzvm_stack_at(vm, 2)->i.type == BUZZTYPE_INT && buzzvm_stack_at(vm, 2)->i.value == 0)); \
-   buzzvm_stack_at(vm, 2)->o.type = BUZZTYPE_INT;
+   buzzobj_t op = buzzvm_stack_at(vm, 1);                               \
+   buzzdarray_pop(vm->stack);                                           \
+   buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_INT);           \
+   res->i.value =                                                       \
+      (op->o.type == BUZZTYPE_NIL ||                                    \
+       (op->i.type == BUZZTYPE_INT && op->i.value == 0));               \
+   buzzvm_push(vm, res);
    
 /*
  * Pushes stack(#2) == stack(#1) and pops the operands.
@@ -679,9 +727,12 @@ extern "C" {
  * used to update the program counter.
  */
 #define buzzvm_ret0(vm) {                                         \
+      buzzdarray_pop((vm)->lsyms);                                \
+      (vm)->lsyms = buzzdarray_last((vm)->lsymts, buzzdarray_t);  \
       buzzdarray_pop((vm)->stacks);                               \
       (vm)->stack = buzzdarray_last((vm)->stacks, buzzdarray_t);  \
       buzzvm_stack_assert(vm, 1);                                 \
+      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);                    \
       (vm)->pc = buzzvm_stack_at(vm, 1)->i.value;                 \
       buzzvm_pop(vm);                                             \
    }
@@ -699,18 +750,21 @@ extern "C" {
  * program counter. Then, the saved return value is pushed on the
  * stack.
  */
-#define buzzvm_ret1(vm) {                                               \
-                         buzzobj_t ret = buzzvm_stack_at(vm, 1);        \
-                         buzzdarray_pop((vm)->stacks);                  \
-                         (vm)->stack = buzzdarray_last((vm)->stacks, buzzdarray_t); \
-                         buzzvm_stack_assert(vm, 1);                    \
-                         (vm)->pc = buzzvm_stack_at(vm, 1)->i.value;    \
-                         buzzvm_pop(vm);                                \
-                         buzzvm_push(vm, ret);                          \
-                         }
-
+#define buzzvm_ret1(vm) {                                         \
+      buzzdarray_pop((vm)->lsyms);                                \
+      (vm)->lsyms = buzzdarray_last((vm)->lsymts, buzzdarray_t);  \
+      buzzobj_t ret = buzzvm_stack_at(vm, 1);                     \
+      buzzdarray_pop((vm)->stacks);                               \
+      (vm)->stack = buzzdarray_last((vm)->stacks, buzzdarray_t);  \
+      buzzvm_stack_assert(vm, 1);                                 \
+      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);                    \
+      (vm)->pc = buzzvm_stack_at(vm, 1)->i.value;                 \
+      buzzvm_pop(vm);                                             \
+      buzzvm_push(vm, ret);                                       \
+   }
+   
 /**
- * Calls a native closure.
+ * Calls a closure.
  * Internally checks whether the operation is valid.
  * This function is designed to be used within int-returning functions such as
  * BuzzVM hook functions or buzzvm_step().
@@ -720,73 +774,44 @@ extern "C" {
  * ...
  * #1+N Closure argN
  * #2+N The closure
- * This function pushes a new stack filled with the activation record entries
- * and the closure arguments. In addition, it leaves the stack beneath as follows:
+ * This function pushes a new stack and a new local variable table filled with the
+ * activation record entries and the closure arguments. In addition, it leaves the stack
+ * beneath as follows:
  * #1 An integer for the return address
  */
-#define buzzvm_callcn(vm) {                                           \
-      buzzvm_stack_assert(vm, 1);                                     \
-      int32_t argn = buzzvm_stack_at(vm, 1)->i.value;                 \
-      buzzvm_pop(vm);                                                 \
-      buzzvm_stack_assert(vm, argn+1);                                \
-      buzzobj_t c = buzzvm_stack_at(vm, argn+1);                      \
-      buzzdarray_t prstack = (vm)->stack;                             \
-      (vm)->stack = buzzdarray_clone(c->c.value.native.actrec);       \
-      buzzdarray_push((vm)->stacks, &((vm)->stack));                  \
-      for(int32_t i = argn; i > 0; --i)                               \
-         buzzvm_push(vm,                                              \
-                     buzzdarray_get(prstack,                          \
-                                    buzzdarray_size(prstack) - i,     \
-                                    buzzobj_t));                      \
-      for(int32_t i = argn+1; i > 0; --i)                             \
-         buzzdarray_pop(prstack);                                     \
-      buzzobj_t retaddr = buzzheap_newobj((vm)->heap, BUZZTYPE_INT);  \
-      retaddr->i.value = (vm)->pc;                                    \
-      buzzdarray_push(prstack, &retaddr);                             \
-      (vm)->pc = c->c.value.native.addr;                              \
-                                    }
-
-/**
- * Calls a c-function closure.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * This function expects the stack to be as follows:
- * #1   An integer for the number of closure parameters N
- * #2   Closure arg1
- * ...
- * #1+N Closure argN
- * #2+N The closure
- * This function pushes a new stack filled with the activation record entries
- * and the closure arguments. In addition, it leaves the stack beneath as follows:
- * #1 An integer for the return address
- */
-#define buzzvm_callcc(vm) {                                             \
+#define buzzvm_callc(vm) {                                              \
       buzzvm_stack_assert(vm, 1);                                       \
+      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);                          \
       int32_t argn = buzzvm_stack_at(vm, 1)->i.value;                   \
       buzzvm_pop(vm);                                                   \
+      buzzvm_stack_assert(vm, argn+1);                                  \
+      buzzvm_type_assert(vm, argn+1, BUZZTYPE_CLOSURE);                 \
       buzzobj_t c = buzzvm_stack_at(vm, argn+1);                        \
-      if((c->c.value.cfun.id) >= buzzdarray_size((vm)->flist)) {        \
+      if((!c->c.value.isnative) &&                                      \
+         ((c->c.value.ref) >= buzzdarray_size((vm)->flist))) {          \
          (vm)->state = BUZZVM_STATE_ERROR;                              \
          (vm)->error = BUZZVM_ERROR_FLIST;                              \
          return vm->state;                                              \
       }                                                                 \
-      buzzvm_stack_assert(vm, argn);                                    \
-      buzzdarray_t prstack = (vm)->stack;                               \
-      (vm)->stack = buzzdarray_clone(c->c.value.cfun.actrec);           \
-      buzzdarray_push((vm)->stacks, &((vm)->stack));                    \
+      (vm)->lsyms = buzzdarray_clone(c->c.value.actrec);                \
+      buzzdarray_push((vm)->lsymts, &((vm)->lsyms));                    \
       for(int32_t i = argn; i > 0; --i)                                 \
-         buzzvm_push(vm,                                                \
-                     buzzdarray_get(prstack,                            \
-                                    buzzdarray_size(prstack) - i,       \
-                                    buzzobj_t));                        \
+         buzzdarray_push((vm)->lsyms,                                   \
+                         buzzdarray_get((vm)->stack,                    \
+                                        buzzdarray_size((vm)->stack) - i, \
+                                        buzzobj_t));                    \
       for(int32_t i = argn+1; i > 0; --i)                               \
-         buzzdarray_pop(prstack);                                       \
+         buzzdarray_pop((vm)->stack);                                   \
       buzzobj_t retaddr = buzzheap_newobj((vm)->heap, BUZZTYPE_INT);    \
       retaddr->i.value = (vm)->pc;                                      \
-      buzzdarray_push(prstack, &retaddr);                               \
-      buzzdarray_get((vm)->flist, c->c.value.cfun.id, buzzvm_funp)(vm); \
-                                    }
+      buzzdarray_push((vm)->stack, &retaddr);                           \
+      (vm)->stack = buzzdarray_new(1, sizeof(buzzobj_t), NULL);         \
+      buzzdarray_push((vm)->stacks, &((vm)->stack));                    \
+      if(c->c.value.isnative) (vm)->pc = c->c.value.ref;                \
+      else buzzdarray_get((vm)->flist,                                  \
+                          c->c.value.ref,                               \
+                          buzzvm_funp)(vm);                             \
+   }
 
 /*
  * Pushes an empty table onto the stack.
@@ -806,14 +831,15 @@ extern "C" {
  * This operation pops #1 and #2, leaving the table at the stack top.
  * @param vm The VM data.
  */
-#define buzzvm_tput(vm) {                       \
-      buzzvm_stack_assert(vm, 3);               \
-      buzzobj_t v = buzzvm_stack_at(vm, 1);     \
-      buzzobj_t k = buzzvm_stack_at(vm, 2);     \
-      buzzobj_t t = buzzvm_stack_at(vm, 3);     \
-      buzzdict_set(t->t.value, &k, &v);         \
-      buzzvm_pop(vm);                           \
-      buzzvm_pop(vm);                           \
+#define buzzvm_tput(vm) {                         \
+      buzzvm_stack_assert(vm, 3);                 \
+      buzzobj_t v = buzzvm_stack_at(vm, 1);       \
+      buzzobj_t k = buzzvm_stack_at(vm, 2);       \
+      buzzobj_t t = buzzvm_stack_at(vm, 3);       \
+      buzzvm_type_assert(vm, 3, BUZZTYPE_TABLE);  \
+      buzzdict_set(t->t.value, &k, &v);           \
+      buzzvm_pop(vm);                             \
+      buzzvm_pop(vm);                             \
    }
 
 /*
@@ -833,6 +859,7 @@ extern "C" {
       buzzvm_stack_assert(vm, 2);                             \
       buzzobj_t  k = buzzvm_stack_at(vm, 1);                  \
       buzzobj_t  t = buzzvm_stack_at(vm, 2);                  \
+      buzzvm_type_assert(vm, 2, BUZZTYPE_TABLE);              \
       buzzobj_t* v = buzzdict_get(t->t.value, &k, buzzobj_t); \
       buzzvm_pop(vm);                                         \
       if(v) buzzvm_push(vm, *v);                              \
