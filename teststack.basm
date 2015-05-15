@@ -1,58 +1,90 @@
 # Stack: 
 
-pushf 200
-# Stack: 200
+pushi 130
+# Stack: i130
 
-pop
-# Stack: 
-
-pushf 130
-# Stack: 130
-
-pushf 30
-# Stack: 30 130
+pushi 30
+# Stack: i30 i130
 
 add
-# Stack: 160
-
-pushf 60
-# Stack: 60 160
-
-sub
-# Stack: -100
-
-pushf 2
-# Stack: 2 -100
-
-mul
-# Stack: -200
-
-pushf 5
-# Stack: 5 -200
-
-div
-# Stack: -0.025000
-
-pushf -0.025000
-# Stack: -0.025000 -0.025000
-
-eq
-# Stack: 1
-
-pushf 17
-# Stack: 17 1
-
-pushf 19
-# Stack: 19 17 1
-
-eq
-# Stack: 0 1
-
-and
-# Stack: 0
-
-jumpnz 0
-# Stack: 0
+# Stack: i160
 
 pop
 # Stack:
+
+pushf 130
+# Stack: f130
+
+pushf 30
+# Stack: f30 f130
+
+add
+# Stack: f160
+
+pop
+# Stack:
+
+pushi 130
+# Stack: i130
+
+pushf 30
+# Stack: f30 i130
+
+add
+# Stack: f160
+
+pop
+# Stack:
+
+pushf 130
+# Stack: f130
+
+pushi 30
+# Stack: i30 f130
+
+add
+# Stack: f160
+
+pushf 60
+# Stack: f60 f160
+
+sub
+# Stack: f-100
+
+pushf 2
+# Stack: f2 f-100
+
+mul
+# Stack: f-200
+
+pushf 5
+# Stack: f5 f-200
+
+div
+# Stack: f-0.025000
+
+pushf -0.025000
+# Stack: f-0.025000 f-0.025000
+
+eq
+# Stack: i1
+
+pushf 17
+# Stack: f17 i1
+
+pushf 19
+# Stack: f19 f17 i1
+
+eq
+# Stack: i0 i1
+
+and
+# Stack: i0
+
+# #jumpnz 0
+# # Stack:
+
+# pop
+# # Stack:
+
+done

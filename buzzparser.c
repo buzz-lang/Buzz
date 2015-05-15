@@ -741,7 +741,7 @@ int parse_command(buzzparser_t par) {
             else                 { chunk_append("\tlstore %d\n", idrefinfo.info); }
          }
          else if(idrefinfo.info == TYPE_TABLE)   { chunk_append("\ttset\n"); }
-         else if(idrefinfo.info == TYPE_CLOSURE) { chunk_append("\tcallcn\n"); }
+         else if(idrefinfo.info == TYPE_CLOSURE) { chunk_append("\tcallc\n"); }
          DEBUG("Assignment statement end\n");
          return PARSE_OK;
       }
@@ -869,7 +869,7 @@ int parse_idref(buzzparser_t par,
          else          { chunk_append("\tlload %lld\n", s->pos); }
       }
       else if(idrefinfo->info == TYPE_TABLE)   { chunk_append("\ttget\n"); }
-      else if(idrefinfo->info == TYPE_CLOSURE) { chunk_append("\tcallcn\n"); }
+      else if(idrefinfo->info == TYPE_CLOSURE) { chunk_append("\tcallc\n"); }
       if(par->tok->type == BUZZTOK_DOT) {
          DEBUG("Parsing idref.idref\n");
          idrefinfo->info = TYPE_TABLE;
@@ -906,7 +906,7 @@ int parse_idref(buzzparser_t par,
          chunk_append("\ttget\n");
       }
       else if(idrefinfo->info == TYPE_CLOSURE) {
-         chunk_append("\tcallcn\n");
+         chunk_append("\tcallc\n");
       }
    }
    DEBUG("Idref end\n");
