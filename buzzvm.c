@@ -637,7 +637,9 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          inc_pc();
          get_arg(uint32_t);
          buzzvm_stack_assert(vm, 1);
-         if(buzzvm_stack_at(vm, 1)->i.value == 0) {
+         if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_NIL ||
+            (buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_INT &&
+             buzzvm_stack_at(vm, 1)->i.value == 0)) {
             vm->pc = arg;
             assert_pc(vm->pc);
          }
@@ -648,7 +650,9 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          inc_pc();
          get_arg(uint32_t);
          buzzvm_stack_assert(vm, 1);
-         if(buzzvm_stack_at(vm, 1)->i.value != 0) {
+         if(buzzvm_stack_at(vm, 1)->o.type != BUZZTYPE_NIL &&
+            (buzzvm_stack_at(vm, 1)->o.type != BUZZTYPE_INT ||
+             buzzvm_stack_at(vm, 1)->i.value != 0)) {
             vm->pc = arg;
             assert_pc(vm->pc);
          }

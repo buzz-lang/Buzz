@@ -1,5 +1,4 @@
-# Stack: 
-
+@start
 pushi 130
 # Stack: i130
 
@@ -81,8 +80,8 @@ eq
 and
 # Stack: i0
 
-# #jumpnz 0
-# # Stack:
+#jumpnz @start
+# Stack:
 
 # pop
 # # Stack:
