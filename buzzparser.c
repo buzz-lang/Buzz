@@ -20,6 +20,47 @@ static int TYPE_TABLE   = -3;
 /****************************************/
 /****************************************/
 
+struct string_s {
+   char* str;
+   uint32_t pos;
+};
+
+void string_copy(const void* key, void* data, void* params) {
+   struct string_s* x = (struct string_s*)malloc(sizeof(struct string_s));
+   x->str = *(char**)key;
+   x->pos = *(uint32_t*)data;
+   buzzdarray_t arr = (buzzdarray_t)params;
+   buzzdarray_push(arr, &x);
+}
+
+int string_cmp(const void* a, const void* b) {
+   if((*(struct string_s**)a)->pos < (*(struct string_s**)b)->pos) return -1;
+   if((*(struct string_s**)a)->pos > (*(struct string_s**)b)->pos) return  1;
+   return 0;
+}
+
+void string_destroy(uint32_t pos, void* data, void* params) {
+   free((*(struct string_s**)data)->str);
+}
+
+void string_print(uint32_t pos, void* data, void* params) {
+   fprintf((FILE*)params, "'%s\n", (*(struct string_s**)data)->str);
+}
+
+uint32_t string_add(buzzdict_t strings, const char* str) {
+   uint32_t* pos = buzzdict_get(strings, &str, uint32_t);
+   if(!pos) {
+      char* dup = strdup(str);
+      uint32_t pos = buzzdict_size(strings);
+      buzzdict_set(strings, &dup, &pos);
+      return pos;
+   }
+   else return *pos;
+}
+
+/****************************************/
+/****************************************/
+
 struct sym_s {
    /* Position of the symbol in the activation record (-1 for unknown) */
    int64_t pos;
@@ -47,15 +88,25 @@ struct sym_s* sym_lookup(const char* sym,
    return NULL;
 }
 
-#define sym_add(SYM) {                                     \
-      char* key = strdup(SYM);                            \
-      struct sym_s symdata = {                            \
-         .pos  = (buzzdict_size(par->syms)),              \
-         .type = TYPE_BASIC,                              \
-         .global = (buzzdarray_size(par->symstack) == 1)  \
-      };                                                  \
-      buzzdict_set(par->syms, &key, &symdata);            \
-   }
+void sym_add(buzzparser_t par, const char* sym) {
+   /* Vopy string */
+   char* key = strdup(sym);
+   /* Check whether symbol is global or local */
+   int global = (buzzdarray_size(par->symstack) == 1);
+   /* Calculate position attribute */
+   uint32_t pos;
+   /* For a global symbol, the position corresponds to the string id */
+   if(global) pos = string_add(par->strings, sym);
+   /* For a local symbol, the position is that in the activation record */
+   else       pos = buzzdict_size(par->syms);
+   /* Create symbol and save it */
+   struct sym_s symdata = {
+      .pos  = pos,
+      .type = TYPE_BASIC,
+      .global = global
+   };
+   buzzdict_set(par->syms, &key, &symdata);
+}
 
 void sym_destroy(const void* key,
                 void* data,
@@ -140,7 +191,7 @@ void chunk_addcode(chunk_t c, char* code) {
 void chunk_finalize(chunk_t c) {
    /* Shrink the memory allocation */
    c->ccap = c->csize + 1;
-   c->code = realloc(c->code, c->ccap);   
+   c->code = realloc(c->code, c->ccap);
    /* Add a \0 at the end */
    c->code[c->csize] = 0;
 }
@@ -158,9 +209,10 @@ void chunk_register(uint32_t pos, void* data, void* params) {
    FILE* f = (FILE*)params;
    /* Print registration code */
    if(c->sym) {
+      if(c->sym->global) fprintf(f, "\tpushs %lld\n", c->sym->pos);
       fprintf(f, "\tpushi " LABELREF "%u\n", c->label);
       fprintf(f, "\tpushcn\n");
-      if(c->sym->global) fprintf(f, "\tgstore %lld\n", c->sym->pos);
+      if(c->sym->global) fprintf(f, "\tgstore\n");
       else               fprintf(f, "\tlstore %lld\n", c->sym->pos);
    }
 }
@@ -387,7 +439,7 @@ int parse_fun(buzzparser_t par) {
    fetchtok();
    tokmatch(BUZZTOK_ID);
    /* Add a symbol for this function */
-   sym_add(par->tok->value);
+   sym_add(par, par->tok->value);
    /* Make a new chunk for this function and get the associated symbol */
    chunk_push(sym_lookup(par->tok->value, par->symstack));
    fetchtok();
@@ -661,6 +713,8 @@ int parse_operand(buzzparser_t par) {
    }
    else if(par->tok->type == BUZZTOK_STRING) {
       DEBUG("Operand is string\n");
+      uint32_t pos = string_add(par->strings, par->tok->value);
+      chunk_append("\tpushs %u\n", pos);
       fetchtok();
       return PARSE_OK;
    }
@@ -716,7 +770,7 @@ int parse_command(buzzparser_t par) {
       }
       else {
          if(!parse_expression(par)) return PARSE_ERROR;
-         chunk_append("\tret1\n");         
+         chunk_append("\tret1\n");
       }
       return PARSE_OK;
    }
@@ -725,6 +779,7 @@ int parse_command(buzzparser_t par) {
       struct idrefinfo_s idrefinfo;
       if(!parse_idref(par, 1, &idrefinfo)) return PARSE_ERROR;
       if(par->tok->type == BUZZTOK_ASSIGN) {
+         /* Is lvalue a closure? ERROR */
          if(idrefinfo.info == TYPE_CLOSURE) {
             fprintf(stderr,
                     "%s:%llu:%llu: Syntax error: can't have a function call as lvalue\n",
@@ -733,15 +788,29 @@ int parse_command(buzzparser_t par) {
                     par->tok->col);
             return PARSE_ERROR;
          }
+         /* lvalue is OK */
          DEBUG("Parsing assignment\n");
+         /* Is lvalue a global symbol? If so, push its string id */
+         if(idrefinfo.global) chunk_append("\tpushs %d\n", idrefinfo.info);
+         /* Consume the = */
          fetchtok();
+         /* Parse the expression */
          if(!parse_expression(par)) return PARSE_ERROR;
-         if(idrefinfo.info >= 0) {
-            if(idrefinfo.global) { chunk_append("\tgstore %d\n", idrefinfo.info); }
-            else                 { chunk_append("\tlstore %d\n", idrefinfo.info); }
+         if(idrefinfo.global) {
+            /* The lvalue is a global symbol, just add gstore */
+            chunk_append("\tgstore\n");
          }
-         else if(idrefinfo.info == TYPE_TABLE)   { chunk_append("\ttset\n"); }
-         else if(idrefinfo.info == TYPE_CLOSURE) { chunk_append("\tcallc\n"); }
+         else {
+            /* The lvalue is a local symbol or a table reference */
+            if(idrefinfo.info >= 0) {
+               /* Local variable */
+               chunk_append("\tlstore %d\n", idrefinfo.info);
+            }
+            else if(idrefinfo.info == TYPE_TABLE) {
+               /* Table reference */
+               chunk_append("\ttput\n");
+            }
+         }
          DEBUG("Assignment statement end\n");
          return PARSE_OK;
       }
@@ -779,14 +848,18 @@ int parse_idlist(buzzparser_t par) {
     * the parent
     */
    struct sym_s* sym = sym_lookup(par->tok->value, par->symstack);
-   if(!sym || sym->global) { sym_add(par->tok->value); }
+   if(!sym || sym->global) {
+      sym_add(par, par->tok->value);
+   }
    fetchtok();
    /* Match rest of the argument list */
    while(par->tok->type == BUZZTOK_LISTSEP) {
       fetchtok();
       tokmatch(BUZZTOK_ID);
       struct sym_s* sym = sym_lookup(par->tok->value, par->symstack);
-      if(!sym || sym->global) { sym_add(par->tok->value); }
+      if(!sym || sym->global) {
+         sym_add(par, par->tok->value);
+      }
       fetchtok();
    }
    DEBUG("Idlist end\n");
@@ -828,34 +901,16 @@ int parse_idref(buzzparser_t par,
    /* Look it up in the symbol table */
    struct sym_s* s = sym_lookup(par->tok->value, par->symstack);
    if(!s) {
-      /* Symbol not found */
-      /* If the symbol is not an lvalue or
-       * is used as a base for a structured type,
-       * error */
-      if(!lvalue ||
-         (par->tok->type == BUZZTOK_DOT ||
-          par->tok->type == BUZZTOK_IDXOPEN ||
-          par->tok->type == BUZZTOK_PAROPEN)) {
-         /* No, error */
-         fprintf(stderr,
-                 "%s:%llu:%llu: Undefined symbol %s\n",
-                 par->lex->fname,
-                 par->tok->line,
-                 par->tok->col,
-                 par->tok->value);
-         return PARSE_ERROR;
-      }
-      /* Otherwise, set the idrefinfo */
+      /* Symbol not found, add it */
       DEBUG("Adding unknown idref %s\n", par->tok->value);
-      idrefinfo->info = buzzdict_size(par->syms);
-      idrefinfo->global = (buzzdarray_size(par->symstack) == 1);
-      sym_add(par->tok->value);
-      fetchtok();
-      /* Nothing else to do */
-      return PARSE_OK;
+      sym_add(par, par->tok->value);
+      s = sym_lookup(par->tok->value, par->symstack);
    }
-   /* Symbol found, save its info */
-   DEBUG("Found idref %s\n", par->tok->value);
+   else {
+      /* Symbol found */
+      DEBUG("Found idref %s\n", par->tok->value);
+   }
+   /* Save symbol info */
    idrefinfo->info = s->pos;
    idrefinfo->global = s->global;
    /* Go on parsing the reference */
@@ -864,18 +919,23 @@ int parse_idref(buzzparser_t par,
          par->tok->type == BUZZTOK_IDXOPEN ||
          par->tok->type == BUZZTOK_PAROPEN) {
       /* Take care of structured types */
-      if(idrefinfo->info >= 0) {
-         if(s->global) { chunk_append("\tgload %lld\n", s->pos); }
-         else          { chunk_append("\tlload %lld\n", s->pos); }
-      }
+      if(idrefinfo->global) { chunk_append("\tpushs %d\n\tgload\n", idrefinfo->info); }
+      else if(idrefinfo->info >= 0) { chunk_append("\tlload %lld\n", s->pos); }
       else if(idrefinfo->info == TYPE_TABLE)   { chunk_append("\ttget\n"); }
       else if(idrefinfo->info == TYPE_CLOSURE) { chunk_append("\tcallc\n"); }
+      idrefinfo->global = 0;
+      /* Go on parsing structure type */
       if(par->tok->type == BUZZTOK_DOT) {
          DEBUG("Parsing idref.idref\n");
          idrefinfo->info = TYPE_TABLE;
          fetchtok();
          tokmatch(BUZZTOK_ID);
-         chunk_append("\tpushs %s\n", par->tok->value);
+         uint32_t* sid = buzzdict_get(par->strings, &par->tok->value, uint32_t);
+         if(!sid) {
+            uint32_t pos = string_add(par->strings, par->tok->value);
+            sid = &pos;
+         }
+         chunk_append("\tpushs %u\n", *sid);
          fetchtok();
       }
       if(par->tok->type == BUZZTOK_IDXOPEN) {
@@ -897,10 +957,12 @@ int parse_idref(buzzparser_t par,
          chunk_append("\tpushi %d\n", numargs);
       }
    }
-   if(!lvalue) {
-      if(idrefinfo->info >= 0) {
-         if(s->global) { chunk_append("\tgload %lld\n", s->pos); }
-         else          { chunk_append("\tlload %lld\n", s->pos); }
+   if(!lvalue || idrefinfo->info == TYPE_CLOSURE) {
+      if(idrefinfo->global) {
+         chunk_append("\tpushs %d\n\tgload\n", idrefinfo->info);
+      }
+      else if(idrefinfo->info >= 0) {
+         chunk_append("\tlload %d\n", idrefinfo->info);
       }
       else if(idrefinfo->info == TYPE_TABLE) {
          chunk_append("\ttget\n");
@@ -963,6 +1025,13 @@ buzzparser_t buzzparser_new(const char* fscript,
    /* Initialize symbol table stack */
    par->symstack = buzzdarray_new(10, sizeof(buzzdict_t), symt_destroy);
    par->syms = NULL;
+   /* Initialize string list */
+   par->strings = buzzdict_new(100,
+                               sizeof(char*),
+                               sizeof(uint32_t),
+                               buzzdict_strkeyhash,
+                               buzzdict_strkeycmp,
+                               NULL);
    /* Return parser state */
    return par;
 }
@@ -971,6 +1040,7 @@ buzzparser_t buzzparser_new(const char* fscript,
 /****************************************/
 
 void buzzparser_destroy(buzzparser_t* par) {
+   buzzdict_destroy(&((*par)->strings));
    buzzdarray_destroy(&((*par)->chunks));
    buzzdarray_destroy(&((*par)->symstack));
    free((*par)->asmfn);
@@ -985,11 +1055,25 @@ void buzzparser_destroy(buzzparser_t* par) {
 /****************************************/
 
 int buzzparser_parse(buzzparser_t par) {
-   /* Parse the script */
+   /*
+    * Parse the script
+    */
    if(!parse_script(par)) return PARSE_ERROR;
-   /* Write to file */
+   /*
+    * Write to file
+    */
+   /* Write strings */
+   fprintf(par->asmstream, "!%u\n", buzzdict_size(par->strings));
+   buzzdarray_t sarr = buzzdarray_new(10, sizeof(struct string_s*), string_destroy);
+   buzzdict_foreach(par->strings, string_copy, sarr);
+   buzzdarray_sort(sarr, string_cmp);
+   buzzdarray_foreach(sarr, string_print, par->asmstream);
+   buzzdarray_destroy(&sarr);
+   fprintf(par->asmstream, "\n");
+   /* Write chunk registration code */
    buzzdarray_foreach(par->chunks, chunk_register, par->asmstream);
-   buzzdarray_foreach(par->chunks, chunk_print,    par->asmstream);
+   /* Write actual chunks */
+   buzzdarray_foreach(par->chunks, chunk_print, par->asmstream);
    return PARSE_OK;
 }
 

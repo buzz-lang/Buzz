@@ -1,6 +1,10 @@
-function f(x,y) {
-  return function(y) {
-    return x + y
-  }
+a = hook(3,4)
+
+r = {}
+r.a = 16
+
+function f(x) {
+  return a + r.a + x
 }
 
+f(1)

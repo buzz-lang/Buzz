@@ -57,7 +57,7 @@ extern "C" {
    typedef struct {
       uint16_t type;
       uint16_t marker;
-      char*    value;
+      uint16_t value; // The string id in the string list
    } buzzstring_t;
 
    /*

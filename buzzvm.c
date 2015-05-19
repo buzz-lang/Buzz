@@ -7,10 +7,32 @@
 /****************************************/
 /****************************************/
 
-#define BUZZVM_STACKS_INIT_CAPACITY 20
-#define BUZZVM_STACK_INIT_CAPACITY  20
-#define BUZZVM_LSYMTS_INIT_CAPACITY 20
-#define BUZZVM_SYMS_INIT_CAPACITY   20
+#define BUZZVM_STACKS_INIT_CAPACITY  20
+#define BUZZVM_STACK_INIT_CAPACITY   20
+#define BUZZVM_LSYMTS_INIT_CAPACITY  20
+#define BUZZVM_SYMS_INIT_CAPACITY    20
+#define BUZZVM_STRINGS_INIT_CAPACITY 20
+
+/****************************************/
+/****************************************/
+
+void buzzvm_string_add(buzzvm_t vm,
+                       const char* str) {
+   char* s = strdup(str);
+   buzzdarray_push(vm->strings, &s);
+}
+
+void buzzvm_string_destroy(uint32_t pos,
+                           void* data,
+                           void* params) {
+   free(*(char**)data);
+}
+
+int buzzvm_string_cmp(const void* a, const void* b) {
+   return strcmp(*(char**)a, *(char**)b);
+}
+
+#define buzzdarray_string_find(vm, str) buzzdarray_find(vm->strings, buzzvm_string_cmp, str);
 
 /****************************************/
 /****************************************/
@@ -197,9 +219,16 @@ buzzvm_t buzzvm_new(uint32_t robot) {
                               NULL);
    buzzdarray_push(vm->lsymts, &(vm->lsyms));
    /* Create global variable tables */
-   vm->gsyms = buzzdarray_new(BUZZVM_SYMS_INIT_CAPACITY,
-                              sizeof(buzzobj_t),
-                              NULL);
+   vm->gsyms = buzzdict_new(BUZZVM_SYMS_INIT_CAPACITY,
+                            sizeof(int32_t),
+                            sizeof(buzzobj_t),
+                            buzzdict_int32keyhash,
+                            buzzdict_int32keycmp,
+                            NULL);
+   /* Create string list */
+   vm->strings = buzzdarray_new(BUZZVM_STRINGS_INIT_CAPACITY,
+                                sizeof(char*),
+                                buzzvm_string_destroy);
    /* Create heap */
    vm->heap = buzzheap_new();
    /* Create function list */
@@ -265,7 +294,13 @@ void buzzvm_reset(buzzvm_t vm) {
                               NULL);
    buzzdarray_push(vm->lsymts, &(vm->lsyms));
    /* Clear global variable table */
-   buzzdarray_clear(vm->gsyms, BUZZVM_SYMS_INIT_CAPACITY);
+   buzzdict_destroy(&(vm->gsyms));
+   vm->gsyms = buzzdict_new(BUZZVM_SYMS_INIT_CAPACITY,
+                            sizeof(int32_t),
+                            sizeof(buzzobj_t),
+                            buzzdict_int32keyhash,
+                            buzzdict_int32keycmp,
+                            NULL);
    /* Reset program counter */
    vm->pc = 0;
    /* Reset VM state */
@@ -278,8 +313,10 @@ void buzzvm_reset(buzzvm_t vm) {
 /****************************************/
 
 void buzzvm_destroy(buzzvm_t* vm) {
+   /* Get rid of the stack */
+   buzzdarray_destroy(&(*vm)->strings);
    /* Get rid of the global variable table */
-   buzzdarray_destroy(&(*vm)->gsyms);
+   buzzdict_destroy(&(*vm)->gsyms);
    /* Get rid of the local variable tables */
    buzzdarray_destroy(&(*vm)->lsymts);
    /* Get rid of the stack */
@@ -307,11 +344,27 @@ void buzzvm_destroy(buzzvm_t* vm) {
 void buzzvm_set_bcode(buzzvm_t vm,
                       const uint8_t* bcode,
                       uint32_t bcode_size) {
-   vm->bcode_size = bcode_size;
-   vm->bcode = bcode;
-   vm->pc = 0;
+   /* Fetch the string count */
+   long int count;
+   memcpy(&count, bcode, sizeof(long int));
+   /* Go through the strings and store them */
+   uint32_t i = sizeof(long int);
+   long int c = 0;
+   for(; (c < count) && (i < bcode_size); ++c) {
+      /* Store string */
+      buzzvm_string_add(vm, (char*)(bcode + i));
+      /* Advance to first character of next string */
+      while(*(bcode + i) != 0) ++i;
+      ++i;
+   }
+   /* Initialize VM state */
    vm->state = BUZZVM_STATE_READY;
    vm->error = BUZZVM_ERROR_NONE;
+   /* Initialize bytecode data */
+   vm->bcode_size = bcode_size;
+   vm->bcode = bcode;
+   /* Set program counter */
+   vm->pc = i;
 }
 
 /****************************************/
@@ -327,7 +380,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
    /* Can't execute if not ready */
    if(vm->state != BUZZVM_STATE_READY) return vm->state;
    /* Execute GC */
-   buzzheap_gc(vm);
+   //buzzheap_gc(vm);
    /* Process messages */
    buzzvm_process_inmsgs(vm);
    /* Fetch instruction and (potential) argument */
@@ -358,17 +411,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          break;
       }
       case BUZZVM_INSTR_RET1: {
-//         buzzvm_ret1(vm);
-         buzzdarray_pop((vm)->lsyms);
-         (vm)->lsyms = buzzdarray_last((vm)->lsymts, buzzdarray_t);
-         buzzobj_t ret = buzzvm_stack_at(vm, 1);
-         buzzdarray_pop((vm)->stacks);
-         (vm)->stack = buzzdarray_last((vm)->stacks, buzzdarray_t);
-         buzzvm_stack_assert(vm, 1);
-         buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
-         (vm)->pc = buzzvm_stack_at(vm, 1)->i.value;
-         buzzvm_pop(vm);
-         buzzvm_push(vm, ret);
+         buzzvm_ret1(vm);
          assert_pc(vm->pc);
          break;
       }
@@ -459,6 +502,16 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          buzzmsg_queue_append(vm->outmsgs, buf);
          /* Next instruction */
          inc_pc();
+         break;
+      }
+      case BUZZVM_INSTR_GLOAD: {
+         inc_pc();
+         buzzvm_gload(vm);
+         break;
+      }
+      case BUZZVM_INSTR_GSTORE: {
+         inc_pc();
+         buzzvm_gstore(vm);
          break;
       }
       case BUZZVM_INSTR_PUSHT: {
@@ -638,6 +691,12 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          buzzvm_pushi(vm, arg);
          break;
       }
+      case BUZZVM_INSTR_PUSHS: {
+         inc_pc();
+         get_arg(int32_t);
+         buzzvm_pushs(vm, arg);
+         break;
+      }
       case BUZZVM_INSTR_PUSHF: {
          inc_pc();
          get_arg(float);
@@ -654,18 +713,6 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          inc_pc();
          get_arg(uint32_t);
          buzzvm_lstore(vm, arg);
-         break;
-      }
-      case BUZZVM_INSTR_GLOAD: {
-         inc_pc();
-         get_arg(uint32_t);
-         buzzvm_gload(vm, arg);
-         break;
-      }
-      case BUZZVM_INSTR_GSTORE: {
-         inc_pc();
-         get_arg(uint32_t);
-         buzzvm_gstore(vm, arg);
          break;
       }
       case BUZZVM_INSTR_JUMP: {
@@ -712,10 +759,32 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
-int64_t buzzvm_register_function(buzzvm_t vm,
-                                 buzzvm_funp funp) {
-   buzzdarray_push(vm->flist, funp);
-   return buzzdarray_size(vm->flist) - 1;
+int buzzvm_function_cmp(const void* a, const void* b) {
+   if(*(uintptr_t*)a < *(uintptr_t*)b) return -1;
+   if(*(uintptr_t*)a > *(uintptr_t*)b) return  1;
+   return 0;
+}
+
+void buzzvm_register_function(buzzvm_t vm,
+                              const char* fname,
+                              buzzvm_funp funp) {
+   /* Look for function pointer to avoid duplicates */
+   uint32_t fpos = buzzdarray_find(vm->flist, buzzvm_function_cmp, funp);
+   if(fpos == buzzdarray_size(vm->flist)) {
+      /* Add function to the list */
+      buzzdarray_push(vm->flist, &funp);
+   }
+   /* Create c closure */
+   buzzobj_t c = buzzheap_newobj(vm->heap, BUZZTYPE_CLOSURE);
+   c->c.value.isnative = 0;
+   c->c.value.ref = fpos;
+   /* Look for function name in the string list, add if missing */
+   uint32_t str = buzzdarray_string_find(vm, &fname);
+   if(str == buzzdarray_size(vm->strings)) {
+      buzzvm_string_add(vm, fname);
+   }
+   /* Add closure to the global symbols */
+   buzzdict_set(vm->gsyms, &str, &c);
 }
 
 /****************************************/

@@ -63,6 +63,9 @@ uint32_t buzzheap_table_hash(const void* key) {
       case BUZZTYPE_FLOAT: {
          return ((uint32_t)(k->f.value) % BUZZHEAP_TABLE_BUCKETS);
       }
+      case BUZZTYPE_STRING: {
+         return ((uint32_t)(k->f.value) % BUZZHEAP_TABLE_BUCKETS);
+      }
       default:
          fprintf(stderr, "[TODO] %s:%d\n", __FILE__, __LINE__);
          exit(1);
@@ -115,6 +118,8 @@ void buzzheap_objmark(buzzobj_t o,
     * Nothing to do if the object is already marked
     * This avoids infinite looping when cycles are present
     */
+   fprintf(stderr, "[DEBUG] o = %p\n", o);
+   fprintf(stderr, "[DEBUG] h = %p\n", h);
    if(o->o.marker == h->marker) return;
    /* Update marker */
    o->o.marker = h->marker;
@@ -173,14 +178,25 @@ void buzzheap_vstig_mark(const void* key,
                      params);
 }
 
+void buzzheap_gsymobj_mark(const void* key, void* data, void* params) {
+   buzzheap_objmark(*(buzzobj_t*)data, (buzzheap_t)params);
+}
+
 void buzzheap_gc(struct buzzvm_s* vm) {
    buzzheap_t h = vm->heap;
    /* Is GC necessary? */
    if(buzzdarray_size(h->objs) < h->max_objs) return;
+   fprintf(stderr, "[DEBUG] ^^^^^^^^^^^^^^^^^^^^^^\n");
+   fprintf(stderr, "[DEBUG] ^ Garbage collection ^\n");
+   fprintf(stderr, "[DEBUG] ^^^^^^^^^^^^^^^^^^^^^^\n");
    /* Increase the marker */
    ++h->marker;
+   /* Go through all the objects in the global symbols and mark them */
+   buzzdict_foreach(vm->gsyms, buzzheap_gsymobj_mark, h);
    /* Go through all the objects in the VM stack and mark them */
    buzzdarray_foreach(vm->stacks, buzzheap_stack_mark, h);
+   /* Go through all the objects in the local symbol stack and mark them */
+   buzzdarray_foreach(vm->lsymts, buzzheap_stack_mark, h);
    /* Go through all the objects in the virtual stigmergy and mark them */
    buzzdict_foreach(vm->vstigs, buzzheap_vstig_mark, h);
    /* Go through all the objects in the object list and delete the unmarked ones */

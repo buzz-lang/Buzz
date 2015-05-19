@@ -22,13 +22,19 @@ void dump(buzzvm_t vm, const char* prefix) {
             fprintf(stderr, "[float] %f\n", o->f.value);
             break;
          case BUZZTYPE_TABLE:
-            fprintf(stderr, "[table] %d\n", buzzdict_size(o->t.value));
+            fprintf(stderr, "[table] %d elements\n", buzzdict_size(o->t.value));
             break;
          case BUZZTYPE_ARRAY:
             fprintf(stderr, "[array] %lld\n", buzzdarray_size(o->a.value));
             break;
          case BUZZTYPE_CLOSURE:
-            fprintf(stderr, "[closure] %d\n", o->c.value.ref);
+            if(o->c.value.isnative)
+               fprintf(stderr, "[n-closure] %d\n", o->c.value.ref);
+            else
+               fprintf(stderr, "[c-closure] %d\n", o->c.value.ref);
+            break;
+         case BUZZTYPE_STRING:
+            fprintf(stderr, "[string] %d:'%s'\n", o->s.value, buzzdarray_get(vm->strings, o->s.value, char*));
             break;
          default:
             fprintf(stderr, "[TODO] type = %d\n", o->o.type);
@@ -39,6 +45,8 @@ void dump(buzzvm_t vm, const char* prefix) {
 
 int hook(buzzvm_t vm) {
    fprintf(stdout, "Hook called!\n\n");
+   buzzvm_pushf(vm, 17.0);
+   buzzvm_ret1(vm);
    return 0;
 }
 
@@ -61,10 +69,10 @@ int main(int argc, char** argv) {
    buzz_deasm(bcode_buf, bcode_size, fdeasm);
    /* Create new VM */
    buzzvm_t vm = buzzvm_new(1);
-   /* Register hook function */
-   buzzvm_register_function(vm, hook);
    /* Set byte code */
    buzzvm_set_bcode(vm, bcode_buf, bcode_size);
+   /* Register hook function */
+   buzzvm_register_function(vm, "hook", hook);
    /* Run byte code and dump state */
    do dump(vm, "[DEBUG] ");
    while(buzzvm_step(vm) == BUZZVM_STATE_READY);

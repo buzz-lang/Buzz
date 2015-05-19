@@ -19,7 +19,7 @@
    }                                            \
 
 /*
- * Adds an instructions to the bytecode buffer
+ * Adds an instruction to the bytecode buffer
  */
 #define bcode_add_instr(OPCODE)                 \
    bcode_resize(1);                             \
@@ -75,15 +75,13 @@
 #define l_arg_instr(OP) if(strcmp(instr, buzzvm_instr_desc[OP]) == 0) { bcode_add_instr(OP); bcode_add_arg_l(); continue; }
 
 void strkeydstryf(const void* key, void* data, void* params) {
-   char* k = (char*)key;
-   free(k);
-   free(data);
+   free(*(char**)key);
+   free((int32_t*)data);
 }
 
 void strdatadstryf(const void* key, void* data, void* params) {
-   char* d = (char*)data;
    free((int32_t*)key);
-   free(d);
+   free(*(char**)data);
 }
 
 struct buzz_asm_info_s {
@@ -137,9 +135,6 @@ int buzz_asm(const char* fname,
                                      buzzdict_int32keyhash,
                                      buzzdict_int32keycmp,
                                      strdatadstryf);
-   /*
-    * Perform first pass - compilation and label collection
-    */
    /* Open file */
    FILE* fd = fopen(fname, "r");
    if(!fd) {
@@ -150,6 +145,9 @@ int buzz_asm(const char* fname,
    *buf = malloc(256);
    size_t bcode_max_size = 256;
    *size = 0;
+   /*
+    * Perform first pass - compilation and label collection
+    */
    /* Read each line */
    ssize_t read;
    char* rawline = 0;
@@ -168,15 +166,34 @@ int buzz_asm(const char* fname,
       char* endc = trimline + strlen(trimline) - 1;
       while(endc > trimline && isspace(*endc)) --endc;
       *(endc + 1) = 0;
+      /* Is the line a string count marker? */
+      if(*trimline == '!') {
+         ++trimline;
+         long int n = strtol(trimline, NULL, 10);
+         bcode_resize(sizeof(long int));
+         memcpy((*buf) + (*size), &n, sizeof(long int)); \
+         *size += sizeof(long int);
+         continue;
+      }      
+      /* Is the line a string? */
+      if(*trimline == '\'') {
+         ++trimline;
+         fprintf(stderr, "[DEBUG] %s:%zu STRING %s\n", fname, lineno, trimline);
+         size_t l = strlen(trimline) + 1;
+         bcode_resize(l);
+         strcpy((char*)(*buf + *size), trimline);
+         *size += l;
+         continue;
+      }
       /* Is the line a label? */
       if(*trimline == '@') {
          char* label = strdup(trimline);
          buzzdict_set(labpos, &label, size);
-         fprintf(stderr, "[DEBUG] %s:%zu %s\tLABEL at %u (%p)\n", fname, lineno, label, *size, label);
+         fprintf(stderr, "[DEBUG] %s:%zu LABEL %s\tat %u (%p)\n", fname, lineno, label, *size, label);
          continue;
       }
       /* Fetch the instruction */
-      fprintf(stderr, "[DEBUG] %s:%zu %s", fname, lineno, trimline);
+      fprintf(stderr, "[DEBUG] %s:%zu \t%s", fname, lineno, trimline);
       char* instr = strsep(&trimline, " \n\t");
       char* argstr = strsep(&trimline, " \n\t");
       fprintf(stderr, "\t[%s] [%s]\n", instr, argstr);
@@ -204,6 +221,8 @@ int buzz_asm(const char* fname,
       noarg_instr(BUZZVM_INSTR_LT);
       noarg_instr(BUZZVM_INSTR_LTE);
       noarg_instr(BUZZVM_INSTR_SHOUT);
+      noarg_instr(BUZZVM_INSTR_GLOAD);
+      noarg_instr(BUZZVM_INSTR_GSTORE);
       noarg_instr(BUZZVM_INSTR_PUSHT);
       noarg_instr(BUZZVM_INSTR_TPUT);
       noarg_instr(BUZZVM_INSTR_TGET);
@@ -221,10 +240,9 @@ int buzz_asm(const char* fname,
       noarg_instr(BUZZVM_INSTR_INSWARM);
       f_arg_instr(BUZZVM_INSTR_PUSHF);
       i_arg_instr(BUZZVM_INSTR_PUSHI);
+      i_arg_instr(BUZZVM_INSTR_PUSHS);
       i_arg_instr(BUZZVM_INSTR_LLOAD);
       i_arg_instr(BUZZVM_INSTR_LSTORE);
-      i_arg_instr(BUZZVM_INSTR_GLOAD);
-      i_arg_instr(BUZZVM_INSTR_GSTORE);
       l_arg_instr(BUZZVM_INSTR_JUMP);
       l_arg_instr(BUZZVM_INSTR_JUMPZ);
       l_arg_instr(BUZZVM_INSTR_JUMPNZ);
@@ -273,10 +291,34 @@ int buzz_deasm(const uint8_t* buf,
       perror(fname);
       return 1;
    }
+   /*
+    * Phase 1: fetch the strings
+    */
+   /* Fetch and print the string count */
+   long int count;
+   memcpy(&count, buf, sizeof(long int));
+   fprintf(fd, "!%ld\n", count);
+   /* Go through the strings and print them */
+   uint32_t i = sizeof(long int);
+   long int c = 0;
+   for(; (c < count) && (i < size); ++c) {
+      /* Print string */
+      fprintf(fd, "'%s\n", ((char*)buf + i));
+      /* Advance to first character of next string */
+      while(*(buf + i) != 0) ++i;
+      ++i;
+   }
+   if(c < count) {
+      fprintf(stderr, "ERROR: %s: scanning string went up to end of file (%ld still to parse)\n", fname, (count - c));
+      return 2;
+   }
+   /*
+    * Phase 2: deassemble the opcodes
+    */
    /* Calculate max opcode */
    uint32_t maxop = sizeof(buzzvm_instr_desc) / sizeof(char*);
    /* Go through the bytecode */
-   for(uint32_t i = 0; i < size; ++i) {
+   for(; i < size; ++i) {
       /* Fetch instruction */
       uint8_t op = buf[i];
       /* Check that it's in the allowed range */
@@ -293,7 +335,7 @@ int buzz_deasm(const uint8_t* buf,
       }
       else if(op > BUZZVM_INSTR_PUSHF) {
          /* Integer argument */
-         write_arg(int32_t, "%u");
+         write_arg(int32_t, "%d");
       }
       /* Newline */
       fprintf(fd, "\n");

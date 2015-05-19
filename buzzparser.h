@@ -49,6 +49,8 @@ extern "C" {
       buzzdarray_t symstack;
       /* The top of the symbol table stack */
       buzzdict_t syms;
+      /* List of string symbols */
+      buzzdict_t strings;
       /* Label counter */
       uint32_t labels;
    };

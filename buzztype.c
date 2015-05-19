@@ -53,6 +53,11 @@ int buzzobj_cmp(const buzzobj_t a,
       if(a->f.value > b->f.value) return 1;
       return 0;
    }
+   if(a->o.type == BUZZTYPE_STRING && b->o.type == BUZZTYPE_STRING) {
+      if(a->s.value < b->s.value) return -1;
+      if(a->s.value > b->s.value) return 1;
+      return 0;
+   }
    // TODO better error management
    fprintf(stderr, "[TODO] %s:%d: error for comparison between Buzz objects of types %d and %d\n", __FILE__, __LINE__, a->o.type, b->o.type);
    exit(1);
@@ -82,11 +87,11 @@ void buzzobj_serialize(buzzdarray_t buf,
          buzzmsg_serialize_float(buf, data->f.value);
          break;
       }
-      case BUZZTYPE_STRING: {
-         buzzmsg_serialize_u16(buf, data->s.type);
-         buzzmsg_serialize_string(buf, data->s.value);
-         break;
-      }
+      /* case BUZZTYPE_STRING: { */
+      /*    buzzmsg_serialize_u16(buf, data->s.type); */
+      /*    buzzmsg_serialize_string(buf, data->s.value); */
+      /*    break; */
+      /* } */
       case BUZZTYPE_ARRAY: {
          buzzmsg_serialize_u16(buf, data->a.type);
          buzzmsg_serialize_u32(buf, buzzdarray_size(data->a.value));
@@ -124,13 +129,13 @@ int64_t buzzobj_deserialize(buzzobj_t data,
          p = buzzmsg_deserialize_float(&data->f.value, buf, p);
          return p;
       }
-      case BUZZTYPE_STRING: {
-         int64_t p = pos;
-         p = buzzmsg_deserialize_u16(&data->s.type, buf, p);
-         if(p < 0) return -1;
-         p = buzzmsg_deserialize_string(&data->s.value, buf, p);
-         return p;
-      }
+      /* case BUZZTYPE_STRING: { */
+      /*    int64_t p = pos; */
+      /*    p = buzzmsg_deserialize_u16(&data->s.type, buf, p); */
+      /*    if(p < 0) return -1; */
+      /*    p = buzzmsg_deserialize_string(&data->s.value, buf, p); */
+      /*    return p; */
+      /* } */
       default:
          fprintf(stderr, "TODO: %s %u\n", __FILE__, __LINE__);
          return -1;

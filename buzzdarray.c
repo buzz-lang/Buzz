@@ -40,7 +40,7 @@ buzzdarray_t buzzdarray_clone(const buzzdarray_t da) {
    clone->elem_destroy = da->elem_destroy;
    /* Create data buffer */
    clone->data = malloc(clone->capacity * clone->elem_size);
-   memcpy(clone->data, da->data, clone->capacity * clone->elem_size);
+   memcpy(clone->data, da->data, clone->size * clone->elem_size);
    /* Done */
    return clone;
 }

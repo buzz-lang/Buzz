@@ -64,6 +64,8 @@ extern "C" {
       BUZZVM_INSTR_LT,         // Push stack(#1) < stack(#2), pop operands
       BUZZVM_INSTR_LTE,        // Push stack(#1) <= stack(#2), pop operands
       BUZZVM_INSTR_SHOUT,      // Broadcast variable stack(#1), pop operands
+      BUZZVM_INSTR_GLOAD,      // Push global variable corresponding to string at stack #1, pop operand
+      BUZZVM_INSTR_GSTORE,     // Store stack-top value into global variable at stack #2, pop operands
       BUZZVM_INSTR_PUSHT,      // Push empty table
       BUZZVM_INSTR_TPUT,       // Put key (stack(#2)), value (stack #1) in table (stack #3), pop key and value
       BUZZVM_INSTR_TGET,       // Push value for key (stack(#1)) in table (stack #2), pop key
@@ -86,15 +88,14 @@ extern "C" {
       BUZZVM_INSTR_PUSHF,    // Push float constant onto stack
       /* Integer argument */
       BUZZVM_INSTR_PUSHI,    // Push integer constant onto stack
+      BUZZVM_INSTR_PUSHS,    // Push string constant onto stack
       BUZZVM_INSTR_LLOAD,    // Push local variable at given position
       BUZZVM_INSTR_LSTORE,   // Store stack-top value into local variable at given position, pop operand
-      BUZZVM_INSTR_GLOAD,    // Push global variable at given position
-      BUZZVM_INSTR_GSTORE,   // Store stack-top value into global variable at given position, pop operand
       BUZZVM_INSTR_JUMP,     // Set PC to argument
       BUZZVM_INSTR_JUMPZ,    // Set PC to argument if stack top is zero, pop operand
       BUZZVM_INSTR_JUMPNZ,   // Set PC to argument if stack top is not zero, pop operand
    } buzzvm_instr;
-   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "shout", "pusht", "tput", "tget", "pusha", "aput", "aget", "vscreate", "vsput", "vsget", "callc", "pushcn", "pushcc", "joinswarm", "leaveswarm", "inswarm", "pushf", "pushi", "lload", "lstore", "gload", "gstore", "jump", "jumpz", "jumpnz", "jumpsub"};
+   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "shout", "gload", "gstore", "pusht", "tput", "tget", "pusha", "aput", "aget", "vscreate", "vsput", "vsget", "callc", "pushcn", "pushcc", "joinswarm", "leaveswarm", "inswarm", "pushf", "pushi", "pushs", "lload", "lstore", "jump", "jumpz", "jumpnz", "jumpsub"};
 
    /*
     * Function pointer for BUZZVM_INSTR_CALL.
@@ -123,7 +124,9 @@ extern "C" {
       /* Local variable table list */
       buzzdarray_t lsymts;
       /* Global symbols */
-      buzzdarray_t gsyms;
+      buzzdict_t gsyms;
+      /* Strings */
+      buzzdarray_t strings;
       /* Heap content */
       buzzheap_t heap;
       /* Registered functions */
@@ -188,11 +191,12 @@ extern "C" {
    /*
     * Registers a function in the VM.
     * @param vm The VM data.
+    * @param fname The function name in Buzz.
     * @param funp The function pointer to register.
-    * @return The id associated to the function, or -1 in case of error. A valid id must be used with BUZZVM_INSTR_CALL.
     */
-   extern int64_t buzzvm_register_function(buzzvm_t vm,
-                                           buzzvm_funp funp);
+   extern void buzzvm_register_function(buzzvm_t vm,
+                                        const char* fname,
+                                        buzzvm_funp funp);
 
 #ifdef __cplusplus
 }
@@ -272,6 +276,13 @@ extern "C" {
 #define buzzvm_pushi(vm, v) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_INT); o->i.value = (v); buzzvm_push(vm, o); }
 
 /*
+ * Pushes a string on the stack.
+ * @param vm The VM data.
+ * @param v The value.
+ */
+#define buzzvm_pushs(vm, v) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_STRING); o->s.value = (v); buzzvm_push(vm, o); }
+
+/*
  * Pushes a float value on the stack.
  * @param vm The VM data.
  * @param v The value.
@@ -341,9 +352,11 @@ extern "C" {
  * @param vm The VM data.
  * @param idx The local variable index.
  */
-#define buzzvm_lstore(vm, idx) {                                \
-      buzzdarray_set((vm)->lsyms, idx, buzzvm_stack_at(vm, 1)); \
-      buzzvm_pop(vm);                                           \
+#define buzzvm_lstore(vm, idx) {                                  \
+      buzzvm_stack_assert((vm), 1);                               \
+      buzzobj_t o = buzzvm_stack_at(vm, 1);                       \
+      buzzvm_pop(vm);                                             \
+      buzzdarray_set((vm)->lsyms, idx, &o);                       \
    }
 
 /*
@@ -354,8 +367,20 @@ extern "C" {
  * @param vm The VM data.
  * @param idx The local variable index.
  */
-#define buzzvm_gload(vm, idx) buzzvm_push(vm, buzzdarray_get((vm)->gsyms, idx, buzzobj_t));
-   
+#define buzzvm_gload(vm) {                                              \
+      buzzvm_stack_assert((vm), 1);                                     \
+      buzzvm_type_assert((vm), 1, BUZZTYPE_STRING);                     \
+      buzzobj_t str = buzzvm_stack_at((vm), 1);                         \
+      buzzvm_pop(vm);                                                   \
+      buzzobj_t* o = buzzdict_get((vm)->gsyms, &(str->s.value), buzzobj_t); \
+      if(!o) {                                                          \
+         buzzvm_pushnil(vm);                                            \
+      }                                                                 \
+      else {                                                            \
+         buzzvm_push(vm, (*o));                                         \
+      }                                                                 \
+   }
+
 /*
  * Stores the object located at the stack top into the a global variable, pops operand.
  * Internally checks whether the operation is valid.
@@ -364,9 +389,14 @@ extern "C" {
  * @param vm The VM data.
  * @param idx The local variable index.
  */
-#define buzzvm_gstore(vm, idx) {                                \
-      buzzdarray_set((vm)->gsyms, idx, buzzvm_stack_at(vm, 1)); \
-      buzzvm_pop(vm);                                           \
+#define buzzvm_gstore(vm) {                                             \
+      buzzvm_stack_assert((vm), 2);                                     \
+      buzzvm_type_assert((vm), 2, BUZZTYPE_STRING);                     \
+      buzzobj_t str = buzzvm_stack_at((vm), 2);                         \
+      buzzobj_t o = buzzvm_stack_at((vm), 1);                           \
+      buzzvm_pop(vm);                                                   \
+      buzzvm_pop(vm);                                                   \
+      buzzdict_set((vm)->gsyms, &(str->s.value), &o);                   \
    }
 
 /*
@@ -727,7 +757,7 @@ extern "C" {
  * used to update the program counter.
  */
 #define buzzvm_ret0(vm) {                                         \
-      buzzdarray_pop((vm)->lsyms);                                \
+      buzzdarray_pop((vm)->lsymts);                               \
       (vm)->lsyms = buzzdarray_last((vm)->lsymts, buzzdarray_t);  \
       buzzdarray_pop((vm)->stacks);                               \
       (vm)->stack = buzzdarray_last((vm)->stacks, buzzdarray_t);  \
@@ -751,8 +781,9 @@ extern "C" {
  * stack.
  */
 #define buzzvm_ret1(vm) {                                         \
-      buzzdarray_pop((vm)->lsyms);                                \
+      buzzdarray_pop((vm)->lsymts);                               \
       (vm)->lsyms = buzzdarray_last((vm)->lsymts, buzzdarray_t);  \
+      buzzvm_stack_assert(vm, 1);                                 \
       buzzobj_t ret = buzzvm_stack_at(vm, 1);                     \
       buzzdarray_pop((vm)->stacks);                               \
       (vm)->stack = buzzdarray_last((vm)->stacks, buzzdarray_t);  \
@@ -797,9 +828,9 @@ extern "C" {
       buzzdarray_push((vm)->lsymts, &((vm)->lsyms));                    \
       for(int32_t i = argn; i > 0; --i)                                 \
          buzzdarray_push((vm)->lsyms,                                   \
-                         buzzdarray_get((vm)->stack,                    \
-                                        buzzdarray_size((vm)->stack) - i, \
-                                        buzzobj_t));                    \
+                         &buzzdarray_get((vm)->stack,                   \
+                                         buzzdarray_size((vm)->stack) - i, \
+                                         buzzobj_t));                   \
       for(int32_t i = argn+1; i > 0; --i)                               \
          buzzdarray_pop((vm)->stack);                                   \
       buzzobj_t retaddr = buzzheap_newobj((vm)->heap, BUZZTYPE_INT);    \
@@ -840,6 +871,7 @@ extern "C" {
       buzzdict_set(t->t.value, &k, &v);           \
       buzzvm_pop(vm);                             \
       buzzvm_pop(vm);                             \
+      buzzvm_pop(vm);                             \
    }
 
 /*
@@ -857,11 +889,12 @@ extern "C" {
  */
 #define buzzvm_tget(vm) {                                     \
       buzzvm_stack_assert(vm, 2);                             \
-      buzzobj_t  k = buzzvm_stack_at(vm, 1);                  \
-      buzzobj_t  t = buzzvm_stack_at(vm, 2);                  \
       buzzvm_type_assert(vm, 2, BUZZTYPE_TABLE);              \
-      buzzobj_t* v = buzzdict_get(t->t.value, &k, buzzobj_t); \
+      buzzobj_t k = buzzvm_stack_at(vm, 1);                   \
+      buzzobj_t t = buzzvm_stack_at(vm, 2);                   \
       buzzvm_pop(vm);                                         \
+      buzzvm_pop(vm);                                         \
+      buzzobj_t* v = buzzdict_get(t->t.value, &k, buzzobj_t); \
       if(v) buzzvm_push(vm, *v);                              \
       else buzzvm_pushnil(vm);                                \
    }
