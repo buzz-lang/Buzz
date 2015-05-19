@@ -153,6 +153,21 @@ extern "C" {
 
    /*
     * Hash functions for integers.
+    * @param key The key to hash, cast to uint16_t.
+    * @return A hash for the given key.
+    */
+   uint32_t buzzdict_uint16keyhash(const void* key);
+
+   /*
+    * Comparison function for integer keys.
+    * @param a The first key, cast to uint16_t.
+    * @param b The second key, cast to uint16_t.
+    * @return -1 if a < b; 1 if a > b; 0 if a == b.
+    */
+   int buzzdict_uint16keycmp(const void* a, const void* b);
+
+   /*
+    * Hash functions for integers.
     * @param key The key to hash, cast to int32_t.
     * @return A hash for the given key.
     */
@@ -165,6 +180,21 @@ extern "C" {
     * @return -1 if a < b; 1 if a > b; 0 if a == b.
     */
    int buzzdict_int32keycmp(const void* a, const void* b);
+
+   /*
+    * Hash functions for integers.
+    * @param key The key to hash, cast to uint32_t.
+    * @return A hash for the given key.
+    */
+   uint32_t buzzdict_uint32keyhash(const void* key);
+
+   /*
+    * Comparison function for integer keys.
+    * @param a The first key, cast to uint32_t.
+    * @param b The second key, cast to uint32_t.
+    * @return -1 if a < b; 1 if a > b; 0 if a == b.
+    */
+   int buzzdict_uint32keycmp(const void* a, const void* b);
 
 #ifdef __cplusplus
 }

@@ -57,7 +57,10 @@ extern "C" {
    typedef struct {
       uint16_t type;
       uint16_t marker;
-      uint16_t value; // The string id in the string list
+      struct {
+         uint16_t sid;    // The string id
+         const char* str; // The actual string
+      } value;
    } buzzstring_t;
 
    /*
@@ -110,6 +113,18 @@ extern "C" {
    typedef union buzzobj_u* buzzobj_t;
 
    /*
+    * Forward declaration of the Buzz VM.
+    */
+   struct buzzvm_s;
+
+   /*
+    * Returns the hash of the passed Buzz object.
+    * @param o The Buzz object to hash.
+    * @return The calculated hash.
+    */
+   extern uint32_t buzzobj_hash(const buzzobj_t o);
+
+   /*
     * Returns 1 if two Buzz objects are equal, 0 otherwise.
     * To be equal, two objects must have the same type and equal value.
     * For numeric types, value equality is as expected; for closures,
@@ -155,11 +170,13 @@ extern "C" {
     * @param data The deserialized data of the element.
     * @param buf The input buffer where the serialized data is stored.
     * @param pos The position at which the data starts.
+    * @param vm The Buzz VM data.
     * @return The new position in the buffer, of -1 in case of error.
     */
-   extern int64_t buzzobj_deserialize(buzzobj_t data,
+   extern int64_t buzzobj_deserialize(buzzobj_t* data,
                                       buzzdarray_t buf,
-                                      uint32_t pos);
+                                      uint32_t pos,
+                                      struct buzzvm_s* vm);
    
 #ifdef __cplusplus
 }

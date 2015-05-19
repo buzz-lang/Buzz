@@ -5,11 +5,32 @@
 /****************************************/
 /****************************************/
 
+uint32_t buzzvstig_key_hash(const void* key) {
+   return buzzobj_hash(*(buzzobj_t*)key);
+}
+
+int buzzvstig_key_cmp(const void* a, const void* b) {
+   return buzzobj_cmp(*(buzzobj_t*)a, *(buzzobj_t*)b);
+}
+
+/****************************************/
+/****************************************/
+
+buzzvstig_elem_t buzzvstig_elem_new(buzzobj_t data,
+                                    uint16_t timestamp,
+                                    uint32_t robot) {
+   buzzvstig_elem_t e = (buzzvstig_elem_t)malloc(sizeof(struct buzzvstig_elem_s));
+   e->data = data;
+   e->timestamp = timestamp;
+   e->robot = robot;
+   return e;
+}
+
+/****************************************/
+/****************************************/
+
 void buzzvstig_elem_destroy(const void* key, void* data, void* params) {
-   buzzvstig_elem_t* x = (buzzvstig_elem_t*)data;
-   // TODO: take care of string, table, swarm, and closure
-   free((void*)key);
-   free(data);
+   free(*(buzzvstig_elem_t*)data);
 }
 
 /****************************************/
@@ -18,10 +39,10 @@ void buzzvstig_elem_destroy(const void* key, void* data, void* params) {
 buzzvstig_t buzzvstig_new() {
    return buzzdict_new(
       20,
-      sizeof(int32_t),
+      sizeof(buzzobj_t),
       sizeof(buzzvstig_elem_t),
-      buzzdict_int32keyhash,
-      buzzdict_int32keycmp,
+      buzzvstig_key_hash,
+      buzzvstig_key_cmp,
       buzzvstig_elem_destroy);
 }
 
@@ -29,14 +50,14 @@ buzzvstig_t buzzvstig_new() {
 /****************************************/
 
 void buzzvstig_elem_serialize(buzzdarray_t buf,
-                              int32_t key,
-                              const buzzvstig_elem_t* data) {
+                              const buzzobj_t key,
+                              const buzzvstig_elem_t data) {
    /* Serialize the key */
-   buzzmsg_serialize_u32(buf, key);
+   buzzobj_serialize(buf, key);
    /* Serialize the data */
    buzzobj_serialize(buf, data->data);
    /* Serialize the timestamp */
-   buzzmsg_serialize_u32(buf, data->timestamp);
+   buzzmsg_serialize_u16(buf, data->timestamp);
    /* Serialize the robot */
    buzzmsg_serialize_u32(buf, data->robot);
 }
@@ -44,22 +65,26 @@ void buzzvstig_elem_serialize(buzzdarray_t buf,
 /****************************************/
 /****************************************/
 
-int64_t buzzvstig_elem_deserialize(int32_t* key,
+int64_t buzzvstig_elem_deserialize(buzzobj_t* key,
                                    buzzvstig_elem_t* data,
                                    buzzdarray_t buf,
-                                   uint32_t pos) {
+                                   uint32_t pos,
+                                   struct buzzvm_s* vm) {
+   /* Initialize the position */
    int64_t p = pos;
+   /* Create a new vstig entry */
+   *data = (buzzvstig_elem_t)malloc(sizeof(struct buzzvstig_elem_s));
    /* Deserialize the key */
-   p = buzzmsg_deserialize_u32((uint32_t*)key, buf, p);
+   p = buzzobj_deserialize(key, buf, p, vm);
    if(p < 0) return -1;
    /* Deserialize the data */
-   p = buzzobj_deserialize(data->data, buf, p);
+   p = buzzobj_deserialize(&((*data)->data), buf, p, vm);
    if(p < 0) return -1;
    /* Deserialize the timestamp */
-   p = buzzmsg_deserialize_u32(&(data->timestamp), buf, p);
+   p = buzzmsg_deserialize_u16(&((*data)->timestamp), buf, p);
    if(p < 0) return -1;
    /* Deserialize the robot */
-   p = buzzmsg_deserialize_u32(&(data->robot), buf, p);
+   p = buzzmsg_deserialize_u32(&((*data)->robot), buf, p);
    if(p < 0) return -1;
    return p;
 }

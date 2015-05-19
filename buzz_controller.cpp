@@ -58,7 +58,7 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
 
 void CBuzzController::Reset() {
    /* Reset the VM */
-   buzzvm_reset(m_tBuzzVM);
+   // TODO
 }
 
 /****************************************/

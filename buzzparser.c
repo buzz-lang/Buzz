@@ -220,8 +220,7 @@ void chunk_register(uint32_t pos, void* data, void* params) {
    /* Print registration code */
    if(c->sym) {
       if(c->sym->global) fprintf(f, "\tpushs %lld\n", c->sym->pos);
-      fprintf(f, "\tpushi " LABELREF "%u\n", c->label);
-      fprintf(f, "\tpushcn\n");
+      fprintf(f, "\tpushcn " LABELREF "%u\n", c->label);
       if(c->sym->global) fprintf(f, "\tgstore\n");
       else               fprintf(f, "\tlstore %lld\n", c->sym->pos);
    }
@@ -698,13 +697,13 @@ int parse_operand(buzzparser_t par) {
    DEBUG("Parsing operand\n");
    if(par->tok->type == BUZZTOK_FUN) {
       DEBUG("Operand is lambda\n");
-      chunk_append("\tpushi " LABELREF "%u\n", par->labels);
-      chunk_append("\tpushcn\n");
+      chunk_append("\tpushcn " LABELREF "%u\n", par->labels);
       if(!parse_lambda(par)) return PARSE_ERROR;
       return PARSE_OK;
    }
-   else if(par->tok->type == BUZZTOK_BOOL) {
-      DEBUG("Operand is token true/false\n");
+   else if(par->tok->type == BUZZTOK_NIL) {
+      DEBUG("Operand is token nil\n");
+      chunk_append("\tpushnil\n");      
       fetchtok();
       return PARSE_OK;
    }
@@ -1045,7 +1044,6 @@ buzzparser_t buzzparser_new(const char* fscript,
                                buzzdict_strkeyhash,
                                buzzdict_strkeycmp,
                                NULL);
-   string_add(par->strings, "stigmergy");
    /* Return parser state */
    return par;
 }

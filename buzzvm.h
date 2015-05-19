@@ -30,9 +30,10 @@ extern "C" {
       BUZZVM_ERROR_STACK,    // Empty stack
       BUZZVM_ERROR_PC,       // Program counter out of range
       BUZZVM_ERROR_FLIST,    // Function call id out of range
-      BUZZVM_ERROR_TYPE      // Type mismatch
+      BUZZVM_ERROR_TYPE,     // Type mismatch
+      BUZZVM_ERROR_STRING    // Unknown string id
    } buzzvm_error;
-   static const char *buzzvm_error_desc[] = { "none", "unknown instruction", "empty stack", "pc out of range", "function id out of range", "type mismatch" };
+   static const char *buzzvm_error_desc[] = { "none", "unknown instruction", "empty stack", "pc out of range", "function id out of range", "type mismatch", "unknown string id" };
 
    /*
     * VM instructions
@@ -72,12 +73,7 @@ extern "C" {
       BUZZVM_INSTR_PUSHA,      // Push empty array
       BUZZVM_INSTR_APUT,       // Put idx (stack(#2)), value (stack #1) in array (stack #3), pop idx and value
       BUZZVM_INSTR_AGET,       // Push value for idx (stack(#1)) in array (stack #2), pop idx
-      BUZZVM_INSTR_VSCREATE,   // Create virtual stigmergy from integer id stack(#1), pop operands
-      BUZZVM_INSTR_VSPUT,      // Put (key stack(#2),value stack(#1)) in virtual stigmergy stack(#3), pop operands
-      BUZZVM_INSTR_VSGET,      // Push virtual stigmergy stack(#2) value of key stack(#1), pop operand
       BUZZVM_INSTR_CALLC,      // Calls the closure on top of the stack
-      BUZZVM_INSTR_PUSHCN,     // Push closure, pop operands (jump addr, argnum stack(#2), args (stack #3-#(3+argnum)))
-      BUZZVM_INSTR_PUSHCC,     // Push c-function closure, pop operands (ref, argnum stack(#2), args (stack #3-#(3+argnum)))
       BUZZVM_INSTR_JOINSWARM,  // Joins the swarm with id at stack #1, pops operand
       BUZZVM_INSTR_LEAVESWARM, // Leaves the swarm with id at stack #1, pops operand
       BUZZVM_INSTR_INSWARM,    // Checks whether robot is in swarm at stack #1, pushes 1 for true or 0 for false, pops operand
@@ -89,13 +85,15 @@ extern "C" {
       /* Integer argument */
       BUZZVM_INSTR_PUSHI,    // Push integer constant onto stack
       BUZZVM_INSTR_PUSHS,    // Push string constant onto stack
+      BUZZVM_INSTR_PUSHCN,   // Push native closure onto stack
+      BUZZVM_INSTR_PUSHCC,   // Push c-function closure onto stack
       BUZZVM_INSTR_LLOAD,    // Push local variable at given position
       BUZZVM_INSTR_LSTORE,   // Store stack-top value into local variable at given position, pop operand
       BUZZVM_INSTR_JUMP,     // Set PC to argument
       BUZZVM_INSTR_JUMPZ,    // Set PC to argument if stack top is zero, pop operand
       BUZZVM_INSTR_JUMPNZ,   // Set PC to argument if stack top is not zero, pop operand
    } buzzvm_instr;
-   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "shout", "gload", "gstore", "pusht", "tput", "tget", "pusha", "aput", "aget", "vscreate", "vsput", "vsget", "callc", "pushcn", "pushcc", "joinswarm", "leaveswarm", "inswarm", "pushf", "pushi", "pushs", "lload", "lstore", "jump", "jumpz", "jumpnz", "jumpsub"};
+   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "shout", "gload", "gstore", "pusht", "tput", "tget", "pusha", "aput", "aget", "callc", "joinswarm", "leaveswarm", "inswarm", "pushf", "pushi", "pushs", "pushcn", "pushcc", "lload", "lstore", "jump", "jumpz", "jumpnz"};
 
    /*
     * Function pointer for BUZZVM_INSTR_CALL.
@@ -156,15 +154,6 @@ extern "C" {
    extern buzzvm_t buzzvm_new(uint32_t robot);
 
    /*
-    * Resets the VM.
-    * It brings the data of the VM back to what it was right after
-    * initialization. It keeps the loaded bytecode and function list,
-    * if any.
-    * @param vm The VM data.
-    */
-   extern void buzzvm_reset(buzzvm_t vm);
-
-   /*
     * Destroys the VM.
     * @param vm The VM data.
     */
@@ -176,10 +165,11 @@ extern "C" {
     * @param vm The VM data.
     * @param bcode_size The size (in bytes) of the bytecode.
     * @param bcode The bytecode buffer.
+    * @return 0 if everything OK, a non-zero value in case of error
     */
-   extern void buzzvm_set_bcode(buzzvm_t vm,
-                                const uint8_t* bcode,
-                                uint32_t bcode_size);
+   extern int buzzvm_set_bcode(buzzvm_t vm,
+                               const uint8_t* bcode,
+                               uint32_t bcode_size);
 
    /*
     * Executes the next step in the bytecode, if possible.
@@ -189,14 +179,63 @@ extern "C" {
    extern buzzvm_state buzzvm_step(buzzvm_t vm);
 
    /*
+    * Registers a new string in the VM.
+    * @param vm The VM data.
+    * @param str The string to register.
+    * @return The id of the string.
+    */
+   extern uint16_t buzzvm_string_register(buzzvm_t vm,
+                                          const char* str);
+
+   /*
+    * Returns the string corresponding to the given id.
+    * Returns NULL if the string is not found.
+    * @param vm The VM data.
+    * @param sid The string id.
+    * @return The string data, or NULL if not found.
+    */
+   extern const char* buzzvm_string_get(buzzvm_t vm,
+                                        uint16_t sid);
+   
+   /*
     * Registers a function in the VM.
     * @param vm The VM data.
-    * @param fname The function name in Buzz.
     * @param funp The function pointer to register.
+    * @return The function id.
     */
-   extern void buzzvm_register_function(buzzvm_t vm,
-                                        const char* fname,
-                                        buzzvm_funp funp);
+   extern uint32_t buzzvm_function_register(buzzvm_t vm,
+                                            buzzvm_funp funp);
+
+   /*
+    * Creates a new virtual stigmergy.
+    * It expects the stack to be laid out this way:
+    * #1 Virtual stigmergy id
+    * This function pops the operand.
+    * @return 0 if everything OK, -1 in case of error
+    */
+   extern int buzzvm_vstig_create(buzzvm_t vm);
+
+   /*
+    * It puts a value into the given virtual stigmergy.
+    * It expects the stack to be laid out this way:
+    * #1 The value
+    * #2 The key
+    * #3 The virtual stigmergy id
+    * This function pops the operands.
+    * @return 0 if everything OK, -1 in case of error
+    */
+   extern int buzzvm_vstig_put(buzzvm_t vm);
+
+   /*
+    * It gets a value from the given virtual stigmergy.
+    * It expects the stack to be laid out this way:
+    * #2 The key
+    * #3 The virtual stigmergy id
+    * This function pops the operands and pushes the value,
+    * or nil if no value exists for the given key.
+    * @return 0 if everything OK, -1 in case of error
+    */
+   extern int buzzvm_vstig_get(buzzvm_t vm);
 
 #ifdef __cplusplus
 }
@@ -278,9 +317,19 @@ extern "C" {
 /*
  * Pushes a string on the stack.
  * @param vm The VM data.
- * @param v The value.
+ * @param strid The string id.
  */
-#define buzzvm_pushs(vm, v) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_STRING); o->s.value = (v); buzzvm_push(vm, o); }
+#define buzzvm_pushs(vm, strid) {                                       \
+      if((strid) >= buzzdarray_size((vm)->strings)) {                   \
+         (vm)->state = BUZZVM_STATE_ERROR;                              \
+         (vm)->error = BUZZVM_ERROR_STRING;                             \
+         return (vm)->state;                                            \
+      }                                                                 \
+      buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_STRING);       \
+      o->s.value.sid = (strid);                                         \
+      o->s.value.str = buzzdarray_get((vm)->strings, (strid), char*);  \
+      buzzvm_push(vm, o);                                               \
+   }
 
 /*
  * Pushes a float value on the stack.
@@ -294,18 +343,13 @@ extern "C" {
  * Internally checks whether the operation is valid.
  * This function is designed to be used within int-returning functions such as
  * BuzzVM hook functions or buzzvm_step().
- * This function expects the jump address in the stack top.
- * It pops the jump address and pushes the native closure.
- * object on the stack top.
  * @param vm The VM data.
+ * @param addr The closure address.
  */
-#define buzzvm_pushcn(vm) {                                           \
-      buzzvm_stack_assert(vm, 1);                                     \
-      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);                        \
+#define buzzvm_pushcn(vm, addr) {                                     \
       buzzobj_t o = buzzheap_newobj(((vm)->heap), BUZZTYPE_CLOSURE);  \
       o->c.value.isnative = 1;                                        \
-      o->c.value.ref = buzzvm_stack_at(vm, 1)->i.value;               \
-      buzzvm_pop(vm);                                                 \
+      o->c.value.ref = addr;                                          \
       for(int i = 0; i < buzzdarray_size((vm)->lsyms); ++i)           \
          buzzdarray_push(o->c.value.actrec,                           \
                          &buzzdarray_get((vm)->lsyms, i, buzzobj_t)); \
@@ -320,14 +364,12 @@ extern "C" {
  * This function expects the function id in the stack top.
  * It pops the function id and pushes the c-function closure.
  * @param vm The VM data.
+ * @param cid The closure id.
  */
-#define buzzvm_pushcc(vm) {                                           \
-      buzzvm_stack_assert(vm, 1);                                     \
-      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);                        \
+#define buzzvm_pushcc(vm, cid) {                                      \
       buzzobj_t o = buzzheap_newobj(((vm)->heap), BUZZTYPE_CLOSURE);  \
       o->c.value.isnative = 0;                                        \
-      o->c.value.ref = buzzvm_stack_at(vm, 1)->i.value;               \
-      buzzvm_pop(vm);                                                 \
+      o->c.value.ref = cid;                                           \
       for(int i = 0; i < buzzdarray_size((vm)->lsyms); ++i)           \
          buzzdarray_push(o->c.value.actrec,                           \
                          &buzzdarray_get((vm)->lsyms, i, buzzobj_t)); \

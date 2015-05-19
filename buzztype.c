@@ -1,6 +1,34 @@
-#include "buzztype.h"
+#include "buzzvm.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+/****************************************/
+/****************************************/
+
+uint32_t buzzobj_hash(const buzzobj_t o) {
+   switch(o->o.type) {
+      case BUZZTYPE_NIL: {
+         return 0;
+      }
+      case BUZZTYPE_INT: {
+         return buzzdict_int32keyhash(&(o->i.value));
+      }
+      case BUZZTYPE_FLOAT: {
+         int32_t x = o->f.value;
+         return buzzdict_int32keyhash(&(x));
+      }
+      case BUZZTYPE_STRING: {
+         return buzzdict_strkeyhash(&(o->s.value.str));
+      }
+      case BUZZTYPE_TABLE:
+      case BUZZTYPE_ARRAY:
+      case BUZZTYPE_CLOSURE:
+      default:
+         fprintf(stderr, "[BUG] %s:%d: Hash for Buzz object type %d\n", __FILE__, __LINE__, o->o.type);
+         exit(1);
+   }
+}
 
 /****************************************/
 /****************************************/
@@ -54,9 +82,7 @@ int buzzobj_cmp(const buzzobj_t a,
       return 0;
    }
    if(a->o.type == BUZZTYPE_STRING && b->o.type == BUZZTYPE_STRING) {
-      if(a->s.value < b->s.value) return -1;
-      if(a->s.value > b->s.value) return 1;
-      return 0;
+      return strcmp(a->s.value.str, b->s.value.str);
    }
    // TODO better error management
    fprintf(stderr, "[TODO] %s:%d: error for comparison between Buzz objects of types %d and %d\n", __FILE__, __LINE__, a->o.type, b->o.type);
@@ -66,36 +92,42 @@ int buzzobj_cmp(const buzzobj_t a,
 /****************************************/
 /****************************************/
 
-void buzzobj_serialize_darrayelem(uint32_t pos, void* data, void* params) {
+void buzzobj_serialize_tableelem(const void* key, void* data, void* params) {
+   buzzobj_serialize((buzzdarray_t)params, *(buzzobj_t*)key);
+   buzzobj_serialize((buzzdarray_t)params, *(buzzobj_t*)data);
+}
+
+void buzzobj_serialize_arrayelem(uint32_t pos, void* data, void* params) {
    buzzobj_serialize((buzzdarray_t)params, *(buzzobj_t*)data);
 }
 
 void buzzobj_serialize(buzzdarray_t buf,
                        const buzzobj_t data) {
+   buzzmsg_serialize_u16(buf, data->o.type);
    switch(data->o.type) {
       case BUZZTYPE_NIL: {
-         buzzmsg_serialize_u16(buf, data->n.type);
          break;
       }
       case BUZZTYPE_INT: {
-         buzzmsg_serialize_u16(buf, data->i.type);
          buzzmsg_serialize_u32(buf, data->i.value);
          break;
       }
       case BUZZTYPE_FLOAT: {
-         buzzmsg_serialize_u16(buf, data->f.type);
          buzzmsg_serialize_float(buf, data->f.value);
          break;
       }
-      /* case BUZZTYPE_STRING: { */
-      /*    buzzmsg_serialize_u16(buf, data->s.type); */
-      /*    buzzmsg_serialize_string(buf, data->s.value); */
-      /*    break; */
-      /* } */
+      case BUZZTYPE_STRING: {
+         buzzmsg_serialize_string(buf, data->s.value.str);
+         break;
+      }
+      case BUZZTYPE_TABLE: {
+         buzzmsg_serialize_u32(buf, buzzdict_size(data->t.value));
+         buzzdict_foreach(data->t.value, buzzobj_serialize_tableelem, buf);
+         break;
+      }
       case BUZZTYPE_ARRAY: {
-         buzzmsg_serialize_u16(buf, data->a.type);
          buzzmsg_serialize_u32(buf, buzzdarray_size(data->a.value));
-         buzzdarray_foreach(data->a.value, buzzobj_serialize_darrayelem, buf);
+         buzzdarray_foreach(data->a.value, buzzobj_serialize_arrayelem, buf);
          break;
       }
       default:
@@ -106,36 +138,49 @@ void buzzobj_serialize(buzzdarray_t buf,
 /****************************************/
 /****************************************/
 
-int64_t buzzobj_deserialize(buzzobj_t data,
+int64_t buzzobj_deserialize(buzzobj_t* data,
                             buzzdarray_t buf,
-                            uint32_t pos) {
-   switch(data->o.type) {
+                            uint32_t pos,
+                            struct buzzvm_s* vm) {
+   int64_t p = pos;
+   uint16_t type;
+   p = buzzmsg_deserialize_u16(&type, buf, p);
+   if(p < 0) return -1;
+   *data = buzzheap_newobj(vm->heap, type);
+   switch(type) {
       case BUZZTYPE_NIL: {
-         int64_t p = pos;
-         p = buzzmsg_deserialize_u16(&data->n.type, buf, p);
          return p;
       }
       case BUZZTYPE_INT: {
-         int64_t p = pos;
-         p = buzzmsg_deserialize_u16(&data->i.type, buf, p);
-         if(p < 0) return -1;
-         p = buzzmsg_deserialize_u32((uint32_t*)(&data->i.value), buf, p);
-         return p;
+         return buzzmsg_deserialize_u32((uint32_t*)(&((*data)->i.value)), buf, p);
       }
       case BUZZTYPE_FLOAT: {
-         int64_t p = pos;
-         p = buzzmsg_deserialize_u16(&data->f.type, buf, p);
+         return buzzmsg_deserialize_float(&((*data)->f.value), buf, p);
+      }
+      case BUZZTYPE_STRING: {
+         char* str;
+         p = buzzmsg_deserialize_string(&str, buf, p);
          if(p < 0) return -1;
-         p = buzzmsg_deserialize_float(&data->f.value, buf, p);
+         (*data)->s.value.sid = buzzvm_string_register(vm, str);
+         (*data)->s.value.str = buzzvm_string_get(vm, (*data)->s.value.sid);
+         free(str);
          return p;
       }
-      /* case BUZZTYPE_STRING: { */
-      /*    int64_t p = pos; */
-      /*    p = buzzmsg_deserialize_u16(&data->s.type, buf, p); */
-      /*    if(p < 0) return -1; */
-      /*    p = buzzmsg_deserialize_string(&data->s.value, buf, p); */
-      /*    return p; */
-      /* } */
+      case BUZZTYPE_TABLE: {
+         uint32_t size;
+         p = buzzmsg_deserialize_u32(&size, buf, p);
+         if(p < 0) return -1;
+         for(uint32_t i = 0; i < size; ++i) {
+            buzzobj_t* k;
+            buzzobj_t* v;
+            buzzobj_deserialize(k, buf, p, vm);
+            if(p < 0) return -1;
+            buzzobj_deserialize(v, buf, p, vm);
+            if(p < 0) return -1;
+            buzzdict_set((*data)->t.value, &k, &v);
+         }
+         return p;
+      }
       default:
          fprintf(stderr, "TODO: %s %u\n", __FILE__, __LINE__);
          return -1;

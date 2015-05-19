@@ -12,16 +12,35 @@ extern "C" {
     * An entry in virtual stigmergy.
     */
    struct buzzvstig_elem_s {
+      /* The data associated to the entry */
       buzzobj_t data;
-      uint32_t timestamp;
+      /* The timestamp (Lamport clock) */
+      uint16_t timestamp;
+      /* The robot id */
       uint32_t robot;
    };
-   typedef struct buzzvstig_elem_s buzzvstig_elem_t;
+   typedef struct buzzvstig_elem_s* buzzvstig_elem_t;
 
    /*
     * The virtual stigmergy data.
     */
    typedef buzzdict_t buzzvstig_t;
+
+   /*
+    * Forward declaration of the Buzz VM.
+    */
+   struct buzzvm_s;
+
+   /*
+    * Creates a new virtual stigmergy entry.
+    * @param data The data associated to the entry.
+    * @param timestamp The timestamp (Lamport clock).
+    * @param robot The robot id.
+    * @return The new virtual stigmergy entry.
+    */
+   extern buzzvstig_elem_t buzzvstig_elem_new(buzzobj_t data,
+                                              uint16_t timestamp,
+                                              uint32_t robot);
 
    /*
     * Creates a new virtual stigmergy structure.
@@ -38,8 +57,8 @@ extern "C" {
     * @param data The data of the element to serialize.
     */
    extern void buzzvstig_elem_serialize(buzzmsg_t buf,
-                                        int32_t key,
-                                        const buzzvstig_elem_t* data);
+                                        const buzzobj_t key,
+                                        const buzzvstig_elem_t data);
 
    /*
     * Deserializes a virtual stigmergy element.
@@ -49,12 +68,14 @@ extern "C" {
     * @param data The deserialized data of the element.
     * @param buf The input buffer where the serialized data is stored.
     * @param pos The position at which the data starts.
+    * @param vm The Buzz VM data.
     * @return The new position in the buffer, of -1 in case of error.
     */
-   extern int64_t buzzvstig_elem_deserialize(int32_t* key,
+   extern int64_t buzzvstig_elem_deserialize(buzzobj_t* key,
                                              buzzvstig_elem_t* data,
                                              buzzmsg_t buf,
-                                             uint32_t pos);
+                                             uint32_t pos,
+                                             struct buzzvm_s* vm);
    
 #ifdef __cplusplus
 }
@@ -72,7 +93,7 @@ extern "C" {
  * @param key The key to look for.
  * @return The data associated to the key, or NULL if not found.
  */
-#define buzzvstig_fetch(vs, key) buzzdict_get((vs), &(key), buzzvstig_elem_t)
+#define buzzvstig_fetch(vs, key) buzzdict_get((vs), (key), buzzvstig_elem_t)
 
 /*
  * Puts data into a virtual stigmergy structure.
@@ -80,7 +101,7 @@ extern "C" {
  * @param key The key.
  * @param el The element.
  */
-#define buzzvstig_store(vs, key, el) buzzdict_set((vs), &(key), (el));
+#define buzzvstig_store(vs, key, el) buzzdict_set((vs), (key), (el));
 
 /*
  * Applies the given function to each element in the virtual stigmergy structure.

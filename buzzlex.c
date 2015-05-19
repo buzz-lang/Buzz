@@ -220,8 +220,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       checkkeyword("and",      BUZZTOK_ANDOR);
       checkkeyword("or",       BUZZTOK_ANDOR);
       checkkeyword("not",      BUZZTOK_NOT);
-      checkkeyword("true",     BUZZTOK_BOOL);
-      checkkeyword("false",    BUZZTOK_BOOL);
+      checkkeyword("nil",      BUZZTOK_NIL);
       /* No keyword found, consider it an id */
       return buzzlex_newtok(BUZZTOK_ID,
                             val,

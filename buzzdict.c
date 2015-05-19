@@ -206,34 +206,30 @@ int buzzdict_strkeycmp(const void* a, const void* b) {
 /****************************************/
 /****************************************/
 
-uint32_t buzzdict_int16keyhash(const void* key) {
-   return *(int16_t*)key;
-}
+#define buzzdict_intkeycmp(TYPE)                                        \
+   int buzzdict_ ## TYPE ## keycmp(const void* a, const void* b) {      \
+      if(*(TYPE ## _t*)a < *(TYPE ## _t*)b) return -1;                  \
+      if(*(TYPE ## _t*)a > *(TYPE ## _t*)b) return  1;                  \
+      return 0;                                                         \
+   }
+
+buzzdict_intkeycmp(int16);
+buzzdict_intkeycmp(uint16);
+buzzdict_intkeycmp(int32);
+buzzdict_intkeycmp(uint32);
 
 /****************************************/
 /****************************************/
 
-int buzzdict_int16keycmp(const void* a, const void* b) {
-   if(*(int16_t*)a < *(int16_t*)b) return -1;
-   if(*(int16_t*)a > *(int16_t*)b) return  1;
-   return 0;
-}
+#define buzzdict_intkeyhash(TYPE)                           \
+   uint32_t buzzdict_ ## TYPE ## keyhash(const void* key) { \
+      return *(TYPE ## _t*)key;                             \
+   }
 
-/****************************************/
-/****************************************/
-
-uint32_t buzzdict_int32keyhash(const void* key) {
-   return *(int32_t*)key;
-}
-
-/****************************************/
-/****************************************/
-
-int buzzdict_int32keycmp(const void* a, const void* b) {
-   if(*(int32_t*)a < *(int32_t*)b) return -1;
-   if(*(int32_t*)a > *(int32_t*)b) return  1;
-   return 0;
-}
+buzzdict_intkeyhash(int16);
+buzzdict_intkeyhash(uint16);
+buzzdict_intkeyhash(int32);
+buzzdict_intkeyhash(uint32);
 
 /****************************************/
 /****************************************/

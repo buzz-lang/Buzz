@@ -34,7 +34,7 @@ void dump(buzzvm_t vm, const char* prefix) {
                fprintf(stderr, "[c-closure] %d\n", o->c.value.ref);
             break;
          case BUZZTYPE_STRING:
-            fprintf(stderr, "[string] %d:'%s'\n", o->s.value, buzzdarray_get(vm->strings, o->s.value, char*));
+            fprintf(stderr, "[string] %d:'%s'\n", o->s.value.sid, o->s.value.str);
             break;
          default:
             fprintf(stderr, "[TODO] type = %d\n", o->o.type);
@@ -72,7 +72,9 @@ int main(int argc, char** argv) {
    /* Set byte code */
    buzzvm_set_bcode(vm, bcode_buf, bcode_size);
    /* Register hook function */
-   buzzvm_register_function(vm, "hook", hook);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "hook"));
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, hook));
+   buzzvm_gstore(vm);
    /* Run byte code and dump state */
    do dump(vm, "[DEBUG] ");
    while(buzzvm_step(vm) == BUZZVM_STATE_READY);
