@@ -5,11 +5,15 @@
 /****************************************/
 /****************************************/
 
-static int PARSE_ERROR  =  0;
-static int PARSE_OK     =  1;
-static int TYPE_BASIC   = -1;
-static int TYPE_CLOSURE = -2;
-static int TYPE_TABLE   = -3;
+static int PARSE_ERROR    =  0;
+static int PARSE_OK       =  1;
+static int TYPE_BASIC     = -1;
+static int TYPE_CLOSURE   = -2;
+static int TYPE_TABLE     = -3;
+static int TYPE_STIGMERGY = -4;
+static int SCOPE_LOCAL    =  0;
+static int SCOPE_GLOBAL   =  1;
+static int SCOPE_AUTO     =  2;
 
 /****************************************/
 /****************************************/
@@ -88,11 +92,17 @@ struct sym_s* sym_lookup(const char* sym,
    return NULL;
 }
 
-void sym_add(buzzparser_t par, const char* sym) {
-   /* Vopy string */
+void sym_add(buzzparser_t par, const char* sym, int scope) {
+   /* Copy string */
    char* key = strdup(sym);
    /* Check whether symbol is global or local */
-   int global = (buzzdarray_size(par->symstack) == 1);
+   int global;
+   if(scope == SCOPE_AUTO) {
+      global = (buzzdarray_size(par->symstack) == 1);
+   }
+   else {
+      global = scope;
+   }
    /* Calculate position attribute */
    uint32_t pos;
    /* For a global symbol, the position corresponds to the string id */
@@ -439,7 +449,7 @@ int parse_fun(buzzparser_t par) {
    fetchtok();
    tokmatch(BUZZTOK_ID);
    /* Add a symbol for this function */
-   sym_add(par, par->tok->value);
+   sym_add(par, par->tok->value, SCOPE_AUTO);
    /* Make a new chunk for this function and get the associated symbol */
    chunk_push(sym_lookup(par->tok->value, par->symstack));
    fetchtok();
@@ -849,7 +859,7 @@ int parse_idlist(buzzparser_t par) {
     */
    struct sym_s* sym = sym_lookup(par->tok->value, par->symstack);
    if(!sym || sym->global) {
-      sym_add(par, par->tok->value);
+      sym_add(par, par->tok->value, SCOPE_LOCAL);
    }
    fetchtok();
    /* Match rest of the argument list */
@@ -858,7 +868,7 @@ int parse_idlist(buzzparser_t par) {
       tokmatch(BUZZTOK_ID);
       struct sym_s* sym = sym_lookup(par->tok->value, par->symstack);
       if(!sym || sym->global) {
-         sym_add(par, par->tok->value);
+         sym_add(par, par->tok->value, SCOPE_LOCAL);
       }
       fetchtok();
    }
@@ -903,7 +913,7 @@ int parse_idref(buzzparser_t par,
    if(!s) {
       /* Symbol not found, add it */
       DEBUG("Adding unknown idref %s\n", par->tok->value);
-      sym_add(par, par->tok->value);
+      sym_add(par, par->tok->value, SCOPE_AUTO);
       s = sym_lookup(par->tok->value, par->symstack);
    }
    else {
@@ -938,7 +948,7 @@ int parse_idref(buzzparser_t par,
          chunk_append("\tpushs %u\n", *sid);
          fetchtok();
       }
-      if(par->tok->type == BUZZTOK_IDXOPEN) {
+      else if(par->tok->type == BUZZTOK_IDXOPEN) {
          idrefinfo->info = TYPE_TABLE;
          DEBUG("Parsing idref[expression]\n");
          fetchtok();
@@ -986,10 +996,13 @@ int parse_lambda(buzzparser_t par) {
    chunk_push(NULL);
    tokmatch(BUZZTOK_PAROPEN);
    fetchtok();
+   int symtpushed = (buzzdarray_size(par->symstack) == 1);
+   if(symtpushed) { symt_push(); }
    if(!parse_idlist(par)) return PARSE_ERROR;
    tokmatch(BUZZTOK_PARCLOSE);
    fetchtok();
    if(!parse_block(par)) return PARSE_ERROR;
+   if(symtpushed) { symt_pop(); }
    chunk_pop();
    DEBUG("Lambda done\n");
    return PARSE_OK;
@@ -1032,6 +1045,7 @@ buzzparser_t buzzparser_new(const char* fscript,
                                buzzdict_strkeyhash,
                                buzzdict_strkeycmp,
                                NULL);
+   string_add(par->strings, "stigmergy");
    /* Return parser state */
    return par;
 }
