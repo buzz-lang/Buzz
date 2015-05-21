@@ -7,10 +7,12 @@
 
 static int PARSE_ERROR    =  0;
 static int PARSE_OK       =  1;
+
 static int TYPE_BASIC     = -1;
 static int TYPE_CLOSURE   = -2;
 static int TYPE_TABLE     = -3;
 static int TYPE_STIGMERGY = -4;
+
 static int SCOPE_LOCAL    =  0;
 static int SCOPE_GLOBAL   =  1;
 static int SCOPE_AUTO     =  2;
@@ -18,8 +20,8 @@ static int SCOPE_AUTO     =  2;
 /****************************************/
 /****************************************/
 
-#define DEBUG(MSG, ...) fprintf(stderr, "[DEBUG] " MSG, ##__VA_ARGS__);
-#define TODO (MSG, ...) fprintf(stderr, "[TODO] " MSG, ##__VA_ARGS__);
+#define DEBUG(MSG, ...) fprintf(stderr, "[DEBUG] " MSG, ##__VA_ARGS__)
+#define TODO (MSG, ...) fprintf(stderr, "[TODO] " MSG, ##__VA_ARGS__)
 
 /****************************************/
 /****************************************/
@@ -454,11 +456,18 @@ int parse_fun(buzzparser_t par) {
    fetchtok();
    tokmatch(BUZZTOK_PAROPEN);
    fetchtok();
+   /* Make a new symbol table */
    symt_push();
+   /* Add "self" symbol */
+   struct sym_s* sym = sym_lookup("self", par->symstack);
+   if(!sym || sym->global) { sym_add(par, "self", SCOPE_LOCAL); }
+   /* Parse arguments */
    if(!parse_idlist(par)) return PARSE_ERROR;
    tokmatch(BUZZTOK_PARCLOSE);
    fetchtok();
+   /* Parse block */
    if(!parse_block(par)) return PARSE_ERROR;
+   /* Get rid of symbol table and close chunk */
    symt_pop();
    chunk_pop();
    return PARSE_OK;
@@ -697,7 +706,7 @@ int parse_operand(buzzparser_t par) {
    DEBUG("Parsing operand\n");
    if(par->tok->type == BUZZTOK_FUN) {
       DEBUG("Operand is lambda\n");
-      chunk_append("\tpushcn " LABELREF "%u\n", par->labels);
+      chunk_append("\tpushl " LABELREF "%u\n", par->labels);
       if(!parse_lambda(par)) return PARSE_ERROR;
       return PARSE_OK;
    }
@@ -928,8 +937,8 @@ int parse_idref(buzzparser_t par,
          par->tok->type == BUZZTOK_IDXOPEN ||
          par->tok->type == BUZZTOK_PAROPEN) {
       /* Take care of structured types */
-      if(idrefinfo->global) { chunk_append("\tpushs %d\n\tgload\n", idrefinfo->info); }
-      else if(idrefinfo->info >= 0) { chunk_append("\tlload %lld\n", s->pos); }
+      if(idrefinfo->global)                    { chunk_append("\tpushs %d\n\tgload\n", idrefinfo->info); }
+      else if(idrefinfo->info >= 0)            { chunk_append("\tlload %lld\n", s->pos); }
       else if(idrefinfo->info == TYPE_TABLE)   { chunk_append("\ttget\n"); }
       else if(idrefinfo->info == TYPE_CLOSURE) { chunk_append("\tcallc\n"); }
       idrefinfo->global = 0;
@@ -948,8 +957,8 @@ int parse_idref(buzzparser_t par,
          fetchtok();
       }
       else if(par->tok->type == BUZZTOK_IDXOPEN) {
-         idrefinfo->info = TYPE_TABLE;
          DEBUG("Parsing idref[expression]\n");
+         idrefinfo->info = TYPE_TABLE;
          fetchtok();
          if(!parse_expression(par)) return PARSE_ERROR;
          tokmatch(BUZZTOK_IDXCLOSE);
@@ -957,7 +966,6 @@ int parse_idref(buzzparser_t par,
       }
       else if(par->tok->type == BUZZTOK_PAROPEN) {
          idrefinfo->info = TYPE_CLOSURE;
-         DEBUG("Parsing function call\n");
          fetchtok();
          int numargs;
          if(!parse_conditionlist(par, &numargs)) return PARSE_ERROR;
@@ -966,7 +974,8 @@ int parse_idref(buzzparser_t par,
          chunk_append("\tpushi %d\n", numargs);
       }
    }
-   if(!lvalue || idrefinfo->info == TYPE_CLOSURE) {
+   if(!lvalue ||
+      idrefinfo->info == TYPE_CLOSURE) {
       if(idrefinfo->global) {
          chunk_append("\tpushs %d\n\tgload\n", idrefinfo->info);
       }
@@ -995,13 +1004,26 @@ int parse_lambda(buzzparser_t par) {
    chunk_push(NULL);
    tokmatch(BUZZTOK_PAROPEN);
    fetchtok();
-   int symtpushed = (buzzdarray_size(par->symstack) == 1);
-   if(symtpushed) { symt_push(); }
+   /* Check whether it's necessary to create a new symbol table
+    * If the parent symtable is the global one, it is necessary
+    * otherwise, reuse the parent's
+    */
+   int symtpush = (buzzdarray_size(par->symstack) == 1);
+   if(symtpush) {
+      /* Add new symtable */
+      symt_push();
+      /* Add "self" symbol */
+      struct sym_s* sym = sym_lookup("self", par->symstack);
+      if(!sym || sym->global) { sym_add(par, "self", SCOPE_LOCAL); }
+   }
+   /* Parse lambda arguments */
    if(!parse_idlist(par)) return PARSE_ERROR;
    tokmatch(BUZZTOK_PARCLOSE);
    fetchtok();
+   /* Parse block */
    if(!parse_block(par)) return PARSE_ERROR;
-   if(symtpushed) { symt_pop(); }
+   /* Get rid of symbol table and close chunk */
+   if(symtpush) { symt_pop(); }
    chunk_pop();
    DEBUG("Lambda done\n");
    return PARSE_OK;

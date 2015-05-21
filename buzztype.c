@@ -16,12 +16,15 @@ uint32_t buzzobj_hash(const buzzobj_t o) {
       }
       case BUZZTYPE_FLOAT: {
          int32_t x = o->f.value;
-         return buzzdict_int32keyhash(&(x));
+         return buzzdict_int32keyhash(&x);
       }
       case BUZZTYPE_STRING: {
          return buzzdict_strkeyhash(&(o->s.value.str));
       }
-      case BUZZTYPE_TABLE:
+      case BUZZTYPE_TABLE: {
+         uint32_t p = (uintptr_t)(o->t.value);
+         return buzzdict_uint32keyhash(&p);
+      }
       case BUZZTYPE_ARRAY:
       case BUZZTYPE_CLOSURE:
       default:
@@ -43,8 +46,8 @@ int buzzobj_eq(const buzzobj_t a,
       case BUZZTYPE_INT:     return (a->i.value == b->i.value);
       case BUZZTYPE_FLOAT:   return (a->f.value == b->f.value);
       case BUZZTYPE_STRING:  return 0; // TODO
-      case BUZZTYPE_TABLE:   return (a->t.value == b->t.value);
-      case BUZZTYPE_ARRAY:   return (a->a.value == b->a.value);
+      case BUZZTYPE_TABLE:   return ((uintptr_t)(a->t.value) == (uintptr_t)(b->t.value));
+      case BUZZTYPE_ARRAY:   return ((uintptr_t)(a->a.value) == (uintptr_t)(b->a.value));
       case BUZZTYPE_CLOSURE:
          return((a->c.value.isnative == b->c.value.isnative) &&
                 (a->c.value.ref      == b->c.value.ref)      &&
@@ -83,6 +86,11 @@ int buzzobj_cmp(const buzzobj_t a,
    }
    if(a->o.type == BUZZTYPE_STRING && b->o.type == BUZZTYPE_STRING) {
       return strcmp(a->s.value.str, b->s.value.str);
+   }
+   if(a->o.type == BUZZTYPE_TABLE && b->o.type == BUZZTYPE_TABLE) {
+      if((uintptr_t)(a->t.value) < (uintptr_t)(b->t.value)) return -1;
+      if((uintptr_t)(a->t.value) > (uintptr_t)(b->t.value)) return 1;
+      return 0;
    }
    // TODO better error management
    fprintf(stderr, "[TODO] %s:%d: error for comparison between Buzz objects of types %d and %d\n", __FILE__, __LINE__, a->o.type, b->o.type);

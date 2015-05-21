@@ -1,0 +1,10 @@
+function f() {
+  return self
+}
+
+f()
+
+t = {}
+t.x = f
+
+t.x()

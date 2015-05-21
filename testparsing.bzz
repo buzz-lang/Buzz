@@ -1,11 +1,12 @@
 r = {}
 r.a = function(x) { return x }
 r.a(1)
+r.a = 6
 
-# a = hook(3,4)
+a = hook(3,4)
 
-# function f(x) {
-#   return a + r.a + x
-# }
+function f(x) {
+  return a + r.a + x
+}
 
-# f(1)
+f(1)

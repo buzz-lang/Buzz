@@ -118,7 +118,8 @@ void buzzheap_objmark(buzzobj_t o,
     * Nothing to do if the object is already marked
     * This avoids infinite looping when cycles are present
     */
-   fprintf(stderr, "[DEBUG] o = %p, type = %d, o->o.type\n", o, o->o.type);
+   fprintf(stderr, "[DEBUG] o = %p ", o);
+   fprintf(stderr, "type = %d\n", o->o.type);
    if(o->o.marker == h->marker) return;
    /* Update marker */
    o->o.marker = h->marker;
@@ -157,6 +158,14 @@ void buzzheap_stack_mark(uint32_t pos,
                          void* data,
                          void* params) {
    buzzdarray_foreach(*(buzzdarray_t*)data,
+                      buzzheap_darrayobj_mark,
+                      params);
+}
+
+void buzzheap_lsyms_mark(uint32_t pos,
+                         void* data,
+                         void* params) {
+   buzzdarray_foreach((*(buzzvm_lsyms_t*)data)->syms,
                       buzzheap_darrayobj_mark,
                       params);
 }
@@ -200,7 +209,7 @@ void buzzheap_gc(struct buzzvm_s* vm) {
    buzzdarray_foreach(vm->stacks, buzzheap_stack_mark, h);
    /* Go through all the objects in the local symbol stack and mark them */
    fprintf(stderr, "[DEBUG] GC lsyms\n");
-   buzzdarray_foreach(vm->lsymts, buzzheap_stack_mark, h);
+   buzzdarray_foreach(vm->lsymts, buzzheap_lsyms_mark, h);
    /* Go through all the objects in the virtual stigmergy and mark them */
    fprintf(stderr, "[DEBUG] GC vstigs\n");
    buzzdict_foreach(vm->vstigs, buzzheap_vstig_mark, h);

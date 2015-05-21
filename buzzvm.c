@@ -16,6 +16,17 @@
 /****************************************/
 /****************************************/
 
+buzzvm_lsyms_t buzzvm_lsyms_new(uint8_t isswarm,
+                                buzzdarray_t syms) {
+   buzzvm_lsyms_t s = (buzzvm_lsyms_t)malloc(sizeof(struct buzzvm_lsyms_s));
+   s->isswarm = isswarm;
+   s->syms = syms;
+   return s;
+}
+
+/****************************************/
+/****************************************/
+
 void buzzvm_string_add(buzzvm_t vm,
                        const char* str) {
    char* s = strdup(str);
@@ -37,9 +48,15 @@ int buzzvm_string_cmp(const void* a, const void* b) {
 /****************************************/
 /****************************************/
 
+void buzzvm_vstig_destroy(const void* key, void* data, void* params) {
+   buzzvstig_destroy((buzzvstig_t*)data);
+}
+
+/****************************************/
+/****************************************/
+
 void buzzvm_msg_destroy(uint32_t pos, void* data, void* param) {
-   buzzmsg_t* m = (buzzmsg_t*)data;
-   buzzmsg_destroy(m);
+   buzzmsg_destroy((buzzmsg_t*)data);
 }
 
 void buzzvm_process_inmsgs(buzzvm_t vm) {
@@ -182,21 +199,18 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
-void buzzvm_vstig_destroy(const void* key, void* data, void* params) {
-   free((void*)key);
-   buzzvstig_t* x = (buzzvstig_t*)data;
-   buzzvstig_destroy(x);
-   free(x);
-}
-
-/****************************************/
-/****************************************/
-
 void buzzvm_darray_destroy(uint32_t pos,
                            void* data,
                            void* params) {
    buzzdarray_t* s = (buzzdarray_t*)data;
    buzzdarray_destroy(s);
+}
+
+void buzzvm_lsyms_destroy(uint32_t pos,
+                          void* data,
+                          void* params) {
+   buzzvm_lsyms_t s = *(buzzvm_lsyms_t*)data;
+   buzzdarray_destroy(&(s->syms));
 }
 
 buzzvm_t buzzvm_new(uint32_t robot) {
@@ -212,12 +226,9 @@ buzzvm_t buzzvm_new(uint32_t robot) {
    buzzdarray_push(vm->stacks, &(vm->stack));
    /* Create local variable tables */
    vm->lsymts = buzzdarray_new(BUZZVM_LSYMTS_INIT_CAPACITY,
-                               sizeof(buzzdarray_t),
-                               buzzvm_darray_destroy);
-   vm->lsyms = buzzdarray_new(BUZZVM_SYMS_INIT_CAPACITY,
-                              sizeof(buzzobj_t),
-                              NULL);
-   buzzdarray_push(vm->lsymts, &(vm->lsyms));
+                               sizeof(buzzvm_lsyms_t),
+                               buzzvm_lsyms_destroy);
+   vm->lsyms = NULL;
    /* Create global variable tables */
    vm->gsyms = buzzdict_new(BUZZVM_SYMS_INIT_CAPACITY,
                             sizeof(int32_t),
@@ -235,11 +246,15 @@ buzzvm_t buzzvm_new(uint32_t robot) {
    vm->flist = buzzdarray_new(20, sizeof(buzzvm_funp), NULL);
    /* Create swarm list */
    vm->swarms = buzzdict_new(10,
-                             sizeof(int16_t),
+                             sizeof(uint16_t),
                              sizeof(uint8_t),
-                             buzzdict_int16keyhash,
-                             buzzdict_int16keycmp,
+                             buzzdict_uint16keyhash,
+                             buzzdict_uint16keycmp,
                              NULL);
+   /* Create swarm stack */
+   vm->swarmstack = buzzdarray_new(10,
+                                   sizeof(uint16_t),
+                                   NULL);
    /* Create message queues */
    vm->inmsgs = buzzmsg_queue_new(20);
    vm->outmsgs = buzzmsg_queue_new(20);
@@ -274,6 +289,7 @@ void buzzvm_destroy(buzzvm_t* vm) {
    buzzdarray_destroy(&(*vm)->flist);
    /* Get rid of the swarm list */
    buzzdict_destroy(&(*vm)->swarms);
+   buzzdarray_destroy(&(*vm)->swarmstack);
    /* Get rid of the message queues */
    buzzdarray_foreach((*vm)->inmsgs, buzzvm_msg_destroy, NULL);
    buzzdarray_destroy(&(*vm)->inmsgs);
@@ -292,10 +308,10 @@ int buzzvm_set_bcode(buzzvm_t vm,
                      const uint8_t* bcode,
                      uint32_t bcode_size) {
    /* Fetch the string count */
-   long int count;
-   memcpy(&count, bcode, sizeof(long int));
+   uint16_t count;
+   memcpy(&count, bcode, sizeof(uint16_t));
    /* Go through the strings and store them */
-   uint32_t i = sizeof(long int);
+   uint32_t i = sizeof(uint16_t);
    long int c = 0;
    for(; (c < count) && (i < bcode_size); ++c) {
       /* Store string */
@@ -325,15 +341,18 @@ int buzzvm_set_bcode(buzzvm_t vm,
    buzzvm_pushs(vm, buzzvm_string_register(vm, "create"));
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_create));
    buzzvm_tput(vm);
-   /* Add the 'put' method */
+   /*
+    * Register swarm methods
+    */
+   /* Add 'swarm' table */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm"));
+   buzzvm_pusht(vm);
+   t = buzzvm_stack_at(vm, 1);
+   buzzvm_gstore(vm);
+   /* Add the 'create' method */
    buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "put"));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_put));
-   buzzvm_tput(vm);
-   /* Add the 'get' method */
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "get"));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_get));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "create"));
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_create));
    buzzvm_tput(vm);
    return BUZZVM_STATE_READY;
 }
@@ -521,19 +540,10 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          assert_pc(vm->pc);
          break;
       }
-      case BUZZVM_INSTR_JOINSWARM: {
+      case BUZZVM_INSTR_CALLS: {
          inc_pc();
-         buzzvm_joinswarm(vm);
-         break;
-      }
-      case BUZZVM_INSTR_LEAVESWARM: {
-         inc_pc();
-         buzzvm_leaveswarm(vm);
-         break;
-      }
-      case BUZZVM_INSTR_INSWARM: {
-         inc_pc();
-         buzzvm_inswarm(vm);
+         buzzvm_callc(vm);
+         assert_pc(vm->pc);
          break;
       }
       case BUZZVM_INSTR_PUSHI: {
@@ -664,16 +674,34 @@ uint32_t buzzvm_function_register(buzzvm_t vm,
 /****************************************/
 
 int buzzvm_vstig_create(buzzvm_t vm) {
-   /* Get the id */
-   buzzvm_lload(vm, 0);
+   /* Get vstig id */
+   buzzvm_lload(vm, 1);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
-   /* Create virtual stigmergy if not present already */
-   if(!buzzdict_get(vm->vstigs, &id, buzzdict_t)) {
-      buzzvstig_t vs = buzzvstig_new();
-      buzzdict_set(vm->vstigs, &id, &vs);
-   }
-   /* Push the vstig id on the stack */
+   buzzvm_pop(vm);
+   /* Look for virtual stigmergy */
+   buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
+   if(vs)
+      /* Found, destroy it */
+      buzzvstig_destroy(vs);
+   /* Create a new virtual stigmergy */
+   buzzvstig_t nvs = buzzvstig_new();
+   buzzdict_set(vm->vstigs, &id, &nvs);
+   /* Create a table and add data and methods */
+   buzzobj_t t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
+   buzzvm_push(vm, t);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "put"));
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_put));
+   buzzvm_tput(vm);
+   buzzvm_push(vm, t);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "get"));
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_get));
+   buzzvm_tput(vm);
+   buzzvm_push(vm, t);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "vstig"));
    buzzvm_pushi(vm, id);
+   buzzvm_tput(vm);
+   /* Push the table on the stack */
+   buzzvm_push(vm, t);
    /* Return */
    buzzvm_ret1(vm);
    return BUZZVM_STATE_READY;
@@ -685,6 +713,8 @@ int buzzvm_vstig_create(buzzvm_t vm) {
 int buzzvm_vstig_put(buzzvm_t vm) {
    /* Get vstig id */
    buzzvm_lload(vm, 0);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "vstig"));
+   buzzvm_tget(vm);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
    /* Get key */
    buzzvm_lload(vm, 1);
@@ -716,10 +746,6 @@ int buzzvm_vstig_put(buzzvm_t vm) {
       /* Append the message to the out message queue */
       buzzmsg_queue_append(vm->outmsgs, buf);
    }
-   else {
-      /* Ignore commands for virtual stigmergy that is not there */
-      fprintf(stderr, "[WARNING] [ROBOT %u] No virtual stigmergy with id %d\n", vm->robot, id);
-   }
    /* Return */
    buzzvm_ret0(vm);
    return BUZZVM_STATE_READY;
@@ -731,8 +757,9 @@ int buzzvm_vstig_put(buzzvm_t vm) {
 int buzzvm_vstig_get(buzzvm_t vm) {
    /* Get vstig id */
    buzzvm_lload(vm, 0);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "vstig"));
+   buzzvm_tget(vm);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
-   fprintf(stderr, "[DEBUG] id = %u\n", id);
    /* Get key */
    buzzvm_lload(vm, 1);
    buzzobj_t k = buzzvm_stack_at(vm, 1);
@@ -746,10 +773,12 @@ int buzzvm_vstig_get(buzzvm_t vm) {
       /* Virtual stigmergy found, look for key and push result */
       buzzvstig_elem_t* e = buzzvstig_fetch(*vs, &k);
       if(e) {
+         /* Key found */
          buzzvm_push(vm, (*e)->data);
          buzzvstig_elem_serialize(buf, k, *e);
       }
       else {
+         /* Key not found */
          buzzvm_pushnil(vm);
          buzzvstig_elem_t x =
             buzzvstig_elem_new(buzzvm_stack_at(vm, 1),
@@ -760,15 +789,160 @@ int buzzvm_vstig_get(buzzvm_t vm) {
    else {
       /* No virtual stigmergy found, push false */
       buzzvm_pushnil(vm);
-         buzzvstig_elem_t x =
-            buzzvstig_elem_new(buzzvm_stack_at(vm, 1),
-                               1, vm->robot);
+      buzzvstig_elem_t x =
+         buzzvstig_elem_new(buzzvm_stack_at(vm, 1),
+                            1, vm->robot);
       buzzvstig_elem_serialize(buf, k, x);
    }
    /* Append the message to the out message queue */
    buzzmsg_queue_append(vm->outmsgs, buf);
    /* Return */
    buzzvm_ret1(vm);
+   return BUZZVM_STATE_READY;
+}
+
+/****************************************/
+/****************************************/
+
+int buzzvm_swarm_create(buzzvm_t vm) {
+   /* Get the id */
+   buzzvm_lload(vm, 1);
+   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
+   fprintf(stderr, "[DEBUG] SWARM id = %u\n", id);
+   /* Add a new entry if necessary */
+   if(!buzzdict_exists(vm->swarms, &id)) {
+      uint8_t v = 0;
+      buzzdict_set(vm->swarms, &id, &v);
+   }
+   /* Create a table and add data and methods */
+   buzzobj_t t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
+   buzzvm_push(vm, t);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "join"));
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_join));
+   buzzvm_tput(vm);
+   buzzvm_push(vm, t);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "leave"));
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_leave));
+   buzzvm_tput(vm);
+   buzzvm_push(vm, t);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "in"));
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_in));
+   buzzvm_tput(vm);
+   buzzvm_push(vm, t);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "exec"));
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_exec));
+   buzzvm_tput(vm);
+   buzzvm_push(vm, t);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm"));
+   buzzvm_pushi(vm, id);
+   buzzvm_tput(vm);
+   /* Push the table on the stack */
+   buzzvm_push(vm, t);
+   /* Return */
+   buzzvm_ret1(vm);
+   return BUZZVM_STATE_READY;
+}
+
+/****************************************/
+/****************************************/
+
+int buzzvm_swarm_join(buzzvm_t vm) {
+   /* Get the id */
+   buzzvm_lload(vm, 0);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm"));
+   buzzvm_tget(vm);
+   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
+   fprintf(stderr, "[DEBUG] SWARM id = %u\n", id);
+   /* Join the swarm, if known */
+   if(buzzdict_exists(vm->swarms, &id)) {
+      uint8_t v = 1;
+      buzzdict_set(vm->swarms, &id, &v);
+      /* Return */
+      buzzvm_ret0(vm);
+      return BUZZVM_STATE_READY;
+   }
+   else {
+      vm->state = BUZZVM_STATE_ERROR;
+      vm->error = BUZZVM_ERROR_SWARM;
+      return BUZZVM_STATE_ERROR;
+   }
+}
+
+/****************************************/
+/****************************************/
+
+int buzzvm_swarm_leave(buzzvm_t vm) {
+   /* Get the id */
+   buzzvm_lload(vm, 0);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm"));
+   buzzvm_tget(vm);
+   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
+   fprintf(stderr, "[DEBUG] SWARM id = %u\n", id);
+   /* Join the swarm, if known */
+   if(buzzdict_exists(vm->swarms, &id)) {
+      uint8_t v = 0;
+      buzzdict_set(vm->swarms, &id, &v);
+      /* Return */
+      buzzvm_ret0(vm);
+      return BUZZVM_STATE_READY;
+   }
+   else {
+      vm->state = BUZZVM_STATE_ERROR;
+      vm->error = BUZZVM_ERROR_SWARM;
+      return BUZZVM_STATE_ERROR;
+   }
+}
+
+/****************************************/
+/****************************************/
+
+int buzzvm_swarm_in(buzzvm_t vm) {
+   /* Get the id */
+   buzzvm_lload(vm, 0);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm"));
+   buzzvm_tget(vm);
+   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
+   fprintf(stderr, "[DEBUG] SWARM id = %u\n", id);
+   /* Get the swarm entry */
+   uint8_t* x = buzzdict_get(vm->swarms, &id, uint8_t);
+   /* Push the return value */
+   buzzvm_pushi(vm, x && *x);
+   /* Return */
+   buzzvm_ret1(vm);
+   return BUZZVM_STATE_READY;
+}
+
+/****************************************/
+/****************************************/
+
+int buzzvm_swarm_exec(buzzvm_t vm) {
+   /* Get the id */
+   buzzvm_lload(vm, 0);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm"));
+   buzzvm_tget(vm);
+   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
+   fprintf(stderr, "[DEBUG] SWARM id = %u\n", id);
+   /* Get the swarm entry */
+   uint8_t* x = buzzdict_get(vm->swarms, &id, uint8_t);
+   /* Check whether the robot is in the swarm */
+   if(x && *x) {
+      /* Get the closure */
+      buzzvm_lload(vm, 1);
+      buzzobj_t c = buzzvm_stack_at(vm, 1);
+      /* Get rid of the current call structure */
+      buzzvm_ret0(vm);
+      /* Push the current swarm in the stack */
+      buzzdarray_push(vm->swarmstack, &id);
+      /* Call the closure */
+      buzzvm_push(vm, c);
+      int32_t numargs = 0;
+      buzzvm_pushi(vm, numargs);
+      buzzvm_calls(vm);
+   }
+   else {
+      /* Get rid of the current call structure */
+      buzzvm_ret0(vm);
+   }
    return BUZZVM_STATE_READY;
 }
 

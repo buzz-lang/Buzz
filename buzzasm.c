@@ -41,7 +41,8 @@
    T arg = CONVFUN;                                                     \
    if((arg == 0) && (argstr == endptr)) {                               \
       char* label = strdup(argstr);                                     \
-      buzzdict_set(labsubs, size, &label);                              \
+      int32_t pos = *size;                                              \
+      buzzdict_set(labsubs, &pos, &label);                              \
    }                                                                    \
    memcpy((*buf) + (*size), (uint8_t*)(&arg), sizeof(T));               \
    (*size) += sizeof(T);
@@ -59,7 +60,16 @@
 /*
  * Adds a label argument to the bytecode buffer
  */
-#define bcode_add_arg_l() bcode_add_arg(int32_t, 0); { char* label = strdup(argstr); buzzdict_set(labsubs, size, &label); }
+#define bcode_add_arg_l()                                               \
+   bcode_resize(sizeof(int32_t));                                       \
+   if(argstr == 0 || *argstr == 0) {                                    \
+      fprintf(stderr, "ERROR: %s:%zu missing argument\n", fname, lineno); \
+      return 2;                                                         \
+   }                                                                    \
+   char* label = strdup(argstr);                                        \
+   int32_t pos = *size;                                                 \
+   buzzdict_set(labsubs, &pos, &label);                                 \
+   (*size) += sizeof(int32_t);
 
 /*
  * Prints a warning if an argument is passed for an opcode that doesn't want one
@@ -76,11 +86,9 @@
 
 void strkeydstryf(const void* key, void* data, void* params) {
    free(*(char**)key);
-   free((int32_t*)data);
 }
 
 void strdatadstryf(const void* key, void* data, void* params) {
-   free((int32_t*)key);
    free(*(char**)data);
 }
 
@@ -113,6 +121,7 @@ void buzz_asm_labsub(const void* key, void* data, void* params) {
       state->retval = 2;
    }
    else {
+      fprintf(stderr, "[DEBUG] Writing label %s (%d) at %d\n", sublab, *labpos, subpos);
       /* Put the label value at its bytecode position */
       memcpy(state->buf + subpos, labpos, sizeof(int32_t));
    }
@@ -169,10 +178,10 @@ int buzz_asm(const char* fname,
       /* Is the line a string count marker? */
       if(*trimline == '!') {
          ++trimline;
-         long int n = strtol(trimline, NULL, 10);
-         bcode_resize(sizeof(long int));
-         memcpy((*buf) + (*size), &n, sizeof(long int)); \
-         *size += sizeof(long int);
+         uint16_t n = strtol(trimline, NULL, 10);
+         bcode_resize(sizeof(uint16_t));
+         memcpy((*buf) + (*size), &n, sizeof(uint16_t)); \
+         *size += sizeof(uint16_t);
          continue;
       }      
       /* Is the line a string? */
@@ -189,14 +198,17 @@ int buzz_asm(const char* fname,
       if(*trimline == '@') {
          char* label = strdup(trimline);
          buzzdict_set(labpos, &label, size);
-         fprintf(stderr, "[DEBUG] %s:%zu LABEL %s\tat %u (%p)\n", fname, lineno, label, *size, label);
+         fprintf(stderr, "[DEBUG] %s:%zu LABEL %s at %u\n", fname, lineno, label, *size);
          continue;
       }
       /* Fetch the instruction */
       fprintf(stderr, "[DEBUG] %s:%zu \t%s", fname, lineno, trimline);
       char* instr = strsep(&trimline, " \n\t");
       char* argstr = strsep(&trimline, " \n\t");
-      fprintf(stderr, "\t[%s] [%s]\n", instr, argstr);
+      if(argstr)
+         fprintf(stderr, "\t[%s] [%s]\n", instr, argstr);
+      else
+         fprintf(stderr, "\t[%s]\n", instr);
       /* Interpret the instruction */
       noarg_instr(BUZZVM_INSTR_NOP);
       noarg_instr(BUZZVM_INSTR_DONE);
@@ -230,14 +242,13 @@ int buzz_asm(const char* fname,
       noarg_instr(BUZZVM_INSTR_APUT);
       noarg_instr(BUZZVM_INSTR_AGET);
       noarg_instr(BUZZVM_INSTR_CALLC);
-      noarg_instr(BUZZVM_INSTR_JOINSWARM);
-      noarg_instr(BUZZVM_INSTR_LEAVESWARM);
-      noarg_instr(BUZZVM_INSTR_INSWARM);
+      noarg_instr(BUZZVM_INSTR_CALLS);
       f_arg_instr(BUZZVM_INSTR_PUSHF);
       i_arg_instr(BUZZVM_INSTR_PUSHI);
       i_arg_instr(BUZZVM_INSTR_PUSHS);
       i_arg_instr(BUZZVM_INSTR_PUSHCN);
       i_arg_instr(BUZZVM_INSTR_PUSHCC);
+      i_arg_instr(BUZZVM_INSTR_PUSHL);
       i_arg_instr(BUZZVM_INSTR_LLOAD);
       i_arg_instr(BUZZVM_INSTR_LSTORE);
       l_arg_instr(BUZZVM_INSTR_JUMP);
@@ -292,11 +303,11 @@ int buzz_deasm(const uint8_t* buf,
     * Phase 1: fetch the strings
     */
    /* Fetch and print the string count */
-   long int count;
-   memcpy(&count, buf, sizeof(long int));
-   fprintf(fd, "!%ld\n", count);
+   uint16_t count;
+   memcpy(&count, buf, sizeof(uint16_t));
+   fprintf(fd, "!%u\n", count);
    /* Go through the strings and print them */
-   uint32_t i = sizeof(long int);
+   uint32_t i = sizeof(uint16_t);
    long int c = 0;
    for(; (c < count) && (i < size); ++c) {
       /* Print string */
@@ -324,7 +335,7 @@ int buzz_deasm(const uint8_t* buf,
          return 2;
       }
       /* Write the op description */
-      fprintf(fd, "%s", buzzvm_instr_desc[op]);
+      fprintf(fd, "%u:\t%s", i, buzzvm_instr_desc[op]);
       /* Does the opcode have an argument? */
       if(op == BUZZVM_INSTR_PUSHF) {
          /* Float argument */

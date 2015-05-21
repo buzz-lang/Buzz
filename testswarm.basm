@@ -1,33 +1,44 @@
-# Stack: 
+!6
+'f
+'s
+'swarm
+'create
+'join
+'exec
 
-pushi 10
-# Stack: i10
+	pushs 0
+	pushcn @__label_1
+	gstore
 
-joinswarm
-# Stack: 
+@__label_0
+	pushs 1
+	pushs 2
+	gload
+	pushs 3
+	tget
+	pushi 17
+	pushi 1
+	callc
+	gstore
+	pushs 1
+	gload
+	pushs 4
+	tget
+	pushi 0
+	callc
+	pushs 1
+	gload
+	pushs 5
+	tget
+	pushs 0
+	gload
+	pushi 1
+	callc
 
-pushi 10
-# Stack: i10
+@__exitpoint
+	done
 
-inswarm
-# Stack: i1
-
-pushi 11
-# Stack: i11 i1
-
-inswarm
-# Stack: i0 i1
-
-pushi 10
-# Stack: i10 i0 i1
-
-leaveswarm
-# Stack: i0 i1
-
-pushi 10
-# Stack: i10 i0 i1
-
-inswarm
-# Stack: i0 i0 i1
-
-done
+@__label_1
+	pushi 10
+	lstore 1
+	ret0

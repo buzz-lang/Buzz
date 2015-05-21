@@ -2,45 +2,47 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 
-void dump(buzzvm_t vm, const char* prefix) {
-   fprintf(stderr, "%s============================================================\n", prefix);
-   fprintf(stderr, "%sstate: %d\terror: %d\n", prefix, vm->state, vm->error);
-   fprintf(stderr, "%scode size: %u\tpc: %d\n", prefix, vm->bcode_size, vm->pc);
-   fprintf(stderr, "%sstack max: %lld\tcur: %lld\n", prefix, buzzvm_stack_top(vm), buzzvm_stack_top(vm));
+void dump(buzzvm_t vm) {
+   fprintf(stdout, "============================================================\n");
+   fprintf(stdout, "state: %d\terror: %d\n", vm->state, vm->error);
+   fprintf(stdout, "code size: %u\tpc: %d\n", vm->bcode_size, vm->pc);
+   fprintf(stdout, "stacks: %lld\tcur elem: %lld (size %lld)\n", buzzdarray_size(vm->stacks), buzzvm_stack_top(vm), buzzvm_stack_top(vm));
    for(int64_t i = buzzvm_stack_top(vm)-1; i >= 0; --i) {
-      fprintf(stderr, "%s\t%lld\t", prefix, i);
+      fprintf(stdout, "\t%lld\t", i);
       buzzobj_t o = buzzdarray_get(vm->stack, i, buzzobj_t);
       switch(o->o.type) {
          case BUZZTYPE_NIL:
-            fprintf(stderr, "[nil]\n");
+            fprintf(stdout, "[nil]\n");
             break;
          case BUZZTYPE_INT:
-            fprintf(stderr, "[int] %d\n", o->i.value);
+            fprintf(stdout, "[int] %d\n", o->i.value);
             break;
          case BUZZTYPE_FLOAT:
-            fprintf(stderr, "[float] %f\n", o->f.value);
+            fprintf(stdout, "[float] %f\n", o->f.value);
             break;
          case BUZZTYPE_TABLE:
-            fprintf(stderr, "[table] %d elements\n", buzzdict_size(o->t.value));
+            fprintf(stdout, "[table] %d elements\n", buzzdict_size(o->t.value));
             break;
          case BUZZTYPE_ARRAY:
-            fprintf(stderr, "[array] %lld\n", buzzdarray_size(o->a.value));
+            fprintf(stdout, "[array] %lld\n", buzzdarray_size(o->a.value));
             break;
          case BUZZTYPE_CLOSURE:
             if(o->c.value.isnative)
-               fprintf(stderr, "[n-closure] %d\n", o->c.value.ref);
+               fprintf(stdout, "[n-closure] %d\n", o->c.value.ref);
             else
-               fprintf(stderr, "[c-closure] %d\n", o->c.value.ref);
+               fprintf(stdout, "[c-closure] %d\n", o->c.value.ref);
             break;
          case BUZZTYPE_STRING:
-            fprintf(stderr, "[string] %d:'%s'\n", o->s.value.sid, o->s.value.str);
+            fprintf(stdout, "[string] %d:'%s'\n", o->s.value.sid, o->s.value.str);
             break;
          default:
-            fprintf(stderr, "[TODO] type = %d\n", o->o.type);
+            fprintf(stdout, "[TODO] type = %d\n", o->o.type);
       }
    }
-   fprintf(stderr, "%s============================================================\n\n", prefix);
+   fprintf(stdout, "============================================================\n\n");
 }
 
 int hook(buzzvm_t vm) {
@@ -53,20 +55,24 @@ int hook(buzzvm_t vm) {
 int main(int argc, char** argv) {
    /* Parse command line */
    if(argc != 2) {
-      fprintf(stderr, "Usage:\n\t%s <script.basm>\n\n", argv[0]);
+      fprintf(stderr, "Usage:\n\t%s <file.bo>\n\n", argv[0]);
       return 0;
    }
-   /* Parse script */
-   uint8_t* bcode_buf;
-   uint32_t bcode_size;
-   if(buzz_asm(argv[1], &bcode_buf, &bcode_size) != 0) {
-      return 1;
+   /* Open file */
+   int fd = open(argv[1], O_RDONLY);
+   if(fd < 0) perror(argv[1]);
+   /* Read data */
+   size_t bcode_size = lseek(fd, 0, SEEK_END);
+   lseek(fd, 0, SEEK_SET);
+   uint8_t* bcode_buf = (uint8_t*)malloc(bcode_size);
+   ssize_t rd;
+   size_t tot = 0;
+   while(tot < bcode_size) {
+      rd = read(fd, bcode_buf + tot, bcode_size - tot);
+      if(rd < 0) perror(argv[1]);
+      tot += rd;
    }
-   /* Test deassembler */
-   char fdeasm[100];
-   strcpy(fdeasm, argv[1]);
-   strcat(fdeasm, ".tmp");
-   buzz_deasm(bcode_buf, bcode_size, fdeasm);
+   close(fd);
    /* Create new VM */
    buzzvm_t vm = buzzvm_new(1);
    /* Set byte code */
@@ -76,18 +82,19 @@ int main(int argc, char** argv) {
    buzzvm_pushcc(vm, buzzvm_function_register(vm, hook));
    buzzvm_gstore(vm);
    /* Run byte code and dump state */
-   do dump(vm, "[DEBUG] ");
+   do dump(vm);
    while(buzzvm_step(vm) == BUZZVM_STATE_READY);
    if(vm->state == BUZZVM_STATE_DONE) {
-      dump(vm, "[DEBUG] ");
+      dump(vm);
+      fprintf(stdout, "%s: execution terminated correctly\n\n",
+              argv[1]);
    }
    else {
-      fprintf(stderr, "%s: execution terminated abnormally: %s\n",
+      fprintf(stderr, "%s: execution terminated abnormally: %s\n\n",
               argv[1],
               buzzvm_error_desc[vm->error]);
-      dump(vm, "");
    }
-   /* Destroy VM*/
+   /* Destroy VM */
    free(bcode_buf);
    buzzvm_destroy(&vm);
    return 0;

@@ -1,0 +1,37 @@
+function f() {
+  y = 10
+  return
+}
+
+s = swarm.create(17)
+
+# if(s.in()) {
+#   x = 5
+# }
+# else {
+#   x = 7
+# }
+
+# s.exec(f)
+
+s.join()
+
+# if(s.in()) {
+#   x = 5
+# }
+# else {
+#   x = 7
+# }
+
+s.exec(f)
+
+# s.leave()
+
+# if(s.in()) {
+#   x = 5
+# }
+# else {
+#   x = 7
+# }
+
+# s.exec(f)

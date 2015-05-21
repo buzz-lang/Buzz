@@ -1,7 +1,7 @@
 s = stigmergy.create(22)
 
-stigmergy.put(s, 5, 17.0)
+s.put(5, 17.0)
 
-x = stigmergy.get(s, 5)
-# y = stigmergy.get(s, 6)
+x = s.get(5)
+y = s.get(6)
 

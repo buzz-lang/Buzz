@@ -1,45 +1,36 @@
-pushi 1
-# Stack: i1
+!3
+'f
+'t
+'x
 
-pushf 2.0
-# Stack: f2.0 i1
+	pushs 0
+	pushcn @__label_1
+	gstore
 
-pushi -6
-# Stack: i-6 f2.0 i1
+@__label_0
+	pushs 0
+	gload
+	pushi 0
+	callc
+	pushs 1
+	pusht
+	gstore
+	pushs 1
+	gload
+	pushs 2
+	pushs 0
+	gload
+	tput
+	pushs 1
+	gload
+	pushs 2
+	tget
+	pushi 0
+	callc
 
-pushf -17.0
-# Stack: f-17.0 i-6 f2.0 i1
+@__exitpoint
+	done
 
-pushi 4
-# Stack: i4 f-17.0 i-6 f2.0 i1
-
-pushi @subroutine
-# Stack: i54 i4 f-17.0 i-6 f2.0 i1
-
-pushcn
-# Stack: c54
-
-pushi 100
-# Stack: i100 c54
-
-pushf 200.0
-# Stack: f200 i100 c54
-
-pushi 300
-# Stack: i300 f200 i100 c54
-
-pushi 3
-# Stack: i3 i300 f200 i100 c54
-
-callc
-# Stack: i300 f200 i100 f-17.0 i-6 f2.0 i1
-
-done
-# Stack:
-
-@subroutine
-pushi 1
-# Stack: i300 f200 i100 f-17.0 i-6 f2.0 i1
-
-ret1
-# Stack: i300
+@__label_1
+	lload 0
+	ret1
