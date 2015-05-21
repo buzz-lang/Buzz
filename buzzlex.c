@@ -211,6 +211,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       /* It's either a keyword or an identifier */
       readval(buzzlex_isid);
       /* Go through the possible keywords */
+      checkkeyword("var",      BUZZTOK_VAR);
       checkkeyword("if",       BUZZTOK_IF);
       checkkeyword("else",     BUZZTOK_ELSE);
       checkkeyword("function", BUZZTOK_FUN);

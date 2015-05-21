@@ -2,19 +2,97 @@
 #include "buzzasm.h"
 #include <cstdlib>
 #include <fstream>
+#include <argos3/core/utility/logging/argos_log.h>
 
 /****************************************/
 /****************************************/
 
-void dump(buzzvm_t vm, const char* prefix) {
-   fprintf(stderr, "%s============================================================\n", prefix);
-   fprintf(stderr, "%sstate: %d\terror: %d\n", prefix, vm->state, vm->error);
-   fprintf(stderr, "%scode size: %u\tpc: %d\n", prefix, vm->bcode_size, vm->pc);
-   fprintf(stderr, "%sstack max: %lld\tcur: %lld\n", prefix, buzzvm_stack_top(vm), buzzvm_stack_top(vm));
+void dump(buzzvm_t vm) {
+   DEBUG("============================================================\n");
+   DEBUG("state: %d\terror: %d\n", vm->state, vm->error);
+   DEBUG("code size: %u\tpc: %d\n", vm->bcode_size, vm->pc);
+   DEBUG("stacks: %lld\tcur elem: %lld (size %lld)\n", buzzdarray_size(vm->stacks), buzzvm_stack_top(vm), buzzvm_stack_top(vm));
    for(int64_t i = buzzvm_stack_top(vm)-1; i >= 0; --i) {
-      fprintf(stderr, "%s\t%lld\t%u\t%f\n", prefix, i, buzzdarray_get(vm->stack, i, buzzobj_t)->i.value, buzzdarray_get(vm->stack, i, buzzobj_t)->f.value);
+      DEBUG("\t%lld\t", i);
+      buzzobj_t o = buzzdarray_get(vm->stack, i, buzzobj_t);
+      switch(o->o.type) {
+         case BUZZTYPE_NIL:
+            fprintf(stderr, "[nil]\n");
+            break;
+         case BUZZTYPE_INT:
+            fprintf(stderr, "[int] %d\n", o->i.value);
+            break;
+         case BUZZTYPE_FLOAT:
+            fprintf(stderr, "[float] %f\n", o->f.value);
+            break;
+         case BUZZTYPE_TABLE:
+            fprintf(stderr, "[table] %d elements\n", buzzdict_size(o->t.value));
+            break;
+         case BUZZTYPE_ARRAY:
+            fprintf(stderr, "[array] %lld\n", buzzdarray_size(o->a.value));
+            break;
+         case BUZZTYPE_CLOSURE:
+            if(o->c.value.isnative) {
+               fprintf(stderr, "[n-closure] %d\n", o->c.value.ref);
+            }
+            else {
+               fprintf(stderr, "[c-closure] %d\n", o->c.value.ref);
+            }
+            break;
+         case BUZZTYPE_STRING:
+            fprintf(stderr, "[string] %d:'%s'\n", o->s.value.sid, o->s.value.str);
+            break;
+         default:
+            fprintf(stderr, "[TODO] type = %d\n", o->o.type);
+      }
    }
-   fprintf(stderr, "%s============================================================\n\n", prefix);
+   DEBUG("============================================================\n\n");
+}
+
+/****************************************/
+/****************************************/
+
+int BuzzLOG (buzzvm_t vm) {
+   for(UInt32 i = 1; i < buzzdarray_size(vm->lsyms->syms); ++i) {
+      buzzvm_lload(vm, i);
+      buzzobj_t o = buzzvm_stack_at(vm, 1);
+      buzzvm_pop(vm);
+      switch(o->o.type) {
+         case BUZZTYPE_NIL:
+            LOG << "[nil]";
+            break;
+         case BUZZTYPE_INT:
+            LOG << o->i.value;
+            break;
+         case BUZZTYPE_FLOAT:
+            LOG << o->f.value;
+            break;
+         case BUZZTYPE_TABLE:
+            LOG << "[table " << (buzzdict_size(o->t.value)) << " elems]";
+            break;
+         case BUZZTYPE_ARRAY:
+            LOG << "[array " << (buzzdict_size(o->a.value)) << " elems]";
+            break;
+         case BUZZTYPE_CLOSURE:
+            if(o->c.value.isnative)
+               LOG << "[n-closure " << o->c.value.ref << "]";
+            else
+               LOG << "[c-closure " << o->c.value.ref << "]";
+            break;
+         case BUZZTYPE_STRING:
+            LOG << o->s.value.str;
+            break;
+         case BUZZTYPE_USERDATA:
+            LOG << "[userdata " << o->u.value << "]";
+            break;
+         default:
+            break;
+      }
+   }
+   LOG << std::endl;
+   LOG.Flush();
+   buzzvm_ret0(vm);
+   return BUZZVM_STATE_READY;
 }
 
 /****************************************/
@@ -35,36 +113,94 @@ CBuzzController::~CBuzzController() {
 /****************************************/
 
 void CBuzzController::Init(TConfigurationNode& t_node) {
-   /* Get pointers to devices */
-   m_pcRABA = GetActuator<CCI_RangeAndBearingActuator>("range_and_bearing");
-   m_pcRABS = GetSensor  <CCI_RangeAndBearingSensor  >("range_and_bearing");
-   /* Create a new BuzzVM */
-   m_tBuzzVM = buzzvm_new(1); // TODO
-   /* Get the bytecode filename */
-   std::string strFName;
-   GetNodeAttribute(t_node, "script", strFName);
-   /* Load the bytecode */
-   std::ifstream cBCodeFile(strFName.c_str(), std::ios::binary | std::ios::ate);
-   std::ifstream::pos_type unFileSize = cBCodeFile.tellg();
-   CByteArray cBCode(unFileSize);
-   cBCodeFile.seekg(0, std::ios::beg);
-   cBCodeFile.read(reinterpret_cast<char*>(cBCode.ToCArray()), unFileSize);
-   /* Set the script */
-   SetBytecode(cBCode);
+   try {
+      /* Get pointers to devices */
+      // m_pcRABA = GetActuator<CCI_RangeAndBearingActuator>("range_and_bearing");
+      // m_pcRABS = GetSensor  <CCI_RangeAndBearingSensor  >("range_and_bearing");
+      /* Get the script name */
+      std::string strFName;
+      GetNodeAttribute(t_node, "bytecode_file", strFName);
+      /* Initialize the rest */
+      m_tBuzzVM = NULL;
+      m_unRobotId = FromString<UInt32>(GetId().substr(2));
+      SetBytecode(strFName);
+   }
+   catch(CARGoSException& ex) {
+      THROW_ARGOSEXCEPTION_NESTED("Error initializing the Buzz controller", ex);
+   }
 }
 
 /****************************************/
 /****************************************/
 
 void CBuzzController::Reset() {
-   /* Reset the VM */
-   // TODO
+   SetBytecode(m_strBytecodeFName);
 }
 
 /****************************************/
 /****************************************/
 
 void CBuzzController::ControlStep() {
+   // ProcessInMsgs();
+   UpdateSensors();
+   buzzvm_function_call(m_tBuzzVM, "step", 0);
+   //dump(m_tBuzzVM);
+   UpdateActuators();
+   // ProcessOutMsgs();
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzController::Destroy() {
+   /* Get rid of the VM */
+   if(m_tBuzzVM) {
+      buzzvm_function_call(m_tBuzzVM, "destroy", 0);
+      buzzvm_destroy(&m_tBuzzVM);
+   }
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzController::SetBytecode(const std::string& str_fname) {
+   /* Reset the BuzzVM */
+   if(m_tBuzzVM) buzzvm_destroy(&m_tBuzzVM);
+   m_tBuzzVM = buzzvm_new(m_unRobotId);
+   /* Save the bytecode filename */
+   m_strBytecodeFName = str_fname;
+   /* Load the bytecode */
+   std::ifstream cBCodeFile(str_fname.c_str(), std::ios::binary | std::ios::ate);
+   std::ifstream::pos_type unFileSize = cBCodeFile.tellg();
+   m_cBytecode.Clear();
+   m_cBytecode.Resize(unFileSize);
+   cBCodeFile.seekg(0, std::ios::beg);
+   cBCodeFile.read(reinterpret_cast<char*>(m_cBytecode.ToCArray()), unFileSize);
+   /* Load the script */
+   buzzvm_set_bcode(m_tBuzzVM, m_cBytecode.ToCArray(), m_cBytecode.Size());
+   /* Register basic function */
+   if(RegisterFunctions() != BUZZVM_STATE_READY) {
+      THROW_ARGOSEXCEPTION("Error while registering functions");
+   }
+   /* Call the Init() function */
+   buzzvm_function_call(m_tBuzzVM, "init", 0);
+}
+
+/****************************************/
+/****************************************/
+
+int CBuzzController::RegisterFunctions() {
+   /* BuzzLOG */
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "log"));
+   buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzLOG));
+   buzzvm_gstore(m_tBuzzVM);
+   return BUZZVM_STATE_READY;
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzController::ProcessInMsgs() {
    /* Go through RAB messages and add them to the FIFO */
    const CCI_RangeAndBearingSensor::TReadings& tPackets = m_pcRABS->GetReadings();
    for(size_t i = 0; i < tPackets.size(); ++i) {
@@ -85,11 +221,12 @@ void CBuzzController::ControlStep() {
       }
       while(cData.Size() > sizeof(UInt16) && unMsgSize > 0);
    }
-   /* Step the VM */
-   buzzvm_step(m_tBuzzVM);
-   dump(m_tBuzzVM, "[DEBUG] ");
-   /* Apply actuation */
-   // TODO
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzController::ProcessOutMsgs() {
    /* Send messages from FIFO */
    CByteArray cData;
    do {
@@ -116,19 +253,13 @@ void CBuzzController::ControlStep() {
 /****************************************/
 /****************************************/
 
-void CBuzzController::Destroy() {
-   /* Get rid of the VM */
-   buzzvm_destroy(&m_tBuzzVM);
+void CBuzzController::UpdateSensors() {
 }
 
 /****************************************/
 /****************************************/
 
-void CBuzzController::SetBytecode(const CByteArray& c_bcode) {
-   /* Copy the bytecode */
-   m_cBytecode = c_bcode;
-   /* Load the script */
-   buzzvm_set_bcode(m_tBuzzVM, m_cBytecode.ToCArray(), m_cBytecode.Size());
+void CBuzzController::UpdateActuators() {
 }
 
 /****************************************/

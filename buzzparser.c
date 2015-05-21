@@ -299,6 +299,7 @@ int parse_stat(buzzparser_t par);
 
 int parse_block(buzzparser_t par);
 
+int parse_var(buzzparser_t par);
 int parse_fun(buzzparser_t par);
 int parse_if(buzzparser_t par);
 int parse_for(buzzparser_t par);
@@ -375,6 +376,8 @@ int parse_stat(buzzparser_t par) {
       DEBUG("Statement end\n");
       return PARSE_OK;
    }
+   if(par->tok->type == BUZZTOK_VAR)
+      return parse_var(par);
    if(par->tok->type == BUZZTOK_FUN)
       return parse_fun(par);
    if(par->tok->type == BUZZTOK_IF)
@@ -443,6 +446,17 @@ int parse_block(buzzparser_t par) {
 
 /****************************************/
 /****************************************/
+
+int parse_var(buzzparser_t par) {
+   DEBUG("Parsing variable definition\n");
+   tokmatch(BUZZTOK_VAR);
+   fetchtok();
+   tokmatch(BUZZTOK_ID);
+   /* Add a symbol for this variable */
+   sym_add(par, par->tok->value, SCOPE_AUTO);
+   fetchtok();
+   return PARSE_OK;
+}
 
 int parse_fun(buzzparser_t par) {
    DEBUG("Parsing function definition\n");
@@ -546,14 +560,30 @@ int parse_for(buzzparser_t par) {
 
 int parse_while(buzzparser_t par) {
    DEBUG("Parsing while\n");
+   /* Save labels for while start and end */
+   uint32_t wstart = par->labels;
+   uint32_t wend = par->labels + 1;
+   par->labels += 2;
+   /* Parse tokens */
    tokmatch(BUZZTOK_WHILE);
    fetchtok();
    tokmatch(BUZZTOK_PAROPEN);
    fetchtok();
+   /* Place while start label */
+   chunk_append(LABELREF "%u\n", wstart);
+   /* Place the condition */
    if(!parse_condition(par)) return PARSE_ERROR;
    tokmatch(BUZZTOK_PARCLOSE);
    fetchtok();
-   return parse_block(par);
+   /* If the condition is false, jump to the end */
+   chunk_append("\tjumpz " LABELREF "%u\n", wend);
+   /* Parse block */
+   if(!parse_block(par)) return PARSE_ERROR;
+   /* Jump back to while start */
+   chunk_append("\tjump " LABELREF "%u\n", wstart);
+   /* Place while end label */
+   chunk_append(LABELREF "%u\n", wend);
+   return PARSE_OK;
 }
 
 /****************************************/
@@ -921,7 +951,7 @@ int parse_idref(buzzparser_t par,
    if(!s) {
       /* Symbol not found, add it */
       DEBUG("Adding unknown idref %s\n", par->tok->value);
-      sym_add(par, par->tok->value, SCOPE_AUTO);
+      sym_add(par, par->tok->value, SCOPE_GLOBAL);
       s = sym_lookup(par->tok->value, par->symstack);
    }
    else {
@@ -1104,8 +1134,9 @@ int buzzparser_parse(buzzparser_t par) {
    buzzdarray_foreach(sarr, string_print, par->asmstream);
    buzzdarray_destroy(&sarr);
    fprintf(par->asmstream, "\n");
-   /* Write chunk registration code */
+   /* Write chunk registration code (end it with a nop) */
    buzzdarray_foreach(par->chunks, chunk_register, par->asmstream);
+   fprintf(par->asmstream, "\tnop\n");
    /* Write actual chunks */
    buzzdarray_foreach(par->chunks, chunk_print, par->asmstream);
    return PARSE_OK;

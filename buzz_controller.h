@@ -23,11 +23,17 @@ public:
    virtual void ControlStep();
    virtual void Destroy();
 
-   /*
-    * Sets the bytecode.
-    * @param c_bcode The bytecode buffer.
-    */
-   void SetBytecode(const CByteArray& c_bcode);
+   void SetBytecode(const std::string& str_fname);
+
+private:
+
+   int RegisterFunctions();
+
+   void ProcessInMsgs();
+   void ProcessOutMsgs();
+
+   void UpdateSensors();
+   void UpdateActuators();
 
 private:
 
@@ -36,10 +42,14 @@ private:
    /* Pointer to the range and bearing sensor */
    CCI_RangeAndBearingSensor* m_pcRABS;
 
-   /* VM state */
-   buzzvm_t m_tBuzzVM;
+   /* The robot numeric id */
+   UInt32 m_unRobotId;
 
-   /* Bytecode buffer */
+   /* Buzz VM state */
+   buzzvm_t m_tBuzzVM;
+   /* Name of the bytecode file */
+   std::string m_strBytecodeFName;
+   /* The actual bytecode */
    CByteArray m_cBytecode;
 
 };

@@ -201,6 +201,23 @@ extern "C" {
    extern buzzvm_state buzzvm_step(buzzvm_t vm);
 
    /*
+    * Calls a function defined in Buzz.
+    * It expects the stack to be as follows:
+    * #1 arg1
+    * #2 arg2
+    * ...
+    * #N argN
+    * This function pops all arguments.
+    * @param vm The VM data.
+    * @param fname The function name.
+    * @param argc The number of arguments.
+    * @return 0 if everything OK, a non-zero value in case of error
+    */
+   extern buzzvm_state buzzvm_function_call(buzzvm_t vm,
+                                            const char* fname,
+                                            uint32_t argc);
+
+   /*
     * Registers a new string in the VM.
     * @param vm The VM data.
     * @param str The string to register.
@@ -352,6 +369,13 @@ extern "C" {
  * @param v The variable.
  */
 #define buzzvm_push(vm, v) buzzdarray_push((vm)->stack, &(v))
+
+/*
+ * Pushes a userdata on the stack.
+ * @param vm The VM data.
+ * @param v The C pointer to the user data.
+ */
+#define buzzvm_pushuserdata(vm, v) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_USERDATA); o->u.value = (v); buzzvm_push(vm, o); }
 
 /*
  * Pushes nil on the stack.

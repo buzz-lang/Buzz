@@ -8,13 +8,14 @@
 /*
  * Object types in Buzz
  */
-#define BUZZTYPE_NIL     0
-#define BUZZTYPE_INT     1
-#define BUZZTYPE_FLOAT   2
-#define BUZZTYPE_STRING  3
-#define BUZZTYPE_TABLE   4
-#define BUZZTYPE_ARRAY   5
-#define BUZZTYPE_CLOSURE 6
+#define BUZZTYPE_NIL      0
+#define BUZZTYPE_INT      1
+#define BUZZTYPE_FLOAT    2
+#define BUZZTYPE_STRING   3
+#define BUZZTYPE_TABLE    4
+#define BUZZTYPE_ARRAY    5
+#define BUZZTYPE_CLOSURE  6
+#define BUZZTYPE_USERDATA 7
 
 /*
  * Info extraction from an object
@@ -95,20 +96,30 @@ extern "C" {
    } buzzclosure_t;
    
    /*
+    * User data
+    */
+   typedef struct {
+      uint16_t type;
+      uint16_t marker;
+      void*    value;
+   } buzzuserdata_t;
+
+   /*
     * A handle for a object
     */
    union buzzobj_u {
       struct {
-         uint16_t type;   // object type
-         uint16_t marker; // marker for garbage collection
-      }             o;    // as a generic object
-      buzznil_t     n;    // as nil
-      buzzint_t     i;    // as integer
-      buzzfloat_t   f;    // as floating-point
-      buzzstring_t  s;    // as string
-      buzztable_t   t;    // as table
-      buzzarray_t   a;    // as array
-      buzzclosure_t c;    // as closure
+         uint16_t type;    // object type
+         uint16_t marker;  // marker for garbage collection
+      }              o;    // as a generic object
+      buzznil_t      n;    // as nil
+      buzzint_t      i;    // as integer
+      buzzfloat_t    f;    // as floating-point
+      buzzstring_t   s;    // as string
+      buzztable_t    t;    // as table
+      buzzarray_t    a;    // as array
+      buzzclosure_t  c;    // as closure
+      buzzuserdata_t u;    // as user data
    };
    typedef union buzzobj_u* buzzobj_t;
 

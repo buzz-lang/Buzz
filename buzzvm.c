@@ -43,7 +43,7 @@ int buzzvm_string_cmp(const void* a, const void* b) {
    return strcmp(*(char**)a, *(char**)b);
 }
 
-#define buzzdarray_string_find(vm, str) buzzdarray_find(vm->strings, buzzvm_string_cmp, str);
+#define buzzdarray_string_find(vm, str) buzzdarray_find(vm->strings, buzzvm_string_cmp, str)
 
 /****************************************/
 /****************************************/
@@ -328,6 +328,19 @@ int buzzvm_set_bcode(buzzvm_t vm,
    vm->bcode = bcode;
    /* Set program counter */
    vm->pc = i;
+   /*
+    * Register function definitions
+    * Stop when you find a 'nop'
+    */
+   while(vm->bcode[vm->pc] != BUZZVM_INSTR_NOP)
+      if(buzzvm_step(vm) != BUZZVM_STATE_READY) return vm->state;
+   buzzvm_step(vm);
+   /*
+    * Register global symbols
+    */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
+   buzzvm_pushi(vm, vm->robot);
+   buzzvm_gstore(vm);
    /*
     * Register stigmergy methods
     */
@@ -627,6 +640,45 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          break;
    }
    return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state buzzvm_function_call(buzzvm_t vm,
+                                  const char* fname,
+                                  uint32_t argc) {
+   /* Save arguments */
+   buzzobj_t* args;
+   if(argc > 0) {
+      buzzvm_stack_assert(vm, argc);
+      args = (buzzobj_t*)malloc(sizeof(buzzobj_t) * argc);
+      for(int i = 1; i <= argc; ++i) {
+         args[argc - i] = buzzvm_stack_at(vm, i);
+         buzzvm_pop(vm);
+      }
+   }
+   /* Push the function name (return with error if not found) */
+   buzzvm_pushs(vm, buzzdarray_string_find(vm, &fname));
+   /* Get associated symbol */
+   buzzvm_gload(vm);
+   /* Make sure it's a closure */
+   buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
+   /* Push back the arguments and the count */
+   if(argc > 0) {
+      for(int i = 0; i < argc; ++i)
+         buzzvm_push(vm, args[i]);
+      free(args);
+   }
+   buzzvm_pushi(vm, argc);
+   /* Save the current stack depth */
+   uint32_t stacks = buzzdarray_size(vm->stacks);
+   /* Call the closure and keep stepping until
+    * the stack count is back to the saved value */
+   buzzvm_callc(vm);
+   do if(buzzvm_step(vm) != BUZZVM_STATE_READY) return (vm)->state;
+   while(stacks < buzzdarray_size(vm->stacks));
+   return (vm)->state;
 }
 
 /****************************************/
