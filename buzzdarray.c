@@ -1,11 +1,12 @@
 #include "buzzdarray.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 /****************************************/
 /****************************************/
 
-#define buzzdarray_rawget(da, pos) ((uint8_t*)((da)->data) + ((pos) * (da)->elem_size))
+#define buzzdarray_rawget(da, pos) ((uint8_t*)(da)->data + (pos) * (da)->elem_size)
 
 void buzzdarray_elem_destroy(uint32_t pos, void* data, void* params) {}
 
@@ -88,16 +89,22 @@ void* buzzdarray_makeslot(buzzdarray_t da,
       Making sure we are not adding beyond the current size */
    uint32_t i = pos < buzzdarray_size(da) ? pos : buzzdarray_size(da);
    /* Increase the capacity if necessary */
-   if(i >= da->capacity) {
-      do { da->capacity *= 2; } while(i >= da->capacity);
-      da->data = realloc(da->data, da->capacity * da->elem_size);
+   if(buzzdarray_size(da)+1 >= da->capacity) {
+      do { da->capacity *= 2; } while(buzzdarray_size(da)+1 >= da->capacity);
+      void* nd = realloc(da->data, da->capacity * da->elem_size);
+      if(!nd) {
+         fprintf(stderr, "[FATAL] Can't reallocate dynamic array.\n");
+         abort();
+      }
+      da->data = nd;
    }
    /* Move elements from i onwards one step to the right */
-   if(!buzzdarray_isempty(da) && i < buzzdarray_size(da))
+   if(!buzzdarray_isempty(da) && i < buzzdarray_size(da)) {
       memmove(
          buzzdarray_rawget(da, i+1),
          buzzdarray_rawget(da, i),
          (buzzdarray_size(da) - i) * da->elem_size);
+   }
    /* Increase size */
    ++(da->size);
    /* Return pointer to the slot */
@@ -136,7 +143,12 @@ void buzzdarray_remove(buzzdarray_t da,
    if((da->size > 0) &&
       (da->size <= da->capacity / 2)) {
       da->capacity /= 2;
-      da->data = realloc(da->data, da->capacity * da->elem_size);
+      void* nd = realloc(da->data, da->capacity * da->elem_size);
+      if(!nd) {
+         fprintf(stderr, "[FATAL] Can't reallocate dynamic array.\n");
+         abort();
+      }
+      da->data = nd;
    }
 }
 
@@ -149,7 +161,12 @@ void buzzdarray_clear(buzzdarray_t da,
    buzzdarray_foreach(da, da->elem_destroy, NULL);
    /* Resize the array */
    da->capacity = cap;
-   da->data = realloc(da->data, cap * da->elem_size);
+   void* nd = realloc(da->data, da->capacity * da->elem_size);
+   if(!nd) {
+      fprintf(stderr, "[FATAL] Can't reallocate dynamic array.\n");
+      abort();
+   }
+   da->data = nd;
    /* Zero the size */
    da->size = 0;
 }

@@ -29,6 +29,17 @@ buzzvstig_elem_t buzzvstig_elem_new(buzzobj_t data,
 /****************************************/
 /****************************************/
 
+buzzvstig_elem_t buzzvstig_elem_clone(const buzzvstig_elem_t e) {
+   buzzvstig_elem_t x = (buzzvstig_elem_t)malloc(sizeof(struct buzzvstig_elem_s));
+   x->data      = buzzobj_clone(e->data);
+   x->timestamp = e->timestamp;
+   x->robot     = e->robot;
+   return x;
+}
+
+/****************************************/
+/****************************************/
+
 void buzzvstig_elem_destroy(const void* key, void* data, void* params) {
    free(*(buzzvstig_elem_t*)data);
 }
@@ -49,7 +60,7 @@ buzzvstig_t buzzvstig_new() {
 /****************************************/
 /****************************************/
 
-void buzzvstig_elem_serialize(buzzdarray_t buf,
+void buzzvstig_elem_serialize(buzzmsg_payload_t buf,
                               const buzzobj_t key,
                               const buzzvstig_elem_t data) {
    /* Serialize the key */
@@ -67,7 +78,7 @@ void buzzvstig_elem_serialize(buzzdarray_t buf,
 
 int64_t buzzvstig_elem_deserialize(buzzobj_t* key,
                                    buzzvstig_elem_t* data,
-                                   buzzdarray_t buf,
+                                   buzzmsg_payload_t buf,
                                    uint32_t pos,
                                    struct buzzvm_s* vm) {
    /* Initialize the position */

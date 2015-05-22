@@ -1,9 +1,9 @@
-#include <buzzmsg.h>
+#include <buzzinmsg.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 int main() {
-   buzzmsg_t buf = buzzdarray_new(10, sizeof(uint8_t), 0);
+   buzzmsg_payload_t buf = buzzmsg_payload_new(10);
    fprintf(stderr, "Serializing 10\n");
    buzzmsg_serialize_u32(buf, 10);
    fprintf(stderr, "Serializing -2.5\n");
@@ -15,11 +15,10 @@ int main() {
    fprintf(stderr, "Serializing 3.14\n");
    buzzmsg_serialize_float(buf, -3.14);
 
-   buzzmsg_queue_t q = buzzmsg_queue_new(1);
-   buzzmsg_queue_append(q, buf);
+   buzzinmsg_queue_t q = buzzinmsg_queue_new(1);
+   buzzinmsg_queue_append(q, buf);
    
-   buzzmsg_t buf2 = buzzmsg_queue_extract(q);
-   
+   buzzmsg_payload_t buf2 = buzzinmsg_queue_extract(q);
    int64_t pos = 0;
    int32_t x;
    float y;
@@ -46,7 +45,7 @@ int main() {
    fprintf(stderr, "%f (%lld)\n", y, pos);
    if(pos < 0) return 1;
    
-   buzzmsg_destroy(&buf2);
-   buzzmsg_queue_destroy(&q);
+   buzzmsg_payload_destroy(&buf2);
+   buzzinmsg_queue_destroy(&q);
    return 0;
 }

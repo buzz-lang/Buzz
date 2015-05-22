@@ -53,6 +53,7 @@ void dump(buzzvm_t vm) {
 /****************************************/
 
 int BuzzLOG (buzzvm_t vm) {
+   LOG << "BUZZ: ";
    for(UInt32 i = 1; i < buzzdarray_size(vm->lsyms->syms); ++i) {
       buzzvm_lload(vm, i);
       buzzobj_t o = buzzvm_stack_at(vm, 1);
@@ -115,8 +116,8 @@ CBuzzController::~CBuzzController() {
 void CBuzzController::Init(TConfigurationNode& t_node) {
    try {
       /* Get pointers to devices */
-      // m_pcRABA = GetActuator<CCI_RangeAndBearingActuator>("range_and_bearing");
-      // m_pcRABS = GetSensor  <CCI_RangeAndBearingSensor  >("range_and_bearing");
+      m_pcRABA = GetActuator<CCI_RangeAndBearingActuator>("range_and_bearing");
+      m_pcRABS = GetSensor  <CCI_RangeAndBearingSensor  >("range_and_bearing");
       /* Get the script name */
       std::string strFName;
       GetNodeAttribute(t_node, "bytecode_file", strFName);
@@ -141,12 +142,12 @@ void CBuzzController::Reset() {
 /****************************************/
 
 void CBuzzController::ControlStep() {
-   // ProcessInMsgs();
+   ProcessInMsgs();
    UpdateSensors();
    buzzvm_function_call(m_tBuzzVM, "step", 0);
    //dump(m_tBuzzVM);
    UpdateActuators();
-   // ProcessOutMsgs();
+   ProcessOutMsgs();
 }
 
 /****************************************/
@@ -213,8 +214,8 @@ void CBuzzController::ProcessInMsgs() {
          unMsgSize = cData.PopFront<UInt16>();
          /* Append message to the Buzz input message queue */
          if(unMsgSize > 0 && cData.Size() >= unMsgSize) {
-            buzzmsg_queue_append(m_tBuzzVM->inmsgs,
-                                 buzzmsg_frombuffer(cData.ToCArray(), unMsgSize));
+            buzzinmsg_queue_append(m_tBuzzVM->inmsgs,
+                                   buzzmsg_payload_frombuffer(cData.ToCArray(), unMsgSize));
             /* Get rid of the data read */
             for(size_t i = 0; i < unMsgSize; ++i) cData.PopFront<UInt8>();
          }
@@ -227,27 +228,65 @@ void CBuzzController::ProcessInMsgs() {
 /****************************************/
 
 void CBuzzController::ProcessOutMsgs() {
+   LOGERR << "CNTRL: "
+          << GetId()
+          << ": At start msg queue has "
+          << buzzoutmsg_queue_size(m_tBuzzVM->outmsgs)
+          << " elements"
+          << std::endl;
    /* Send messages from FIFO */
    CByteArray cData;
    do {
       /* Are there more messages? */
-      if(buzzmsg_queue_isempty(m_tBuzzVM->outmsgs)) break;
+      if(buzzoutmsg_queue_isempty(m_tBuzzVM->outmsgs)) break;
+      /* Get first message */
+      buzzmsg_payload_t m = buzzoutmsg_queue_first(m_tBuzzVM->outmsgs);
       /* Make sure the next message fits the data buffer */
-      if(buzzmsg_size(buzzmsg_queue_get(m_tBuzzVM->outmsgs, 0)) +
-         sizeof(UInt16) > m_pcRABA->GetSize()) break;
-      /* Extract message */
-      buzzmsg_t m = buzzmsg_queue_extract(m_tBuzzVM->outmsgs);
+      if(cData.Size() + buzzmsg_payload_size(m) + sizeof(UInt16)
+         >
+         m_pcRABA->GetSize()) {
+         // LOGERR << "CNTRL: "
+         //        << GetId()
+         //        << ": Not sending "
+         //        << (buzzmsg_size(buzzmsg_queue_get(m_tBuzzVM->outmsgs, 0)) + sizeof(UInt16))
+         //        << " bytes"
+         //        << std::endl;
+         break;
+      }
+      // LOGERR << "CNTRL: "
+      //        << GetId()
+      //        << ": Sending "
+      //        << (buzzmsg_size(buzzmsg_queue_get(m_tBuzzVM->outmsgs, 0)) + sizeof(UInt16))
+      //        << " bytes - "
+      //        << cData.Size()
+      //        << " bytes sent so far"
+      //        << std::endl;
       /* Add message length to data buffer */
-      cData << static_cast<UInt16>(buzzmsg_size(m));
+      cData << static_cast<UInt16>(buzzmsg_payload_size(m));
       /* Add payload to data buffer */
-      cData.AddBuffer(reinterpret_cast<UInt8*>(m->data), buzzmsg_size(m));
+      cData.AddBuffer(reinterpret_cast<UInt8*>(m->data), buzzmsg_payload_size(m));
       /* Get rid of message */
-      buzzmsg_destroy(&m);
+      buzzoutmsg_queue_next(m_tBuzzVM->outmsgs);
+      buzzmsg_payload_destroy(&m);
    } while(1);
    /* Pad the rest of the data with zeroes */
+   // LOGERR << "CNTRL: Total msg size sent: "
+   //        << cData.Size()
+   //        << std::endl;
    while(cData.Size() < m_pcRABA->GetSize()) cData << static_cast<UInt8>(0);
+   // LOGERR << "CNTRL: Total msg size sent: "
+   //        << cData.Size()
+   //        << std::endl;
    /* Send message */
    m_pcRABA->SetData(cData);
+   // LOGERR << "CNTRL: "
+   //        << std::endl;
+   LOGERR << "CNTRL: "
+          << GetId()
+          << ": At end msg queue has "
+          << buzzoutmsg_queue_size(m_tBuzzVM->outmsgs)
+          << " elements"
+          << std::endl;
 }
 
 /****************************************/

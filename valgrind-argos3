@@ -12,4 +12,4 @@ export DYLD_LIBRARY_PATH
 # replaces the script with the argos3 executable. In this
 # way, there is only one PID and the return value is handled
 # correctly.
-valgrind --log-file=mem.log /usr/local/Cellar/argos3/3.0.0-beta35/libexec/argos3 "$@"
+valgrind --vgdb=no --log-file=mem.log /usr/local/Cellar/argos3/3.0.0-beta35/libexec/argos3 "$@"

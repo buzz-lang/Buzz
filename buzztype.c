@@ -6,6 +6,42 @@
 /****************************************/
 /****************************************/
 
+buzzobj_t buzzobj_clone(const buzzobj_t o) {
+   buzzobj_t x = (buzzobj_t)malloc(sizeof(union buzzobj_u));
+   x->o.type = o->o.type;
+   switch(o->o.type) {
+      case BUZZTYPE_NIL: {
+         return x;
+      }
+      case BUZZTYPE_INT: {
+         x->i.value = o->i.value;
+         return x;
+      }
+      case BUZZTYPE_FLOAT: {
+         x->f.value = o->f.value;
+         return x;
+      }
+      case BUZZTYPE_STRING: {
+         x->s.value.sid = o->s.value.sid;
+         x->s.value.str = o->s.value.str;
+         return x;
+      }
+      case BUZZTYPE_USERDATA: {
+         x->u.value = o->u.value;
+         return x;
+      }
+      case BUZZTYPE_TABLE:
+      case BUZZTYPE_ARRAY:
+      case BUZZTYPE_CLOSURE:
+      default:
+         fprintf(stderr, "[BUG] %s:%d: Clone for Buzz object type %d\n", __FILE__, __LINE__, o->o.type);
+         exit(1);
+   }
+}
+
+/****************************************/
+/****************************************/
+
 uint32_t buzzobj_hash(const buzzobj_t o) {
    switch(o->o.type) {
       case BUZZTYPE_NIL: {
@@ -191,11 +227,11 @@ int64_t buzzobj_deserialize(buzzobj_t* data,
          for(uint32_t i = 0; i < size; ++i) {
             buzzobj_t* k;
             buzzobj_t* v;
-            buzzobj_deserialize(k, buf, p, vm);
+            p = buzzobj_deserialize(k, buf, p, vm);
             if(p < 0) return -1;
-            buzzobj_deserialize(v, buf, p, vm);
+            p = buzzobj_deserialize(v, buf, p, vm);
             if(p < 0) return -1;
-            buzzdict_set((*data)->t.value, &k, &v);
+            buzzdict_set((*data)->t.value, k, v);
          }
          return p;
       }

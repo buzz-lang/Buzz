@@ -1,7 +1,34 @@
-s = stigmergy.create(22)
+#
+# Declare variables
+#
+var robots
+var s
+var t
 
-s.put(5, 17.0)
+#
+# Executed at init time
+#
+function init() {
+  robots = 2
+  s = stigmergy.create(1)
+  t = 0
+  return
+}
 
-x = s.get(5)
-y = s.get(6)
-
+#
+# Executed at each time step
+#
+function step() {
+  # Increase step count
+  t = t + 1
+  # Put step count, using own id as key
+  s.put(id, t)
+  # Print other known values in stigmergy
+  i = 0
+  while(i < robots) {
+    log("fb ", id, ": vstig[", i, "] = ", s.get(i))
+    i = i + 1
+  }
+  log()
+  return
+}

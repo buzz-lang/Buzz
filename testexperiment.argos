@@ -6,7 +6,7 @@
   <!-- ************************* -->
   <framework>
     <system threads="0" />
-    <experiment length="1"
+    <experiment length="10"
                 ticks_per_second="10"
                 random_seed="124" />
   </framework>
@@ -19,11 +19,13 @@
     <buzz_controller id="fdc" library="../../build/libbuzzargos">
       <actuators>
         <differential_steering implementation="default" />
+        <range_and_bearing implementation="default" />
       </actuators>
       <sensors>
         <footbot_proximity implementation="default" show_rays="true" />
+        <range_and_bearing implementation="medium" medium="rab" show_rays="true" />
       </sensors>
-      <params bytecode_file="testbehavior.bo" />
+      <params bytecode_file="teststigmergy.bo" />
     </buzz_controller>
 
   </controllers>
@@ -58,8 +60,8 @@
     <distribute>
       <position method="uniform" min="-2,-2,0" max="2,2,0" />
       <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0" />
-      <entity quantity="10" max_trials="100">
-        <foot-bot id="fb">
+      <entity quantity="2" max_trials="100">
+        <foot-bot id="fb" rab_data_size="100">
           <controller config="fdc" />
         </foot-bot>
       </entity>
@@ -68,26 +70,26 @@
     <!--
         We distribute 5 boxes uniformly in position and rotation around Z.
     -->
-    <distribute>
-      <position method="uniform" min="-2,-2,0" max="2,2,0" />
-      <orientation method="uniform" min="0,0,0" max="360,0,0" />
-      <entity quantity="5" max_trials="100">
-        <box id="b" size="0.3,0.3,0.5" movable="false" />
-      </entity>
-    </distribute>
+    <!-- <distribute> -->
+    <!--   <position method="uniform" min="-2,-2,0" max="2,2,0" /> -->
+    <!--   <orientation method="uniform" min="0,0,0" max="360,0,0" /> -->
+    <!--   <entity quantity="5" max_trials="100"> -->
+    <!--     <box id="b" size="0.3,0.3,0.5" movable="false" /> -->
+    <!--   </entity> -->
+    <!-- </distribute> -->
 
     <!--
         We distribute cylinders uniformly in position and with
         constant rotation (rotating a cylinder around Z does not
         matter)
     -->
-    <distribute>
-      <position method="uniform" min="-2,-2,0" max="2,2,0" />
-      <orientation method="constant" values="0,0,0" />
-      <entity quantity="5" max_trials="100">
-        <cylinder id="c" height="0.5" radius="0.15" movable="false" />
-      </entity>
-    </distribute>
+    <!-- <distribute> -->
+    <!--   <position method="uniform" min="-2,-2,0" max="2,2,0" /> -->
+    <!--   <orientation method="constant" values="0,0,0" /> -->
+    <!--   <entity quantity="5" max_trials="100"> -->
+    <!--     <cylinder id="c" height="0.5" radius="0.15" movable="false" /> -->
+    <!--   </entity> -->
+    <!-- </distribute> -->
 
   </arena>
 
@@ -101,13 +103,15 @@
   <!-- ********* -->
   <!-- * Media * -->
   <!-- ********* -->
-  <media />
+  <media>
+    <range_and_bearing id="rab" />
+  </media>
 
   <!-- ****************** -->
   <!-- * Visualization * -->
   <!-- ****************** -->
   <visualization>
-    <qt-opengl />
+    <!-- <qt-opengl /> -->
   </visualization>
 
 </argos-configuration>

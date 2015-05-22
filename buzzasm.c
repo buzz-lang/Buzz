@@ -171,6 +171,17 @@ int buzz_asm(const char* fname,
       while(isspace(*trimline)) ++trimline;
       /* Skip empty lines and comment lines */
       if(*trimline == 0 || *trimline == '#') continue;
+      /* Is the line a string? */
+      if(*trimline == '\'') {
+         ++trimline;
+         trimline[strlen(trimline)-1] = 0;
+         fprintf(stderr, "[DEBUG] %s:%zu STRING %s\n", fname, lineno, trimline);
+         size_t l = strlen(trimline) + 1;
+         bcode_resize(l);
+         strcpy((char*)(*buf + *size), trimline);
+         *size += l;
+         continue;
+      }
       /* Trim trailing space */
       char* endc = trimline + strlen(trimline) - 1;
       while(endc > trimline && isspace(*endc)) --endc;
@@ -184,16 +195,6 @@ int buzz_asm(const char* fname,
          *size += sizeof(uint16_t);
          continue;
       }      
-      /* Is the line a string? */
-      if(*trimline == '\'') {
-         ++trimline;
-         fprintf(stderr, "[DEBUG] %s:%zu STRING %s\n", fname, lineno, trimline);
-         size_t l = strlen(trimline) + 1;
-         bcode_resize(l);
-         strcpy((char*)(*buf + *size), trimline);
-         *size += l;
-         continue;
-      }
       /* Is the line a label? */
       if(*trimline == '@') {
          char* label = strdup(trimline);

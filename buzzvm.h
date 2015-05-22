@@ -1,7 +1,8 @@
 #ifndef BUZZVM_H
 #define BUZZVM_H
 
-#include <buzzmsg.h>
+#include <buzzinmsg.h>
+#include <buzzoutmsg.h>
 #include <buzzvstig.h>
 #include <buzzheap.h>
 #include <math.h>
@@ -154,9 +155,9 @@ extern "C" {
       /* List of known swarms */
       buzzdarray_t swarmstack;
       /* Input message FIFO */
-      buzzmsg_queue_t inmsgs;
+      buzzinmsg_queue_t inmsgs;
       /* Output message FIFO */
-      buzzmsg_queue_t outmsgs;
+      buzzoutmsg_queue_t outmsgs;
       /* Virtual stigmergy maps */
       buzzdict_t vstigs;
       /* Current VM state */

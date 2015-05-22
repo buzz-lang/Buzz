@@ -43,6 +43,13 @@ extern "C" {
                                               uint32_t robot);
 
    /*
+    * Clones a virtual stigmergy entry.
+    * @param e The entry to clone.
+    * @return A new virtual stigmergy entry.
+    */
+   extern buzzvstig_elem_t buzzvstig_elem_clone(const buzzvstig_elem_t e);
+
+   /*
     * Creates a new virtual stigmergy structure.
     * @return The new virtual stigmergy structure.
     */
@@ -56,7 +63,7 @@ extern "C" {
     * @param key The key of the element to serialize.
     * @param data The data of the element to serialize.
     */
-   extern void buzzvstig_elem_serialize(buzzmsg_t buf,
+   extern void buzzvstig_elem_serialize(buzzmsg_payload_t buf,
                                         const buzzobj_t key,
                                         const buzzvstig_elem_t data);
 
@@ -73,7 +80,7 @@ extern "C" {
     */
    extern int64_t buzzvstig_elem_deserialize(buzzobj_t* key,
                                              buzzvstig_elem_t* data,
-                                             buzzmsg_t buf,
+                                             buzzmsg_payload_t buf,
                                              uint32_t pos,
                                              struct buzzvm_s* vm);
    

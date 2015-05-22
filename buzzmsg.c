@@ -1,4 +1,5 @@
-#include <buzzmsg.h>
+#include "buzzmsg.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
@@ -11,22 +12,6 @@ static int32_t MAX_MANTISSA = 2147483646; // 2 << 31 - 2;
 
 /****************************************/
 /****************************************/
-
-void buzzmsg_queue_append(buzzmsg_queue_t msgq,
-                     buzzmsg_t payload) {
-   buzzmsg_t* m = buzzdarray_makeslot(msgq, buzzmsg_queue_size(msgq));
-   *m = payload;
-}
-
-/****************************************/
-/****************************************/
-
-buzzmsg_t buzzmsg_queue_extract(buzzmsg_queue_t msgq) {
-   if(buzzmsg_queue_isempty(msgq)) return NULL;
-   buzzmsg_t m = buzzdarray_get(msgq, 0, buzzmsg_t);
-   buzzdarray_remove(msgq, 0);
-   return m;
-}
 
 void buzzmsg_serialize_u8(buzzdarray_t buf,
                           uint8_t data) {

@@ -129,6 +129,13 @@ extern "C" {
    struct buzzvm_s;
 
    /*
+    * Clones a Buzz object.
+    * @param o The Buzz object to clone.
+    * @return The cloned object.
+    */
+   extern buzzobj_t buzzobj_clone(const buzzobj_t o);
+
+   /*
     * Returns the hash of the passed Buzz object.
     * @param o The Buzz object to hash.
     * @return The calculated hash.
