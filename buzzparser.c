@@ -356,18 +356,15 @@ int parse_script(buzzparser_t par) {
 int parse_statlist(buzzparser_t par) {
    DEBUG("Parsing statement list start\n");
    if(!parse_stat(par)) return PARSE_ERROR;
-   while(par->tok && par->tok->type == BUZZTOK_STATEND) {
-      buzzlex_destroytok(&par->tok);
-      par->tok = buzzlex_nexttok(par->lex);
+   while(par->tok && par->tok->type != BUZZTOK_BLOCKCLOSE) {
+      while(par->tok && par->tok->type == BUZZTOK_STATEND) {
+         buzzlex_destroytok(&par->tok);
+         par->tok = buzzlex_nexttok(par->lex);
+      }
       if(par->tok && !parse_stat(par)) return PARSE_ERROR;
    }
-   if(!par->tok || par->tok->type == BUZZTOK_BLOCKCLOSE) {
-      DEBUG("Statement list end\n");
-      return PARSE_OK;
-   }
-   else {
-      return PARSE_ERROR;
-   }
+   DEBUG("Statement list end\n");
+   return PARSE_OK;
 }
 
 int parse_stat(buzzparser_t par) {
@@ -408,7 +405,7 @@ void buzzparser_symtodel(const void* key, void* data, void* params) {
 }
 
 void buzzparser_symdel(uint32_t pos, void* data, void* params) {
-   DEBUG("Deleted local var '%s'\n", *(char**)data);
+   DEBUG("Deleted symbol '%s'\n", *(char**)data);
    buzzdict_remove((buzzdict_t)params, (char**)data);
 }
 
