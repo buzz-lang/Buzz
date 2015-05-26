@@ -13,9 +13,12 @@ extern "C" {
     */
    typedef enum {
       BUZZMSG_SHOUT = 0,   // shout() command in Buzz
-      BUZZMSG_SWARMS,      // Swarm advertisement
+      BUZZMSG_SWARM_LIST,  // Swarm listing
       BUZZMSG_VSTIG_PUT,   // Virtual stigmergy PUT
       BUZZMSG_VSTIG_QUERY, // Virtual stigmergy QUERY
+      BUZZMSG_SWARM_JOIN,  // Swarm joining
+      BUZZMSG_SWARM_LEAVE, // Swarm leaving
+      BUZZMSG_TYPE_COUNT   // How many Buzz message types have been defined
    } buzzmsg_payload_type_e;
 
    /*

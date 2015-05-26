@@ -4,11 +4,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <math.h>
-
-/****************************************/
-/****************************************/
-
-static int32_t MAX_QUEUE = 100;
+#include <string.h>
 
 /****************************************/
 /****************************************/
@@ -19,6 +15,15 @@ static int32_t MAX_QUEUE = 100;
 struct buzzoutmsg_shout_s {
    int type;
    buzzmsg_payload_t payload;
+};
+
+/*
+ * Swarm message data
+ */
+struct buzzoutmsg_swarm_s {
+   int type;
+   uint16_t* ids;
+   uint16_t size;
 };
 
 /*
@@ -37,6 +42,7 @@ struct buzzoutmsg_vstig_s {
 union buzzoutmsg_u {
    int type;
    struct buzzoutmsg_shout_s sh;
+   struct buzzoutmsg_swarm_s sw;
    struct buzzoutmsg_vstig_s vs;
 };
 typedef union buzzoutmsg_u* buzzoutmsg_t;
@@ -58,8 +64,10 @@ void buzzoutmsg_destroy(uint32_t pos, void* data, void* params) {
       case BUZZMSG_SHOUT:
          free(m->sh.payload);
          break;
-      case BUZZMSG_SWARMS:
-         // TODO
+      case BUZZMSG_SWARM_JOIN:
+      case BUZZMSG_SWARM_LEAVE:
+      case BUZZMSG_SWARM_LIST:
+         if(m->sw.size > 0) free(m->sw.ids);
          break;
       case BUZZMSG_VSTIG_PUT:
       case BUZZMSG_VSTIG_QUERY:
@@ -84,10 +92,12 @@ int buzzoutmsg_vstig_cmp(const void* a, const void* b) {
 /****************************************/
 /****************************************/
 
-buzzoutmsg_queue_t buzzoutmsg_queue_new() {
+buzzoutmsg_queue_t buzzoutmsg_queue_new(uint16_t robot) {
    buzzoutmsg_queue_t q = (buzzoutmsg_queue_t)malloc(sizeof(struct buzzoutmsg_queue_s));
    q->queues[BUZZMSG_SHOUT]       = buzzdarray_new(1, sizeof(buzzoutmsg_t), buzzoutmsg_destroy);
-   q->queues[BUZZMSG_SWARMS]      = buzzdarray_new(1, sizeof(buzzoutmsg_t), buzzoutmsg_destroy);
+   q->queues[BUZZMSG_SWARM_LIST]  = buzzdarray_new(1, sizeof(buzzoutmsg_t), buzzoutmsg_destroy);
+   q->queues[BUZZMSG_SWARM_JOIN]  = buzzdarray_new(1, sizeof(buzzoutmsg_t), buzzoutmsg_destroy);
+   q->queues[BUZZMSG_SWARM_LEAVE] = buzzdarray_new(1, sizeof(buzzoutmsg_t), buzzoutmsg_destroy);
    q->queues[BUZZMSG_VSTIG_PUT]   = buzzdarray_new(1, sizeof(buzzoutmsg_t), buzzoutmsg_destroy);
    q->queues[BUZZMSG_VSTIG_QUERY] = buzzdarray_new(1, sizeof(buzzoutmsg_t), buzzoutmsg_destroy);
    q->vstig = buzzdict_new(10,
@@ -96,6 +106,7 @@ buzzoutmsg_queue_t buzzoutmsg_queue_new() {
                            buzzdict_uint16keyhash,
                            buzzdict_uint16keycmp,
                            buzzoutmsg_vstig_destroy);
+   q->robot = robot;
    return q;
 }
 
@@ -104,7 +115,9 @@ buzzoutmsg_queue_t buzzoutmsg_queue_new() {
 
 void buzzoutmsg_queue_destroy(buzzoutmsg_queue_t* msgq) {
    buzzdarray_destroy(&((*msgq)->queues[BUZZMSG_SHOUT]));
-   buzzdarray_destroy(&((*msgq)->queues[BUZZMSG_SWARMS]));
+   buzzdarray_destroy(&((*msgq)->queues[BUZZMSG_SWARM_LIST]));
+   buzzdarray_destroy(&((*msgq)->queues[BUZZMSG_SWARM_JOIN]));
+   buzzdarray_destroy(&((*msgq)->queues[BUZZMSG_SWARM_LEAVE]));
    buzzdarray_destroy(&((*msgq)->queues[BUZZMSG_VSTIG_PUT]));
    buzzdarray_destroy(&((*msgq)->queues[BUZZMSG_VSTIG_QUERY]));
    buzzdict_destroy(&((*msgq)->vstig));
@@ -116,7 +129,9 @@ void buzzoutmsg_queue_destroy(buzzoutmsg_queue_t* msgq) {
 uint32_t buzzoutmsg_queue_size(buzzoutmsg_queue_t msgq) {
    return
       buzzdarray_size(msgq->queues[BUZZMSG_SHOUT]) +
-      buzzdarray_size(msgq->queues[BUZZMSG_SWARMS]) +
+      buzzdarray_size(msgq->queues[BUZZMSG_SWARM_LIST]) +
+      buzzdarray_size(msgq->queues[BUZZMSG_SWARM_JOIN]) +
+      buzzdarray_size(msgq->queues[BUZZMSG_SWARM_LEAVE]) +
       buzzdarray_size(msgq->queues[BUZZMSG_VSTIG_PUT]) +
       buzzdarray_size(msgq->queues[BUZZMSG_VSTIG_QUERY]);
 }
@@ -135,8 +150,123 @@ void buzzoutmsg_queue_append_shout(buzzoutmsg_queue_t msgq,
 /****************************************/
 /****************************************/
 
-void buzzoutmsg_queue_append_swarm(buzzoutmsg_queue_t msgq,
-                                   buzzmsg_payload_t payload) {
+void buzzoutmsg_queue_append_swarm_list(buzzoutmsg_queue_t msgq,
+                                        const buzzdarray_t ids) {
+   fprintf(stderr, "[DEBUG] Sending swarm list\n");
+   /* Invariants:
+    * - Only one list message can be queued at any time;
+    * - If a list message is already queued, join/leave messages are not
+    */
+   /* Delete every existing SWARM related message */
+   buzzdarray_clear(msgq->queues[BUZZMSG_SWARM_LIST], 1);
+   buzzdarray_clear(msgq->queues[BUZZMSG_SWARM_JOIN], 1);
+   buzzdarray_clear(msgq->queues[BUZZMSG_SWARM_LEAVE], 1);
+   /* Make a new LIST message */
+   buzzoutmsg_t m = (buzzoutmsg_t)malloc(sizeof(union buzzoutmsg_u));
+   m->sh.type = BUZZMSG_SWARM_LIST;
+   m->sw.size = buzzdarray_size(ids);
+   m->sw.ids = (uint16_t*)malloc(m->sw.size * sizeof(uint16_t));
+   memcpy(m->sw.ids, ids->data, m->sw.size * sizeof(uint16_t));
+   /* Queue the new LIST message */
+   buzzdarray_push(msgq->queues[BUZZMSG_SWARM_LIST], &m);
+}
+
+/****************************************/
+/****************************************/
+
+static void append_to_swarm_queue(buzzdarray_t q, uint16_t id, int type) {
+   /* Is the queue empty? */
+   if(buzzdarray_isempty(q)) {
+      /* Yes, add the element at the end */
+      buzzoutmsg_t m = (buzzoutmsg_t)malloc(sizeof(union buzzoutmsg_u));
+      m->sh.type = type;
+      m->sw.size = 1;
+      m->sw.ids = (uint16_t*)malloc(sizeof(uint16_t));
+      m->sw.ids[0] = id;
+      buzzdarray_push(q, &m);
+   }
+   else {
+      /* Queue not empty - look for a message with the same id */
+      int found = 0;
+      for(uint32_t i = 0; i < buzzdarray_size(q) && !found; ++i) {
+         found = buzzdarray_get(q, i, buzzoutmsg_t)->sw.ids[0] == id;
+      }
+      /* Message found? */
+      if(!found) {
+         /* No, append a new message the passed id */
+         buzzoutmsg_t m = (buzzoutmsg_t)malloc(sizeof(union buzzoutmsg_u));
+         m->sh.type = type;
+         m->sw.size = 1;
+         m->sw.ids = (uint16_t*)malloc(sizeof(uint16_t));
+         m->sw.ids[0] = id;
+         buzzdarray_push(q, &m);
+      }
+   }
+}
+
+static void remove_from_swarm_queue(buzzdarray_t q, uint16_t id) {
+   /* Is the queue empty? If so, nothing to do */
+   if(buzzdarray_isempty(q)) return;
+   /* Queue not empty - look for a message with the same id */
+   uint32_t i;
+   for(i = 0; i < buzzdarray_size(q); ++i) {
+      if(buzzdarray_get(q, i, buzzoutmsg_t)->sw.ids[0] == id) break;
+   }
+   /* Message found? If so, remove it */
+   if(i < buzzdarray_size(q)) buzzdarray_remove(q, i);
+}
+
+void buzzoutmsg_queue_append_swarm_joinleave(buzzoutmsg_queue_t msgq,
+                                             int type,
+                                             uint16_t id) {
+   fprintf(stderr, "[DEBUG] [ROBOT %u] Sending swarm join/leave (%d) for id %d\n", msgq->robot, type, id);
+   /* Invariants:
+    * - Only one list message can be qeueued at any time;
+    * - If a list message is already queued, join/leave messages are not
+    */
+   /* Is there a LIST message? */
+   if(!buzzdarray_isempty(msgq->queues[BUZZMSG_SWARM_LIST])) {
+      /* Yes, get a handle to the message */
+      buzzoutmsg_t l = buzzdarray_get(msgq->queues[BUZZMSG_SWARM_LIST], 0, buzzoutmsg_t);
+      /* Go through the ids in the list and look for the passed id */
+      uint16_t i = 0;
+      while(i < l->sw.size && l->sw.ids[i] != id) ++i;
+      /* Id found? */
+      if(i < l->sw.size) {
+         /* Yes; is the message a LEAVE? */
+         if(type == BUZZMSG_SWARM_LEAVE) {
+            /* Yes: remove it from the list */
+            --(l->sw.size);
+            memmove(l->sw.ids+i, l->sw.ids+i+1, (l->sw.size-i) * sizeof(uint16_t));
+         }
+         /* If the message is a JOIN, there's nothing to do */
+      }
+      else {
+         /* Id not found; is the message a JOIN? */
+         if(type == BUZZMSG_SWARM_JOIN) {
+            /* Yes: add it to the list */
+            ++(l->sw.size);
+            l->sw.ids = realloc(l->sw.ids, l->sw.size * sizeof(uint16_t));
+            l->sw.ids[l->sw.size-1] = id;
+         }
+         /* If the message is a LEAVE, there's nothing to do */
+      }
+   }
+   else {
+      /* No LIST message present - send an individual message */
+      if(type == BUZZMSG_SWARM_JOIN) {
+         /* Look for a duplicate in the JOIN queue - if not add one  */
+         append_to_swarm_queue(msgq->queues[BUZZMSG_SWARM_JOIN], id, BUZZMSG_SWARM_JOIN);
+         /* Look for an entry in the LEAVE queue and remove it  */
+         remove_from_swarm_queue(msgq->queues[BUZZMSG_SWARM_LEAVE], id);
+      }
+      else if(type == BUZZMSG_SWARM_LEAVE) {
+         /* Look for an entry in the JOIN queue and remove it */
+         remove_from_swarm_queue(msgq->queues[BUZZMSG_SWARM_JOIN], id);
+         /* Look for a duplicate in the LEAVE queue - if not add one  */
+         append_to_swarm_queue(msgq->queues[BUZZMSG_SWARM_LEAVE], id, BUZZMSG_SWARM_LEAVE);
+      }
+   }
 }
 
 /****************************************/
@@ -205,8 +335,20 @@ buzzmsg_payload_t buzzoutmsg_queue_first(buzzoutmsg_queue_t msgq) {
       /* Return message */
       return m;
    }
-   else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_SWARMS])) {
-      // TODO
+   else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_SWARM_LIST])) {
+      /* Take the first message in the queue */
+      buzzoutmsg_t f = buzzdarray_get(msgq->queues[BUZZMSG_SWARM_LIST],
+                                      0, buzzoutmsg_t);
+      /* Make a new message */
+      buzzmsg_payload_t m = buzzmsg_payload_new(10);
+      buzzmsg_serialize_u8(m, BUZZMSG_SWARM_LIST);
+      buzzmsg_serialize_u16(m, msgq->robot);
+      buzzmsg_serialize_u16(m, f->sw.size);
+      for(uint16_t i = 0; i < f->sw.size; ++i) {
+         buzzmsg_serialize_u16(m, f->sw.ids[i]);
+      }
+      /* Return message */
+      return m;      
    }
    else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_VSTIG_PUT])) {
       /* Take the first message in the queue */
@@ -214,7 +356,7 @@ buzzmsg_payload_t buzzoutmsg_queue_first(buzzoutmsg_queue_t msgq) {
                                       0, buzzoutmsg_t);
       /* Make a new message */
       buzzmsg_payload_t m = buzzmsg_payload_new(10);
-      buzzmsg_serialize_u8(m, BUZZMSG_VSTIG_PUT);
+      buzzmsg_serialize_u8(m, BUZZMSG_SWARM_LIST);
       buzzmsg_serialize_u16(m, f->vs.id);
       buzzvstig_elem_serialize(m, f->vs.key, f->vs.data);
       /* Return message */
@@ -232,6 +374,30 @@ buzzmsg_payload_t buzzoutmsg_queue_first(buzzoutmsg_queue_t msgq) {
       /* Return message */
       return m;
    }
+   else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_SWARM_JOIN])) {
+      /* Take the first message in the queue */
+      buzzoutmsg_t f = buzzdarray_get(msgq->queues[BUZZMSG_SWARM_JOIN],
+                                      0, buzzoutmsg_t);
+      /* Make a new message */
+      buzzmsg_payload_t m = buzzmsg_payload_new(5);
+      buzzmsg_serialize_u8(m, BUZZMSG_SWARM_JOIN);
+      buzzmsg_serialize_u16(m, msgq->robot);
+      buzzmsg_serialize_u16(m, f->sw.ids[0]);
+      /* Return message */
+      return m;      
+   }
+   else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_SWARM_LEAVE])) {
+      /* Take the first message in the queue */
+      buzzoutmsg_t f = buzzdarray_get(msgq->queues[BUZZMSG_SWARM_LEAVE],
+                                      0, buzzoutmsg_t);
+      /* Make a new message */
+      buzzmsg_payload_t m = buzzmsg_payload_new(5);
+      buzzmsg_serialize_u8(m, BUZZMSG_SWARM_LEAVE);
+      buzzmsg_serialize_u16(m, msgq->robot);
+      buzzmsg_serialize_u16(m, f->sw.ids[0]);
+      /* Return message */
+      return m;      
+   }
    /* Empty queue */
    return NULL;
 }
@@ -244,8 +410,9 @@ void buzzoutmsg_queue_next(buzzoutmsg_queue_t msgq) {
       /* Remove the first message in the queue */
       buzzdarray_remove(msgq->queues[BUZZMSG_SHOUT], 0);
    }
-   else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_SWARMS])) {
-      // TODO
+   else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_SWARM_LIST])) {
+      /* Remove the first message in the queue */
+      buzzdarray_remove(msgq->queues[BUZZMSG_SWARM_LIST], 0);
    }
    else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_VSTIG_PUT])) {
       /* Take the first message in the queue */
@@ -268,6 +435,14 @@ void buzzoutmsg_queue_next(buzzoutmsg_queue_t msgq) {
          &f->vs.key);
       /* Remove the first message in the queue */
       buzzdarray_remove(msgq->queues[BUZZMSG_VSTIG_QUERY], 0);
+   }
+   else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_SWARM_JOIN])) {
+      /* Remove the first message in the queue */
+      buzzdarray_remove(msgq->queues[BUZZMSG_SWARM_JOIN], 0);
+   }
+   else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_SWARM_LEAVE])) {
+      /* Remove the first message in the queue */
+      buzzdarray_remove(msgq->queues[BUZZMSG_SWARM_LEAVE], 0);
    }
 }
 

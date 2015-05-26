@@ -9,7 +9,7 @@ var t
 # Executed at init time
 #
 function init() {
-  robots = 2
+  robots = 10
   s = stigmergy.create(1)
   t = 0
   return
@@ -21,14 +21,27 @@ function init() {
 function step() {
   # Increase step count
   t = t + 1
-  # Put step count, using own id as key
-  s.put(id, t)
-  # Print other known values in stigmergy
-  i = 0
-  while(i < robots) {
-    log("fb ", id, ": vstig[", i, "] = ", s.get(i))
-    i = i + 1
+  if(t < 10) {
+    # Put step count, using own id as key
+    s.put(id, t)
+    # Print other known values in stigmergy
+    i = 0
+    while(i < robots) {
+      log("fb ", id, ": vstig[", i, "] = ", s.get(i))
+      i = i + 1
+    }
+    log()
   }
-  log()
+  else {
+    if(t == 100) {
+      # Print other known values in stigmergy
+      i = 0
+      while(i < robots) {
+        log("fb ", id, ": vstig[", i, "] = ", s.get(i))
+        i = i + 1
+      }
+      log()
+    }
+  }
   return
 }

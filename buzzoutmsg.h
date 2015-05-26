@@ -14,17 +14,20 @@ extern "C" {
     */
    struct buzzoutmsg_queue_s {
       /* One queue for each message type */
-      buzzdarray_t queues[4];
+      buzzdarray_t queues[BUZZMSG_TYPE_COUNT];
       /* Vstig message dict for fast duplicate management */
       buzzdict_t vstig;
+      /* The robot id */
+      uint16_t robot;
    };
    typedef struct buzzoutmsg_queue_s* buzzoutmsg_queue_t;
 
    /*
     * Create a new message queue.
+    * @param robot The robot id.
     * @return A new message queue.
     */
-   buzzoutmsg_queue_t buzzoutmsg_queue_new();
+   buzzoutmsg_queue_t buzzoutmsg_queue_new(uint16_t robot);
 
    /*
     * Destroys a message queue.
@@ -50,14 +53,22 @@ extern "C" {
                                              buzzmsg_payload_t payload);
 
    /*
-    * Appends a new swarm message.
-    * The ownership of the payload is assumed by the message queue. Make sure
-    * the payload is in the heap.
+    * Appends a new swarm list message.
     * @param msgq The message queue.
-    * @param payload The message payload.
+    * @param ids A list of swarm ids in which the robot is a member.
     */
-   extern void buzzoutmsg_queue_append_swarm(buzzoutmsg_queue_t msgq,
-                                             buzzmsg_payload_t payload);
+   extern void buzzoutmsg_queue_append_swarm_list(buzzoutmsg_queue_t msgq,
+                                                  const buzzdarray_t ids);
+   
+   /*
+    * Appends a new swarm join/leave message.
+    * @param msgq The message queue.
+    * @param type Either BUZZMSG_SWARM_JOIN or BUZZMSG_SWARM_LEAVE
+    * @param id The swarm id whose membership has changed
+    */
+   extern void buzzoutmsg_queue_append_swarm_joinleave(buzzoutmsg_queue_t msgq,
+                                                       int type,
+                                                       uint16_t id);
 
    /*
     * Appends a new virtual stigmergy message.

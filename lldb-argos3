@@ -2,9 +2,9 @@
 
 # Add path to ARGoS3 libraries to the DYLD_LIBRARY_PATH env variable.
 if [ -n "${DYLD_LIBRARY_PATH}" ]; then
-    DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}:/usr/local/Cellar/argos3/3.0.0-beta35/lib/argos3
+    DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}:/usr/local/lib/argos3
 else
-    DYLD_LIBRARY_PATH=/usr/local/Cellar/argos3/3.0.0-beta35/lib/argos3
+    DYLD_LIBRARY_PATH=/usr/local/lib/argos3
 fi
 export DYLD_LIBRARY_PATH
 
@@ -12,4 +12,4 @@ export DYLD_LIBRARY_PATH
 # replaces the script with the argos3 executable. In this
 # way, there is only one PID and the return value is handled
 # correctly.
-lldb -- /usr/local/Cellar/argos3/3.0.0-beta35/libexec/argos3 "$@"
+lldb -- /usr/local/libexec/argos3 "$@"

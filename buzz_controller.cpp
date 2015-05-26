@@ -144,8 +144,8 @@ void CBuzzController::Reset() {
 void CBuzzController::ControlStep() {
    ProcessInMsgs();
    UpdateSensors();
+   buzzswarm_members_print(m_tBuzzVM->swarmmembers, m_tBuzzVM->robot);
    buzzvm_function_call(m_tBuzzVM, "step", 0);
-   //dump(m_tBuzzVM);
    UpdateActuators();
    ProcessOutMsgs();
 }

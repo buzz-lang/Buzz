@@ -84,6 +84,27 @@ extern "C" {
                                              uint32_t pos,
                                              struct buzzvm_s* vm);
    
+   /*
+    * Buzz C closure to create a new stigmergy object.
+    * @param vm The Buzz VM state.
+    * @return The updated VM state.
+    */
+   int buzzvm_vstig_create(struct buzzvm_s* vm);
+
+   /*
+    * Buzz C closure to put an element in a stigmergy object.
+    * @param vm The Buzz VM state.
+    * @return The updated VM state.
+    */
+   int buzzvm_vstig_put(struct buzzvm_s* vm);
+
+   /*
+    * Buzz C closure to get an element from a stigmergy object.
+    * @param vm The Buzz VM state.
+    * @return The updated VM state.
+    */
+   int buzzvm_vstig_get(struct buzzvm_s* vm);
+
 #ifdef __cplusplus
 }
 #endif

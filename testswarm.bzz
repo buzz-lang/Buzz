@@ -1,37 +1,23 @@
-function f() {
-  y = 10
-  return
+function members() {
+  log("fb ", id, ": MEMBER")
 }
 
-s = swarm.create(17)
+function nonmembers() {
+  log("fb ", id, ": NONMEMBER")
+}
 
-# if(s.in()) {
-#   x = 5
-# }
-# else {
-#   x = 7
-# }
+function init() {
+  s1 = swarm.create(1)
+  s1.select(id % 2 == 0)
+  o1 = s1.others(2)
+  s2 = swarm.create(3)
+  s2.select(id < 5)
+  o2 = s2.others(4)
+}
 
-# s.exec(f)
-
-s.join()
-
-# if(s.in()) {
-#   x = 5
-# }
-# else {
-#   x = 7
-# }
-
-s.exec(f)
-
-# s.leave()
-
-# if(s.in()) {
-#   x = 5
-# }
-# else {
-#   x = 7
-# }
-
-# s.exec(f)
+function step() {
+  s1.exec(members)
+  o1.exec(nonmembers)
+  s2.exec(members)
+  o2.exec(nonmembers)
+}

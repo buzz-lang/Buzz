@@ -1,5 +1,6 @@
 #include "buzzvm.h"
 #include "buzzvstig.h"
+#include "buzzswarm.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -150,37 +151,78 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
             }
             break;
          }
-         case BUZZMSG_SWARMS: {
+         case BUZZMSG_SWARM_LIST: {
+            fprintf(stderr, "[DEBUG] Received BUZZMSG_SWARM_LIST message\n");
             /* Deserialize robot id */
-            int16_t rid;
-            int64_t pos = buzzmsg_deserialize_u16((uint16_t*)(&rid), msg, 1);
+            uint16_t rid;
+            int64_t pos = buzzmsg_deserialize_u16(&rid, msg, 1);
             if(pos < 0) {
-               fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARMS message received\n", vm->robot);
+               fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARM_LIST message received\n", vm->robot);
                break;
             }
             /* Deserialize number of swarm ids */
-            uint16_t numsids;
-            pos = buzzmsg_deserialize_u16(&numsids, msg, pos);
+            uint16_t nsids;
+            pos = buzzmsg_deserialize_u16(&nsids, msg, pos);
             if(pos < 0) {
-               fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARMS message received\n", vm->robot);
+               fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARM_LIST message received\n", vm->robot);
                break;
             }
-            /* Go through swarm ids and deserialize them */
-            uint8_t sid;
-            for(uint16_t i = 0; i < numsids; ++i) {
-               pos = buzzmsg_deserialize_u8(&sid, msg, pos);
+            /* Deserialize swarm ids */
+            buzzdarray_t sids = buzzdarray_new(nsids, sizeof(uint16_t), NULL);
+            for(uint16_t i = 0; i < nsids; ++i) {
+               pos = buzzmsg_deserialize_u16(buzzdarray_makeslot(sids, i), msg, pos);
                if(pos < 0) {
-                  fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARMS message received\n", vm->robot);
+                  fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARM_LIST message received\n", vm->robot);
                   break;
                }
-               /* Add the swarm id to the list of swarm ids of the robot with id rid */
-               // TODO
             }
+            /* Update the information */
+            buzzswarm_members_refresh(vm->swarmmembers, rid, sids);
             break;
          }
-            /* Get rid of the message */
-            buzzmsg_payload_destroy(&msg);
+         case BUZZMSG_SWARM_JOIN: {
+            /* Deserialize robot id */
+            uint16_t rid;
+            int64_t pos = buzzmsg_deserialize_u16(&rid, msg, 1);
+            if(pos < 0) {
+               fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARM_JOIN message received\n", vm->robot);
+               break;
+            }
+            /* Deserialize swarm id */
+            uint16_t sid;
+            pos = buzzmsg_deserialize_u16(&sid, msg, pos);
+            if(pos < 0) {
+               fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARM_JOIN message received\n", vm->robot);
+               break;
+            }
+            /* Update the information */
+            fprintf(stderr, "[DEBUG] [ROBOT %u] Received BUZZMSG_SWARM_JOIN (R%u, S%u)\n", vm->robot, rid, sid);
+            buzzswarm_members_join(vm->swarmmembers, rid, sid);
+            break;
+         }
+         case BUZZMSG_SWARM_LEAVE: {
+            /* Deserialize robot id */
+            uint16_t rid;
+            int64_t pos = buzzmsg_deserialize_u16(&rid, msg, 1);
+            if(pos < 0) {
+               fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARM_LEAVE message received\n", vm->robot);
+               break;
+            }
+            /* Deserialize swarm id */
+            uint16_t sid;
+            pos = buzzmsg_deserialize_u16(&sid, msg, pos);
+            if(pos < 0) {
+               fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARM_LEAVE message received\n", vm->robot);
+               break;
+            }
+            /* Update the information */
+            fprintf(stderr, "[DEBUG] [ROBOT %u] Received BUZZMSG_SWARM_LEAVE (R%u, S%u)\n", vm->robot, rid, sid);
+            buzzswarm_members_leave(vm->swarmmembers, rid, sid);
+            break;
+         }
       }
+      /* Get rid of the message */
+      buzzmsg_payload_destroy(&msg);
    }
 }
 
@@ -243,9 +285,11 @@ buzzvm_t buzzvm_new(uint32_t robot) {
    vm->swarmstack = buzzdarray_new(10,
                                    sizeof(uint16_t),
                                    NULL);
+   /* Create swarm member structure */
+   vm->swarmmembers = buzzswarm_members_new();
    /* Create message queues */
    vm->inmsgs = buzzinmsg_queue_new(20);
-   vm->outmsgs = buzzoutmsg_queue_new(20);
+   vm->outmsgs = buzzoutmsg_queue_new(robot);
    /* Create virtual stigmergy. */
    vm->vstigs = buzzdict_new(10,
                              sizeof(uint16_t),
@@ -278,6 +322,7 @@ void buzzvm_destroy(buzzvm_t* vm) {
    /* Get rid of the swarm list */
    buzzdict_destroy(&(*vm)->swarms);
    buzzdarray_destroy(&(*vm)->swarmstack);
+   buzzswarm_members_destroy(&((*vm)->swarmmembers));
    /* Get rid of the message queues */
    buzzdarray_foreach((*vm)->inmsgs, buzzvm_inmsg_destroy, NULL);
    buzzdarray_destroy(&(*vm)->inmsgs);
@@ -706,283 +751,6 @@ uint32_t buzzvm_function_register(buzzvm_t vm,
       buzzdarray_push(vm->flist, &funp);
    }
    return fpos;
-}
-
-/****************************************/
-/****************************************/
-
-int buzzvm_vstig_create(buzzvm_t vm) {
-   /* Get vstig id */
-   buzzvm_lload(vm, 1);
-   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
-   buzzvm_pop(vm);
-   /* Look for virtual stigmergy */
-   buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
-   if(vs)
-      /* Found, destroy it */
-      buzzvstig_destroy(vs);
-   /* Create a new virtual stigmergy */
-   buzzvstig_t nvs = buzzvstig_new();
-   buzzdict_set(vm->vstigs, &id, &nvs);
-   /* Create a table and add data and methods */
-   buzzobj_t t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "put"));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_put));
-   buzzvm_tput(vm);
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "get"));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_get));
-   buzzvm_tput(vm);
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "vstig"));
-   buzzvm_pushi(vm, id);
-   buzzvm_tput(vm);
-   /* Push the table on the stack */
-   buzzvm_push(vm, t);
-   /* Return */
-   buzzvm_ret1(vm);
-   return BUZZVM_STATE_READY;
-}
-
-/****************************************/
-/****************************************/
-
-int buzzvm_vstig_put(buzzvm_t vm) {
-   /* Get vstig id */
-   buzzvm_lload(vm, 0);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "vstig"));
-   buzzvm_tget(vm);
-   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
-   /* Get key */
-   buzzvm_lload(vm, 1);
-   buzzobj_t k = buzzvm_stack_at(vm, 1);
-   /* Get value */
-   buzzvm_lload(vm, 2);
-   buzzobj_t v = buzzvm_stack_at(vm, 1);
-   /* Look for virtual stigmergy */
-   buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
-   if(vs) {
-      /* Look for the element */
-      buzzvstig_elem_t* x = buzzvstig_fetch(*vs, &k);
-      if(x) {
-         /* Element found, update it */
-         (*x)->data = v;
-         ++((*x)->timestamp);
-         (*x)->robot = vm->robot;
-         buzzvstig_store(*vs, &k, x);
-         /* Append a PUT message to the out message queue */
-         buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, *x);
-         fprintf(stderr, "[DEBUG] robot %d sends <PUT, d=%d, ts=%d, r=%d>\n",
-                 vm->robot, k->i.value, (*x)->timestamp, (*x)->robot);
-      }
-      else {
-         /* Element not found, create a new one */
-         buzzvstig_elem_t y = buzzvstig_elem_new(v, 1, vm->robot);
-         buzzvstig_store(*vs, &k, &y);
-         /* Append a PUT message to the out message queue */
-         buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, y);
-         fprintf(stderr, "[DEBUG] robot %d sends <PUT, d=%d, ts=%d, r=%d>\n",
-                 vm->robot, k->i.value, y->timestamp, y->robot);
-      }
-   }
-   /* Return */
-   buzzvm_ret0(vm);
-   return BUZZVM_STATE_READY;
-}
-
-/****************************************/
-/****************************************/
-
-int buzzvm_vstig_get(buzzvm_t vm) {
-   /* Get vstig id */
-   buzzvm_lload(vm, 0);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "vstig"));
-   buzzvm_tget(vm);
-   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
-   /* Get key */
-   buzzvm_lload(vm, 1);
-   buzzobj_t k = buzzvm_stack_at(vm, 1);
-   /* Look for virtual stigmergy */
-   buzzdict_t* vs = buzzdict_get(vm->vstigs, &id, buzzdict_t);
-   if(vs) {
-      /* Virtual stigmergy found */
-      /* Look for key and push result */
-      buzzvstig_elem_t* e = buzzvstig_fetch(*vs, &k);
-      if(e) {
-         /* Key found */
-         buzzvm_push(vm, (*e)->data);
-         fprintf(stderr, "[DEBUG] robot %d sends <QUERY, d=%d, ts=%d, r=%d>\n",
-                 vm->robot, k->i.value, (*e)->timestamp, (*e)->robot);
-         /* Append the message to the out message queue */
-         buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_QUERY, id, k, *e);
-      }
-      else {
-         /* Key not found, add a new one containing nil */
-         buzzvm_pushnil(vm);
-         buzzvstig_elem_t x =
-            buzzvstig_elem_new(buzzvm_stack_at(vm, 1),
-                               1, vm->robot);
-         fprintf(stderr, "[DEBUG] robot %d sends <QUERY, d=%d, ts=%d, r=%d>\n",
-                 vm->robot, k->i.value, x->timestamp, x->robot);
-         /* Append the message to the out message queue */
-         buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_QUERY, id, k, x);
-      }
-   }
-   else {
-      /* No virtual stigmergy found, just push false */
-      /* If this happens, its a bug */
-      buzzvm_pushnil(vm);
-      fprintf(stderr, "[BUG] [ROBOT %u] Can't find virtual stigmergy %u\n", vm->robot, id);
-   }
-   /* Return the value found */
-   buzzvm_ret1(vm);
-   return BUZZVM_STATE_READY;
-}
-
-/****************************************/
-/****************************************/
-
-int buzzvm_swarm_create(buzzvm_t vm) {
-   /* Get the id */
-   buzzvm_lload(vm, 1);
-   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
-   fprintf(stderr, "[DEBUG] SWARM id = %u\n", id);
-   /* Add a new entry if necessary */
-   if(!buzzdict_exists(vm->swarms, &id)) {
-      uint8_t v = 0;
-      buzzdict_set(vm->swarms, &id, &v);
-   }
-   /* Create a table and add data and methods */
-   buzzobj_t t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "join"));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_join));
-   buzzvm_tput(vm);
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "leave"));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_leave));
-   buzzvm_tput(vm);
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "in"));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_in));
-   buzzvm_tput(vm);
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "exec"));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_exec));
-   buzzvm_tput(vm);
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm"));
-   buzzvm_pushi(vm, id);
-   buzzvm_tput(vm);
-   /* Push the table on the stack */
-   buzzvm_push(vm, t);
-   /* Return */
-   buzzvm_ret1(vm);
-   return BUZZVM_STATE_READY;
-}
-
-/****************************************/
-/****************************************/
-
-int buzzvm_swarm_join(buzzvm_t vm) {
-   /* Get the id */
-   buzzvm_lload(vm, 0);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm"));
-   buzzvm_tget(vm);
-   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
-   fprintf(stderr, "[DEBUG] SWARM id = %u\n", id);
-   /* Join the swarm, if known */
-   if(buzzdict_exists(vm->swarms, &id)) {
-      uint8_t v = 1;
-      buzzdict_set(vm->swarms, &id, &v);
-      /* Return */
-      buzzvm_ret0(vm);
-      return BUZZVM_STATE_READY;
-   }
-   else {
-      vm->state = BUZZVM_STATE_ERROR;
-      vm->error = BUZZVM_ERROR_SWARM;
-      return BUZZVM_STATE_ERROR;
-   }
-}
-
-/****************************************/
-/****************************************/
-
-int buzzvm_swarm_leave(buzzvm_t vm) {
-   /* Get the id */
-   buzzvm_lload(vm, 0);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm"));
-   buzzvm_tget(vm);
-   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
-   fprintf(stderr, "[DEBUG] SWARM id = %u\n", id);
-   /* Join the swarm, if known */
-   if(buzzdict_exists(vm->swarms, &id)) {
-      uint8_t v = 0;
-      buzzdict_set(vm->swarms, &id, &v);
-      /* Return */
-      buzzvm_ret0(vm);
-      return BUZZVM_STATE_READY;
-   }
-   else {
-      vm->state = BUZZVM_STATE_ERROR;
-      vm->error = BUZZVM_ERROR_SWARM;
-      return BUZZVM_STATE_ERROR;
-   }
-}
-
-/****************************************/
-/****************************************/
-
-int buzzvm_swarm_in(buzzvm_t vm) {
-   /* Get the id */
-   buzzvm_lload(vm, 0);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm"));
-   buzzvm_tget(vm);
-   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
-   fprintf(stderr, "[DEBUG] SWARM id = %u\n", id);
-   /* Get the swarm entry */
-   uint8_t* x = buzzdict_get(vm->swarms, &id, uint8_t);
-   /* Push the return value */
-   buzzvm_pushi(vm, x && *x);
-   /* Return */
-   buzzvm_ret1(vm);
-   return BUZZVM_STATE_READY;
-}
-
-/****************************************/
-/****************************************/
-
-int buzzvm_swarm_exec(buzzvm_t vm) {
-   /* Get the id */
-   buzzvm_lload(vm, 0);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm"));
-   buzzvm_tget(vm);
-   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
-   fprintf(stderr, "[DEBUG] SWARM id = %u\n", id);
-   /* Get the swarm entry */
-   uint8_t* x = buzzdict_get(vm->swarms, &id, uint8_t);
-   /* Check whether the robot is in the swarm */
-   if(x && *x) {
-      /* Get the closure */
-      buzzvm_lload(vm, 1);
-      buzzobj_t c = buzzvm_stack_at(vm, 1);
-      /* Get rid of the current call structure */
-      buzzvm_ret0(vm);
-      /* Push the current swarm in the stack */
-      buzzdarray_push(vm->swarmstack, &id);
-      /* Call the closure */
-      buzzvm_push(vm, c);
-      int32_t numargs = 0;
-      buzzvm_pushi(vm, numargs);
-      buzzvm_calls(vm);
-   }
-   else {
-      /* Get rid of the current call structure */
-      buzzvm_ret0(vm);
-   }
-   return BUZZVM_STATE_READY;
 }
 
 /****************************************/

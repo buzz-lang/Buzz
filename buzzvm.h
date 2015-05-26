@@ -4,6 +4,7 @@
 #include <buzzinmsg.h>
 #include <buzzoutmsg.h>
 #include <buzzvstig.h>
+#include <buzzswarm.h>
 #include <buzzheap.h>
 #include <math.h>
 
@@ -154,6 +155,8 @@ extern "C" {
       buzzdict_t swarms;
       /* List of known swarms */
       buzzdarray_t swarmstack;
+      /* Swarm members */
+      buzzswarm_members_t swarmmembers;
       /* Input message FIFO */
       buzzinmsg_queue_t inmsgs;
       /* Output message FIFO */
