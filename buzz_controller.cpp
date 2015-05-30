@@ -144,8 +144,11 @@ void CBuzzController::Reset() {
 void CBuzzController::ControlStep() {
    ProcessInMsgs();
    UpdateSensors();
-   buzzswarm_members_print(m_tBuzzVM->swarmmembers, m_tBuzzVM->robot);
-   buzzvm_function_call(m_tBuzzVM, "step", 0);
+   if(buzzvm_function_call(m_tBuzzVM, "step", 0) != BUZZVM_STATE_READY) {
+      fprintf(stderr, "%s: execution terminated abnormally: %s\n\n",
+              m_strBytecodeFName.c_str(),
+              buzzvm_error_desc[m_tBuzzVM->error]);
+   }
    UpdateActuators();
    ProcessOutMsgs();
 }
@@ -202,11 +205,20 @@ int CBuzzController::RegisterFunctions() {
 /****************************************/
 
 void CBuzzController::ProcessInMsgs() {
+   /* Reset neighbor information */
+   buzzneighbors_reset(m_tBuzzVM);
    /* Go through RAB messages and add them to the FIFO */
    const CCI_RangeAndBearingSensor::TReadings& tPackets = m_pcRABS->GetReadings();
    for(size_t i = 0; i < tPackets.size(); ++i) {
       /* Copy packet into temporary buffer */
       CByteArray cData = tPackets[i].Data;
+      /* Get robot id and update neighbor information */
+      UInt16 unRobotId = cData.PopFront<UInt16>();
+      buzzneighbors_add(m_tBuzzVM,
+                        unRobotId,
+                        tPackets[i].Range,
+                        tPackets[i].HorizontalBearing.GetValue(),
+                        tPackets[i].VerticalBearing.GetValue());
       /* Go through the messages until there's nothing else to read */
       UInt16 unMsgSize;
       do {
@@ -234,8 +246,10 @@ void CBuzzController::ProcessOutMsgs() {
           << buzzoutmsg_queue_size(m_tBuzzVM->outmsgs)
           << " elements"
           << std::endl;
-   /* Send messages from FIFO */
+   /* Send robot id */
    CByteArray cData;
+   cData << m_tBuzzVM->robot;
+   /* Send messages from FIFO */
    do {
       /* Are there more messages? */
       if(buzzoutmsg_queue_isempty(m_tBuzzVM->outmsgs)) break;
@@ -245,22 +259,8 @@ void CBuzzController::ProcessOutMsgs() {
       if(cData.Size() + buzzmsg_payload_size(m) + sizeof(UInt16)
          >
          m_pcRABA->GetSize()) {
-         // LOGERR << "CNTRL: "
-         //        << GetId()
-         //        << ": Not sending "
-         //        << (buzzmsg_size(buzzmsg_queue_get(m_tBuzzVM->outmsgs, 0)) + sizeof(UInt16))
-         //        << " bytes"
-         //        << std::endl;
          break;
       }
-      // LOGERR << "CNTRL: "
-      //        << GetId()
-      //        << ": Sending "
-      //        << (buzzmsg_size(buzzmsg_queue_get(m_tBuzzVM->outmsgs, 0)) + sizeof(UInt16))
-      //        << " bytes - "
-      //        << cData.Size()
-      //        << " bytes sent so far"
-      //        << std::endl;
       /* Add message length to data buffer */
       cData << static_cast<UInt16>(buzzmsg_payload_size(m));
       /* Add payload to data buffer */
@@ -270,17 +270,9 @@ void CBuzzController::ProcessOutMsgs() {
       buzzmsg_payload_destroy(&m);
    } while(1);
    /* Pad the rest of the data with zeroes */
-   // LOGERR << "CNTRL: Total msg size sent: "
-   //        << cData.Size()
-   //        << std::endl;
    while(cData.Size() < m_pcRABA->GetSize()) cData << static_cast<UInt8>(0);
-   // LOGERR << "CNTRL: Total msg size sent: "
-   //        << cData.Size()
-   //        << std::endl;
    /* Send message */
    m_pcRABA->SetData(cData);
-   // LOGERR << "CNTRL: "
-   //        << std::endl;
    LOGERR << "CNTRL: "
           << GetId()
           << ": At end msg queue has "

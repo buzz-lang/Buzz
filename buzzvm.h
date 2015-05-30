@@ -1,11 +1,12 @@
 #ifndef BUZZVM_H
 #define BUZZVM_H
 
+#include <buzzheap.h>
 #include <buzzinmsg.h>
 #include <buzzoutmsg.h>
 #include <buzzvstig.h>
 #include <buzzswarm.h>
-#include <buzzheap.h>
+#include <buzzneighbors.h>
 #include <math.h>
 
 #ifdef __cplusplus
@@ -168,7 +169,7 @@ extern "C" {
       /* Current VM error */
       buzzvm_error error;
       /* Robot id */
-      uint32_t robot;
+      uint16_t robot;
    };
    typedef struct buzzvm_s* buzzvm_t;
 
@@ -177,7 +178,7 @@ extern "C" {
     * @param robot The robot id.
     * @return The VM data.
     */
-   extern buzzvm_t buzzvm_new(uint32_t robot);
+   extern buzzvm_t buzzvm_new(uint16_t robot);
 
    /*
     * Destroys the VM.
@@ -203,6 +204,22 @@ extern "C" {
     * @return The updated VM state.
     */
    extern buzzvm_state buzzvm_step(buzzvm_t vm);
+
+   /*
+    * Calls a Buzz closure.
+    * It expects the stack to be as follows:
+    * #1   arg1
+    * #2   arg2
+    * ...
+    * #N   argN
+    * #N+1 closure
+    * This function pops all arguments.
+    * @param vm The VM data.
+    * @param argc The number of arguments.
+    * @return 0 if everything OK, a non-zero value in case of error
+    */
+   extern buzzvm_state buzzvm_closure_call(buzzvm_t vm,
+                                           uint32_t argc);
 
    /*
     * Calls a function defined in Buzz.
@@ -250,65 +267,23 @@ extern "C" {
                                             buzzvm_funp funp);
 
    /*
-    * Creates a new virtual stigmergy.
-    * It expects the stack to be laid out this way:
-    * #1 Virtual stigmergy id
-    * This function pops the operand.
-    * @return 0 if everything OK, -1 in case of error
-    */
-   extern int buzzvm_vstig_create(buzzvm_t vm);
-
-   /*
-    * It puts a value into the given virtual stigmergy.
-    * It expects the stack to be laid out this way:
-    * #1 The value
-    * #2 The key
-    * #3 The virtual stigmergy id
-    * This function pops the operands.
-    * @return 0 if everything OK, -1 in case of error
-    */
-   extern int buzzvm_vstig_put(buzzvm_t vm);
-
-   /*
-    * It gets a value from the given virtual stigmergy.
-    * It expects the stack to be laid out this way:
-    * #2 The key
-    * #3 The virtual stigmergy id
-    * This function pops the operands and pushes the value,
-    * or nil if no value exists for the given key.
-    * @return 0 if everything OK, -1 in case of error
-    */
-   extern int buzzvm_vstig_get(buzzvm_t vm);
-
-   /*
-    * Creates a swarm.
+    * Calls a closure.
+    * Internally checks whether the operation is valid.
+    * This function expects the stack to be as follows:
+    * #1   An integer for the number of closure parameters N
+    * #2   Closure arg1
+    * ...
+    * #1+N Closure argN
+    * #2+N The closure
+    * This function pushes a new stack and a new local variable table filled with the
+    * activation record entries and the closure arguments. In addition, it leaves the stack
+    * beneath as follows:
+    * #1 An integer for the return address
     * @param vm The VM data.
+    * @param isswrm 0 for a normal closure, 1 for a swarm closure
+    * @return The VM state.
     */
-   extern int buzzvm_swarm_create(buzzvm_t vm);
-
-   /*
-    * Joins a swarm.
-    * @param vm The VM data.
-    */
-   extern int buzzvm_swarm_join(buzzvm_t vm);
-
-   /*
-    * Leaves a swarm.
-    * @param vm The VM data.
-    */
-   extern int buzzvm_swarm_leave(buzzvm_t vm);
-
-   /*
-    * Checks whether this robot is part of a swarm.
-    * @param vm The VM data.
-    */
-   extern int buzzvm_swarm_in(buzzvm_t vm);
-
-   /*
-    * Executes a closure if a robot is part of a swarm.
-    * @param vm The VM data.
-    */
-   extern int buzzvm_swarm_exec(buzzvm_t vm);
+   extern int buzzvm_call(buzzvm_t vm, int isswrm);
 
 #ifdef __cplusplus
 }
@@ -407,7 +382,7 @@ extern "C" {
       }                                                                 \
       buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_STRING);       \
       o->s.value.sid = (strid);                                         \
-      o->s.value.str = buzzdarray_get((vm)->strings, (strid), char*);  \
+      o->s.value.str = buzzdarray_get((vm)->strings, (strid), char*);   \
       buzzvm_push(vm, o);                                               \
    }
 
@@ -459,7 +434,7 @@ extern "C" {
 #define buzzvm_pushcc(vm, cid) buzzvm_pushc(vm, cid, 0)
 
 /*
- * Pushes a native closure on the stack.
+ * Pushes a lambda native closure on the stack.
  * Internally checks whether the operation is valid.
  * This function is designed to be used within int-returning functions such as
  * BuzzVM hook functions or buzzvm_step().
@@ -791,12 +766,12 @@ extern "C" {
    buzzvm_stack_assert(vm, 1);                                          \
    buzzobj_t op = buzzvm_stack_at(vm, 1);                               \
    buzzdarray_pop(vm->stack);                                           \
-   if(op->o.type == BUZZVM_INT) {                                       \
+   if(op->o.type == BUZZTYPE_INT) {                                     \
       buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_INT);        \
       res->i.value = -op->i.value;                                      \
       buzzvm_push(vm, res);                                             \
    }                                                                    \
-   else if(op->o.type == BUZZVM_FLOAT) {                                \
+   else if(op->o.type == BUZZTYPE_FLOAT) {                              \
       buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_FLOAT);      \
       res->f.value = -op->f.value;                                      \
       buzzvm_push(vm, res);                                             \
@@ -954,58 +929,6 @@ extern "C" {
       buzzvm_push(vm, ret);                                       \
    }
    
-/**
- * Calls a closure.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * This function expects the stack to be as follows:
- * #1   An integer for the number of closure parameters N
- * #2   Closure arg1
- * ...
- * #1+N Closure argN
- * #2+N The closure
- * This function pushes a new stack and a new local variable table filled with the
- * activation record entries and the closure arguments. In addition, it leaves the stack
- * beneath as follows:
- * #1 An integer for the return address
- * @param vm The VM data.
- * @param isswrm 0 for a normal closure, 1 for a swarm closure
- */
-#define buzzvm_call(vm, isswrm) {                                       \
-      buzzvm_stack_assert(vm, 1);                                       \
-      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);                          \
-      int32_t argn = buzzvm_stack_at(vm, 1)->i.value;                   \
-      buzzvm_pop(vm);                                                   \
-      buzzvm_stack_assert(vm, argn+1);                                  \
-      buzzvm_type_assert(vm, argn+1, BUZZTYPE_CLOSURE);                 \
-      buzzobj_t c = buzzvm_stack_at(vm, argn+1);                        \
-      if((!c->c.value.isnative) &&                                      \
-         ((c->c.value.ref) >= buzzdarray_size((vm)->flist))) {          \
-         (vm)->state = BUZZVM_STATE_ERROR;                              \
-         (vm)->error = BUZZVM_ERROR_FLIST;                              \
-         return vm->state;                                              \
-      }                                                                 \
-      (vm)->lsyms =                                                     \
-         buzzvm_lsyms_new(isswrm,                                       \
-                          buzzdarray_clone(c->c.value.actrec));         \
-      buzzdarray_push((vm)->lsymts, &((vm)->lsyms));                    \
-      for(int32_t i = argn; i > 0; --i)                                 \
-         buzzdarray_push((vm)->lsyms->syms,                             \
-                         &buzzdarray_get((vm)->stack,                   \
-                                         buzzdarray_size((vm)->stack) - i, \
-                                         buzzobj_t));                   \
-      for(int32_t i = argn+1; i > 0; --i)                               \
-         buzzdarray_pop((vm)->stack);                                   \
-      buzzvm_pushi((vm), (vm)->pc);                                     \
-      (vm)->stack = buzzdarray_new(1, sizeof(buzzobj_t), NULL);         \
-      buzzdarray_push((vm)->stacks, &((vm)->stack));                    \
-      if(c->c.value.isnative) (vm)->pc = c->c.value.ref;                \
-      else buzzdarray_get((vm)->flist,                                  \
-                          c->c.value.ref,                               \
-                          buzzvm_funp)(vm);                             \
-   }
-
 /**
  * Calls a normal closure.
  * Internally checks whether the operation is valid.

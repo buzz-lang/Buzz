@@ -20,7 +20,7 @@ int buzzvstig_key_cmp(const void* a, const void* b) {
 
 buzzvstig_elem_t buzzvstig_elem_new(buzzobj_t data,
                                     uint16_t timestamp,
-                                    uint32_t robot) {
+                                    uint16_t robot) {
    buzzvstig_elem_t e = (buzzvstig_elem_t)malloc(sizeof(struct buzzvstig_elem_s));
    e->data = data;
    e->timestamp = timestamp;
@@ -72,7 +72,7 @@ void buzzvstig_elem_serialize(buzzmsg_payload_t buf,
    /* Serialize the timestamp */
    buzzmsg_serialize_u16(buf, data->timestamp);
    /* Serialize the robot */
-   buzzmsg_serialize_u32(buf, data->robot);
+   buzzmsg_serialize_u16(buf, data->robot);
 }
 
 /****************************************/
@@ -97,7 +97,7 @@ int64_t buzzvstig_elem_deserialize(buzzobj_t* key,
    p = buzzmsg_deserialize_u16(&((*data)->timestamp), buf, p);
    if(p < 0) return -1;
    /* Deserialize the robot */
-   p = buzzmsg_deserialize_u32(&((*data)->robot), buf, p);
+   p = buzzmsg_deserialize_u16(&((*data)->robot), buf, p);
    if(p < 0) return -1;
    return p;
 }

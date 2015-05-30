@@ -8,6 +8,51 @@
 /****************************************/
 /****************************************/
 
+void dump(buzzvm_t vm) {
+   fprintf(stderr, "============================================================\n");
+   fprintf(stderr, "state: %d\terror: %d\n", vm->state, vm->error);
+   fprintf(stderr, "code size: %u\tpc: %d\n", vm->bcode_size, vm->pc);
+   fprintf(stderr, "stacks: %lld\tcur elem: %lld (size %lld)\n", buzzdarray_size(vm->stacks), buzzvm_stack_top(vm), buzzvm_stack_top(vm));
+   for(int64_t i = buzzvm_stack_top(vm)-1; i >= 0; --i) {
+      fprintf(stderr, "\t%lld\t", i);
+      buzzobj_t o = buzzdarray_get(vm->stack, i, buzzobj_t);
+      switch(o->o.type) {
+         case BUZZTYPE_NIL:
+            fprintf(stderr, "[nil]\n");
+            break;
+         case BUZZTYPE_INT:
+            fprintf(stderr, "[int] %d\n", o->i.value);
+            break;
+         case BUZZTYPE_FLOAT:
+            fprintf(stderr, "[float] %f\n", o->f.value);
+            break;
+         case BUZZTYPE_TABLE:
+            fprintf(stderr, "[table] %d elements\n", buzzdict_size(o->t.value));
+            break;
+         case BUZZTYPE_ARRAY:
+            fprintf(stderr, "[array] %lld\n", buzzdarray_size(o->a.value));
+            break;
+         case BUZZTYPE_CLOSURE:
+            if(o->c.value.isnative) {
+               fprintf(stderr, "[n-closure] %d\n", o->c.value.ref);
+            }
+            else {
+               fprintf(stderr, "[c-closure] %d\n", o->c.value.ref);
+            }
+            break;
+         case BUZZTYPE_STRING:
+            fprintf(stderr, "[string] %d:'%s'\n", o->s.value.sid, o->s.value.str);
+            break;
+         default:
+            fprintf(stderr, "[TODO] type = %d\n", o->o.type);
+      }
+   }
+   fprintf(stderr, "============================================================\n\n");
+}
+
+/****************************************/
+/****************************************/
+
 #define BUZZVM_STACKS_INIT_CAPACITY  20
 #define BUZZVM_STACK_INIT_CAPACITY   20
 #define BUZZVM_LSYMTS_INIT_CAPACITY  20
@@ -243,7 +288,7 @@ void buzzvm_lsyms_destroy(uint32_t pos,
    buzzdarray_destroy(&(s->syms));
 }
 
-buzzvm_t buzzvm_new(uint32_t robot) {
+buzzvm_t buzzvm_new(uint16_t robot) {
    /* Create VM state. calloc() takes care of zeroing everything */
    buzzvm_t vm = (buzzvm_t)calloc(1, sizeof(struct buzzvm_s));
    /* Create stacks */
@@ -480,6 +525,11 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          inc_pc();
          break;
       }
+      case BUZZVM_INSTR_UNM: {
+         buzzvm_unm(vm);
+         inc_pc();
+         break;
+      }
       case BUZZVM_INSTR_AND: {
          buzzvm_and(vm);
          inc_pc();
@@ -590,6 +640,12 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          assert_pc(vm->pc);
          break;
       }
+      case BUZZVM_INSTR_PUSHF: {
+         inc_pc();
+         get_arg(float);
+         buzzvm_pushf(vm, arg);
+         break;
+      }
       case BUZZVM_INSTR_PUSHI: {
          inc_pc();
          get_arg(int32_t);
@@ -602,12 +658,6 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          buzzvm_pushs(vm, arg);
          break;
       }
-      case BUZZVM_INSTR_PUSHF: {
-         inc_pc();
-         get_arg(float);
-         buzzvm_pushf(vm, arg);
-         break;
-      }
       case BUZZVM_INSTR_PUSHCN: {
          inc_pc();
          get_arg(uint32_t);
@@ -618,6 +668,12 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          inc_pc();
          get_arg(uint32_t);
          buzzvm_pushcc(vm, arg);
+         break;
+      }
+      case BUZZVM_INSTR_PUSHL: {
+         inc_pc();
+         get_arg(uint32_t);
+         buzzvm_pushl(vm, arg);
          break;
       }
       case BUZZVM_INSTR_LLOAD: {
@@ -676,40 +732,41 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
-buzzvm_state buzzvm_function_call(buzzvm_t vm,
-                                  const char* fname,
-                                  uint32_t argc) {
-   /* Save arguments */
-   buzzobj_t* args;
-   if(argc > 0) {
-      buzzvm_stack_assert(vm, argc);
-      args = (buzzobj_t*)malloc(sizeof(buzzobj_t) * argc);
-      for(int i = 1; i <= argc; ++i) {
-         args[argc - i] = buzzvm_stack_at(vm, i);
-         buzzvm_pop(vm);
-      }
-   }
-   /* Push the function name (return with error if not found) */
-   buzzvm_pushs(vm, buzzdarray_string_find(vm, &fname));
-   /* Get associated symbol */
-   buzzvm_gload(vm);
-   /* Make sure it's a closure */
-   buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
-   /* Push back the arguments and the count */
-   if(argc > 0) {
-      for(int i = 0; i < argc; ++i)
-         buzzvm_push(vm, args[i]);
-      free(args);
-   }
+buzzvm_state buzzvm_closure_call(buzzvm_t vm,
+                                 uint32_t argc) {
+   /* Push the argument count */
    buzzvm_pushi(vm, argc);
    /* Save the current stack depth */
    uint32_t stacks = buzzdarray_size(vm->stacks);
    /* Call the closure and keep stepping until
     * the stack count is back to the saved value */
    buzzvm_callc(vm);
-   do if(buzzvm_step(vm) != BUZZVM_STATE_READY) return (vm)->state;
+   do if(buzzvm_step(vm) != BUZZVM_STATE_READY) return vm->state;
    while(stacks < buzzdarray_size(vm->stacks));
-   return (vm)->state;
+   return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state buzzvm_function_call(buzzvm_t vm,
+                                  const char* fname,
+                                  uint32_t argc) {
+   /* Push the function name (return with error if not found) */
+   buzzvm_pushs(vm, buzzdarray_string_find(vm, &fname));
+   /* Get associated symbol */
+   buzzvm_gload(vm);
+   /* Make sure it's a closure */
+   buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
+   /* Move closure before arguments */
+   if(argc > 0) {
+      buzzdarray_insert(vm->stack,
+                        buzzdarray_size(vm->stack) - argc - 1,
+                        buzzvm_stack_at(vm, 1));
+      buzzvm_pop(vm);
+   }
+   /* Call the closure */
+   return buzzvm_closure_call(vm, argc);
 }
 
 /****************************************/
@@ -751,6 +808,44 @@ uint32_t buzzvm_function_register(buzzvm_t vm,
       buzzdarray_push(vm->flist, &funp);
    }
    return fpos;
+}
+
+/****************************************/
+/****************************************/
+
+int buzzvm_call(buzzvm_t vm, int isswrm) {
+   buzzvm_stack_assert(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+   int32_t argn = buzzvm_stack_at(vm, 1)->i.value;
+   buzzvm_pop(vm);
+   buzzvm_stack_assert(vm, argn+1);
+   buzzvm_type_assert(vm, argn+1, BUZZTYPE_CLOSURE);
+   buzzobj_t c = buzzvm_stack_at(vm, argn+1);
+   if((!c->c.value.isnative) &&
+      ((c->c.value.ref) >= buzzdarray_size((vm)->flist))) {
+      (vm)->state = BUZZVM_STATE_ERROR;
+      (vm)->error = BUZZVM_ERROR_FLIST;
+      return vm->state;
+   }
+   (vm)->lsyms =
+      buzzvm_lsyms_new(isswrm,
+                       buzzdarray_clone(c->c.value.actrec));
+   buzzdarray_push((vm)->lsymts, &((vm)->lsyms));
+   for(int32_t i = argn; i > 0; --i)
+      buzzdarray_push((vm)->lsyms->syms,
+                      &buzzdarray_get((vm)->stack,
+                                      buzzdarray_size((vm)->stack) - i,
+                                      buzzobj_t));
+   for(int32_t i = argn+1; i > 0; --i)
+      buzzdarray_pop((vm)->stack);
+   buzzvm_pushi((vm), (vm)->pc);
+   (vm)->stack = buzzdarray_new(1, sizeof(buzzobj_t), NULL);
+   buzzdarray_push((vm)->stacks, &((vm)->stack));
+   if(c->c.value.isnative) (vm)->pc = c->c.value.ref;
+   else buzzdarray_get((vm)->flist,
+                       c->c.value.ref,
+                       buzzvm_funp)(vm);
+   return vm->state;
 }
 
 /****************************************/

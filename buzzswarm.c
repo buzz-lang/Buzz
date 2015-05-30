@@ -405,6 +405,8 @@ int buzzvm_swarm_exec(buzzvm_t vm) {
       buzzobj_t c = buzzvm_stack_at(vm, 1);
       /* Get rid of the current call structure */
       buzzvm_ret0(vm);
+      /* Save the current stack depth */
+      uint32_t stacks = buzzdarray_size(vm->stacks);
       /* Push the current swarm in the stack */
       buzzdarray_push(vm->swarmstack, &id);
       /* Call the closure */
@@ -412,12 +414,15 @@ int buzzvm_swarm_exec(buzzvm_t vm) {
       int32_t numargs = 0;
       buzzvm_pushi(vm, numargs);
       buzzvm_calls(vm);
+      do if(buzzvm_step(vm) != BUZZVM_STATE_READY) return vm->state;
+      while(stacks < buzzdarray_size(vm->stacks));
+      return vm->state;
    }
    else {
       /* Get rid of the current call structure */
       buzzvm_ret0(vm);
+      return BUZZVM_STATE_READY;
    }
-   return BUZZVM_STATE_READY;
 }
 
 /****************************************/

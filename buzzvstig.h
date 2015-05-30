@@ -17,7 +17,7 @@ extern "C" {
       /* The timestamp (Lamport clock) */
       uint16_t timestamp;
       /* The robot id */
-      uint32_t robot;
+      uint16_t robot;
    };
    typedef struct buzzvstig_elem_s* buzzvstig_elem_t;
 
@@ -40,7 +40,7 @@ extern "C" {
     */
    extern buzzvstig_elem_t buzzvstig_elem_new(buzzobj_t data,
                                               uint16_t timestamp,
-                                              uint32_t robot);
+                                              uint16_t robot);
 
    /*
     * Clones a virtual stigmergy entry.

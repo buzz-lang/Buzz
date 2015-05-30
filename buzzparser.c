@@ -117,7 +117,20 @@ void sym_add(buzzparser_t par, const char* sym, int scope) {
       .type = TYPE_BASIC,
       .global = global
    };
-   buzzdict_set(par->syms, &key, &symdata);
+   /* A global symbol must be stored in the base symbol table */
+   if(global) buzzdict_set(buzzdarray_get(par->symstack, 0, buzzdict_t),
+                           &key, &symdata);
+   /* A local symbol must be stored in the current symbol table */
+   else       buzzdict_set(par->syms, &key, &symdata);
+}
+
+void sym_print(const void* key,
+               void* data,
+               void* params) {
+   char* k = *(char**)key;
+   struct sym_s* d = (struct sym_s*)data;
+   fprintf(stderr, "[DEBUG]  Symbol '%s' pos=%lld type=%u global=%u\n",
+           k, d->pos, d->type, d->global);
 }
 
 void sym_destroy(const void* key,
@@ -1039,11 +1052,17 @@ int parse_lambda(buzzparser_t par) {
     */
    int symtpush = (buzzdarray_size(par->symstack) == 1);
    if(symtpush) {
+      DEBUG("Added dedicated symtable for lambda\n");
       /* Add new symtable */
       symt_push();
       /* Add "self" symbol */
       struct sym_s* sym = sym_lookup("self", par->symstack);
       if(!sym || sym->global) { sym_add(par, "self", SCOPE_LOCAL); }
+   }
+   else {
+      DEBUG("Lambda uses parent's symtable containing %u elements:\n",
+            buzzdict_size(par->syms));
+      buzzdict_foreach(par->syms, sym_print, NULL);
    }
    /* Parse lambda arguments */
    if(!parse_idlist(par)) return PARSE_ERROR;
