@@ -21,7 +21,7 @@ struct neighbor_filter_s {
    buzzvm_pushcc(vm, buzzvm_function_register(vm, (FPOINTER)));         \
    buzzvm_tput(vm);
 
-int make_table(buzzvm_t vm, buzzobj_t* t) {
+static int make_table(buzzvm_t vm, buzzobj_t* t) {
    /* Make new table */
    *t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
    /* Add methods */
@@ -150,12 +150,14 @@ int buzzneighbors_kin(buzzvm_t vm) {
       if(buzzdarray_size(vm->lsyms->syms) > 1)
          sstackpos = buzzdarray_get(vm->lsyms->syms, 1, buzzobj_t)->i.value;
       /* Get swarm id */
-      if(sstackpos < buzzdarray_size(vm->lsyms->syms))
-         swarmid = buzzdarray_get(vm->lsyms->syms, sstackpos, uint16_t);
+      if(sstackpos <= buzzdarray_size(vm->swarmstack))
+         swarmid = buzzdarray_get(vm->swarmstack,
+                                  buzzdarray_size(vm->swarmstack) - sstackpos,
+                                  uint16_t);
    }
    /* Get the self table */
    buzzvm_lload(vm, 0);
-   buzzobj_t self = buzzvm_stack_at(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_TABLE);
    /* Get the data table */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
    buzzvm_tget(vm);
@@ -165,10 +167,17 @@ int buzzneighbors_kin(buzzvm_t vm) {
    vm->state = make_table(vm, &t);
    if(vm->state != BUZZVM_STATE_READY) return vm->state;
    /* If data is available, filter it */
-   if(buzzvm_stack_at(vm, 1)->o.type != BUZZTYPE_NIL) {
-      /* Go through all the neighbors in data and filter them */
-      struct neighbor_filter_s fdata = { .vm = vm, .swarm_id = swarmid, .result = t->t.value };
+   if(data->o.type == BUZZTYPE_TABLE) {
+      /* Create a new data table */
+      buzzobj_t kindata = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
+      /* Filter the neighbors in data and add them to kindata */
+      struct neighbor_filter_s fdata = { .vm = vm, .swarm_id = swarmid, .result = kindata->t.value };
       buzzdict_foreach(data->t.value, neighbor_filter_kin, &fdata);
+      /* Add kindata as the "data" field in t */
+      buzzvm_push(vm, t);
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+      buzzvm_push(vm, kindata);
+      buzzvm_tput(vm);
    }
    /* Return the table */
    buzzvm_push(vm, t);
@@ -204,8 +213,10 @@ int buzzneighbors_nonkin(buzzvm_t vm) {
       if(buzzdarray_size(vm->lsyms->syms) > 1)
          sstackpos = buzzdarray_get(vm->lsyms->syms, 1, buzzobj_t)->i.value;
       /* Get swarm id */
-      if(sstackpos < buzzdarray_size(vm->lsyms->syms))
-         swarmid = buzzdarray_get(vm->lsyms->syms, sstackpos, uint16_t);
+      if(sstackpos <= buzzdarray_size(vm->swarmstack))
+         swarmid = buzzdarray_get(vm->swarmstack,
+                                  buzzdarray_size(vm->swarmstack) - sstackpos,
+                                  uint16_t);
    }
    /* Create a new table as return value */
    buzzobj_t t;
@@ -215,16 +226,22 @@ int buzzneighbors_nonkin(buzzvm_t vm) {
    if(swarmid >= 0) {
       /* Get the self table */
       buzzvm_lload(vm, 0);
-      buzzobj_t self = buzzvm_stack_at(vm, 1);
       /* Get the data table */
       buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
       buzzvm_tget(vm);
       buzzobj_t data = buzzvm_stack_at(vm, 1);
       /* If data is available, filter it */
-      if(buzzvm_stack_at(vm, 1)->o.type != BUZZTYPE_NIL) {
-         /* Go through all the neighbors in data and filter them */
-         struct neighbor_filter_s fdata = { .vm = vm, .swarm_id = swarmid, .result = t->t.value };
+      if(data->o.type == BUZZTYPE_TABLE) {
+         /* Create a new data table */
+         buzzobj_t nonkindata = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
+         /* Filter the neighbors in data and add them to nonkindata */
+         struct neighbor_filter_s fdata = { .vm = vm, .swarm_id = swarmid, .result = nonkindata->t.value };
          buzzdict_foreach(data->t.value, neighbor_filter_nonkin, &fdata);
+         /* Add nonkindata as the "data" field in t */
+         buzzvm_push(vm, t);
+         buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+         buzzvm_push(vm, nonkindata);
+         buzzvm_tput(vm);
       }
    }
    /* Return the table */

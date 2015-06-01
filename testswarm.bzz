@@ -1,9 +1,9 @@
 function members() {
-  log("fb ", id, ": MEMBER")
+  log("fb ", id, ": MEMBER of ", swarm.id)
 }
 
 function nonmembers() {
-  log("fb ", id, ": NONMEMBER")
+  log("fb ", id, ": NONMEMBER of ", swarm.id  )
 }
 
 function init() {
