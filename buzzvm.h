@@ -174,6 +174,12 @@ extern "C" {
    typedef struct buzzvm_s* buzzvm_t;
 
    /*
+    * Prints the current state of the VM.
+    * @param vm The VM data.
+    */
+   extern void buzzvm_dump(buzzvm_t vm);
+
+   /*
     * Creates a new VM.
     * @param robot The robot id.
     * @return The VM data.
@@ -283,7 +289,15 @@ extern "C" {
     * @param isswrm 0 for a normal closure, 1 for a swarm closure
     * @return The VM state.
     */
-   extern int buzzvm_call(buzzvm_t vm, int isswrm);
+   extern buzzvm_state buzzvm_call(buzzvm_t vm, int isswrm);
+
+   /*
+    * Pops the stack.
+    * Internally checks whether the operation is valid.
+    * @param vm The VM data.
+    * @return The VM state.
+    */
+   extern buzzvm_state buzzvm_pop(buzzvm_t vm);
 
 #ifdef __cplusplus
 }
@@ -332,15 +346,6 @@ extern "C" {
  * @param vm The VM data.
  */
 #define buzzvm_done(vm) { (vm)->state = BUZZVM_STATE_DONE; return (vm)->state; }
-
-/*
- * Pops the stack.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_pop(vm) if(buzzdarray_isempty((vm)->stack)) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_STACK; return (vm)->state; } buzzdarray_pop(vm->stack);
 
 /*
  * Pushes a variable on the stack.

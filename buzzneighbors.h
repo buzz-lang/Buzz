@@ -95,6 +95,13 @@ extern "C" {
    extern int buzzneighbors_map(struct buzzvm_s* vm);
 
    /*
+    * Performs a left fold/accumulation/reduction operation on the neighbors.
+    * @param vm The Buzz VM data.
+    * @return The updated VM state.
+    */
+   extern int buzzneighbors_accumulate(struct buzzvm_s* vm);
+
+   /*
     * Pushes the number of neighbors on the stack.
     * @param vm The Buzz VM data.
     * @return The updated VM state.

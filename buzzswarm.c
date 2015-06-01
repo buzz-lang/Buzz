@@ -209,7 +209,6 @@ int buzzvm_swarm_create(buzzvm_t vm) {
    /* Get the id */
    buzzvm_lload(vm, 1);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
-   fprintf(stderr, "[DEBUG] Created swarm id = %u\n", id);
    /* Add a new entry if necessary */
    if(!buzzdict_exists(vm->swarms, &id)) {
       uint8_t v = 0;
@@ -264,7 +263,6 @@ int buzzvm_swarm_others(buzzvm_t vm) {
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
    buzzvm_tget(vm);
    uint16_t id1 = buzzvm_stack_at(vm, 1)->i.value;
-   fprintf(stderr, "[DEBUG] Creating other swarm from id1 = %u\n", id1);
    /* Get the swarm entry */
    uint8_t* x = buzzdict_get(vm->swarms, &id1, uint8_t);
    if(!x) {
@@ -275,7 +273,6 @@ int buzzvm_swarm_others(buzzvm_t vm) {
    /* Get the id of the new swarm to create */
    buzzvm_lload(vm, 1);
    uint16_t id2 = buzzvm_stack_at(vm, 1)->i.value;
-   fprintf(stderr, "[DEBUG] Created other swarm with id2 = %u\n", id2);
    /* Add a new entry for the swarm */
    uint8_t v = *x ? 0 : 1;
    buzzdict_set(vm->swarms, &id2, &v);
@@ -299,7 +296,6 @@ int buzzvm_swarm_join(buzzvm_t vm) {
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
    buzzvm_tget(vm);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
-   fprintf(stderr, "[DEBUG] Joining swarm with id = %u\n", id);
    /* Join the swarm, if known */
    if(buzzdict_exists(vm->swarms, &id)) {
       /* Store membership */
@@ -328,7 +324,6 @@ int buzzvm_swarm_leave(buzzvm_t vm) {
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
    buzzvm_tget(vm);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
-   fprintf(stderr, "[DEBUG] Leaving swarm with id = %u\n", id);
    /* Leave the swarm, if known */
    if(buzzdict_exists(vm->swarms, &id)) {
       /* Store membership */
@@ -357,7 +352,6 @@ int buzzvm_swarm_in(buzzvm_t vm) {
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
    buzzvm_tget(vm);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
-   fprintf(stderr, "[DEBUG] Checking membership for swarm id = %u\n", id);
    /* Get the swarm entry */
    uint8_t* x = buzzdict_get(vm->swarms, &id, uint8_t);
    if(!x) {
@@ -384,7 +378,6 @@ int buzzvm_swarm_select(buzzvm_t vm) {
    /* Get the result of the condition check */
    buzzvm_lload(vm, 1);
    uint8_t in = buzzvm_stack_at(vm, 1)->i.value;
-   fprintf(stderr, "[DEBUG] Selecting membership for swarm id = %u: %u\n", id, in);
    /* Update the swarm, if known */
    if(buzzdict_exists(vm->swarms, &id)) {
       /* Store membership */
@@ -423,7 +416,6 @@ int buzzvm_swarm_exec(buzzvm_t vm) {
    }
    /* Check whether the robot is in the swarm */
    if(*x) {
-      fprintf(stderr, "[DEBUG] Executing closure for swarm with id = %u\n", id);
       /* Get the closure */
       buzzvm_lload(vm, 1);
       buzzobj_t c = buzzvm_stack_at(vm, 1);

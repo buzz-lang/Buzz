@@ -25,14 +25,15 @@ static int make_table(buzzvm_t vm, buzzobj_t* t) {
    /* Make new table */
    *t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
    /* Add methods */
-   function_register(*t, "pto",       buzzneighbors_pto);
-   function_register(*t, "cto",       buzzneighbors_cto);
-   function_register(*t, "kin",       buzzneighbors_kin);
-   function_register(*t, "nonkin",    buzzneighbors_nonkin);
-   function_register(*t, "aggregate", buzzneighbors_aggregate);
-   function_register(*t, "propagate", buzzneighbors_propagate);
-   function_register(*t, "map",       buzzneighbors_map);
-   function_register(*t, "count",     buzzneighbors_count);
+   function_register(*t, "pto",        buzzneighbors_pto);
+   function_register(*t, "cto",        buzzneighbors_cto);
+   function_register(*t, "kin",        buzzneighbors_kin);
+   function_register(*t, "nonkin",     buzzneighbors_nonkin);
+   function_register(*t, "aggregate",  buzzneighbors_aggregate);
+   function_register(*t, "propagate",  buzzneighbors_propagate);
+   function_register(*t, "map",        buzzneighbors_map);
+   function_register(*t, "accumulate", buzzneighbors_accumulate);
+   function_register(*t, "count",      buzzneighbors_count);
    return vm->state;
 }
 
@@ -321,6 +322,59 @@ int buzzneighbors_map(struct buzzvm_s* vm) {
                        &edata);
    }
    buzzvm_ret0(vm);
+   return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
+struct neighbor_accumulate_s {
+   buzzvm_t vm;
+   buzzobj_t closure;
+};
+
+void neighbor_accumulate(const void* key, void* data, void* params) {
+   /* Cast params */
+   struct neighbor_accumulate_s* d = (struct neighbor_accumulate_s*)params;
+   if(d->vm->state != BUZZVM_STATE_READY) return;
+   /* Pop current accumulator and keep a pointer to it */
+   buzzobj_t accum = buzzvm_stack_at(d->vm, 1);
+   if(buzzvm_pop(d->vm) != BUZZVM_STATE_READY) return;
+   /* Push closure and params (key, value, accumulator) */
+   buzzvm_push(d->vm, d->closure);
+   buzzvm_push(d->vm, *(buzzobj_t*)key);
+   buzzvm_push(d->vm, *(buzzobj_t*)data);
+   buzzvm_push(d->vm, accum);
+   /* Call closure - this leaves the new accumulator on the stack */
+   d->vm->state = buzzvm_closure_call(d->vm, 3);
+}
+
+int buzzneighbors_accumulate(struct buzzvm_s* vm) {
+   /* Get self table */
+   buzzvm_lload(vm, 0);
+   /* Get data field */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+   buzzvm_tget(vm);
+   buzzobj_t data = buzzvm_stack_at(vm, 1);
+   /* Get accumulator */
+   buzzvm_lload(vm, 2);
+   buzzobj_t accum = buzzvm_stack_at(vm, 1);
+   if(data->o.type == BUZZTYPE_TABLE) {
+      /* Get closure */
+      buzzvm_lload(vm, 1);
+      buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
+      /* Push accumulator */
+      buzzvm_push(vm, accum);
+      /* Go through elements */
+      struct neighbor_accumulate_s edata = {
+         .vm = vm,
+         .closure = buzzvm_stack_at(vm, 2)
+      };
+      buzzdict_foreach(data->t.value,
+                       neighbor_accumulate,
+                       &edata);
+   }
+   buzzvm_ret1(vm);
    return vm->state;
 }
 

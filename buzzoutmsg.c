@@ -152,7 +152,6 @@ void buzzoutmsg_queue_append_shout(buzzoutmsg_queue_t msgq,
 
 void buzzoutmsg_queue_append_swarm_list(buzzoutmsg_queue_t msgq,
                                         const buzzdarray_t ids) {
-   fprintf(stderr, "[DEBUG] Sending swarm list\n");
    /* Invariants:
     * - Only one list message can be queued at any time;
     * - If a list message is already queued, join/leave messages are not
@@ -219,7 +218,6 @@ static void remove_from_swarm_queue(buzzdarray_t q, uint16_t id) {
 void buzzoutmsg_queue_append_swarm_joinleave(buzzoutmsg_queue_t msgq,
                                              int type,
                                              uint16_t id) {
-   fprintf(stderr, "[DEBUG] [ROBOT %u] Sending swarm join/leave (%d) for id %d\n", msgq->robot, type, id);
    /* Invariants:
     * - Only one list message can be qeueued at any time;
     * - If a list message is already queued, join/leave messages are not

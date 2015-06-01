@@ -8,7 +8,7 @@
 /****************************************/
 /****************************************/
 
-void dump(buzzvm_t vm) {
+void buzzvm_dump(buzzvm_t vm) {
    fprintf(stderr, "============================================================\n");
    fprintf(stderr, "state: %d\terror: %d\n", vm->state, vm->error);
    fprintf(stderr, "code size: %u\tpc: %d\n", vm->bcode_size, vm->pc);
@@ -151,8 +151,6 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                buzzvstig_store(*vs, &k, &v);
                /* Append a PUT message to the out message queue */
                buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, v);
-               fprintf(stderr, "[DEBUG] robot %d relays <PUT, d=%d, ts=%d, r=%d>\n",
-                       vm->robot, k->i.value, v->timestamp, v->robot);
             }
             break;
          }
@@ -184,20 +182,15 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                buzzvstig_store(*vs, &k, &v);
                /* Append a PUT message to the out message queue */
                buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, v);
-               fprintf(stderr, "[DEBUG] robot %d sends <PUT, d=%d, ts=%d, r=%d> after QUERY\n",
-                       vm->robot, k->i.value, v->timestamp, v->robot);
             }
             else if((*l)->timestamp > v->timestamp) {
                /* Local element is newer */
                /* Append a PUT message to the out message queue */
                buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, *l);
-               fprintf(stderr, "[DEBUG] robot %d sends <PUT, d=%d, ts=%d, r=%d> after QUERY\n",
-                       vm->robot, k->i.value, (*l)->timestamp, (*l)->robot);
             }
             break;
          }
          case BUZZMSG_SWARM_LIST: {
-            fprintf(stderr, "[DEBUG] Received BUZZMSG_SWARM_LIST message\n");
             /* Deserialize robot id */
             uint16_t rid;
             int64_t pos = buzzmsg_deserialize_u16(&rid, msg, 1);
@@ -241,7 +234,6 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                break;
             }
             /* Update the information */
-            fprintf(stderr, "[DEBUG] [ROBOT %u] Received BUZZMSG_SWARM_JOIN (R%u, S%u)\n", vm->robot, rid, sid);
             buzzswarm_members_join(vm->swarmmembers, rid, sid);
             break;
          }
@@ -261,7 +253,6 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                break;
             }
             /* Update the information */
-            fprintf(stderr, "[DEBUG] [ROBOT %u] Received BUZZMSG_SWARM_LEAVE (R%u, S%u)\n", vm->robot, rid, sid);
             buzzswarm_members_leave(vm->swarmmembers, rid, sid);
             break;
          }
@@ -486,7 +477,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          break;
       }
       case BUZZVM_INSTR_POP: {
-         buzzvm_pop(vm);
+         if(buzzvm_pop(vm) != BUZZVM_STATE_READY) return vm->state;
          inc_pc();
          break;
       }
@@ -635,13 +626,13 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       }
       case BUZZVM_INSTR_CALLC: {
          inc_pc();
-         buzzvm_callc(vm);
+         if(buzzvm_callc(vm) != BUZZVM_STATE_READY) return vm->state;
          assert_pc(vm->pc);
          break;
       }
       case BUZZVM_INSTR_CALLS: {
          inc_pc();
-         buzzvm_callc(vm);
+         if(buzzvm_calls(vm) != BUZZVM_STATE_READY) return vm->state;
          assert_pc(vm->pc);
          break;
       }
@@ -818,38 +809,63 @@ uint32_t buzzvm_function_register(buzzvm_t vm,
 /****************************************/
 /****************************************/
 
-int buzzvm_call(buzzvm_t vm, int isswrm) {
+buzzvm_state buzzvm_call(buzzvm_t vm, int isswrm) {
+   /* Get argument number and pop it */
    buzzvm_stack_assert(vm, 1);
    buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
    int32_t argn = buzzvm_stack_at(vm, 1)->i.value;
    buzzvm_pop(vm);
+   /* Make sure the stack has enough elements */
    buzzvm_stack_assert(vm, argn+1);
+   /* Make sure the closure is where expected */
    buzzvm_type_assert(vm, argn+1, BUZZTYPE_CLOSURE);
    buzzobj_t c = buzzvm_stack_at(vm, argn+1);
+   /* Make sure that that data about C closures is correct */
    if((!c->c.value.isnative) &&
-      ((c->c.value.ref) >= buzzdarray_size((vm)->flist))) {
-      (vm)->state = BUZZVM_STATE_ERROR;
-      (vm)->error = BUZZVM_ERROR_FLIST;
+      ((c->c.value.ref) >= buzzdarray_size(vm->flist))) {
+      vm->state = BUZZVM_STATE_ERROR;
+      vm->error = BUZZVM_ERROR_FLIST;
       return vm->state;
    }
-   (vm)->lsyms =
+   /* Create a new local symbol list copying the parent's */
+   vm->lsyms =
       buzzvm_lsyms_new(isswrm,
                        buzzdarray_clone(c->c.value.actrec));
-   buzzdarray_push((vm)->lsymts, &((vm)->lsyms));
+   buzzdarray_push(vm->lsymts, &(vm->lsyms));
+   /* Add function arguments to the local symbols */
    for(int32_t i = argn; i > 0; --i)
-      buzzdarray_push((vm)->lsyms->syms,
-                      &buzzdarray_get((vm)->stack,
-                                      buzzdarray_size((vm)->stack) - i,
+      buzzdarray_push(vm->lsyms->syms,
+                      &buzzdarray_get(vm->stack,
+                                      buzzdarray_size(vm->stack) - i,
                                       buzzobj_t));
+   /* Get rid of the function arguments */
    for(int32_t i = argn+1; i > 0; --i)
-      buzzdarray_pop((vm)->stack);
-   buzzvm_pushi((vm), (vm)->pc);
-   (vm)->stack = buzzdarray_new(1, sizeof(buzzobj_t), NULL);
-   buzzdarray_push((vm)->stacks, &((vm)->stack));
-   if(c->c.value.isnative) (vm)->pc = c->c.value.ref;
-   else buzzdarray_get((vm)->flist,
+      buzzdarray_pop(vm->stack);
+   /* Push return value */
+   buzzvm_pushi((vm), vm->pc);
+   /* Make a new stack for the function */
+   vm->stack = buzzdarray_new(1, sizeof(buzzobj_t), NULL);
+   buzzdarray_push(vm->stacks, &(vm->stack));
+   /* Jump to/execute the function */
+   if(c->c.value.isnative) vm->pc = c->c.value.ref;
+   else buzzdarray_get(vm->flist,
                        c->c.value.ref,
                        buzzvm_funp)(vm);
+   return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state buzzvm_pop(buzzvm_t vm) {
+   if(buzzdarray_isempty(vm->stack)) {
+      vm->state = BUZZVM_STATE_ERROR;
+      vm->error = BUZZVM_ERROR_STACK;
+      return vm->state;
+   }
+   else {
+      buzzdarray_pop(vm->stack);
+   }
    return vm->state;
 }
 
