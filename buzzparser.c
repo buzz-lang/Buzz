@@ -1070,6 +1070,8 @@ int parse_lambda(buzzparser_t par) {
    fetchtok();
    /* Parse block */
    if(!parse_block(par)) return PARSE_ERROR;
+   /* Add a default return */
+   chunk_append("\tret0\n");
    /* Get rid of symbol table and close chunk */
    if(symtpush) { symt_pop(); }
    chunk_pop();
