@@ -175,35 +175,25 @@ void buzzswarm_members_update(buzzswarm_members_t m) {
 /****************************************/
 /****************************************/
 
-int create_table(buzzvm_t vm, uint16_t id) {
+#define function_register(TABLE, FNAME, FPOINTER)                       \
+   buzzvm_push(vm, (TABLE));                                            \
+   buzzvm_pushs(vm, buzzvm_string_register(vm, (FNAME)));               \
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, (FPOINTER)));         \
+   buzzvm_tput(vm);
+
+static int make_table(buzzvm_t vm, uint16_t id) {
    /* Create a table and add data and methods */
    buzzobj_t t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
+   function_register(t, "others", buzzvm_swarm_others);
+   function_register(t, "join",   buzzvm_swarm_join);
+   function_register(t, "leave",  buzzvm_swarm_leave);
+   function_register(t, "in",     buzzvm_swarm_in);
+   function_register(t, "select", buzzvm_swarm_select);
+   function_register(t, "exec",   buzzvm_swarm_exec);
+   function_register(t, "others", buzzvm_swarm_others);
+   /* Register swarm id */
    buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "others"));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_others));
-   buzzvm_tput(vm);
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "join"));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_join));
-   buzzvm_tput(vm);
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "leave"));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_leave));
-   buzzvm_tput(vm);
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "in"));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_in));
-   buzzvm_tput(vm);
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "select"));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_select));
-   buzzvm_tput(vm);
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "exec"));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_exec));
-   buzzvm_tput(vm);
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
    buzzvm_pushi(vm, id);
    buzzvm_tput(vm);
    /* Push the table on the stack */
@@ -225,7 +215,7 @@ int buzzvm_swarm_create(buzzvm_t vm) {
       buzzdict_set(vm->swarms, &id, &v);
    }
    /* Create a table to return */
-   create_table(vm, id);
+   make_table(vm, id);
    /* Return */
    buzzvm_ret1(vm);
    return BUZZVM_STATE_READY;
@@ -237,7 +227,7 @@ int buzzvm_swarm_create(buzzvm_t vm) {
 int buzzvm_swarm_others(buzzvm_t vm) {
    /* Get the id of the current swarm */
    buzzvm_lload(vm, 0);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
    buzzvm_tget(vm);
    uint16_t id1 = buzzvm_stack_at(vm, 1)->i.value;
    fprintf(stderr, "[DEBUG] Creating other swarm from id1 = %u\n", id1);
@@ -260,7 +250,7 @@ int buzzvm_swarm_others(buzzvm_t vm) {
       buzzoutmsg_queue_append_swarm_joinleave(
          vm->outmsgs, BUZZMSG_SWARM_JOIN, id2);
    /* Create a table to return */
-   create_table(vm, id2);
+   make_table(vm, id2);
    /* Return */
    buzzvm_ret1(vm);
    return BUZZVM_STATE_READY;
@@ -272,7 +262,7 @@ int buzzvm_swarm_others(buzzvm_t vm) {
 int buzzvm_swarm_join(buzzvm_t vm) {
    /* Get the id */
    buzzvm_lload(vm, 0);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
    buzzvm_tget(vm);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
    fprintf(stderr, "[DEBUG] Joining swarm with id = %u\n", id);
@@ -301,7 +291,7 @@ int buzzvm_swarm_join(buzzvm_t vm) {
 int buzzvm_swarm_leave(buzzvm_t vm) {
    /* Get the id */
    buzzvm_lload(vm, 0);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
    buzzvm_tget(vm);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
    fprintf(stderr, "[DEBUG] Leaving swarm with id = %u\n", id);
@@ -330,7 +320,7 @@ int buzzvm_swarm_leave(buzzvm_t vm) {
 int buzzvm_swarm_in(buzzvm_t vm) {
    /* Get the id */
    buzzvm_lload(vm, 0);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
    buzzvm_tget(vm);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
    fprintf(stderr, "[DEBUG] Checking membership for swarm id = %u\n", id);
@@ -354,7 +344,7 @@ int buzzvm_swarm_in(buzzvm_t vm) {
 int buzzvm_swarm_select(buzzvm_t vm) {
    /* Get the id */
    buzzvm_lload(vm, 0);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
    buzzvm_tget(vm);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
    /* Get the result of the condition check */
@@ -387,7 +377,7 @@ int buzzvm_swarm_select(buzzvm_t vm) {
 int buzzvm_swarm_exec(buzzvm_t vm) {
    /* Get the id */
    buzzvm_lload(vm, 0);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
    buzzvm_tget(vm);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
    /* Get the swarm entry */

@@ -100,6 +100,13 @@ extern "C" {
    extern int buzzvm_swarm_others(struct buzzvm_s* vm);
 
    /*
+    * Buzz C closure to return the current swarm id or the parent's.
+    * @param vm The Buzz VM state.
+    * @return The updated VM state.
+    */
+   extern int buzzvm_swarm_id(struct buzzvm_s* vm);
+
+   /*
     * Buzz C closure to join a swarm.
     * @param vm The Buzz VM state.
     * @return The updated VM state.
