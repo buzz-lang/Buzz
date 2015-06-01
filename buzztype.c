@@ -128,6 +128,29 @@ int buzzobj_cmp(const buzzobj_t a,
    if(a->o.type == BUZZTYPE_STRING && b->o.type == BUZZTYPE_STRING) {
       return strcmp(a->s.value.str, b->s.value.str);
    }
+
+   if(a->o.type == BUZZTYPE_STRING && b->o.type == BUZZTYPE_INT) {
+      char str[30];
+      sprintf(str, "%d", b->i.value);
+      return strcmp(a->s.value.str, str);
+   }
+   if(a->o.type == BUZZTYPE_STRING && b->o.type == BUZZTYPE_FLOAT) {
+      char str[30];
+      sprintf(str, "%f", b->f.value);
+      return strcmp(a->s.value.str, str);
+   }
+
+   if(a->o.type == BUZZTYPE_INT && b->o.type == BUZZTYPE_STRING) {
+      char str[30];
+      sprintf(str, "%d", a->i.value);
+      return strcmp(str, b->s.value.str);
+   }
+   if(a->o.type == BUZZTYPE_FLOAT && b->o.type == BUZZTYPE_STRING) {
+      char str[30];
+      sprintf(str, "%f", a->f.value);
+      return strcmp(str, b->s.value.str);
+   }
+
    if(a->o.type == BUZZTYPE_TABLE && b->o.type == BUZZTYPE_TABLE) {
       if((uintptr_t)(a->t.value) < (uintptr_t)(b->t.value)) return -1;
       if((uintptr_t)(a->t.value) > (uintptr_t)(b->t.value)) return 1;
