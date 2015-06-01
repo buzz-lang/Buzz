@@ -169,6 +169,7 @@ void buzzswarm_members_print(buzzswarm_members_t m, uint16_t id) {
 /****************************************/
 
 void buzzswarm_members_update(buzzswarm_members_t m) {
+   /* Erase an element if it exceeds the age */
    // TODO
 }
 
@@ -219,6 +220,39 @@ int buzzvm_swarm_create(buzzvm_t vm) {
    /* Return */
    buzzvm_ret1(vm);
    return BUZZVM_STATE_READY;
+}
+
+/****************************************/
+/****************************************/
+
+int buzzvm_swarm_id(struct buzzvm_s* vm) {
+   /* Is the swarm stack empty? */
+   if(buzzdarray_isempty(vm->swarmstack)) {
+      /* Yes, no swarm to push, push nil instead */
+      buzzvm_pushnil(vm);
+   }
+   else {
+      /* Take the stack top by default */
+      uint16_t stackpos = 1;
+      /* Do we have an argument? */
+      if(buzzdarray_size(vm->lsyms->syms) > 1) {
+         buzzvm_lload(vm, 1);
+         buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+         stackpos = buzzvm_stack_at(vm, 1)->i.value;
+      }
+      /* Limit stackpos value to avoid out-of-bounds operations */
+      if(stackpos > buzzdarray_size(vm->swarmstack))
+         stackpos = buzzdarray_size(vm->swarmstack);
+      /* Push the swarm id located at stackpos */
+      buzzvm_pushi(vm,
+                   buzzdarray_get(
+                      vm->swarmstack,
+                      buzzdarray_size(vm->swarmstack) - stackpos,
+                      uint16_t));
+   }
+   /* Return the value */
+   buzzvm_ret1(vm);
+   return vm->state;
 }
 
 /****************************************/

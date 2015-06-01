@@ -1,9 +1,9 @@
 function members() {
-  log("fb ", id, ": MEMBER of ", swarm.id)
+  log("fb ", id, ": MEMBER of ", swarm.id())
 }
 
 function nonmembers() {
-  log("fb ", id, ": NONMEMBER of ", swarm.id  )
+  log("fb ", id, ": NONMEMBER of ", swarm.id())
 }
 
 function init() {
@@ -16,6 +16,10 @@ function init() {
 }
 
 function step() {
+  log("s1.id = ", s1.id)
+  log("o1.id = ", o1.id)
+  log("s2.id = ", s2.id)
+  log("o2.id = ", o2.id)
   s1.exec(members)
   o1.exec(nonmembers)
   s2.exec(members)

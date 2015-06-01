@@ -25,7 +25,7 @@
         <footbot_proximity implementation="default" show_rays="true" />
         <range_and_bearing implementation="medium" medium="rab" show_rays="true" />
       </sensors>
-      <params bytecode_file="testneighbors.bo" />
+      <params bytecode_file="testswarm.bo" />
     </buzz_controller>
 
   </controllers>

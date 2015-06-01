@@ -444,6 +444,11 @@ int buzzvm_set_bcode(buzzvm_t vm,
    buzzvm_pushs(vm, buzzvm_string_register(vm, "create"));
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_create));
    buzzvm_tput(vm);
+   /* Add the 'id' method */
+   buzzvm_push(vm, t);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_id));
+   buzzvm_tput(vm);
    return BUZZVM_STATE_READY;
 }
 
