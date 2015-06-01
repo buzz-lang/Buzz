@@ -92,7 +92,7 @@ extern "C" {
     * @param vm The Buzz VM data.
     * @return The updated VM state.
     */
-   extern int buzzneighbors_foreach(struct buzzvm_s* vm);
+   extern int buzzneighbors_map(struct buzzvm_s* vm);
 
    /*
     * Pushes the number of neighbors on the stack.

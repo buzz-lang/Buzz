@@ -31,7 +31,7 @@ static int make_table(buzzvm_t vm, buzzobj_t* t) {
    function_register(*t, "nonkin",    buzzneighbors_nonkin);
    function_register(*t, "aggregate", buzzneighbors_aggregate);
    function_register(*t, "propagate", buzzneighbors_propagate);
-   function_register(*t, "foreach",   buzzneighbors_foreach);
+   function_register(*t, "map",       buzzneighbors_map);
    function_register(*t, "count",     buzzneighbors_count);
    return vm->state;
 }
@@ -301,7 +301,7 @@ void neighbor_each(const void* key, void* data, void* params) {
    d->vm->state = buzzvm_closure_call(d->vm, 2);
 }
 
-int buzzneighbors_foreach(struct buzzvm_s* vm) {
+int buzzneighbors_map(struct buzzvm_s* vm) {
    /* Get self table */
    buzzvm_lload(vm, 0);
    /* Get data field */

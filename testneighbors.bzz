@@ -7,8 +7,8 @@ function init() {
 function step() {
   log("ROBOT ", id, ": ", neighbors.count(), " neighbors")
 
-  s.exec(printnonkin)
-  o.exec(printnonkin)
+  s.exec(printkin)
+  o.exec(printkin)
 
   log()
 }
@@ -17,13 +17,14 @@ function destroy() {
 }
 
 function printkin() {
-  neighbors.kin().foreach(function(rid, data) {
+  log("ROBOT ", id, " is in swarm ", swarm.id)
+  neighbors.kin().map(function(rid, data) {
     log("ROBOT ", id, ": NEIGHBOR<id=", rid, ", dist=", data.distance, ", azimuth=", data.azimuth, ", elevation=", data.elevation, ">")
   })
 }
 
 function printnonkin() {
-  neighbors.nonkin().foreach(function(rid, data) {
+  neighbors.nonkin().map(function(rid, data) {
     log("ROBOT ", id, ": NEIGHBOR<id=", rid, ", dist=", data.distance, ", azimuth=", data.azimuth, ", elevation=", data.elevation, ">")
   })
 }
