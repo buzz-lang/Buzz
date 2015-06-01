@@ -20,7 +20,7 @@ For detail, see `comment-dwim'."
 ;; Define token classes and regular expressions
 ;;
 ;; Keywords
-(setq buzz-keywords '("var" "nil" "if" "else" "function" "return" "for" "while" "and" "or" "not" "swarm" "stigmergy" "neighbors" "self" "id"))
+(setq buzz-keywords '("var" "nil" "if" "else" "function" "return" "for" "while" "and" "or" "not" "swarm" "stigmergy" "neighbors" "self" "id" "math"))
 (setq buzz-keywords-regexp (regexp-opt buzz-keywords 'words))
 (setq buzz-keywords nil)
 

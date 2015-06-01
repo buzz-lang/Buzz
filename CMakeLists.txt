@@ -32,6 +32,7 @@ add_library(buzz SHARED
   buzzvstig.h buzzvstig.c
   buzzswarm.h buzzswarm.c
   buzzneighbors.h buzzneighbors.c
+  buzzmath.h buzzmath.c
   buzzvm.h buzzvm.c
   buzzasm.h buzzasm.c
   buzzlex.h buzzlex.c

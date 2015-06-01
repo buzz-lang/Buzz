@@ -1,6 +1,7 @@
 #include "buzzvm.h"
 #include "buzzvstig.h"
 #include "buzzswarm.h"
+#include "buzzmath.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -440,6 +441,10 @@ int buzzvm_set_bcode(buzzvm_t vm,
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_id));
    buzzvm_tput(vm);
+   /*
+    * Register math methods
+    */
+   buzzmath_register(vm);
    return BUZZVM_STATE_READY;
 }
 

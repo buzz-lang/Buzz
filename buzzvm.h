@@ -7,6 +7,7 @@
 #include <buzzvstig.h>
 #include <buzzswarm.h>
 #include <buzzneighbors.h>
+#include <stdlib.h>
 #include <math.h>
 
 #ifdef __cplusplus
