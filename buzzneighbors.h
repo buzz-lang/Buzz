@@ -49,15 +49,7 @@ extern "C" {
     * @param vm The Buzz VM data.
     * @return The updated VM state.
     */
-   extern int buzzneighbors_aggregate(struct buzzvm_s* vm);
-
-   /*
-    * Pushes a symbol to the neighbors.
-    * Upon receiving the data, the neighbor collects it in a table indexed by id.
-    * @param vm The Buzz VM data.
-    * @return The updated VM state.
-    */
-   extern int buzzneighbors_propagate(struct buzzvm_s* vm);
+   extern int buzzneighbors_query(struct buzzvm_s* vm);
 
    /*
     * Pushes a table of robots belonging to the same swarm as the current robot.
@@ -74,18 +66,11 @@ extern "C" {
    extern int buzzneighbors_nonkin(struct buzzvm_s* vm);
 
    /*
-    * Pushes a table containing (robot, distance, azimuth, elevation) onto the stack.
+    * Pushes a table containing (robot id, data) onto the stack.
     * @param vm The Buzz VM data.
     * @return The updated VM state.
     */
-   extern int buzzneighbors_pto(struct buzzvm_s* vm);
-
-   /*
-    * Pushes a table containing (robot, x, y, z) onto the stack.
-    * @param vm The Buzz VM data.
-    * @return The updated VM state.
-    */
-   extern int buzzneighbors_cto(struct buzzvm_s* vm);
+   extern int buzzneighbors_get(struct buzzvm_s* vm);
 
    /*
     * Calls a closure for each neighbor.
@@ -107,6 +92,13 @@ extern "C" {
     * @return The updated VM state.
     */
    extern int buzzneighbors_reduce(struct buzzvm_s* vm);
+
+   /*
+    * Filters the neighbors according to a predicate.
+    * @param vm The Buzz VM data.
+    * @return The updated VM state.
+    */
+   extern int buzzneighbors_filter(struct buzzvm_s* vm);
 
    /*
     * Pushes the number of neighbors on the stack.

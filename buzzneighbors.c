@@ -25,12 +25,10 @@ static int make_table(buzzvm_t vm, buzzobj_t* t) {
    /* Make new table */
    *t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
    /* Add methods */
-   function_register(*t, "pto",       buzzneighbors_pto);
-   function_register(*t, "cto",       buzzneighbors_cto);
+   function_register(*t, "get",       buzzneighbors_get);
    function_register(*t, "kin",       buzzneighbors_kin);
    function_register(*t, "nonkin",    buzzneighbors_nonkin);
-   function_register(*t, "aggregate", buzzneighbors_aggregate);
-   function_register(*t, "propagate", buzzneighbors_propagate);
+   function_register(*t, "query",     buzzneighbors_query);
    function_register(*t, "foreach",   buzzneighbors_foreach);
    function_register(*t, "map",       buzzneighbors_map);
    function_register(*t, "reduce",    buzzneighbors_reduce);
@@ -110,14 +108,7 @@ int buzzneighbors_add(buzzvm_t vm,
 /****************************************/
 /****************************************/
 
-int buzzneighbors_aggregate(buzzvm_t vm) {
-   return BUZZVM_STATE_READY;
-}
-
-/****************************************/
-/****************************************/
-
-int buzzneighbors_propagate(buzzvm_t vm) {
+int buzzneighbors_query(buzzvm_t vm) {
    return BUZZVM_STATE_READY;
 }
 
@@ -255,7 +246,7 @@ int buzzneighbors_nonkin(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
-int buzzneighbors_pto(struct buzzvm_s* vm) {
+int buzzneighbors_get(struct buzzvm_s* vm) {
    /* Get self table */
    buzzvm_lload(vm, 0);
    /* Get data field */
@@ -273,13 +264,6 @@ int buzzneighbors_pto(struct buzzvm_s* vm) {
    }
    /* Return value */
    buzzvm_ret1(vm);
-   return BUZZVM_STATE_READY;
-}
-
-/****************************************/
-/****************************************/
-
-int buzzneighbors_cto(struct buzzvm_s* vm) {
    return BUZZVM_STATE_READY;
 }
 
@@ -451,6 +435,74 @@ int buzzneighbors_reduce(struct buzzvm_s* vm) {
    /* Return value */
    buzzvm_ret1(vm);
    return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
+struct neighbor_filter_each_s {
+   buzzvm_t vm;
+   buzzobj_t closure;
+   buzzdict_t result;
+};
+
+void neighbor_filter_each(const void* key, void* data, void* params) {
+   buzzobj_t rid = *(buzzobj_t*)key;
+   struct neighbor_filter_each_s* d = (struct neighbor_filter_each_s*)params;
+   /* Push closure and params (key, value) */
+   buzzvm_push(d->vm, d->closure);
+   buzzvm_push(d->vm, rid);
+   buzzvm_push(d->vm, *(buzzobj_t*)data);
+   /* Call closure */
+   d->vm->state = buzzvm_closure_call(d->vm, 2);
+   /* Check return value */
+   buzzobj_t retval = buzzvm_stack_at(d->vm, 1);
+   if(retval->o.type != BUZZTYPE_NIL &&
+      (retval->o.type != BUZZTYPE_INT ||
+       retval->i.value != 0))
+      buzzdict_set(d->result, &rid, data);
+   /* Get rid of return value */
+   buzzvm_pop(d->vm);
+}
+
+int buzzneighbors_filter(struct buzzvm_s* vm) {
+   /* Get the self table */
+   buzzvm_lload(vm, 0);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_TABLE);
+   /* Get the data table */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+   buzzvm_tget(vm);
+   buzzobj_t data = buzzvm_stack_at(vm, 1);
+   /* Create a new table as return value and put it on the stack */
+   buzzobj_t t;
+   vm->state = make_table(vm, &t);
+   if(vm->state != BUZZVM_STATE_READY) return vm->state;
+   buzzvm_push(vm, t);
+   /* If data is available, go through it */
+   if(data->o.type == BUZZTYPE_TABLE) {
+      /* Get closure */
+      buzzvm_lload(vm, 1);
+      buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
+      buzzobj_t closure = buzzvm_stack_at(vm, 1);
+      /* Create a new data table */
+      buzzobj_t mapdata = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
+      /* Add mapdata as the "data" field in t */
+      buzzvm_push(vm, t);
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+      buzzvm_push(vm, mapdata);
+      buzzvm_tput(vm);
+      /* Go through the neighbors in data */
+      struct neighbor_map_each_s fdata = {
+         .vm = vm,
+         .closure = closure,
+         .result = mapdata->t.value
+      };
+      buzzdict_foreach(data->t.value, neighbor_map_each, &fdata);
+   }
+   /* Return the table */
+   buzzvm_push(vm, t);
+   buzzvm_ret1(vm);
+   return BUZZVM_STATE_READY;
 }
 
 /****************************************/
