@@ -26,19 +26,20 @@ function printaccum() {
   var accum
   log("ROBOT ", id, " is in swarm ", swarm.id())
   accum = 17
-  neighbors.kin().accumulate(print_neighbor_accum, accum)
+  accum = neighbors.kin().accumulate(print_neighbor_accum, accum)
+  log("ROBOT ", id, ": accum = ", accum)
 }
 
 function printkin() {
   log("ROBOT ", id, " is in swarm ", swarm.id())
-  neighbors.kin().map(function(rid, data) {
+  neighbors.kin().foreach(function(rid, data) {
     log("ROBOT ", id, ": NEIGHBOR<id=", rid, ", dist=", data.distance, ", azimuth=", data.azimuth, ", elevation=", data.elevation, ">")
   })
 }
 
 function printnonkin() {
   log("ROBOT ", id, " is in swarm ", swarm.id())
-  neighbors.nonkin().map(function(rid, data) {
+  neighbors.nonkin().foreach(function(rid, data) {
     log("ROBOT ", id, ": NEIGHBOR<id=", rid, ", dist=", data.distance, ", azimuth=", data.azimuth, ", elevation=", data.elevation, ">")
   })
 }

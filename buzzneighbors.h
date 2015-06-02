@@ -92,6 +92,13 @@ extern "C" {
     * @param vm The Buzz VM data.
     * @return The updated VM state.
     */
+   extern int buzzneighbors_foreach(struct buzzvm_s* vm);
+
+   /*
+    * Makes a new neighbor structure in which each element is transformed by the passed closure.
+    * @param vm The Buzz VM data.
+    * @return The updated VM state.
+    */
    extern int buzzneighbors_map(struct buzzvm_s* vm);
 
    /*
@@ -99,7 +106,7 @@ extern "C" {
     * @param vm The Buzz VM data.
     * @return The updated VM state.
     */
-   extern int buzzneighbors_accumulate(struct buzzvm_s* vm);
+   extern int buzzneighbors_reduce(struct buzzvm_s* vm);
 
    /*
     * Pushes the number of neighbors on the stack.

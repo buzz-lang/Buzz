@@ -6,7 +6,7 @@
   <!-- ************************* -->
   <framework>
     <system threads="0" />
-    <experiment length="1"
+    <experiment length="0"
                 ticks_per_second="10"
                 random_seed="124" />
   </framework>
@@ -22,10 +22,15 @@
         <range_and_bearing implementation="default" />
       </actuators>
       <sensors>
-        <footbot_proximity implementation="default" show_rays="true" />
+        <footbot_proximity implementation="default" show_rays="false" />
         <range_and_bearing implementation="medium" medium="rab" show_rays="true" />
       </sensors>
-      <params bytecode_file="testneighbors.bo" />
+      <params bytecode_file="testflocking.bo">
+        <wheel_turning hard_turn_angle_threshold="90"
+                       soft_turn_angle_threshold="70"
+                       no_turn_angle_threshold="10"
+                       max_speed="10" />
+      </params>
     </buzz_controller>
 
   </controllers>
@@ -58,9 +63,9 @@
         standard deviation is 360 degrees.
     -->
     <distribute>
-      <position method="uniform" min="-2,-2,0" max="2,2,0" />
+      <position method="uniform" min="-1,-1,0" max="1,1,0" />
       <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0" />
-      <entity quantity="10" max_trials="100">
+      <entity quantity="20" max_trials="100">
         <foot-bot id="fb" rab_data_size="100">
           <controller config="fdc" />
         </foot-bot>

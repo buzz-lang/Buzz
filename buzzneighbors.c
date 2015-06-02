@@ -15,25 +15,26 @@ struct neighbor_filter_s {
 /****************************************/
 /****************************************/
 
-#define function_register(TABLE, FNAME, FPOINTER)                       \
-   buzzvm_push(vm, (TABLE));                                            \
-   buzzvm_pushs(vm, buzzvm_string_register(vm, (FNAME)));               \
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, (FPOINTER)));         \
+#define function_register(TABLE, FNAME, FPOINTER)               \
+   buzzvm_push(vm, (TABLE));                                    \
+   buzzvm_pushs(vm, buzzvm_string_register(vm, (FNAME)));       \
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, (FPOINTER))); \
    buzzvm_tput(vm);
 
 static int make_table(buzzvm_t vm, buzzobj_t* t) {
    /* Make new table */
    *t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
    /* Add methods */
-   function_register(*t, "pto",        buzzneighbors_pto);
-   function_register(*t, "cto",        buzzneighbors_cto);
-   function_register(*t, "kin",        buzzneighbors_kin);
-   function_register(*t, "nonkin",     buzzneighbors_nonkin);
-   function_register(*t, "aggregate",  buzzneighbors_aggregate);
-   function_register(*t, "propagate",  buzzneighbors_propagate);
-   function_register(*t, "map",        buzzneighbors_map);
-   function_register(*t, "accumulate", buzzneighbors_accumulate);
-   function_register(*t, "count",      buzzneighbors_count);
+   function_register(*t, "pto",       buzzneighbors_pto);
+   function_register(*t, "cto",       buzzneighbors_cto);
+   function_register(*t, "kin",       buzzneighbors_kin);
+   function_register(*t, "nonkin",    buzzneighbors_nonkin);
+   function_register(*t, "aggregate", buzzneighbors_aggregate);
+   function_register(*t, "propagate", buzzneighbors_propagate);
+   function_register(*t, "foreach",   buzzneighbors_foreach);
+   function_register(*t, "map",       buzzneighbors_map);
+   function_register(*t, "reduce",    buzzneighbors_reduce);
+   function_register(*t, "count",     buzzneighbors_count);
    return vm->state;
 }
 
@@ -285,14 +286,15 @@ int buzzneighbors_cto(struct buzzvm_s* vm) {
 /****************************************/
 /****************************************/
 
-struct neighbor_each_s {
+struct neighbor_for_each_s {
    buzzvm_t vm;
    buzzobj_t closure;
 };
 
-void neighbor_each(const void* key, void* data, void* params) {
+void neighbor_for_each(const void* key, void* data, void* params) {
    /* Cast params */
-   struct neighbor_each_s* d = (struct neighbor_each_s*)params;
+   struct neighbor_for_each_s* d = (struct neighbor_for_each_s*)params;
+   if(d->vm->robot == 0) fprintf(stderr, "[DEBUG] neighbor_for_each - START\n");
    if(d->vm->state != BUZZVM_STATE_READY) return;
    /* Push closure and params (key and value) */
    buzzvm_push(d->vm, d->closure);
@@ -300,56 +302,126 @@ void neighbor_each(const void* key, void* data, void* params) {
    buzzvm_push(d->vm, *(buzzobj_t*)data);
    /* Call closure */
    d->vm->state = buzzvm_closure_call(d->vm, 2);
+   if(d->vm->robot == 0) fprintf(stderr, "[DEBUG] neighbor_for_each - END\n");
 }
 
-int buzzneighbors_map(struct buzzvm_s* vm) {
+int buzzneighbors_foreach(struct buzzvm_s* vm) {
+   if(vm->robot == 0) fprintf(stderr, "[DEBUG] buzzneighbors_foreach - START\n");
    /* Get self table */
    buzzvm_lload(vm, 0);
    /* Get data field */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
    buzzvm_tget(vm);
+   buzzobj_t data = buzzvm_stack_at(vm, 1);
    if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_TABLE) {
       /* Get closure */
       buzzvm_lload(vm, 1);
       buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
+      buzzobj_t closure = buzzvm_stack_at(vm, 1);
       /* Go through elements */
-      struct neighbor_each_s edata = {
+      struct neighbor_for_each_s edata = {
          .vm = vm,
-         .closure = buzzvm_stack_at(vm, 1)
+         .closure = closure
       };
-      buzzdict_foreach(buzzvm_stack_at(vm, 2)->t.value,
-                       neighbor_each,
+      buzzdict_foreach(data->t.value,
+                       neighbor_for_each,
                        &edata);
    }
    buzzvm_ret0(vm);
+   if(vm->robot == 0) fprintf(stderr, "[DEBUG] buzzneighbors_foreach - END\n");
    return vm->state;
 }
 
 /****************************************/
 /****************************************/
 
-struct neighbor_accumulate_s {
+struct neighbor_map_each_s {
+   buzzvm_t vm;
+   buzzobj_t closure;
+   buzzdict_t result;
+};
+
+void neighbor_map_each(const void* key, void* data, void* params) {
+   buzzobj_t rid = *(buzzobj_t*)key;
+   struct neighbor_map_each_s* d = (struct neighbor_map_each_s*)params;
+   /* Push closure and params (key, value) */
+   buzzvm_push(d->vm, d->closure);
+   buzzvm_push(d->vm, rid);
+   buzzvm_push(d->vm, *(buzzobj_t*)data);
+   /* Call closure */
+   d->vm->state = buzzvm_closure_call(d->vm, 2);
+   /* Add entry to the return table */
+   buzzobj_t retval = buzzvm_stack_at(d->vm, 1);
+   buzzdict_set(d->result, &rid, &retval);
+   /* Get rid of return value */
+   buzzvm_pop(d->vm);
+}
+
+int buzzneighbors_map(buzzvm_t vm) {
+   /* Get the self table */
+   buzzvm_lload(vm, 0);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_TABLE);
+   /* Get the data table */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+   buzzvm_tget(vm);
+   buzzobj_t data = buzzvm_stack_at(vm, 1);
+   /* Create a new table as return value and put it on the stack */
+   buzzobj_t t;
+   vm->state = make_table(vm, &t);
+   if(vm->state != BUZZVM_STATE_READY) return vm->state;
+   buzzvm_push(vm, t);
+   /* If data is available, go through it */
+   if(data->o.type == BUZZTYPE_TABLE) {
+      /* Get closure */
+      buzzvm_lload(vm, 1);
+      buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
+      buzzobj_t closure = buzzvm_stack_at(vm, 1);
+      /* Create a new data table */
+      buzzobj_t mapdata = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
+      /* Add mapdata as the "data" field in t */
+      buzzvm_push(vm, t);
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+      buzzvm_push(vm, mapdata);
+      buzzvm_tput(vm);
+      /* Go through the neighbors in data */
+      struct neighbor_map_each_s fdata = {
+         .vm = vm,
+         .closure = closure,
+         .result = mapdata->t.value
+      };
+      buzzdict_foreach(data->t.value, neighbor_map_each, &fdata);
+   }
+   /* Return the table */
+   buzzvm_push(vm, t);
+   buzzvm_ret1(vm);
+   return BUZZVM_STATE_READY;
+}
+
+/****************************************/
+/****************************************/
+
+struct neighbor_reduce_s {
    buzzvm_t vm;
    buzzobj_t closure;
 };
 
-void neighbor_accumulate(const void* key, void* data, void* params) {
+void neighbor_reduce(const void* key, void* data, void* params) {
    /* Cast params */
-   struct neighbor_accumulate_s* d = (struct neighbor_accumulate_s*)params;
+   struct neighbor_reduce_s* d = (struct neighbor_reduce_s*)params;
    if(d->vm->state != BUZZVM_STATE_READY) return;
-   /* Pop current accumulator and keep a pointer to it */
+   /* Save and pop accumulator from the stack */
    buzzobj_t accum = buzzvm_stack_at(d->vm, 1);
-   if(buzzvm_pop(d->vm) != BUZZVM_STATE_READY) return;
+   buzzvm_pop(d->vm);
    /* Push closure and params (key, value, accumulator) */
    buzzvm_push(d->vm, d->closure);
    buzzvm_push(d->vm, *(buzzobj_t*)key);
    buzzvm_push(d->vm, *(buzzobj_t*)data);
    buzzvm_push(d->vm, accum);
-   /* Call closure - this leaves the new accumulator on the stack */
+   /* Call closure - the accumulator is left on the stack */
    d->vm->state = buzzvm_closure_call(d->vm, 3);
 }
 
-int buzzneighbors_accumulate(struct buzzvm_s* vm) {
+int buzzneighbors_reduce(struct buzzvm_s* vm) {
    /* Get self table */
    buzzvm_lload(vm, 0);
    /* Get data field */
@@ -363,17 +435,20 @@ int buzzneighbors_accumulate(struct buzzvm_s* vm) {
       /* Get closure */
       buzzvm_lload(vm, 1);
       buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
-      /* Push accumulator */
+      buzzobj_t closure = buzzvm_stack_at(vm, 1);
+      /* Put accumulator on the stack */
       buzzvm_push(vm, accum);
       /* Go through elements */
-      struct neighbor_accumulate_s edata = {
+      struct neighbor_reduce_s edata = {
          .vm = vm,
-         .closure = buzzvm_stack_at(vm, 2)
+         .closure = closure
       };
       buzzdict_foreach(data->t.value,
-                       neighbor_accumulate,
+                       neighbor_reduce,
                        &edata);
+      /* The final value of the accumulator is on the stack */
    }
+   /* Return value */
    buzzvm_ret1(vm);
    return vm->state;
 }

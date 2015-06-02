@@ -1,0 +1,51 @@
+#
+# Lennard-Jones parameters
+#
+TARGET_DIST = 150.
+EPSILON     = 8000.
+MAX_LJ      = 5.
+
+#
+# Lennard-Jones interaction
+#
+function lj(dist) {
+  return -(EPSILON / dist) * ((TARGET_DIST / dist)^4 - (TARGET_DIST / dist)^2)
+}
+
+#
+# Accumulator of neighbor LJ interactions
+#
+function sum(rid, data, accum) {
+  accum.x = accum.x + lj(data.distance) * math.cos(data.azimuth)
+  accum.y = accum.y + lj(data.distance) * math.sin(data.azimuth)
+  return accum
+}
+
+#
+# Executed at init time
+#
+function init() {
+}
+
+#
+# Executed every time step
+#
+function step() {
+  # Create accumulator
+  var accum
+  accum = {}
+  accum.x = 0
+  accum.y = 0
+  # Calculate accumulator
+  accum = neighbors.reduce(sum, accum)
+  accum.x = accum.x / neighbors.count()
+  accum.y = accum.y / neighbors.count()
+  # Move according to vector
+  goto(accum.x, accum.y);
+}
+
+#
+# Execute at exit
+#
+function destroy() {
+}

@@ -7,46 +7,20 @@
 /****************************************/
 /****************************************/
 
-void dump(buzzvm_t vm) {
-   DEBUG("============================================================\n");
-   DEBUG("state: %d\terror: %d\n", vm->state, vm->error);
-   DEBUG("code size: %u\tpc: %d\n", vm->bcode_size, vm->pc);
-   DEBUG("stacks: %lld\tcur elem: %lld (size %lld)\n", buzzdarray_size(vm->stacks), buzzvm_stack_top(vm), buzzvm_stack_top(vm));
-   for(int64_t i = buzzvm_stack_top(vm)-1; i >= 0; --i) {
-      DEBUG("\t%lld\t", i);
-      buzzobj_t o = buzzdarray_get(vm->stack, i, buzzobj_t);
-      switch(o->o.type) {
-         case BUZZTYPE_NIL:
-            fprintf(stderr, "[nil]\n");
-            break;
-         case BUZZTYPE_INT:
-            fprintf(stderr, "[int] %d\n", o->i.value);
-            break;
-         case BUZZTYPE_FLOAT:
-            fprintf(stderr, "[float] %f\n", o->f.value);
-            break;
-         case BUZZTYPE_TABLE:
-            fprintf(stderr, "[table] %d elements\n", buzzdict_size(o->t.value));
-            break;
-         case BUZZTYPE_ARRAY:
-            fprintf(stderr, "[array] %lld\n", buzzdarray_size(o->a.value));
-            break;
-         case BUZZTYPE_CLOSURE:
-            if(o->c.value.isnative) {
-               fprintf(stderr, "[n-closure] %d\n", o->c.value.ref);
-            }
-            else {
-               fprintf(stderr, "[c-closure] %d\n", o->c.value.ref);
-            }
-            break;
-         case BUZZTYPE_STRING:
-            fprintf(stderr, "[string] %d:'%s'\n", o->s.value.sid, o->s.value.str);
-            break;
-         default:
-            fprintf(stderr, "[TODO] type = %d\n", o->o.type);
-      }
+void CBuzzController::SWheelTurningParams::Init(TConfigurationNode& t_node) {
+   try {
+      CDegrees cAngle;
+      GetNodeAttribute(t_node, "hard_turn_angle_threshold", cAngle);
+      HardTurnOnAngleThreshold = ToRadians(cAngle);
+      GetNodeAttribute(t_node, "soft_turn_angle_threshold", cAngle);
+      SoftTurnOnAngleThreshold = ToRadians(cAngle);
+      GetNodeAttribute(t_node, "no_turn_angle_threshold", cAngle);
+      NoTurnAngleThreshold = ToRadians(cAngle);
+      GetNodeAttribute(t_node, "max_speed", MaxSpeed);
    }
-   DEBUG("============================================================\n\n");
+   catch(CARGoSException& ex) {
+      THROW_ARGOSEXCEPTION_NESTED("Error initializing controller wheel turning parameters.", ex);
+   }
 }
 
 /****************************************/
@@ -99,6 +73,25 @@ int BuzzLOG (buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+int BuzzGoTo(buzzvm_t vm) {
+   /* Push the vector components */
+   buzzvm_lload(vm, 1);
+   buzzvm_lload(vm, 2);
+   /* Create a new vector with that */
+   CVector2 cDir(buzzvm_stack_at(vm, 2)->f.value,
+                 buzzvm_stack_at(vm, 1)->f.value);
+   /* Get pointer to the controller */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller"));
+   buzzvm_gload(vm);
+   /* Call function */
+   reinterpret_cast<CBuzzController*>(buzzvm_stack_at(vm, 1)->u.value)->SetWheelSpeedsFromVector(cDir);
+   buzzvm_ret0(vm);
+   return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
 CBuzzController::CBuzzController() :
    m_pcRABA(NULL),
    m_pcRABS(NULL) {
@@ -116,12 +109,14 @@ CBuzzController::~CBuzzController() {
 void CBuzzController::Init(TConfigurationNode& t_node) {
    try {
       /* Get pointers to devices */
-      m_pcRABA = GetActuator<CCI_RangeAndBearingActuator>("range_and_bearing");
-      m_pcRABS = GetSensor  <CCI_RangeAndBearingSensor  >("range_and_bearing");
+      m_pcWheels = GetActuator<CCI_DifferentialSteeringActuator>("differential_steering");
+      m_pcRABA   = GetActuator<CCI_RangeAndBearingActuator     >("range_and_bearing");
+      m_pcRABS   = GetSensor  <CCI_RangeAndBearingSensor       >("range_and_bearing");
       /* Get the script name */
       std::string strFName;
       GetNodeAttribute(t_node, "bytecode_file", strFName);
       /* Initialize the rest */
+      m_sWheelTurningParams.Init(GetNode(t_node, "wheel_turning"));
       m_tBuzzVM = NULL;
       m_unRobotId = FromString<UInt32>(GetId().substr(2));
       SetBytecode(strFName);
@@ -186,6 +181,8 @@ void CBuzzController::SetBytecode(const std::string& str_fname) {
    if(RegisterFunctions() != BUZZVM_STATE_READY) {
       THROW_ARGOSEXCEPTION("Error while registering functions");
    }
+   /* Execute the global part of the script */
+   buzzvm_execute_script(m_tBuzzVM);
    /* Call the Init() function */
    buzzvm_function_call(m_tBuzzVM, "init", 0);
 }
@@ -193,12 +190,88 @@ void CBuzzController::SetBytecode(const std::string& str_fname) {
 /****************************************/
 /****************************************/
 
+void CBuzzController::SetWheelSpeedsFromVector(const CVector2& c_heading) {
+   /* Get the heading angle */
+   CRadians cHeadingAngle = c_heading.Angle().SignedNormalize();
+   /* Get the length of the heading vector */
+   Real fHeadingLength = c_heading.Length();
+   /* Clamp the speed so that it's not greater than MaxSpeed */
+   Real fBaseAngularWheelSpeed = Min<Real>(fHeadingLength, m_sWheelTurningParams.MaxSpeed);
+
+   /* Turning state switching conditions */
+   if(Abs(cHeadingAngle) <= m_sWheelTurningParams.NoTurnAngleThreshold) {
+      /* No Turn, heading angle very small */
+      m_sWheelTurningParams.TurningMechanism = SWheelTurningParams::NO_TURN;
+   }
+   else if(Abs(cHeadingAngle) > m_sWheelTurningParams.HardTurnOnAngleThreshold) {
+      /* Hard Turn, heading angle very large */
+      m_sWheelTurningParams.TurningMechanism = SWheelTurningParams::HARD_TURN;
+   }
+   else if(m_sWheelTurningParams.TurningMechanism == SWheelTurningParams::NO_TURN &&
+           Abs(cHeadingAngle) > m_sWheelTurningParams.SoftTurnOnAngleThreshold) {
+      /* Soft Turn, heading angle in between the two cases */
+      m_sWheelTurningParams.TurningMechanism = SWheelTurningParams::SOFT_TURN;
+   }
+
+   /* Wheel speeds based on current turning state */
+   Real fSpeed1, fSpeed2;
+   switch(m_sWheelTurningParams.TurningMechanism) {
+      case SWheelTurningParams::NO_TURN: {
+         /* Just go straight */
+         fSpeed1 = fBaseAngularWheelSpeed;
+         fSpeed2 = fBaseAngularWheelSpeed;
+         break;
+      }
+
+      case SWheelTurningParams::SOFT_TURN: {
+         /* Both wheels go straight, but one is faster than the other */
+         Real fSpeedFactor = (m_sWheelTurningParams.HardTurnOnAngleThreshold - Abs(cHeadingAngle)) / m_sWheelTurningParams.HardTurnOnAngleThreshold;
+         fSpeed1 = fBaseAngularWheelSpeed - fBaseAngularWheelSpeed * (1.0 - fSpeedFactor);
+         fSpeed2 = fBaseAngularWheelSpeed + fBaseAngularWheelSpeed * (1.0 - fSpeedFactor);
+         break;
+      }
+
+      case SWheelTurningParams::HARD_TURN: {
+         /* Opposite wheel speeds */
+         fSpeed1 = -m_sWheelTurningParams.MaxSpeed;
+         fSpeed2 =  m_sWheelTurningParams.MaxSpeed;
+         break;
+      }
+   }
+
+   /* Apply the calculated speeds to the appropriate wheels */
+   Real fLeftWheelSpeed, fRightWheelSpeed;
+   if(cHeadingAngle > CRadians::ZERO) {
+      /* Turn Left */
+      fLeftWheelSpeed  = fSpeed1;
+      fRightWheelSpeed = fSpeed2;
+   }
+   else {
+      /* Turn Right */
+      fLeftWheelSpeed  = fSpeed2;
+      fRightWheelSpeed = fSpeed1;
+   }
+   /* Finally, set the wheel speeds */
+   m_pcWheels->SetLinearVelocity(fLeftWheelSpeed, fRightWheelSpeed);
+}
+
+/****************************************/
+/****************************************/
+
 int CBuzzController::RegisterFunctions() {
+   /* Pointer to this controller */
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "controller"));
+   buzzvm_pushuserdata(m_tBuzzVM, this);
+   buzzvm_gstore(m_tBuzzVM);
+   /* BuzzGoTo */
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "goto"));
+   buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGoTo));
+   buzzvm_gstore(m_tBuzzVM);
    /* BuzzLOG */
    buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "log"));
    buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzLOG));
    buzzvm_gstore(m_tBuzzVM);
-   return BUZZVM_STATE_READY;
+   return m_tBuzzVM->state;
 }
 
 /****************************************/
