@@ -968,7 +968,10 @@ int parse_idref(buzzparser_t par,
    }
    else {
       /* Symbol found */
-      DEBUG("Found idref %s\n", par->tok->value);
+      DEBUG("Found idref %s, pos = %lld, global = %d\n",
+            par->tok->value,
+            s->pos,
+            s->global);
    }
    /* Save symbol info */
    idrefinfo->info = s->pos;
