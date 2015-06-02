@@ -15,6 +15,8 @@ extern "C" {
 
    extern int buzzmath_log10(buzzvm_t vm);
 
+   extern int buzzmath_sqrt(buzzvm_t vm);
+
    extern int buzzmath_sin(buzzvm_t vm);
 
    extern int buzzmath_cos(buzzvm_t vm);

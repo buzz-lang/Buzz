@@ -110,6 +110,28 @@ int buzzmath_log10(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+int buzzmath_sqrt(buzzvm_t vm) {
+   /* Get argument */
+   float arg;
+   buzzvm_lload(vm, 1);
+   buzzobj_t o = buzzvm_stack_at(vm, 1);
+   if(o->o.type == BUZZTYPE_FLOAT)    arg = o->f.value;
+   else if(o->o.type == BUZZTYPE_INT) arg = o->i.value;
+   else {
+      vm->state = BUZZVM_STATE_ERROR;
+      vm->error = BUZZVM_ERROR_TYPE;
+      return vm->state;
+   }
+   /* Push result */
+   buzzvm_pushf(vm, sqrtf(arg));
+   /* Return result */
+   buzzvm_ret1(vm);
+   return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
 int buzzmath_sin(buzzvm_t vm) {
    /* Get argument */
    float arg;
