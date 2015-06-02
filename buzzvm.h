@@ -7,6 +7,7 @@
 #include <buzzvstig.h>
 #include <buzzswarm.h>
 #include <buzzneighbors.h>
+
 #include <stdlib.h>
 #include <math.h>
 
@@ -212,6 +213,13 @@ extern "C" {
     */
    extern buzzvm_state buzzvm_step(buzzvm_t vm);
 
+   /*
+    * Executes the script up to completion.
+    * @param vm The VM data.
+    * @return The updated VM state.
+    */
+   extern buzzvm_state buzzvm_execute_script(buzzvm_t vm);
+   
    /*
     * Calls a Buzz closure.
     * It expects the stack to be as follows:

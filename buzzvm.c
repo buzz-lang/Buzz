@@ -733,6 +733,14 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+buzzvm_state buzzvm_execute_script(buzzvm_t vm) {
+   while(buzzvm_step(vm) == BUZZVM_STATE_READY);
+   return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
 buzzvm_state buzzvm_closure_call(buzzvm_t vm,
                                  uint32_t argc) {
    /* Push the argument count */
@@ -753,6 +761,9 @@ buzzvm_state buzzvm_closure_call(buzzvm_t vm,
 buzzvm_state buzzvm_function_call(buzzvm_t vm,
                                   const char* fname,
                                   uint32_t argc) {
+   /* Reset the VM state if it's DONE */
+   if(vm->state == BUZZVM_STATE_DONE)
+      vm->state = BUZZVM_STATE_READY;
    /* Push the function name (return with error if not found) */
    buzzvm_pushs(vm, buzzdarray_string_find(vm, &fname));
    /* Get associated symbol */
