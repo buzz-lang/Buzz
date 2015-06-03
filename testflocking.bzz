@@ -1,51 +1,67 @@
-#
 # Lennard-Jones parameters
-#
-TARGET_DIST = 150.
-EPSILON     = 8000.
-MAX_LJ      = 5.
+TARGET_KIN     = 50.
+EPSILON_KIN    = 2700.
+TARGET_NONKIN  = 150.
+EPSILON_NONKIN = 8000.
+MAX_LJ         = 10.
 
-#
-# Lennard-Jones interaction
-#
-function lj(dist) {
-  return -(EPSILON / dist) * ((TARGET_DIST / dist)^4 - (TARGET_DIST / dist)^2)
+# Lennard-Jones interaction magnitude
+function lj(dist, target, epsilon) {
+  return -(epsilon / dist) * ((target / dist)^4 - (target / dist)^2)
 }
 
-#
+# Neighbor data to kin LJ interaction
+function to_lj_kin(rid, data) {
+  data.x = lj(data.distance, TARGET_KIN, EPSILON_KIN) * math.cos(data.azimuth)
+  data.y = lj(data.distance, TARGET_KIN, EPSILON_KIN) * math.sin(data.azimuth)
+  return data
+}
+
+# Neighbor data to non-kin LJ interaction
+function to_lj_nonkin(rid, data) {
+  data.x = lj(data.distance, TARGET_NONKIN, EPSILON_NONKIN) * math.cos(data.azimuth)
+  data.y = lj(data.distance, TARGET_NONKIN, EPSILON_NONKIN) * math.sin(data.azimuth)
+  return data
+}
+
 # Accumulator of neighbor LJ interactions
-#
 function sum(rid, data, accum) {
-  accum.x = accum.x + lj(data.distance) * math.cos(data.azimuth)
-  accum.y = accum.y + lj(data.distance) * math.sin(data.azimuth)
+  accum.x = accum.x + data.x
+  accum.y = accum.y + data.y
   return accum
 }
 
-#
-# Executed at init time
-#
-function init() {
-}
-
-#
-# Executed every time step
-#
-function step() {
+# Calculates and actuates the flocking interaction
+function flock() {
   # Create accumulator
   var accum
   accum = {}
   accum.x = 0
   accum.y = 0
   # Calculate accumulator
-  accum = neighbors.reduce(sum, accum)
+  accum = neighbors.kin().map(to_lj_kin).reduce(sum, accum)
+  accum = neighbors.nonkin().map(to_lj_nonkin).reduce(sum, accum)
   accum.x = accum.x / neighbors.count()
   accum.y = accum.y / neighbors.count()
   # Move according to vector
   goto(accum.x, accum.y);
 }
 
-#
+# Executed at init time
+function init() {
+  s1 = swarm.create(1)
+  s1.select(id % 2 == 0)
+  s2 = s1.others(2)
+  s1.exec(function(){ setleds(255,0,0) })
+  s2.exec(function(){ setleds(0,255,0) })
+}
+
+# Executed every time step
+function step() {
+  s1.exec(flock)
+  s2.exec(flock)
+}
+
 # Execute at exit
-#
 function destroy() {
 }

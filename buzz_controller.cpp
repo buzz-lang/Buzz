@@ -92,6 +92,27 @@ int BuzzGoTo(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+int BuzzSetLEDs(buzzvm_t vm) {
+   /* Push the color components */
+   buzzvm_lload(vm, 1);
+   buzzvm_lload(vm, 2);
+   buzzvm_lload(vm, 3);
+   /* Create a new color with that */
+   CColor cColor(buzzvm_stack_at(vm, 3)->i.value,
+                 buzzvm_stack_at(vm, 2)->i.value,
+                 buzzvm_stack_at(vm, 1)->i.value);
+   /* Get pointer to the controller */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller"));
+   buzzvm_gload(vm);
+   /* Call function */
+   reinterpret_cast<CBuzzController*>(buzzvm_stack_at(vm, 1)->u.value)->SetLEDs(cColor);
+   buzzvm_ret0(vm);
+   return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
 CBuzzController::CBuzzController() :
    m_pcRABA(NULL),
    m_pcRABS(NULL) {
@@ -110,6 +131,7 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
    try {
       /* Get pointers to devices */
       m_pcWheels = GetActuator<CCI_DifferentialSteeringActuator>("differential_steering");
+      m_pcLEDs   = GetActuator<CCI_LEDsActuator                >("leds");
       m_pcRABA   = GetActuator<CCI_RangeAndBearingActuator     >("range_and_bearing");
       m_pcRABS   = GetSensor  <CCI_RangeAndBearingSensor       >("range_and_bearing");
       /* Get the script name */
@@ -258,6 +280,13 @@ void CBuzzController::SetWheelSpeedsFromVector(const CVector2& c_heading) {
 /****************************************/
 /****************************************/
 
+void CBuzzController::SetLEDs(const CColor& c_color) {
+   m_pcLEDs->SetAllColors(c_color);
+}
+
+/****************************************/
+/****************************************/
+
 int CBuzzController::RegisterFunctions() {
    /* Pointer to this controller */
    buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "controller"));
@@ -266,6 +295,10 @@ int CBuzzController::RegisterFunctions() {
    /* BuzzGoTo */
    buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "goto"));
    buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGoTo));
+   buzzvm_gstore(m_tBuzzVM);
+   /* BuzzSetLEDs */
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "setleds"));
+   buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzSetLEDs));
    buzzvm_gstore(m_tBuzzVM);
    /* BuzzLOG */
    buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "log"));

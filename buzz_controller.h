@@ -3,6 +3,7 @@
 
 #include <argos3/core/control_interface/ci_controller.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_differential_steering_actuator.h>
+#include <argos3/plugins/robots/generic/control_interface/ci_leds_actuator.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_range_and_bearing_actuator.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_range_and_bearing_sensor.h>
 
@@ -51,10 +52,8 @@ public:
 
    void SetBytecode(const std::string& str_fname);
 
-   /*
-    * Gets a direction vector as input and transforms it into wheel actuation.
-    */
    void SetWheelSpeedsFromVector(const CVector2& c_heading);
+   void SetLEDs(const CColor& c_color);
 
 private:
 
@@ -70,6 +69,8 @@ private:
 
    /* Pointer to the differential steering actuator */
    CCI_DifferentialSteeringActuator* m_pcWheels;
+   /* Pointer to the LEDs actuator */
+   CCI_LEDsActuator* m_pcLEDs;
    /* Pointer to the range and bearing actuator */
    CCI_RangeAndBearingActuator*  m_pcRABA;
    /* Pointer to the range and bearing sensor */

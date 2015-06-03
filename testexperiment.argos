@@ -19,11 +19,12 @@
     <buzz_controller id="fdc" library="../../build/libbuzzargos">
       <actuators>
         <differential_steering implementation="default" />
+        <leds                  implementation="default" medium="leds" />
         <range_and_bearing implementation="default" />
       </actuators>
       <sensors>
         <footbot_proximity implementation="default" show_rays="false" />
-        <range_and_bearing implementation="medium" medium="rab" show_rays="true" />
+        <range_and_bearing implementation="medium" medium="rab" show_rays="false" />
       </sensors>
       <params bytecode_file="testflocking.bo">
         <wheel_turning hard_turn_angle_threshold="90"
@@ -110,13 +111,18 @@
   <!-- ********* -->
   <media>
     <range_and_bearing id="rab" />
+    <led id="leds" />
   </media>
 
   <!-- ****************** -->
   <!-- * Visualization * -->
   <!-- ****************** -->
   <visualization>
-    <qt-opengl />
+    <qt-opengl>
+      <camera>
+        <placement idx="0" position="-1.40203,0,3.23277" look_at="-1.08235,0,2.28525" lens_focal_length="20" />
+      </camera>
+    </qt-opengl>
   </visualization>
 
 </argos-configuration>
