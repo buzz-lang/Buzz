@@ -109,6 +109,15 @@ int buzzneighbors_add(buzzvm_t vm,
 /****************************************/
 
 int buzzneighbors_query(buzzvm_t vm) {
+   /* Take symbol argument S */
+   /* Get list of robots L in the neighbor query */
+   /* Send query message for S to robots in L */
+   /* Take continuation argument C, if any */
+   /*   If C was passed */
+   /*     Append C to the list of continuations */
+   /*   If C was not passed */
+   /*     Suspend execution until a response arrives */
+   /* What about the return value? It's delayed either way */
    return BUZZVM_STATE_READY;
 }
 
@@ -174,8 +183,7 @@ int buzzneighbors_kin(buzzvm_t vm) {
    }
    /* Return the table */
    buzzvm_push(vm, t);
-   buzzvm_ret1(vm);
-   return BUZZVM_STATE_READY;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -239,8 +247,7 @@ int buzzneighbors_nonkin(buzzvm_t vm) {
    }
    /* Return the table */
    buzzvm_push(vm, t);
-   buzzvm_ret1(vm);
-   return BUZZVM_STATE_READY;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -263,8 +270,7 @@ int buzzneighbors_get(struct buzzvm_s* vm) {
       buzzvm_tget(vm);
    }
    /* Return value */
-   buzzvm_ret1(vm);
-   return BUZZVM_STATE_READY;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -278,7 +284,6 @@ struct neighbor_for_each_s {
 void neighbor_for_each(const void* key, void* data, void* params) {
    /* Cast params */
    struct neighbor_for_each_s* d = (struct neighbor_for_each_s*)params;
-   if(d->vm->robot == 0) fprintf(stderr, "[DEBUG] neighbor_for_each - START\n");
    if(d->vm->state != BUZZVM_STATE_READY) return;
    /* Push closure and params (key and value) */
    buzzvm_push(d->vm, d->closure);
@@ -286,11 +291,9 @@ void neighbor_for_each(const void* key, void* data, void* params) {
    buzzvm_push(d->vm, *(buzzobj_t*)data);
    /* Call closure */
    d->vm->state = buzzvm_closure_call(d->vm, 2);
-   if(d->vm->robot == 0) fprintf(stderr, "[DEBUG] neighbor_for_each - END\n");
 }
 
 int buzzneighbors_foreach(struct buzzvm_s* vm) {
-   if(vm->robot == 0) fprintf(stderr, "[DEBUG] buzzneighbors_foreach - START\n");
    /* Get self table */
    buzzvm_lload(vm, 0);
    /* Get data field */
@@ -311,9 +314,7 @@ int buzzneighbors_foreach(struct buzzvm_s* vm) {
                        neighbor_for_each,
                        &edata);
    }
-   buzzvm_ret0(vm);
-   if(vm->robot == 0) fprintf(stderr, "[DEBUG] buzzneighbors_foreach - END\n");
-   return vm->state;
+   return buzzvm_ret0(vm);
 }
 
 /****************************************/
@@ -377,8 +378,7 @@ int buzzneighbors_map(buzzvm_t vm) {
    }
    /* Return the table */
    buzzvm_push(vm, t);
-   buzzvm_ret1(vm);
-   return BUZZVM_STATE_READY;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -433,8 +433,7 @@ int buzzneighbors_reduce(struct buzzvm_s* vm) {
       /* The final value of the accumulator is on the stack */
    }
    /* Return value */
-   buzzvm_ret1(vm);
-   return vm->state;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -501,8 +500,7 @@ int buzzneighbors_filter(struct buzzvm_s* vm) {
    }
    /* Return the table */
    buzzvm_push(vm, t);
-   buzzvm_ret1(vm);
-   return BUZZVM_STATE_READY;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -519,8 +517,7 @@ int buzzneighbors_count(struct buzzvm_s* vm) {
       count = buzzdarray_size(buzzvm_stack_at(vm, 1)->t.value);
    }
    buzzvm_pushi(vm, count);
-   buzzvm_ret1(vm);
-   return vm->state;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/

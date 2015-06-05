@@ -135,8 +135,7 @@ int buzzvm_vstig_create(buzzvm_t vm) {
    /* Push the table on the stack */
    buzzvm_push(vm, t);
    /* Return */
-   buzzvm_ret1(vm);
-   return BUZZVM_STATE_READY;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -181,8 +180,7 @@ int buzzvm_vstig_put(buzzvm_t vm) {
       }
    }
    /* Return */
-   buzzvm_ret0(vm);
-   return BUZZVM_STATE_READY;
+   return buzzvm_ret0(vm);
 }
 
 /****************************************/
@@ -230,8 +228,7 @@ int buzzvm_vstig_get(buzzvm_t vm) {
       fprintf(stderr, "[BUG] [ROBOT %u] Can't find virtual stigmergy %u\n", vm->robot, id);
    }
    /* Return the value found */
-   buzzvm_ret1(vm);
-   return BUZZVM_STATE_READY;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/

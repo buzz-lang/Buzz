@@ -48,8 +48,7 @@ void dump(buzzvm_t vm) {
 int hook(buzzvm_t vm) {
    fprintf(stdout, "Hook called!\n\n");
    buzzvm_pushf(vm, 17.0);
-   buzzvm_ret1(vm);
-   return 0;
+   return buzzvm_ret1(vm);
 }
 
 int main(int argc, char** argv) {

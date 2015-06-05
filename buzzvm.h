@@ -308,6 +308,34 @@ extern "C" {
     */
    extern buzzvm_state buzzvm_pop(buzzvm_t vm);
 
+   /*
+    * Returns from a closure without setting a return value.
+    * Internally checks whether the operation is valid.
+    * This function expects at least two stacks to be present. The
+    * first stack is popped. The stack beneath, now the top stack, is
+    * expected to have at least one element: the return address at
+    * #1. The return address is popped and used to update the program
+    * counter.
+    * @param vm The VM data.
+    * @return The VM state.
+    */
+   extern buzzvm_state buzzvm_ret0(buzzvm_t vm);
+
+   /*
+    * Returns from a closure setting a return value.
+    * Internally checks whether the operation is valid.
+    * This function expects at least two stacks to be present. The
+    * first stack must have at least one element, which is saved as
+    * the return value of the call. The stack is then popped. The
+    * stack beneath, now the top stack, is expected to have at least
+    * one element: the return address at #1. The return address is
+    * popped and used to update the program counter. Then, the saved
+    * return value is pushed on the stack.
+    * @param vm The VM data.
+    * @return The VM state.
+    */
+   extern buzzvm_state buzzvm_ret1(buzzvm_t vm);
+
 #ifdef __cplusplus
 }
 #endif
@@ -885,64 +913,6 @@ extern "C" {
  */
 #define buzzvm_lte(vm) buzzvm_binary_op_cmp(vm, <=);
 
-/*
- * Returns from a closure without setting a return value.
- * Internally checks whether the operation is valid.  This function is
- * designed to be used within int-returning functions such as BuzzVM
- * hook functions or buzzvm_step().  This function expects at least
- * two stacks to be present. The first stack is popped. The stack
- * beneath, now the top stack, is expected to have at least one
- * element: the return address at #1. The return address is popped and
- * used to update the program counter.
- */
-#define buzzvm_ret0(vm) {                                         \
-      if((vm)->lsyms->isswarm) {                                  \
-         buzzdarray_pop((vm)->swarmstack);                        \
-      }                                                           \
-      buzzdarray_pop((vm)->lsymts);                               \
-      (vm)->lsyms = !buzzdarray_isempty((vm)->lsymts) ?           \
-         buzzdarray_last((vm)->lsymts, buzzvm_lsyms_t) :          \
-         NULL;                                                    \
-      buzzdarray_pop((vm)->stacks);                               \
-      (vm)->stack = buzzdarray_last((vm)->stacks, buzzdarray_t);  \
-      buzzvm_stack_assert(vm, 1);                                 \
-      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);                    \
-      (vm)->pc = buzzvm_stack_at(vm, 1)->i.value;                 \
-      buzzvm_pop(vm);                                             \
-   }
-
-/*
- * Returns from a closure setting a return value.
- * Internally checks whether the operation is valid.  This function is
- * designed to be used within int-returning functions such as BuzzVM
- * hook functions or buzzvm_step().
- * This function expects at least two stacks to be present. The first
- * stack must have at least one element, which is saved as the return
- * value of the call. The stack is then popped. The stack beneath, now
- * the top stack, is expected to have at least one element: the return
- * address at #1. The return address is popped and used to update the
- * program counter. Then, the saved return value is pushed on the
- * stack.
- */
-#define buzzvm_ret1(vm) {                                         \
-      if((vm)->lsyms->isswarm) {                                  \
-         buzzdarray_pop((vm)->swarmstack);                        \
-      }                                                           \
-      buzzdarray_pop((vm)->lsymts);                               \
-      (vm)->lsyms = !buzzdarray_isempty((vm)->lsymts) ?           \
-         buzzdarray_last((vm)->lsymts, buzzvm_lsyms_t) :          \
-         NULL;                                                    \
-      buzzvm_stack_assert(vm, 1);                                 \
-      buzzobj_t ret = buzzvm_stack_at(vm, 1);                     \
-      buzzdarray_pop((vm)->stacks);                               \
-      (vm)->stack = buzzdarray_last((vm)->stacks, buzzdarray_t);  \
-      buzzvm_stack_assert(vm, 1);                                 \
-      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);                    \
-      (vm)->pc = buzzvm_stack_at(vm, 1)->i.value;                 \
-      buzzvm_pop(vm);                                             \
-      buzzvm_push(vm, ret);                                       \
-   }
-   
 /**
  * Calls a normal closure.
  * Internally checks whether the operation is valid.

@@ -59,8 +59,7 @@ int buzzmath_log(buzzvm_t vm) {
    /* Push result */
    buzzvm_pushf(vm, logf(arg));
    /* Return result */
-   buzzvm_ret1(vm);
-   return vm->state;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -81,8 +80,7 @@ int buzzmath_log2(buzzvm_t vm) {
    /* Push result */
    buzzvm_pushf(vm, log2f(arg));
    /* Return result */
-   buzzvm_ret1(vm);
-   return vm->state;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -103,8 +101,7 @@ int buzzmath_log10(buzzvm_t vm) {
    /* Push result */
    buzzvm_pushf(vm, log10f(arg));
    /* Return result */
-   buzzvm_ret1(vm);
-   return vm->state;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -125,8 +122,7 @@ int buzzmath_sqrt(buzzvm_t vm) {
    /* Push result */
    buzzvm_pushf(vm, sqrtf(arg));
    /* Return result */
-   buzzvm_ret1(vm);
-   return vm->state;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -147,8 +143,7 @@ int buzzmath_sin(buzzvm_t vm) {
    /* Push result */
    buzzvm_pushf(vm, sinf(arg));
    /* Return result */
-   buzzvm_ret1(vm);
-   return vm->state;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -169,8 +164,7 @@ int buzzmath_cos(buzzvm_t vm) {
    /* Push result */
    buzzvm_pushf(vm, cosf(arg));
    /* Return result */
-   buzzvm_ret1(vm);
-   return vm->state;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -191,8 +185,7 @@ int buzzmath_tan(buzzvm_t vm) {
    /* Push result */
    buzzvm_pushf(vm, tanf(arg));
    /* Return result */
-   buzzvm_ret1(vm);
-   return vm->state;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -213,8 +206,7 @@ int buzzmath_asin(buzzvm_t vm) {
    /* Push result */
    buzzvm_pushf(vm, asinf(arg));
    /* Return result */
-   buzzvm_ret1(vm);
-   return vm->state;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -235,8 +227,7 @@ int buzzmath_acos(buzzvm_t vm) {
    /* Push result */
    buzzvm_pushf(vm, acosf(arg));
    /* Return result */
-   buzzvm_ret1(vm);
-   return vm->state;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -268,8 +259,7 @@ int buzzmath_atan(buzzvm_t vm) {
    /* Push result */
    buzzvm_pushf(vm, atan2f(y, x));
    /* Return result */
-   buzzvm_ret1(vm);
-   return vm->state;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -286,8 +276,7 @@ int buzzmath_min(buzzvm_t vm) {
       buzzvm_push(vm, a);
    else
       buzzvm_push(vm, b);
-   buzzvm_ret1(vm);
-   return vm->state;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -304,8 +293,7 @@ int buzzmath_max(buzzvm_t vm) {
       buzzvm_push(vm, a);
    else
       buzzvm_push(vm, b);
-   buzzvm_ret1(vm);
-   return vm->state;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/

@@ -66,8 +66,7 @@ int BuzzLOG (buzzvm_t vm) {
    }
    LOG << std::endl;
    LOG.Flush();
-   buzzvm_ret0(vm);
-   return BUZZVM_STATE_READY;
+   return buzzvm_ret0(vm);
 }
 
 /****************************************/
@@ -85,8 +84,7 @@ int BuzzGoTo(buzzvm_t vm) {
    buzzvm_gload(vm);
    /* Call function */
    reinterpret_cast<CBuzzController*>(buzzvm_stack_at(vm, 1)->u.value)->SetWheelSpeedsFromVector(cDir);
-   buzzvm_ret0(vm);
-   return vm->state;
+   return buzzvm_ret0(vm);
 }
 
 /****************************************/
@@ -106,8 +104,7 @@ int BuzzSetLEDs(buzzvm_t vm) {
    buzzvm_gload(vm);
    /* Call function */
    reinterpret_cast<CBuzzController*>(buzzvm_stack_at(vm, 1)->u.value)->SetLEDs(cColor);
-   buzzvm_ret0(vm);
-   return vm->state;
+   return buzzvm_ret0(vm);
 }
 
 /****************************************/
@@ -346,12 +343,12 @@ void CBuzzController::ProcessInMsgs() {
 /****************************************/
 
 void CBuzzController::ProcessOutMsgs() {
-   LOGERR << "CNTRL: "
-          << GetId()
-          << ": At start msg queue has "
-          << buzzoutmsg_queue_size(m_tBuzzVM->outmsgs)
-          << " elements"
-          << std::endl;
+   // LOGERR << "CNTRL: "
+   //        << GetId()
+   //        << ": At start msg queue has "
+   //        << buzzoutmsg_queue_size(m_tBuzzVM->outmsgs)
+   //        << " elements"
+   //        << std::endl;
    /* Send robot id */
    CByteArray cData;
    cData << m_tBuzzVM->robot;
@@ -379,12 +376,12 @@ void CBuzzController::ProcessOutMsgs() {
    while(cData.Size() < m_pcRABA->GetSize()) cData << static_cast<UInt8>(0);
    /* Send message */
    m_pcRABA->SetData(cData);
-   LOGERR << "CNTRL: "
-          << GetId()
-          << ": At end msg queue has "
-          << buzzoutmsg_queue_size(m_tBuzzVM->outmsgs)
-          << " elements"
-          << std::endl;
+   // LOGERR << "CNTRL: "
+   //        << GetId()
+   //        << ": At end msg queue has "
+   //        << buzzoutmsg_queue_size(m_tBuzzVM->outmsgs)
+   //        << " elements"
+   //        << std::endl;
 }
 
 /****************************************/

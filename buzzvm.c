@@ -487,12 +487,12 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          break;
       }
       case BUZZVM_INSTR_RET0: {
-         buzzvm_ret0(vm);
+         if(buzzvm_ret0(vm) != BUZZVM_STATE_READY) return vm->state;
          assert_pc(vm->pc);
          break;
       }
       case BUZZVM_INSTR_RET1: {
-         buzzvm_ret1(vm);
+         if(buzzvm_ret1(vm) != BUZZVM_STATE_READY) return vm->state;
          assert_pc(vm->pc);
          break;
       }
@@ -882,6 +882,48 @@ buzzvm_state buzzvm_pop(buzzvm_t vm) {
    else {
       buzzdarray_pop(vm->stack);
    }
+   return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state buzzvm_ret0(buzzvm_t vm) {
+   if(vm->lsyms->isswarm) {
+      buzzdarray_pop(vm->swarmstack);
+   }
+   buzzdarray_pop(vm->lsymts);
+   vm->lsyms = !buzzdarray_isempty(vm->lsymts) ?
+      buzzdarray_last(vm->lsymts, buzzvm_lsyms_t) :
+      NULL;
+   buzzdarray_pop(vm->stacks);
+   vm->stack = buzzdarray_last(vm->stacks, buzzdarray_t);
+   buzzvm_stack_assert(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+   vm->pc = buzzvm_stack_at(vm, 1)->i.value;
+   return buzzvm_pop(vm);
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state buzzvm_ret1(buzzvm_t vm) {
+   if(vm->lsyms->isswarm) {
+      buzzdarray_pop(vm->swarmstack);
+   }
+   buzzdarray_pop(vm->lsymts);
+   vm->lsyms = !buzzdarray_isempty(vm->lsymts) ?
+      buzzdarray_last(vm->lsymts, buzzvm_lsyms_t) :
+      NULL;
+   buzzvm_stack_assert(vm, 1);
+   buzzobj_t ret = buzzvm_stack_at(vm, 1);
+   buzzdarray_pop(vm->stacks);
+   vm->stack = buzzdarray_last(vm->stacks, buzzdarray_t);
+   buzzvm_stack_assert(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+   vm->pc = buzzvm_stack_at(vm, 1)->i.value;
+   buzzvm_pop(vm);
+   buzzvm_push(vm, ret);
    return vm->state;
 }
 

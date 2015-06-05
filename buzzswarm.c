@@ -217,8 +217,7 @@ int buzzvm_swarm_create(buzzvm_t vm) {
    /* Create a table to return */
    make_table(vm, id);
    /* Return */
-   buzzvm_ret1(vm);
-   return BUZZVM_STATE_READY;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -250,8 +249,7 @@ int buzzvm_swarm_id(struct buzzvm_s* vm) {
                       uint16_t));
    }
    /* Return the value */
-   buzzvm_ret1(vm);
-   return vm->state;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -283,8 +281,7 @@ int buzzvm_swarm_others(buzzvm_t vm) {
    /* Create a table to return */
    make_table(vm, id2);
    /* Return */
-   buzzvm_ret1(vm);
-   return BUZZVM_STATE_READY;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -305,8 +302,7 @@ int buzzvm_swarm_join(buzzvm_t vm) {
       buzzoutmsg_queue_append_swarm_joinleave(
          vm->outmsgs, BUZZMSG_SWARM_JOIN, id);
       /* Return */
-      buzzvm_ret0(vm);
-      return BUZZVM_STATE_READY;
+      return buzzvm_ret0(vm);
    }
    else {
       vm->state = BUZZVM_STATE_ERROR;
@@ -333,8 +329,7 @@ int buzzvm_swarm_leave(buzzvm_t vm) {
       buzzoutmsg_queue_append_swarm_joinleave(
          vm->outmsgs, BUZZMSG_SWARM_LEAVE, id);
       /* Return */
-      buzzvm_ret0(vm);
-      return BUZZVM_STATE_READY;
+      return buzzvm_ret0(vm);
    }
    else {
       vm->state = BUZZVM_STATE_ERROR;
@@ -362,8 +357,7 @@ int buzzvm_swarm_in(buzzvm_t vm) {
    /* Push the return value */
    buzzvm_pushi(vm, *x);
    /* Return */
-   buzzvm_ret1(vm);
-   return BUZZVM_STATE_READY;
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -388,8 +382,7 @@ int buzzvm_swarm_select(buzzvm_t vm) {
          in ? BUZZMSG_SWARM_JOIN : BUZZMSG_SWARM_LEAVE,
          id);
       /* Return */
-      buzzvm_ret0(vm);
-      return BUZZVM_STATE_READY;
+      return buzzvm_ret0(vm);
    }
    else {
       vm->state = BUZZVM_STATE_ERROR;
@@ -420,7 +413,7 @@ int buzzvm_swarm_exec(buzzvm_t vm) {
       buzzvm_lload(vm, 1);
       buzzobj_t c = buzzvm_stack_at(vm, 1);
       /* Get rid of the current call structure */
-      buzzvm_ret0(vm);
+      if(buzzvm_ret0(vm) != BUZZVM_STATE_READY) return vm->state;
       /* Save the current stack depth */
       uint32_t stacks = buzzdarray_size(vm->stacks);
       /* Push the current swarm in the stack */
@@ -436,8 +429,7 @@ int buzzvm_swarm_exec(buzzvm_t vm) {
    }
    else {
       /* Get rid of the current call structure */
-      buzzvm_ret0(vm);
-      return BUZZVM_STATE_READY;
+      return buzzvm_ret0(vm);
    }
 }
 
