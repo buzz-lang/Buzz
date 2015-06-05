@@ -36,7 +36,6 @@ For detail, see `comment-dwim'."
 ;;
 ;; Buzz syntax table
 ;;
-(defvar buzz-syntax-table nil "Syntax table for `buzz-mode'.")
 (setq buzz-syntax-table
       (let ((synTable (make-syntax-table)))
         (modify-syntax-entry ?# "< b" synTable)
@@ -46,8 +45,7 @@ For detail, see `comment-dwim'."
 ;;
 ;; Define token classes and regular expressions
 ;;
-(defconst buzz-identifier-regexp "[[:alnum:]_]+"
-  "Regexp matching a Buzz identifier")
+(setq buzz-identifier-regexp "[[:alnum:]_]+")
 ;; Keywords
 (setq buzz-keywords '("var" "nil" "if" "else" "function" "return" "for" "while" "and" "or" "not"))
 (setq buzz-keywords-regexp (regexp-opt buzz-keywords 'words))
@@ -74,7 +72,9 @@ For detail, see `comment-dwim'."
 ;; Indentation
 ;;
 ;; Marker regexp
-(setq buzz-indent-marker-regexp (regexp-opt '("function" "if" "for" "while" "else")))
+
+(defvar buzz-indent-marker-regexp (regexp-opt '("function" "if" "for" "while" "else"))
+  "Regexp that matches Buzz keywords used as markers to evaluate line indentation.")
 ;; Indentation function
 (defun buzz-indent-line ()
   "Indent current line as Buzz code."
@@ -84,8 +84,9 @@ For detail, see `comment-dwim'."
   (beginning-of-line)
   ;; Save current position
   (setq cur-point (point))
-  ;; Setup a variables and execute stuff
-  ;; cur-indent is the current line indentation
+  ;; Setup variables and execute stuff
+  ;; cur-indent: is the current line indentation level
+  ;; stop: when true, stop moving back one line
   (let ((cur-indent 0) (stop nil))
     ;; Save current point in buffer and execute commands
     (save-excursion
@@ -100,7 +101,8 @@ For detail, see `comment-dwim'."
               (forward-line -1)
             (setq stop 'true))))
       ;; +1 for each open parenthesis
-      ;; -1 for each closed parenthesis and ;
+      ;; -1 for each closed parenthesis
+      ;; TODO: this considers also parentheses in comments, but it shouldn't
       (setq cur-indent
             (- (count-matches "[[{(]"  (point) cur-point)
                (count-matches "[]})]" (point) cur-point))))
@@ -108,7 +110,7 @@ For detail, see `comment-dwim'."
     (if (looking-at "^[[:blank:]]*[]})]")
         (setq cur-indent (- cur-indent 1)))
     ;; Make sure indentation is positive and
-    ;; Multiply positive indentation by the width
+    ;; Multiply positive indentation by the level
     (if (< cur-indent 0)
         (setq cur-indent 0)
       (setq cur-indent (* cur-indent buzz-indent-level)))
@@ -122,20 +124,24 @@ For detail, see `comment-dwim'."
   "Major mode for editing Buzz scripts."
   :group 'buzz
   :syntax-table buzz-syntax-table
-  ;; Set font lock
+  ;; Font lock
   (setq font-lock-defaults '((buzz-font-lock-list)))
-  ;; Modify the keymap
+  ;; Keymap
   (define-key buzz-mode-map [remap comment-dwim] 'buzz-comment-dwim)
-  ;;
+  ;; Indentation
   (setq indent-line-function 'buzz-indent-line) 
-  ;; Clear memory
+  ;; Clear useless variables to save memory
   (setq buzz-keywords-regexp nil)
+  (setq buzz-builtins-regexp nil)
   (setq buzz-functions-regexp nil)
-  )
+  (setq buzz-identifier-regexp nil))
 
 ;;
 ;; Associate Buzz mode with .bzz files
 ;;
 (add-to-list 'auto-mode-alist '("\\.bzz\\'" . buzz-mode))
 
+;;
+;; End with 'provide' statement
+;;
 (provide 'buzz-mode)
