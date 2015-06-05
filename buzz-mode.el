@@ -40,7 +40,7 @@ For detail, see `comment-dwim'."
         (,buzz-builtins-regexp  . font-lock-builtin-face)
         (,buzz-functions-regexp 1 font-lock-function-name-face)
         (,buzz-keywords-regexp  . font-lock-keyword-face)
-        ))
+))
 
 ;;
 ;; Define the mode
@@ -56,6 +56,6 @@ For detail, see `comment-dwim'."
   ;; Clear memory
   (setq buzz-keywords-regexp nil)
   (setq buzz-functions-regexp nil)
-  )
+)
 
 (provide 'buzz-mode)
