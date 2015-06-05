@@ -1,11 +1,13 @@
 cmake_minimum_required(VERSION 2.8.3)
 
 # Debug flags
-set(CMAKE_C_FLAGS_DEBUG "-g -gdwarf-4")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -gdwarf-4")
-set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-gdwarf-4")
-set(CMAKE_MODULE_LINKER_FLAGS_DEBUG "-gdwarf-4")
-set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "-gdwarf-4")
+set(CMAKE_C_FLAGS "-std=c99")
+set(CMAKE_C_FLAGS_DEBUG "-g -ggdb3")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb3")
+set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-ggdb3")
+set(CMAKE_MODULE_LINKER_FLAGS_DEBUG "-ggdb3")
+set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "-ggdb3")
+add_definitions(-D_GNU_SOURCE)
 
 # Project name
 project(buzz)
@@ -37,6 +39,7 @@ add_library(buzz SHARED
   buzzasm.h buzzasm.c
   buzzlex.h buzzlex.c
   buzzparser.h buzzparser.c)
+target_link_libraries(buzz m)
 
 # Create libbuzzargos
 add_library(buzzargos SHARED

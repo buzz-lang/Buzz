@@ -21,7 +21,7 @@ static int SCOPE_AUTO     =  2;
 /****************************************/
 
 #define DEBUG(MSG, ...) fprintf(stderr, "[DEBUG] " MSG, ##__VA_ARGS__)
-#define TODO (MSG, ...) fprintf(stderr, "[TODO] " MSG, ##__VA_ARGS__)
+#define TODO(MSG, ...) fprintf(stderr, "[TODO] " MSG, ##__VA_ARGS__)
 
 /****************************************/
 /****************************************/
