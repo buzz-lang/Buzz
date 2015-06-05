@@ -27,6 +27,8 @@ void buzzswarm_elem_destroy(const void* key, void* data, void* params) {
    buzzswarm_elem_t e = *(buzzswarm_elem_t*)data;
    buzzdarray_destroy(&(e->swarms));
    free(e);
+   free((void*)key);
+   free(data);
 }
 
 /****************************************/

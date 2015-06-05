@@ -71,6 +71,14 @@ buzzvm_lsyms_t buzzvm_lsyms_new(uint8_t isswarm,
    return s;
 }
 
+void buzzvm_lsyms_destroy(uint32_t pos,
+                          void* data,
+                          void* params) {
+   buzzvm_lsyms_t s = *(buzzvm_lsyms_t*)data;
+   buzzdarray_destroy(&(s->syms));
+   free(s);
+}
+
 /****************************************/
 /****************************************/
 
@@ -271,13 +279,6 @@ void buzzvm_darray_destroy(uint32_t pos,
                            void* params) {
    buzzdarray_t* s = (buzzdarray_t*)data;
    buzzdarray_destroy(s);
-}
-
-void buzzvm_lsyms_destroy(uint32_t pos,
-                          void* data,
-                          void* params) {
-   buzzvm_lsyms_t s = *(buzzvm_lsyms_t*)data;
-   buzzdarray_destroy(&(s->syms));
 }
 
 buzzvm_t buzzvm_new(uint16_t robot) {

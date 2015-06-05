@@ -121,6 +121,7 @@ void buzzoutmsg_queue_destroy(buzzoutmsg_queue_t* msgq) {
    buzzdarray_destroy(&((*msgq)->queues[BUZZMSG_VSTIG_PUT]));
    buzzdarray_destroy(&((*msgq)->queues[BUZZMSG_VSTIG_QUERY]));
    buzzdict_destroy(&((*msgq)->vstig));
+   free(*msgq);
 }
 
 /****************************************/
