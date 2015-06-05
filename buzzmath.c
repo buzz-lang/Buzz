@@ -33,7 +33,7 @@ int buzzmath_register(buzzvm_t vm) {
    function_register(t, "min",   buzzmath_min);
    function_register(t, "max",   buzzmath_max);
    /* Register constants */
-   constant_register(t, "pi",    M_PI);
+   constant_register(t, "pi",    3.14159265358979323846);
    /* Register "math" table */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "math"));
    buzzvm_push(vm, t);
