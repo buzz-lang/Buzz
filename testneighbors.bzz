@@ -33,13 +33,13 @@ function printaccum() {
 function printkin() {
   log("ROBOT ", id, " is in swarm ", swarm.id())
   neighbors.kin().foreach(function(rid, data) {
-    log("ROBOT ", id, ": NEIGHBOR<id=", rid, ", dist=", data.distance, ", azimuth=", data.azimuth, ", elevation=", data.elevation, ">")
-  })
+      log("ROBOT ", id, ": NEIGHBOR<id=", rid, ", dist=", data.distance, ", azimuth=", data.azimuth, ", elevation=", data.elevation, ">")
+    })
 }
 
 function printnonkin() {
   log("ROBOT ", id, " is in swarm ", swarm.id())
   neighbors.nonkin().foreach(function(rid, data) {
-    log("ROBOT ", id, ": NEIGHBOR<id=", rid, ", dist=", data.distance, ", azimuth=", data.azimuth, ", elevation=", data.elevation, ">")
-  })
+      log("ROBOT ", id, ": NEIGHBOR<id=", rid, ", dist=", data.distance, ", azimuth=", data.azimuth, ", elevation=", data.elevation, ">")
+    })
 }
