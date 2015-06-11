@@ -233,7 +233,6 @@ int buzz_asm(const char* fname,
       noarg_instr(BUZZVM_INSTR_GTE);
       noarg_instr(BUZZVM_INSTR_LT);
       noarg_instr(BUZZVM_INSTR_LTE);
-      noarg_instr(BUZZVM_INSTR_SHOUT);
       noarg_instr(BUZZVM_INSTR_GLOAD);
       noarg_instr(BUZZVM_INSTR_GSTORE);
       noarg_instr(BUZZVM_INSTR_PUSHT);

@@ -25,14 +25,13 @@ static int make_table(buzzvm_t vm, buzzobj_t* t) {
    /* Make new table */
    *t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
    /* Add methods */
-   function_register(*t, "get",       buzzneighbors_get);
-   function_register(*t, "kin",       buzzneighbors_kin);
-   function_register(*t, "nonkin",    buzzneighbors_nonkin);
-   function_register(*t, "query",     buzzneighbors_query);
-   function_register(*t, "foreach",   buzzneighbors_foreach);
-   function_register(*t, "map",       buzzneighbors_map);
-   function_register(*t, "reduce",    buzzneighbors_reduce);
-   function_register(*t, "count",     buzzneighbors_count);
+   function_register(*t, "get",     buzzneighbors_get);
+   function_register(*t, "kin",     buzzneighbors_kin);
+   function_register(*t, "nonkin",  buzzneighbors_nonkin);
+   function_register(*t, "foreach", buzzneighbors_foreach);
+   function_register(*t, "map",     buzzneighbors_map);
+   function_register(*t, "reduce",  buzzneighbors_reduce);
+   function_register(*t, "count",   buzzneighbors_count);
    return vm->state;
 }
 
@@ -45,6 +44,10 @@ int buzzneighbors_reset(buzzvm_t vm) {
    buzzobj_t t;
    vm->state = make_table(vm, &t);
    if(vm->state != BUZZVM_STATE_READY) return vm->state;
+   /* Add extra methods */
+   function_register(t, "broadcast", buzzneighbors_broadcast);
+   function_register(t, "listen",    buzzneighbors_listen);
+   function_register(t, "ignore",    buzzneighbors_ignore);
    /* Register table as global symbol */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "neighbors"));
    buzzvm_push(vm, t);
@@ -108,16 +111,49 @@ int buzzneighbors_add(buzzvm_t vm,
 /****************************************/
 /****************************************/
 
-int buzzneighbors_query(buzzvm_t vm) {
-   /* Take symbol argument S */
-   /* Get list of robots L in the neighbor query */
-   /* Send query message for S to robots in L */
-   /* Take continuation argument C, if any */
-   /*   If C was passed */
-   /*     Append C to the list of continuations */
-   /*   If C was not passed */
-   /*     Suspend execution until a response arrives */
-   /* What about the return value? It's delayed either way */
+int buzzneighbors_broadcast(buzzvm_t vm) {
+   /* Get value id argument */
+   buzzvm_lload(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_STRING);
+   /* Get value argument */
+   buzzvm_lload(vm, 2);
+   /* Queue a message with (value_id, value) */
+   buzzoutmsg_queue_append_broadcast(
+      vm->outmsgs,
+      buzzvm_stack_at(vm, 2)->s.value.sid,
+      buzzvm_stack_at(vm, 1));
+   return BUZZVM_STATE_READY;
+}
+
+/****************************************/
+/****************************************/
+
+int buzzneighbors_listen(buzzvm_t vm) {
+   /* Get value id argument */
+   buzzvm_lload(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_STRING);
+   /* Get listener argument */
+   buzzvm_lload(vm, 2);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
+   /* Install listener */
+   buzzdict_set(
+      vm->listeners,
+      &(buzzvm_stack_at(vm, 2)->s.value.sid),
+      &buzzvm_stack_at(vm, 1));
+   return BUZZVM_STATE_READY;
+}
+
+/****************************************/
+/****************************************/
+
+int buzzneighbors_ignore(buzzvm_t vm) {
+   /* Get value id argument */
+   buzzvm_lload(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_STRING);
+   /* Remove listener */
+   buzzdict_remove(
+      vm->listeners,
+      &(buzzvm_stack_at(vm, 1)->s.value.sid));
    return BUZZVM_STATE_READY;
 }
 

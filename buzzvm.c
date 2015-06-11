@@ -125,8 +125,40 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
       buzzmsg_payload_t msg = buzzinmsg_queue_extract(vm->inmsgs);
       /* Dispatch the message wrt its type in msg->payload[0] */
       switch(buzzmsg_payload_get(msg, 0)) {
-         case BUZZMSG_SHOUT: {
-            fprintf(stderr, "[TODO] [ROBOT %u] %s:%d\n", vm->robot, __FILE__, __LINE__);
+         case BUZZMSG_BROADCAST: {
+            /* Deserialize the robot id */
+            uint16_t rid;
+            int64_t pos = buzzmsg_deserialize_u16(&rid, msg, 1);
+            /* Deserialize the value id and make sure the string exists */
+            uint16_t vid;
+            pos = buzzmsg_deserialize_u16(&vid, msg, pos);
+            const char* vidstr = buzzvm_string_get(vm, vid);
+            if(!vidstr) {
+               fprintf(stderr, "[WARNING] [ROBOT %u] BROADCAST message for unknown vid = %u\n", vm->robot, vid);
+               break;
+            }
+            /* Make sure there's a listener to call */
+            buzzobj_t* l = buzzdict_get(vm->listeners, &vid, buzzobj_t);
+            if(!l) {
+               fprintf(stderr, "[WARNING] [ROBOT %u] BROADCAST message with no listener for vid = %u\n", vm->robot, vid);
+               break;
+            }
+            /* Deserialize value */
+            buzzobj_t value;
+            pos = buzzobj_deserialize(&value, msg, pos, vm);
+            /* Make an object for the value id */
+            buzzobj_t vido = buzzheap_newobj(vm->heap, BUZZTYPE_STRING);
+            vido->s.value.sid = vid;
+            vido->s.value.str = vidstr;
+            /* Make an object for the robot id */
+            buzzobj_t rido = buzzheap_newobj(vm->heap, BUZZTYPE_INT);
+            rido->i.value = rid;
+            /* Call listener */
+            buzzvm_push(vm, *l);
+            buzzvm_push(vm, vido);
+            buzzvm_push(vm, value);
+            buzzvm_push(vm, rido);
+            buzzvm_closure_call(vm, 3);
             break;
          }
          case BUZZMSG_VSTIG_PUT: {
@@ -328,13 +360,20 @@ buzzvm_t buzzvm_new(uint16_t robot) {
    /* Create message queues */
    vm->inmsgs = buzzinmsg_queue_new(20);
    vm->outmsgs = buzzoutmsg_queue_new(robot);
-   /* Create virtual stigmergy. */
+   /* Create virtual stigmergy */
    vm->vstigs = buzzdict_new(10,
                              sizeof(uint16_t),
                              sizeof(buzzvstig_t),
                              buzzdict_uint16keyhash,
                              buzzdict_uint16keycmp,
                              buzzvm_vstig_destroy);
+   /* Create virtual stigmergy */
+   vm->listeners = buzzdict_new(10,
+                                sizeof(uint16_t),
+                                sizeof(buzzobj_t),
+                                buzzdict_uint16keyhash,
+                                buzzdict_uint16keycmp,
+                                NULL);
    /* Take care of the robot id */
    vm->robot = robot;
    /* Return new vm */
@@ -367,6 +406,8 @@ void buzzvm_destroy(buzzvm_t* vm) {
    buzzoutmsg_queue_destroy(&(*vm)->outmsgs);
    /* Get rid of the virtual stigmergy structures */
    buzzdict_destroy(&(*vm)->vstigs);
+   /* Get rid of neighbor value listeners */
+   buzzdict_destroy(&(*vm)->listeners);
    free(*vm);
    *vm = 0;
 }
@@ -442,6 +483,10 @@ int buzzvm_set_bcode(buzzvm_t vm,
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_id));
    buzzvm_tput(vm);
+   /* 
+    * Initialize empty neighbors
+    */
+   buzzneighbors_reset(vm);
    /*
     * Register math methods
     */
@@ -574,19 +619,6 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       }
       case BUZZVM_INSTR_LTE: {
          buzzvm_lte(vm);
-         inc_pc();
-         break;
-      }
-      case BUZZVM_INSTR_SHOUT: {
-         /* Get variable from stack(#1) */
-         buzzvm_stack_assert(vm, 1);
-         buzzobj_t var = buzzvm_stack_at(vm, 1);
-         /* Serialize the message */
-         buzzmsg_payload_t buf = buzzmsg_payload_new(16);
-         buzzobj_serialize(buf, var);
-         /* Append it to the out message queue */
-         buzzoutmsg_queue_append_shout(vm->outmsgs, buf);
-         /* Next instruction */
          inc_pc();
          break;
       }

@@ -70,7 +70,6 @@ extern "C" {
       BUZZVM_INSTR_GTE,        // Push stack(#1) >= stack(#2), pop operands
       BUZZVM_INSTR_LT,         // Push stack(#1) < stack(#2), pop operands
       BUZZVM_INSTR_LTE,        // Push stack(#1) <= stack(#2), pop operands
-      BUZZVM_INSTR_SHOUT,      // Broadcast variable stack(#1), pop operands
       BUZZVM_INSTR_GLOAD,      // Push global variable corresponding to string at stack #1, pop operand
       BUZZVM_INSTR_GSTORE,     // Store stack-top value into global variable at stack #2, pop operands
       BUZZVM_INSTR_PUSHT,      // Push empty table
@@ -98,7 +97,7 @@ extern "C" {
       BUZZVM_INSTR_JUMPZ,    // Set PC to argument if stack top is zero, pop operand
       BUZZVM_INSTR_JUMPNZ,   // Set PC to argument if stack top is not zero, pop operand
    } buzzvm_instr;
-   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "shout", "gload", "gstore", "pusht", "tput", "tget", "pusha", "aput", "aget", "callc", "calls", "pushf", "pushi", "pushs", "pushcn", "pushcc", "pushl", "lload", "lstore", "jump", "jumpz", "jumpnz"};
+   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "gload", "gstore", "pusht", "tput", "tget", "pusha", "aput", "aget", "callc", "calls", "pushf", "pushi", "pushs", "pushcn", "pushcc", "pushl", "lload", "lstore", "jump", "jumpz", "jumpnz"};
 
    /*
     * Function pointer for BUZZVM_INSTR_CALL.
@@ -166,6 +165,8 @@ extern "C" {
       buzzoutmsg_queue_t outmsgs;
       /* Virtual stigmergy maps */
       buzzdict_t vstigs;
+      /* Neighbor value listeners */
+      buzzdict_t listeners;
       /* Current VM state */
       buzzvm_state state;
       /* Current VM error */

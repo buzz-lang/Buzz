@@ -14,11 +14,6 @@ extern "C" {
    struct buzzvm_s;
 
    /*
-    * Data type for neighbor structure.
-    */
-   typedef buzzdict_t buzzneighbors_t;
-
-   /*
     * Clears the neighbor structure.
     * Add new neighbor data with buzzneighbor_add().
     * @param vm The Buzz VM data.
@@ -44,12 +39,25 @@ extern "C" {
                                 float elevation);
    
    /*
-    * Queries the neighbors about a symbol.
-    * The received data is collected in a table indexed by id.
+    * Broadcasts a value across the neighbors.
     * @param vm The Buzz VM data.
     * @return The updated VM state.
     */
-   extern int buzzneighbors_query(struct buzzvm_s* vm);
+   extern int buzzneighbors_broadcast(struct buzzvm_s* vm);
+
+   /*
+    * Installs a listener for a value across the neighbors.
+    * @param vm The Buzz VM data.
+    * @return The updated VM state.
+    */
+   extern int buzzneighbors_listen(struct buzzvm_s* vm);
+
+   /*
+    * Removes a listener for a value across the neighbors.
+    * @param vm The Buzz VM data.
+    * @return The updated VM state.
+    */
+   extern int buzzneighbors_ignore(struct buzzvm_s* vm);
 
    /*
     * Pushes a table of robots belonging to the same swarm as the current robot.

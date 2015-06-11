@@ -186,6 +186,12 @@ void buzzheap_vstig_mark(const void* key,
                      params);
 }
 
+void buzzheap_listener_mark(const void* key,
+                            void* data,
+                            void* params) {
+   buzzheap_objmark(*(buzzobj_t*)data, (buzzheap_t)params);
+}
+
 void buzzheap_gsymobj_mark(const void* key, void* data, void* params) {
    buzzheap_objmark(*(buzzobj_t*)data, (buzzheap_t)params);
 }
@@ -204,6 +210,8 @@ void buzzheap_gc(struct buzzvm_s* vm) {
    buzzdarray_foreach(vm->lsymts, buzzheap_lsyms_mark, h);
    /* Go through all the objects in the virtual stigmergy and mark them */
    buzzdict_foreach(vm->vstigs, buzzheap_vstig_mark, h);
+   /* Go through all the objects in the listeners and mark them */
+   buzzdict_foreach(vm->listeners, buzzheap_listener_mark, h);
    /* Go through all the objects in the object list and delete the unmarked ones */
    int64_t i = buzzdarray_size(h->objs) - 1;
    while(i >= 0) {

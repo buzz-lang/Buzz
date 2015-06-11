@@ -43,14 +43,14 @@ extern "C" {
    uint32_t buzzoutmsg_queue_size(buzzoutmsg_queue_t msgq);
 
    /*
-    * Appends a new shout message.
-    * The ownership of the payload is assumed by the message queue. Make sure
-    * the payload is in the heap.
+    * Appends a new broadcast message.
     * @param msgq The message queue.
-    * @param payload The message payload.
+    * @param id The value id (a string id)
+    * @param value The value.
     */
-   extern void buzzoutmsg_queue_append_shout(buzzoutmsg_queue_t msgq,
-                                             buzzmsg_payload_t payload);
+   extern void buzzoutmsg_queue_append_broadcast(buzzoutmsg_queue_t msgq,
+                                                 uint16_t id,
+                                                 buzzobj_t value);
 
    /*
     * Appends a new swarm list message.
