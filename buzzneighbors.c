@@ -122,7 +122,7 @@ int buzzneighbors_broadcast(buzzvm_t vm) {
       vm->outmsgs,
       buzzvm_stack_at(vm, 2)->s.value.sid,
       buzzvm_stack_at(vm, 1));
-   return BUZZVM_STATE_READY;
+   return buzzvm_ret0(vm);
 }
 
 /****************************************/
@@ -140,7 +140,7 @@ int buzzneighbors_listen(buzzvm_t vm) {
       vm->listeners,
       &(buzzvm_stack_at(vm, 2)->s.value.sid),
       &buzzvm_stack_at(vm, 1));
-   return BUZZVM_STATE_READY;
+   return buzzvm_ret0(vm);
 }
 
 /****************************************/
@@ -154,7 +154,7 @@ int buzzneighbors_ignore(buzzvm_t vm) {
    buzzdict_remove(
       vm->listeners,
       &(buzzvm_stack_at(vm, 1)->s.value.sid));
-   return BUZZVM_STATE_READY;
+   return buzzvm_ret0(vm);
 }
 
 /****************************************/

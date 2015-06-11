@@ -44,22 +44,22 @@ int BuzzLOG (buzzvm_t vm) {
             LOG << o->f.value;
             break;
          case BUZZTYPE_TABLE:
-            LOG << "[table " << (buzzdict_size(o->t.value)) << " elems]";
+            LOG << "[table with " << (buzzdict_size(o->t.value)) << " elems]";
             break;
          case BUZZTYPE_ARRAY:
-            LOG << "[array " << (buzzdict_size(o->a.value)) << " elems]";
+            LOG << "[array with " << (buzzdict_size(o->a.value)) << " elems]";
             break;
          case BUZZTYPE_CLOSURE:
             if(o->c.value.isnative)
-               LOG << "[n-closure " << o->c.value.ref << "]";
+               LOG << "[n-closure @" << o->c.value.ref << "]";
             else
-               LOG << "[c-closure " << o->c.value.ref << "]";
+               LOG << "[c-closure @" << o->c.value.ref << "]";
             break;
          case BUZZTYPE_STRING:
             LOG << o->s.value.str;
             break;
          case BUZZTYPE_USERDATA:
-            LOG << "[userdata " << o->u.value << "]";
+            LOG << "[userdata @" << o->u.value << "]";
             break;
          default:
             break;

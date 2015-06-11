@@ -9,9 +9,12 @@ function init() {
     # Listen to other robots' distances
     neighbors.listen("dist_to_source",
       function(value_id, value, robot_id) {
+        log("ROBOT ", id, ": value = ", value, " from robot ", robot_id, " at ", neighbors.get(robot_id).distance)
+        log("ROBOT ", id, ": mydist was ", mydist)
         mydist = math.min(
           mydist,
           neighbors.get(robot_id).distance + value)
+        log("ROBOT ", id, ": mydist is now ", mydist)
       })
   }
 }
