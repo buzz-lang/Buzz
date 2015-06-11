@@ -604,14 +604,18 @@ int parse_while(buzzparser_t par) {
 int parse_conditionlist(buzzparser_t par,
                         int* numargs) {
    DEBUG("Parsing condition list start\n");
+   while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
    *numargs = 0;
    if(par->tok->type == BUZZTOK_PARCLOSE) return PARSE_OK;
    if(!parse_condition(par)) return PARSE_ERROR;
    ++(*numargs);
+   while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
    while(par->tok->type == BUZZTOK_LISTSEP) {
       fetchtok();
+      while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
       if(!parse_condition(par)) return PARSE_ERROR;
       ++(*numargs);
+      while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
    }
    DEBUG("Condition list end\n");
    return PARSE_OK;
@@ -928,16 +932,20 @@ int parse_idlist(buzzparser_t par) {
 
 int parse_idreflist(buzzparser_t par) {
    DEBUG("Parsing idreflist start\n");
+   while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
    if(par->tok->type == BUZZTOK_PARCLOSE) {
       DEBUG("idreflist end\n");
       return PARSE_OK;
    }
    struct idrefinfo_s idrefinfo;
    if(!parse_idref(par, 0, &idrefinfo)) return PARSE_ERROR;
+   while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
    while(par->tok->type == BUZZTOK_LISTSEP) {
       DEBUG("Parsing next idreflist item\n");
       fetchtok();
+      while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
       if(!parse_idref(par, 0, &idrefinfo)) return PARSE_ERROR;
+      while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
    }
    if(par->tok && par->tok->type == BUZZTOK_PARCLOSE) {
       DEBUG("Idreflist end\n");
