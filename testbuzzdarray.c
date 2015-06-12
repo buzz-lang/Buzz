@@ -23,9 +23,9 @@ int dai_cmp(const void* a, const void* b) {
 
 int main() {
    buzzdarray_t dai = buzzdarray_new(1, sizeof(int16_t), NULL);
-   int x;
+   int x, i;
    dai_print(dai);
-   for(int i = 0; i < 10; ++i) {
+   for(i = 0; i < 10; ++i) {
       fprintf(stdout, "adding %d\n", i);
       buzzdarray_push(dai, &i);
       dai_print(dai);

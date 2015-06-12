@@ -152,9 +152,10 @@ int buzzswarm_members_isrobotin(buzzswarm_members_t m,
 /****************************************/
 
 void print_swarm_elem(const void* key, void* data, void* params) {
+   uint32_t i;
    buzzswarm_elem_t e = *(buzzswarm_elem_t*)data;
    fprintf(stdout, "ROBOT %u -> R%u:", *(uint16_t*)params, *(uint16_t*)key);
-   for(uint32_t i = 0; i < buzzdarray_size(e->swarms); ++i) {
+   for(i = 0; i < buzzdarray_size(e->swarms); ++i) {
       fprintf(stdout,
               " %u",
               buzzdarray_get(e->swarms, i, uint16_t));

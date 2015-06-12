@@ -244,10 +244,10 @@ int64_t buzzobj_deserialize(buzzobj_t* data,
          return p;
       }
       case BUZZTYPE_TABLE: {
-         uint32_t size;
+         uint32_t size, i;
          p = buzzmsg_deserialize_u32(&size, buf, p);
          if(p < 0) return -1;
-         for(uint32_t i = 0; i < size; ++i) {
+         for(i = 0; i < size; ++i) {
             buzzobj_t* k;
             buzzobj_t* v;
             p = buzzobj_deserialize(k, buf, p, vm);

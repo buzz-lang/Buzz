@@ -35,7 +35,8 @@ int main() {
    int16_t k;
    float d;
    di_print(di);
-   for(int i = 0; i < 10; ++i) {
+   int i;
+   for(i = 0; i < 10; ++i) {
       k = i;
       d = (100.0f + k);
       fprintf(stdout, "adding (%d, %f)\n", k, d);

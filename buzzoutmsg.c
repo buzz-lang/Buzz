@@ -196,7 +196,8 @@ static void append_to_swarm_queue(buzzdarray_t q, uint16_t id, int type) {
    else {
       /* Queue not empty - look for a message with the same id */
       int found = 0;
-      for(uint32_t i = 0; i < buzzdarray_size(q) && !found; ++i) {
+      uint32_t i;
+      for(i = 0; i < buzzdarray_size(q) && !found; ++i) {
          found = buzzdarray_get(q, i, buzzoutmsg_t)->sw.ids[0] == id;
       }
       /* Message found? */
@@ -343,6 +344,7 @@ buzzmsg_payload_t buzzoutmsg_queue_first(buzzoutmsg_queue_t msgq) {
       return m;
    }
    else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_SWARM_LIST])) {
+      uint16_t i;
       /* Take the first message in the queue */
       buzzoutmsg_t f = buzzdarray_get(msgq->queues[BUZZMSG_SWARM_LIST],
                                       0, buzzoutmsg_t);
@@ -351,7 +353,7 @@ buzzmsg_payload_t buzzoutmsg_queue_first(buzzoutmsg_queue_t msgq) {
       buzzmsg_serialize_u8(m, BUZZMSG_SWARM_LIST);
       buzzmsg_serialize_u16(m, msgq->robot);
       buzzmsg_serialize_u16(m, f->sw.size);
-      for(uint16_t i = 0; i < f->sw.size; ++i) {
+      for(i = 0; i < f->sw.size; ++i) {
          buzzmsg_serialize_u16(m, f->sw.ids[i]);
       }
       /* Return message */

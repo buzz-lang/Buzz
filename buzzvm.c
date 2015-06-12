@@ -10,11 +10,12 @@
 /****************************************/
 
 void buzzvm_dump(buzzvm_t vm) {
+   int64_t i;
    fprintf(stderr, "============================================================\n");
    fprintf(stderr, "state: %d\terror: %d\n", vm->state, vm->error);
    fprintf(stderr, "code size: %u\tpc: %d\n", vm->bcode_size, vm->pc);
    fprintf(stderr, "stacks: %lld\tcur elem: %lld (size %lld)\n", buzzdarray_size(vm->stacks), buzzvm_stack_top(vm), buzzvm_stack_top(vm));
-   for(int64_t i = buzzvm_stack_top(vm)-1; i >= 0; --i) {
+   for(i = buzzvm_stack_top(vm)-1; i >= 0; --i) {
       fprintf(stderr, "\t%lld\t", i);
       buzzobj_t o = buzzdarray_get(vm->stack, i, buzzobj_t);
       switch(o->o.type) {
@@ -248,7 +249,8 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
             }
             /* Deserialize swarm ids */
             buzzdarray_t sids = buzzdarray_new(nsids, sizeof(uint16_t), NULL);
-            for(uint16_t i = 0; i < nsids; ++i) {
+            uint16_t i;
+            for(i = 0; i < nsids; ++i) {
                pos = buzzmsg_deserialize_u16(buzzdarray_makeslot(sids, i), msg, pos);
                if(pos < 0) {
                   fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARM_LIST message received\n", vm->robot);
@@ -882,13 +884,14 @@ buzzvm_state buzzvm_call(buzzvm_t vm, int isswrm) {
                        buzzdarray_clone(c->c.value.actrec));
    buzzdarray_push(vm->lsymts, &(vm->lsyms));
    /* Add function arguments to the local symbols */
-   for(int32_t i = argn; i > 0; --i)
+   int32_t i;
+   for(i = argn; i > 0; --i)
       buzzdarray_push(vm->lsyms->syms,
                       &buzzdarray_get(vm->stack,
                                       buzzdarray_size(vm->stack) - i,
                                       buzzobj_t));
    /* Get rid of the function arguments */
-   for(int32_t i = argn+1; i > 0; --i)
+   for(i = argn+1; i > 0; --i)
       buzzdarray_pop(vm->stack);
    /* Push return value */
    buzzvm_pushi((vm), vm->pc);
