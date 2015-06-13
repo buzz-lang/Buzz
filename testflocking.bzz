@@ -1,9 +1,8 @@
 # Lennard-Jones parameters
-TARGET_KIN     = 50.
-EPSILON_KIN    = 2700.
+TARGET_KIN     = 200.
+EPSILON_KIN    = 107.
 TARGET_NONKIN  = 150.
 EPSILON_NONKIN = 8000.
-MAX_LJ         = 10.
 
 # Lennard-Jones interaction magnitude
 function lj(dist, target, epsilon) {
@@ -41,8 +40,10 @@ function flock() {
   # Calculate accumulator
   accum = neighbors.kin().map(to_lj_kin).reduce(sum, accum)
   accum = neighbors.nonkin().map(to_lj_nonkin).reduce(sum, accum)
-  accum.x = accum.x / neighbors.count()
-  accum.y = accum.y / neighbors.count()
+  if(neighbors.count() > 0) {
+    accum.x = accum.x / neighbors.count()
+    accum.y = accum.y / neighbors.count()
+  }
   # Move according to vector
   goto(accum.x, accum.y);
 }
@@ -50,16 +51,17 @@ function flock() {
 # Executed at init time
 function init() {
   s1 = swarm.create(1)
-  s1.select(id % 2 == 0)
-  s2 = s1.others(2)
-  s1.exec(function(){ setleds(255,0,0) })
-  s2.exec(function(){ setleds(0,255,0) })
+  s1.join()
+  # s1.select(id % 2 == 0)
+  # s2 = s1.others(2)
 }
 
 # Executed every time step
 function step() {
-  s1.exec(flock)
-  s2.exec(flock)
+  if(not takeoff()) {
+    s1.exec(flock)
+  }
+  # s2.exec(flock)
 }
 
 # Execute at exit

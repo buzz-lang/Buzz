@@ -16,30 +16,46 @@
   <!-- *************** -->
   <controllers>
 
-    <buzz_controller id="fdc" library="../../build/libbuzzargos">
+    <buzz_controller_footbot id="bcf" library="../../build/libbuzzargos">
       <actuators>
         <differential_steering implementation="default" />
         <leds                  implementation="default" medium="leds" />
         <range_and_bearing implementation="default" />
       </actuators>
       <sensors>
-        <footbot_proximity implementation="default" show_rays="false" />
         <range_and_bearing implementation="medium" medium="rab" show_rays="false" />
       </sensors>
-      <params bytecode_file="testgradient.bo">
+      <params bytecode_file="testflocking.bo">
         <wheel_turning hard_turn_angle_threshold="90"
                        soft_turn_angle_threshold="70"
                        no_turn_angle_threshold="10"
                        max_speed="10" />
       </params>
-    </buzz_controller>
+    </buzz_controller_footbot>
+
+    <buzz_controller_spiri id="bcs" library="../../build/libbuzzargos">
+      <actuators>
+        <quadrotor_position implementation="default" />
+        <range_and_bearing  implementation="default" />
+      </actuators>
+      <sensors>
+        <range_and_bearing implementation="medium" medium="rab" show_rays="true" />
+        <positioning       implementation="default" />
+      </sensors>
+      <params bytecode_file="testflocking.bo">
+        <wheel_turning hard_turn_angle_threshold="90"
+                       soft_turn_angle_threshold="70"
+                       no_turn_angle_threshold="10"
+                       max_speed="10" />
+      </params>
+    </buzz_controller_spiri>
 
   </controllers>
 
   <!-- *********************** -->
   <!-- * Arena configuration * -->
   <!-- *********************** -->
-  <arena size="5, 5, 1" center="0,0,0.5">
+  <arena size="50, 50, 4" center="0,0,2">
 
     <box id="wall_north" size="4,0.1,0.5" movable="false">
       <body position="0,2,0" orientation="0,0,0" />
@@ -54,22 +70,23 @@
       <body position="-2,0,0" orientation="0,0,0" />
     </box>
 
-    <!--
-        You can distribute entities randomly. Here, we distribute
-        10 foot-bots in this way:
-        - the position is uniformly distributed
-        on the ground, in the square whose corners are (-2,-2) and (2,2)
-        - the orientations are non-zero only when rotating around Z and chosen
-        from a gaussian distribution, whose mean is zero degrees and
-        standard deviation is 360 degrees.
-    -->
+    <!-- <distribute> -->
+    <!--   <position method="uniform" min="-1,-1,0" max="1,1,0" /> -->
+    <!--   <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0" /> -->
+    <!--   <entity quantity="20" max_trials="100"> -->
+    <!--     <foot-bot id="fb" rab_data_size="100"> -->
+    <!--       <controller config="bcf" /> -->
+    <!--     </foot-bot> -->
+    <!--   </entity> -->
+    <!-- </distribute> -->
+
     <distribute>
-      <position method="uniform" min="-1,-1,0" max="1,1,0" />
+      <position method="uniform" min="-1.5,-1.5,0" max="1.5,1.5,0" />
       <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0" />
-      <entity quantity="1" max_trials="100">
-        <foot-bot id="fb" rab_data_size="100">
-          <controller config="fdc" />
-        </foot-bot>
+      <entity quantity="3" max_trials="100">
+        <spiri id="sp" rab_range="10" rab_data_size="100">
+          <controller config="bcs" />
+        </spiri>
       </entity>
     </distribute>
 
@@ -103,7 +120,8 @@
   <!-- * Physics engines * -->
   <!-- ******************* -->
   <physics_engines>
-    <dynamics2d id="dyn2d" />
+    <!-- <dynamics2d id="dyn2d" /> -->
+    <pointmass3d id="pm3d" />
   </physics_engines>
 
   <!-- ********* -->

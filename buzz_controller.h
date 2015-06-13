@@ -17,31 +17,6 @@ class CBuzzController : public CCI_Controller {
 
 public:
 
-   struct SWheelTurningParams {
-      /*
-       * The turning mechanism.
-       * The robot can be in three different turning states.
-       */
-      enum ETurningMechanism
-      {
-         NO_TURN = 0, // go straight
-         SOFT_TURN,   // both wheels are turning forwards, but at different speeds
-         HARD_TURN    // wheels are turning with opposite speeds
-      } TurningMechanism;
-      /*
-       * Angular thresholds to change turning state.
-       */
-      CRadians HardTurnOnAngleThreshold;
-      CRadians SoftTurnOnAngleThreshold;
-      CRadians NoTurnAngleThreshold;
-      /* Maximum wheel speed */
-      Real MaxSpeed;
-
-      void Init(TConfigurationNode& t_tree);
-   };
-
-public:
-
    CBuzzController();
    virtual ~CBuzzController();
 
@@ -50,34 +25,24 @@ public:
    virtual void ControlStep();
    virtual void Destroy();
 
-   void SetBytecode(const std::string& str_fname);
+   virtual void SetBytecode(const std::string& str_fname);
 
-   void SetWheelSpeedsFromVector(const CVector2& c_heading);
-   void SetLEDs(const CColor& c_color);
+protected:
 
-private:
+   virtual int RegisterFunctions();
 
-   int RegisterFunctions();
+   virtual void ProcessInMsgs();
+   virtual void ProcessOutMsgs();
 
-   void ProcessInMsgs();
-   void ProcessOutMsgs();
+   virtual void UpdateSensors();
+   virtual void UpdateActuators();
 
-   void UpdateSensors();
-   void UpdateActuators();
+protected:
 
-private:
-
-   /* Pointer to the differential steering actuator */
-   CCI_DifferentialSteeringActuator* m_pcWheels;
-   /* Pointer to the LEDs actuator */
-   CCI_LEDsActuator* m_pcLEDs;
    /* Pointer to the range and bearing actuator */
    CCI_RangeAndBearingActuator*  m_pcRABA;
    /* Pointer to the range and bearing sensor */
    CCI_RangeAndBearingSensor* m_pcRABS;
-
-   /* The turning parameters. */
-   SWheelTurningParams m_sWheelTurningParams;
 
    /* The robot numeric id */
    UInt32 m_unRobotId;

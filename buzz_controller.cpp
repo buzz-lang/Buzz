@@ -7,26 +7,6 @@
 /****************************************/
 /****************************************/
 
-void CBuzzController::SWheelTurningParams::Init(TConfigurationNode& t_node) {
-   try {
-      TurningMechanism = NO_TURN;
-      CDegrees cAngle;
-      GetNodeAttribute(t_node, "hard_turn_angle_threshold", cAngle);
-      HardTurnOnAngleThreshold = ToRadians(cAngle);
-      GetNodeAttribute(t_node, "soft_turn_angle_threshold", cAngle);
-      SoftTurnOnAngleThreshold = ToRadians(cAngle);
-      GetNodeAttribute(t_node, "no_turn_angle_threshold", cAngle);
-      NoTurnAngleThreshold = ToRadians(cAngle);
-      GetNodeAttribute(t_node, "max_speed", MaxSpeed);
-   }
-   catch(CARGoSException& ex) {
-      THROW_ARGOSEXCEPTION_NESTED("Error initializing controller wheel turning parameters.", ex);
-   }
-}
-
-/****************************************/
-/****************************************/
-
 int BuzzLOG (buzzvm_t vm) {
    LOG << "BUZZ: ";
    for(UInt32 i = 1; i < buzzdarray_size(vm->lsyms->syms); ++i) {
@@ -73,44 +53,6 @@ int BuzzLOG (buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
-int BuzzGoTo(buzzvm_t vm) {
-   /* Push the vector components */
-   buzzvm_lload(vm, 1);
-   buzzvm_lload(vm, 2);
-   /* Create a new vector with that */
-   CVector2 cDir(buzzvm_stack_at(vm, 2)->f.value,
-                 buzzvm_stack_at(vm, 1)->f.value);
-   /* Get pointer to the controller */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller"));
-   buzzvm_gload(vm);
-   /* Call function */
-   reinterpret_cast<CBuzzController*>(buzzvm_stack_at(vm, 1)->u.value)->SetWheelSpeedsFromVector(cDir);
-   return buzzvm_ret0(vm);
-}
-
-/****************************************/
-/****************************************/
-
-int BuzzSetLEDs(buzzvm_t vm) {
-   /* Push the color components */
-   buzzvm_lload(vm, 1);
-   buzzvm_lload(vm, 2);
-   buzzvm_lload(vm, 3);
-   /* Create a new color with that */
-   CColor cColor(buzzvm_stack_at(vm, 3)->i.value,
-                 buzzvm_stack_at(vm, 2)->i.value,
-                 buzzvm_stack_at(vm, 1)->i.value);
-   /* Get pointer to the controller */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller"));
-   buzzvm_gload(vm);
-   /* Call function */
-   reinterpret_cast<CBuzzController*>(buzzvm_stack_at(vm, 1)->u.value)->SetLEDs(cColor);
-   return buzzvm_ret0(vm);
-}
-
-/****************************************/
-/****************************************/
-
 CBuzzController::CBuzzController() :
    m_pcRABA(NULL),
    m_pcRABS(NULL) {
@@ -128,15 +70,12 @@ CBuzzController::~CBuzzController() {
 void CBuzzController::Init(TConfigurationNode& t_node) {
    try {
       /* Get pointers to devices */
-      m_pcWheels = GetActuator<CCI_DifferentialSteeringActuator>("differential_steering");
-      m_pcLEDs   = GetActuator<CCI_LEDsActuator                >("leds");
       m_pcRABA   = GetActuator<CCI_RangeAndBearingActuator     >("range_and_bearing");
       m_pcRABS   = GetSensor  <CCI_RangeAndBearingSensor       >("range_and_bearing");
       /* Get the script name */
       std::string strFName;
       GetNodeAttribute(t_node, "bytecode_file", strFName);
       /* Initialize the rest */
-      m_sWheelTurningParams.Init(GetNode(t_node, "wheel_turning"));
       m_tBuzzVM = NULL;
       m_unRobotId = FromString<UInt32>(GetId().substr(2));
       SetBytecode(strFName);
@@ -210,93 +149,10 @@ void CBuzzController::SetBytecode(const std::string& str_fname) {
 /****************************************/
 /****************************************/
 
-void CBuzzController::SetWheelSpeedsFromVector(const CVector2& c_heading) {
-   /* Get the heading angle */
-   CRadians cHeadingAngle = c_heading.Angle().SignedNormalize();
-   /* Get the length of the heading vector */
-   Real fHeadingLength = c_heading.Length();
-   /* Clamp the speed so that it's not greater than MaxSpeed */
-   Real fBaseAngularWheelSpeed = Min<Real>(fHeadingLength, m_sWheelTurningParams.MaxSpeed);
-
-   /* Turning state switching conditions */
-   if(Abs(cHeadingAngle) <= m_sWheelTurningParams.NoTurnAngleThreshold) {
-      /* No Turn, heading angle very small */
-      m_sWheelTurningParams.TurningMechanism = SWheelTurningParams::NO_TURN;
-   }
-   else if(Abs(cHeadingAngle) > m_sWheelTurningParams.HardTurnOnAngleThreshold) {
-      /* Hard Turn, heading angle very large */
-      m_sWheelTurningParams.TurningMechanism = SWheelTurningParams::HARD_TURN;
-   }
-   else if(m_sWheelTurningParams.TurningMechanism == SWheelTurningParams::NO_TURN &&
-           Abs(cHeadingAngle) > m_sWheelTurningParams.SoftTurnOnAngleThreshold) {
-      /* Soft Turn, heading angle in between the two cases */
-      m_sWheelTurningParams.TurningMechanism = SWheelTurningParams::SOFT_TURN;
-   }
-
-   /* Wheel speeds based on current turning state */
-   Real fSpeed1, fSpeed2;
-   switch(m_sWheelTurningParams.TurningMechanism) {
-      case SWheelTurningParams::NO_TURN: {
-         /* Just go straight */
-         fSpeed1 = fBaseAngularWheelSpeed;
-         fSpeed2 = fBaseAngularWheelSpeed;
-         break;
-      }
-
-      case SWheelTurningParams::SOFT_TURN: {
-         /* Both wheels go straight, but one is faster than the other */
-         Real fSpeedFactor = (m_sWheelTurningParams.HardTurnOnAngleThreshold - Abs(cHeadingAngle)) / m_sWheelTurningParams.HardTurnOnAngleThreshold;
-         fSpeed1 = fBaseAngularWheelSpeed - fBaseAngularWheelSpeed * (1.0 - fSpeedFactor);
-         fSpeed2 = fBaseAngularWheelSpeed + fBaseAngularWheelSpeed * (1.0 - fSpeedFactor);
-         break;
-      }
-
-      case SWheelTurningParams::HARD_TURN: {
-         /* Opposite wheel speeds */
-         fSpeed1 = -m_sWheelTurningParams.MaxSpeed;
-         fSpeed2 =  m_sWheelTurningParams.MaxSpeed;
-         break;
-      }
-   }
-
-   /* Apply the calculated speeds to the appropriate wheels */
-   Real fLeftWheelSpeed, fRightWheelSpeed;
-   if(cHeadingAngle > CRadians::ZERO) {
-      /* Turn Left */
-      fLeftWheelSpeed  = fSpeed1;
-      fRightWheelSpeed = fSpeed2;
-   }
-   else {
-      /* Turn Right */
-      fLeftWheelSpeed  = fSpeed2;
-      fRightWheelSpeed = fSpeed1;
-   }
-   /* Finally, set the wheel speeds */
-   m_pcWheels->SetLinearVelocity(fLeftWheelSpeed, fRightWheelSpeed);
-}
-
-/****************************************/
-/****************************************/
-
-void CBuzzController::SetLEDs(const CColor& c_color) {
-   m_pcLEDs->SetAllColors(c_color);
-}
-
-/****************************************/
-/****************************************/
-
 int CBuzzController::RegisterFunctions() {
    /* Pointer to this controller */
    buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "controller"));
    buzzvm_pushuserdata(m_tBuzzVM, this);
-   buzzvm_gstore(m_tBuzzVM);
-   /* BuzzGoTo */
-   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "goto"));
-   buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGoTo));
-   buzzvm_gstore(m_tBuzzVM);
-   /* BuzzSetLEDs */
-   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "setleds"));
-   buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzSetLEDs));
    buzzvm_gstore(m_tBuzzVM);
    /* BuzzLOG */
    buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "log"));
@@ -344,12 +200,6 @@ void CBuzzController::ProcessInMsgs() {
 /****************************************/
 
 void CBuzzController::ProcessOutMsgs() {
-   // LOGERR << "CNTRL: "
-   //        << GetId()
-   //        << ": At start msg queue has "
-   //        << buzzoutmsg_queue_size(m_tBuzzVM->outmsgs)
-   //        << " elements"
-   //        << std::endl;
    /* Send robot id */
    CByteArray cData;
    cData << m_tBuzzVM->robot;
@@ -377,12 +227,6 @@ void CBuzzController::ProcessOutMsgs() {
    while(cData.Size() < m_pcRABA->GetSize()) cData << static_cast<UInt8>(0);
    /* Send message */
    m_pcRABA->SetData(cData);
-   // LOGERR << "CNTRL: "
-   //        << GetId()
-   //        << ": At end msg queue has "
-   //        << buzzoutmsg_queue_size(m_tBuzzVM->outmsgs)
-   //        << " elements"
-   //        << std::endl;
 }
 
 /****************************************/
@@ -399,5 +243,3 @@ void CBuzzController::UpdateActuators() {
 
 /****************************************/
 /****************************************/
-
-REGISTER_CONTROLLER(CBuzzController, "buzz_controller");

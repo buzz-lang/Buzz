@@ -38,8 +38,21 @@ For detail, see `comment-dwim'."
 ;;
 (setq buzz-syntax-table
       (let ((synTable (make-syntax-table)))
+        ;; Comment syntax
         (modify-syntax-entry ?# "< b" synTable)
         (modify-syntax-entry ?\n "> b" synTable)
+        ;; Arithmetic operators as punctuation
+        (modify-syntax-entry ?+ "." synTable)
+        (modify-syntax-entry ?- "." synTable)
+        (modify-syntax-entry ?* "." synTable)
+        (modify-syntax-entry ?/ "." synTable)
+        (modify-syntax-entry ?^ "." synTable)
+        (modify-syntax-entry ?% "." synTable)
+        (modify-syntax-entry ?> "." synTable)
+        (modify-syntax-entry ?< "." synTable)
+        (modify-syntax-entry ?= "." synTable)
+        ;; Extra word constituents
+        (modify-syntax-entry ?_ "_" synTable)
         synTable))
 
 ;;
