@@ -26,8 +26,7 @@ pkg_check_modules(ARGOS REQUIRED argos3_simulator)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ARGOS_PREFIX}/share/argos3/cmake)
 include(ARGoSCheckQTOpenGL)
 find_package(GSL REQUIRED)
-find_package(Lua52 REQUIRED)
-include_directories(${CMAKE_SOURCE_DIR} ${ARGOS_INCLUDE_DIRS} ${GSL_INCLUDE_DIR} ${LUA_INCLUDE_DIR})
+include_directories(${CMAKE_SOURCE_DIR} ${ARGOS_INCLUDE_DIRS} ${GSL_INCLUDE_DIR})
 link_directories(${ARGOS_LIBRARY_DIRS})
 
 # Create libbuzz

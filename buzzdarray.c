@@ -196,7 +196,8 @@ void buzzdarray_set(buzzdarray_t da,
 void buzzdarray_foreach(buzzdarray_t da,
                         buzzdarray_elem_funp fun,
                         void* params) {
-   for(uint32_t i = 0; i < buzzdarray_size(da); ++i) {
+   uint32_t i;
+   for(i = 0; i < buzzdarray_size(da); ++i) {
       fun(i, buzzdarray_rawget(da, i), params);
    }
 }
@@ -207,7 +208,8 @@ void buzzdarray_foreach(buzzdarray_t da,
 uint32_t buzzdarray_find(buzzdarray_t da,
                          buzzdarray_elem_cmpp cmp,
                          const void* data) {
-   for(uint32_t i = 0; i < buzzdarray_size(da); ++i) {
+   uint32_t i;
+   for(i = 0; i < buzzdarray_size(da); ++i) {
       if(cmp(data, buzzdarray_rawget(da, i)) == 0)
          return i;
    }
@@ -226,8 +228,8 @@ uint32_t buzzdarray_part(buzzdarray_t da,
    /* Temporary used for swapping */
    void* t = malloc(da->elem_size);
    /* Use last element as pivot */
-   int64_t pt = lo;
-   for(int64_t k = lo; k < hi; ++k) {
+   int64_t pt = lo, k;
+   for(k = lo; k < hi; ++k) {
       if(cmp(buzzdarray_rawget(da, k), buzzdarray_rawget(da, hi)) < 0) {
          SWAP(buzzdarray_rawget(da, k), buzzdarray_rawget(da, pt));
          ++pt;

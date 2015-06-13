@@ -489,7 +489,8 @@ extern "C" {
       o->c.value.isnative = 1;                                        \
       o->c.value.ref = (addr);                                        \
       if((vm)->lsyms) {                                               \
-         for(int i = 0; i < buzzdarray_size((vm)->lsyms->syms); ++i)  \
+         int i;                                                       \
+         for(i = 0; i < buzzdarray_size((vm)->lsyms->syms); ++i)      \
             buzzdarray_push(o->c.value.actrec,                        \
                             &buzzdarray_get((vm)->lsyms->syms,        \
                                             i, buzzobj_t));           \
@@ -978,11 +979,12 @@ extern "C" {
       buzzvm_pop(vm);                                                   \
       buzzvm_pop(vm);                                                   \
       if(v->o.type == BUZZTYPE_CLOSURE) {                               \
+         int i;                                                         \
          buzzobj_t o = buzzheap_newobj(((vm)->heap), BUZZTYPE_CLOSURE); \
          o->c.value.isnative = v->c.value.isnative;                     \
          o->c.value.ref = v->c.value.ref;                               \
          buzzdarray_push(o->c.value.actrec, &t);                        \
-         for(int i = 1; i < buzzdarray_size(v->c.value.actrec); ++i)    \
+         for(i = 1; i < buzzdarray_size(v->c.value.actrec); ++i)        \
             buzzdarray_push(o->c.value.actrec,                          \
                             &buzzdarray_get(v->c.value.actrec,          \
                                             i, buzzobj_t));             \

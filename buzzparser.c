@@ -83,7 +83,8 @@ struct sym_s* sym_lookup(const char* sym,
                          buzzdarray_t symstack) {
    struct sym_s* symdata = NULL;
    /* Go through the symbol tables, from the top to the bottom */
-   for(int64_t i = buzzdarray_size(symstack)-1; i >= 0; --i) {
+   int64_t i;
+   for(i = buzzdarray_size(symstack)-1; i >= 0; --i) {
       /* Get symbol table */
       buzzdict_t st = buzzdarray_get(symstack, i, buzzdict_t);
       /* Look for the symbol - if found, return immediately */

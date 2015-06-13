@@ -6,11 +6,12 @@
 #include <unistd.h>
 
 void dump(buzzvm_t vm) {
+   int64_t i;
    fprintf(stdout, "============================================================\n");
    fprintf(stdout, "state: %d\terror: %d\n", vm->state, vm->error);
    fprintf(stdout, "code size: %u\tpc: %d\n", vm->bcode_size, vm->pc);
    fprintf(stdout, "stacks: %lld\tcur elem: %lld (size %lld)\n", buzzdarray_size(vm->stacks), buzzvm_stack_top(vm), buzzvm_stack_top(vm));
-   for(int64_t i = buzzvm_stack_top(vm)-1; i >= 0; --i) {
+   for(i = buzzvm_stack_top(vm)-1; i >= 0; --i) {
       fprintf(stdout, "\t%lld\t", i);
       buzzobj_t o = buzzdarray_get(vm->stack, i, buzzobj_t);
       switch(o->o.type) {
