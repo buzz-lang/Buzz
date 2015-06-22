@@ -365,7 +365,7 @@ buzzmsg_payload_t buzzoutmsg_queue_first(buzzoutmsg_queue_t msgq) {
                                       0, buzzoutmsg_t);
       /* Make a new message */
       buzzmsg_payload_t m = buzzmsg_payload_new(10);
-      buzzmsg_serialize_u8(m, BUZZMSG_SWARM_LIST);
+      buzzmsg_serialize_u8(m, BUZZMSG_VSTIG_PUT);
       buzzmsg_serialize_u16(m, f->vs.id);
       buzzvstig_elem_serialize(m, f->vs.key, f->vs.data);
       /* Return message */
