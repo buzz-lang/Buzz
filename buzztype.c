@@ -9,6 +9,7 @@
 buzzobj_t buzzobj_clone(const buzzobj_t o) {
    buzzobj_t x = (buzzobj_t)malloc(sizeof(union buzzobj_u));
    x->o.type = o->o.type;
+   x->o.marker = o->o.marker;
    switch(o->o.type) {
       case BUZZTYPE_NIL: {
          return x;
@@ -30,9 +31,14 @@ buzzobj_t buzzobj_clone(const buzzobj_t o) {
          x->u.value = o->u.value;
          return x;
       }
+      case BUZZTYPE_CLOSURE: {
+         x->c.value.ref = o->c.value.ref;
+         x->c.value.actrec = buzzdarray_clone(o->c.value.actrec);
+         x->c.value.isnative = o->c.value.isnative;
+         return x;
+      }
       case BUZZTYPE_TABLE:
       case BUZZTYPE_ARRAY:
-      case BUZZTYPE_CLOSURE:
       default:
          fprintf(stderr, "[BUG] %s:%d: Clone for Buzz object type %d\n", __FILE__, __LINE__, o->o.type);
          exit(1);
