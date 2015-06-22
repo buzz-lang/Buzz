@@ -77,7 +77,7 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
       GetNodeAttribute(t_node, "bytecode_file", strFName);
       /* Initialize the rest */
       m_tBuzzVM = NULL;
-      m_unRobotId = FromString<UInt32>(GetId().substr(2));
+      m_unRobotId = FromString<UInt16>(GetId().substr(2));
       SetBytecode(strFName);
    }
    catch(CARGoSException& ex) {
@@ -194,6 +194,8 @@ void CBuzzController::ProcessInMsgs() {
       }
       while(cData.Size() > sizeof(UInt16) && unMsgSize > 0);
    }
+   /* Process messages */
+   buzzvm_process_inmsgs(m_tBuzzVM);
 }
 
 /****************************************/

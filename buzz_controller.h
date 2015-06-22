@@ -45,7 +45,7 @@ protected:
    CCI_RangeAndBearingSensor* m_pcRABS;
 
    /* The robot numeric id */
-   UInt32 m_unRobotId;
+   UInt16 m_unRobotId;
    /* Buzz VM state */
    buzzvm_t m_tBuzzVM;
    /* Name of the bytecode file */

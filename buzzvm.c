@@ -185,14 +185,39 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
             /* Fetch local vstig element */
             buzzvstig_elem_t* l = buzzvstig_fetch(*vs, &k);
             if((!l)                             || /* Element not found */
-               ((*l)->timestamp < v->timestamp) || /* Local element is older */
-               ((*l)->timestamp == v->timestamp &&
-                (*l)->robot < v->robot)) {         /* Same timestamp and local id is lower */
+               ((*l)->timestamp < v->timestamp)) { /* Local element is older */
                /* Local element must be updated */
                /* Store element */
                buzzvstig_store(*vs, &k, &v);
-               /* Append a PUT message to the out message queue */
-               buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, v);
+            }
+            else if(((*l)->timestamp == v->timestamp) && /* Same timestamp */
+                    ((*l)->robot != v->robot)) {         /* Different robot */
+               /* Conflict! */
+               /* Call conflict manager */
+               buzzvstig_elem_t c = 
+                  buzzvm_vstig_onconflict(vm, *vs, k, *l, v);
+               if(!c) {
+                  fprintf(stderr, "[WARNING] [ROBOT %u] Error resolving PUT conflict\n", vm->robot);
+                  break;
+               }
+               /* Did this robot lose the conflict? */
+               if((c->robot != vm->robot) &&
+                  ((*l)->robot == vm->robot)) {
+                  /* Yes */
+                  /* Save current local entry */
+                  buzzvstig_elem_t ol = buzzvstig_elem_clone(*l);
+                  /* Store winning value */
+                  buzzvstig_store(*vs, &k, &c);
+                  /* Call conflict lost manager */
+                  buzzvm_vstig_onconflictlost(vm, *vs, k, ol);
+               }
+               else {
+                  /* This robot did not lose the conflict */
+                  /* Just propagate the PUT message */
+                  buzzvstig_store(*vs, &k, &c);
+               }
+            }
+            else {
             }
             break;
          }
@@ -222,8 +247,6 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                (*l)->timestamp < v->timestamp) { /* Local element is older */
                /* Store element */
                buzzvstig_store(*vs, &k, &v);
-               /* Append a PUT message to the out message queue */
-               buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, v);
             }
             else if((*l)->timestamp > v->timestamp) {
                /* Local element is newer */
@@ -510,8 +533,6 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
    if(vm->state != BUZZVM_STATE_READY) return vm->state;
    /* Execute GC */
    buzzheap_gc(vm);
-   /* Process messages */
-   buzzvm_process_inmsgs(vm);
    /* Fetch instruction and (potential) argument */
    uint8_t instr = vm->bcode[vm->pc];
    /* Execute instruction */
@@ -640,12 +661,12 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          break;
       }
       case BUZZVM_INSTR_TPUT: {
-         buzzvm_tput(vm);
+         if(buzzvm_tput(vm) != BUZZVM_STATE_READY) return vm->state;
          inc_pc();
          break;
       }
       case BUZZVM_INSTR_TGET: {
-         buzzvm_tget(vm);
+         if(buzzvm_tget(vm) != BUZZVM_STATE_READY) return vm->state;
          inc_pc();
          break;
       }
@@ -691,7 +712,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       case BUZZVM_INSTR_PUSHS: {
          inc_pc();
          get_arg(int32_t);
-         buzzvm_pushs(vm, arg);
+         if(buzzvm_pushs(vm, arg) != BUZZVM_STATE_READY) return vm->state;
          break;
       }
       case BUZZVM_INSTR_PUSHCN: {
@@ -919,6 +940,68 @@ buzzvm_state buzzvm_pop(buzzvm_t vm) {
       buzzdarray_pop(vm->stack);
    }
    return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state buzzvm_pushs(buzzvm_t vm, uint16_t strid) {
+   if((strid) >= buzzdarray_size(vm->strings)) {
+      vm->state = BUZZVM_STATE_ERROR;
+      vm->error = BUZZVM_ERROR_STRING;
+      return vm->state;
+   }
+   buzzobj_t o = buzzheap_newobj(vm->heap, BUZZTYPE_STRING);
+   o->s.value.sid = (strid);
+   o->s.value.str = buzzdarray_get(vm->strings, (strid), char*);
+   buzzvm_push(vm, o);
+   return BUZZVM_STATE_READY;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state buzzvm_tput(buzzvm_t vm) {
+   buzzvm_stack_assert(vm, 3);
+   buzzvm_type_assert(vm, 3, BUZZTYPE_TABLE);
+   buzzobj_t v = buzzvm_stack_at(vm, 1);
+   buzzobj_t k = buzzvm_stack_at(vm, 2);
+   buzzobj_t t = buzzvm_stack_at(vm, 3);
+   buzzvm_pop(vm);
+   buzzvm_pop(vm);
+   buzzvm_pop(vm);
+   if(v->o.type == BUZZTYPE_CLOSURE) {
+      int i;
+      buzzobj_t o = buzzheap_newobj((vm->heap), BUZZTYPE_CLOSURE);
+      o->c.value.isnative = v->c.value.isnative;
+      o->c.value.ref = v->c.value.ref;
+      buzzdarray_push(o->c.value.actrec, &t);
+      for(i = 1; i < buzzdarray_size(v->c.value.actrec); ++i)
+         buzzdarray_push(o->c.value.actrec,
+                         &buzzdarray_get(v->c.value.actrec,
+                                         i, buzzobj_t));
+      buzzdict_set(t->t.value, &k, &o);
+   }
+   else {
+      buzzdict_set(t->t.value, &k, &v);
+   }
+   return BUZZVM_STATE_READY;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state buzzvm_tget(buzzvm_t vm) {
+   buzzvm_stack_assert(vm, 2);
+   buzzvm_type_assert(vm, 2, BUZZTYPE_TABLE);
+   buzzobj_t k = buzzvm_stack_at(vm, 1);
+   buzzobj_t t = buzzvm_stack_at(vm, 2);
+   buzzvm_pop(vm);
+   buzzvm_pop(vm);
+   buzzobj_t* v = buzzdict_get(t->t.value, &k, buzzobj_t);
+   if(v) buzzvm_push(vm, *v);
+   else buzzvm_pushnil(vm);
+   return BUZZVM_STATE_READY;
 }
 
 /****************************************/

@@ -24,7 +24,12 @@ extern "C" {
    /*
     * The virtual stigmergy data.
     */
-   typedef buzzdict_t buzzvstig_t;
+   struct buzzvstig_s {
+      buzzdict_t data;
+      buzzobj_t onconflict;
+      buzzobj_t onconflictlost;
+   };
+   typedef struct buzzvstig_s* buzzvstig_t;
 
    /*
     * Forward declaration of the Buzz VM.
@@ -56,6 +61,12 @@ extern "C" {
    extern buzzvstig_t buzzvstig_new();
 
    /*
+    * Destroys a virtual stigmergy structure.
+    * @param vs The virtual stigmergy structure.
+    */
+   void buzzvstig_destroy(buzzvstig_t* vs);
+
+   /*
     * Serializes an element in the virtual stigmergy.
     * The data is appended to the given buffer. The buffer is treated as a
     * dynamic array of uint8_t.
@@ -83,7 +94,7 @@ extern "C" {
                                              buzzmsg_payload_t buf,
                                              uint32_t pos,
                                              struct buzzvm_s* vm);
-   
+
    /*
     * Buzz C closure to create a new stigmergy object.
     * @param vm The Buzz VM state.
@@ -105,15 +116,43 @@ extern "C" {
     */
    int buzzvm_vstig_get(struct buzzvm_s* vm);
 
+   /*
+    * Buzz C closure to set the function to call on write conflict.
+    * @param vm The Buzz VM state.
+    * @return The updated VM state.
+    */
+   int buzzvm_vstig_setonconflict(struct buzzvm_s* vm);
+
+   /*
+    * Buzz C closure to set the function to call on loss of conflict.
+    * @param vm The Buzz VM state.
+    * @return The updated VM state.
+    */
+   int buzzvm_vstig_setonconflictlost(struct buzzvm_s* vm);
+
+   /*
+    * Calls the write conflict manager.
+    * @param vm The Buzz VM state.
+    * @return The updated VM state.
+    */
+   buzzvstig_elem_t buzzvm_vstig_onconflict(struct buzzvm_s* vm,
+                                            buzzvstig_t vs,
+                                            buzzobj_t k,
+                                            buzzvstig_elem_t lv,
+                                            buzzvstig_elem_t rv);
+
+   /*
+    * Calls the lost conflict manager.
+    * @param vm The Buzz VM state.
+    */
+   void buzzvm_vstig_onconflictlost(struct buzzvm_s* vm,
+                                    buzzvstig_t vs,
+                                    buzzobj_t k,
+                                    buzzvstig_elem_t lv);
+
 #ifdef __cplusplus
 }
 #endif
-
-/*
- * Destroys a virtual stigmergy structure.
- * @param vs The virtual stigmergy structure.
- */
-#define buzzvstig_destroy(vs) buzzdict_destroy(vs)
 
 /*
  * Looks for an element in a virtual stigmergy structure.
@@ -121,7 +160,7 @@ extern "C" {
  * @param key The key to look for.
  * @return The data associated to the key, or NULL if not found.
  */
-#define buzzvstig_fetch(vs, key) buzzdict_get((vs), (key), buzzvstig_elem_t)
+#define buzzvstig_fetch(vs, key) buzzdict_get((vs)->data, (key), buzzvstig_elem_t)
 
 /*
  * Puts data into a virtual stigmergy structure.
@@ -129,7 +168,7 @@ extern "C" {
  * @param key The key.
  * @param el The element.
  */
-#define buzzvstig_store(vs, key, el) buzzdict_set((vs), (key), (el));
+#define buzzvstig_store(vs, key, el) buzzdict_set((vs)->data, (key), (el));
 
 /*
  * Applies the given function to each element in the virtual stigmergy structure.
@@ -138,6 +177,6 @@ extern "C" {
  * @param params A buffer to pass along.
  * @see buzzdict_foreach()
  */
-#define buzzvstig_foreach(vs, fun, params) buzzdict_foreach(vs, fun, params);
+#define buzzvstig_foreach(vs, fun, params) buzzdict_foreach((vs)->data, fun, params);
 
 #endif

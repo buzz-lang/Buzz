@@ -50,13 +50,26 @@ void buzzvstig_elem_destroy(const void* key, void* data, void* params) {
 /****************************************/
 
 buzzvstig_t buzzvstig_new() {
-   return buzzdict_new(
+   buzzvstig_t x = (buzzvstig_t)malloc(sizeof(struct buzzvstig_s));
+   x->data = buzzdict_new(
       20,
       sizeof(buzzobj_t),
       sizeof(buzzvstig_elem_t),
       buzzvstig_key_hash,
       buzzvstig_key_cmp,
       buzzvstig_elem_destroy);
+   x->onconflict = NULL;
+   x->onconflictlost = NULL;
+   return x;
+}
+
+/****************************************/
+/****************************************/
+
+void buzzvstig_destroy(buzzvstig_t* vs) {
+   buzzdict_destroy(&((*vs)->data));
+   free((*vs)->onconflict);
+   free((*vs)->onconflictlost);
 }
 
 /****************************************/
@@ -129,7 +142,15 @@ int buzzvm_vstig_create(buzzvm_t vm) {
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_get));
    buzzvm_tput(vm);
    buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "vstig"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "setonconflict"));
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_setonconflict));
+   buzzvm_tput(vm);
+   buzzvm_push(vm, t);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "setonconflictlost"));
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_setonconflictlost));
+   buzzvm_tput(vm);
+   buzzvm_push(vm, t);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
    buzzvm_pushi(vm, id);
    buzzvm_tput(vm);
    /* Push the table on the stack */
@@ -144,7 +165,7 @@ int buzzvm_vstig_create(buzzvm_t vm) {
 int buzzvm_vstig_put(buzzvm_t vm) {
    /* Get vstig id */
    buzzvm_lload(vm, 0);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "vstig"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
    buzzvm_tget(vm);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
    /* Get key */
@@ -166,8 +187,6 @@ int buzzvm_vstig_put(buzzvm_t vm) {
          buzzvstig_store(*vs, &k, x);
          /* Append a PUT message to the out message queue */
          buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, *x);
-         fprintf(stderr, "[DEBUG] robot %d sends <PUT, d=%d, ts=%d, r=%d>\n",
-                 vm->robot, k->i.value, (*x)->timestamp, (*x)->robot);
       }
       else {
          /* Element not found, create a new one */
@@ -175,8 +194,6 @@ int buzzvm_vstig_put(buzzvm_t vm) {
          buzzvstig_store(*vs, &k, &y);
          /* Append a PUT message to the out message queue */
          buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, y);
-         fprintf(stderr, "[DEBUG] robot %d sends <PUT, d=%d, ts=%d, r=%d>\n",
-                 vm->robot, k->i.value, y->timestamp, y->robot);
       }
    }
    /* Return */
@@ -189,14 +206,14 @@ int buzzvm_vstig_put(buzzvm_t vm) {
 int buzzvm_vstig_get(buzzvm_t vm) {
    /* Get vstig id */
    buzzvm_lload(vm, 0);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "vstig"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
    buzzvm_tget(vm);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
    /* Get key */
    buzzvm_lload(vm, 1);
    buzzobj_t k = buzzvm_stack_at(vm, 1);
    /* Look for virtual stigmergy */
-   buzzdict_t* vs = buzzdict_get(vm->vstigs, &id, buzzdict_t);
+   buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
    if(vs) {
       /* Virtual stigmergy found */
       /* Look for key and push result */
@@ -204,8 +221,6 @@ int buzzvm_vstig_get(buzzvm_t vm) {
       if(e) {
          /* Key found */
          buzzvm_push(vm, (*e)->data);
-         fprintf(stderr, "[DEBUG] robot %d sends <QUERY, d=%d, ts=%d, r=%d>\n",
-                 vm->robot, k->i.value, (*e)->timestamp, (*e)->robot);
          /* Append the message to the out message queue */
          buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_QUERY, id, k, *e);
       }
@@ -215,8 +230,6 @@ int buzzvm_vstig_get(buzzvm_t vm) {
          buzzvstig_elem_t x =
             buzzvstig_elem_new(buzzvm_stack_at(vm, 1),
                                1, vm->robot);
-         fprintf(stderr, "[DEBUG] robot %d sends <QUERY, d=%d, ts=%d, r=%d>\n",
-                 vm->robot, k->i.value, x->timestamp, x->robot);
          /* Append the message to the out message queue */
          buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_QUERY, id, k, x);
       }
@@ -229,6 +242,164 @@ int buzzvm_vstig_get(buzzvm_t vm) {
    }
    /* Return the value found */
    return buzzvm_ret1(vm);
+}
+
+/****************************************/
+/****************************************/
+
+int buzzvm_vstig_setonconflict(struct buzzvm_s* vm) {
+   /* Get vstig id */
+   buzzvm_lload(vm, 0);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
+   buzzvm_tget(vm);
+   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
+   /* Look for virtual stigmergy */
+   buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
+   if(vs) {
+      /* Virtual stigmergy found */
+      /* Get closure */
+      buzzvm_lload(vm, 1);
+      buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
+      /* Clone the closure */
+      if((*vs)->onconflict) free((*vs)->onconflict);
+      (*vs)->onconflict = buzzobj_clone(buzzvm_stack_at(vm, 1));
+   }
+   else {
+      /* No virtual stigmergy found, just push false */
+      /* If this happens, its a bug */
+      buzzvm_pushnil(vm);
+      fprintf(stderr, "[BUG] [ROBOT %u] Can't find virtual stigmergy %u\n", vm->robot, id);
+   }
+   /* Return the value found */
+   return buzzvm_ret0(vm);
+}
+
+/****************************************/
+/****************************************/
+
+int buzzvm_vstig_setonconflictlost(struct buzzvm_s* vm) {
+   /* Get vstig id */
+   buzzvm_lload(vm, 0);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
+   buzzvm_tget(vm);
+   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
+   /* Look for virtual stigmergy */
+   buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
+   if(vs) {
+      /* Virtual stigmergy found */
+      /* Get closure */
+      buzzvm_lload(vm, 1);
+      buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
+      /* Clone the closure */
+      if((*vs)->onconflictlost) free((*vs)->onconflictlost);
+      (*vs)->onconflictlost = buzzobj_clone(buzzvm_stack_at(vm, 1));
+   }
+   else {
+      /* No virtual stigmergy found, just push false */
+      /* If this happens, its a bug */
+      buzzvm_pushnil(vm);
+      fprintf(stderr, "[BUG] [ROBOT %u] Can't find virtual stigmergy %u\n", vm->robot, id);
+   }
+   /* Return the value found */
+   return buzzvm_ret0(vm);
+}
+
+/****************************************/
+/****************************************/
+
+buzzvstig_elem_t buzzvm_vstig_onconflict(buzzvm_t vm,
+                                         buzzvstig_t vs,
+                                         buzzobj_t k,
+                                         buzzvstig_elem_t lv,
+                                         buzzvstig_elem_t rv) {
+   /* Was a conflict manager defined? */
+   if(vs->onconflict) {
+      /* Push closure */
+      buzzvm_push(vm, vs->onconflict);
+      /* Push key */
+      buzzvm_push(vm, k);
+      /* Make table for local value */
+      buzzvm_pusht(vm);
+      buzzobj_t loc = buzzvm_stack_at(vm, 1);
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "robot"));
+      buzzvm_pushi(vm, lv->robot);
+      buzzvm_tput(vm);
+      buzzvm_push(vm, loc);
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+      buzzvm_push(vm, lv->data);
+      buzzvm_tput(vm);
+      /* Make table for remote value */
+      buzzvm_pusht(vm);
+      buzzobj_t rem = buzzvm_stack_at(vm, 1);
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "robot"));
+      buzzvm_pushi(vm, rv->robot);
+      buzzvm_tput(vm);
+      buzzvm_push(vm, rem);
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+      buzzvm_push(vm, rv->data);
+      buzzvm_tput(vm);
+      /* Call closure with 3 arguments */
+      buzzvm_push(vm, loc);
+      buzzvm_push(vm, rem);
+      buzzvm_closure_call(vm, 3);
+      /* Make new entry with return value */
+      /* Make sure it's a table */
+      if(buzzvm_stack_at(vm, 1)->o.type != BUZZTYPE_TABLE) {
+         fprintf(stderr, "[WARNING] [ROBOT %u] Return value type is %d\n", vm->robot, buzzvm_stack_at(vm, 1)->o.type);
+         return NULL;
+      }
+      /* Get the robot id */
+      buzzobj_t ret = buzzvm_stack_at(vm, 1);
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "robot"));
+      buzzvm_tget(vm);
+      if(buzzvm_stack_at(vm, 1)->o.type != BUZZTYPE_INT)
+         return NULL;
+      uint16_t robot = buzzvm_stack_at(vm, 1)->i.value;
+      buzzvm_pop(vm);
+      /* Get the data */
+      buzzvm_push(vm, ret);
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+      buzzvm_tget(vm);
+      buzzobj_t data = buzzvm_stack_at(vm, 1);
+      buzzvm_pop(vm);
+      /* Make new entry */
+      return buzzvstig_elem_new(data, lv->timestamp, robot);
+   }
+   else {
+      /* No conflict manager, use default behavior */
+      if(lv->robot > rv->robot) return lv;
+      else return rv;
+   }
+}
+
+/****************************************/
+/****************************************/
+
+void buzzvm_vstig_onconflictlost(buzzvm_t vm,
+                                 buzzvstig_t vs,
+                                 buzzobj_t k,
+                                 buzzvstig_elem_t lv) {
+   fprintf(stderr, "[DEBUG] [ROBOT %u] buzzvm_vstig_onconflictlost\n", vm->robot);
+   /* Was a conflict manager defined? */
+   if(vs->onconflictlost) {
+      /* Push closure */
+      buzzvm_push(vm, vs->onconflictlost);
+      /* Push key */
+      buzzvm_push(vm, k);
+      /* Make table for local value */
+      buzzvm_pusht(vm);
+      buzzobj_t loc = buzzvm_stack_at(vm, 1);
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "robot"));
+      buzzvm_pushi(vm, lv->robot);
+      buzzvm_tput(vm);
+      buzzvm_push(vm, loc);
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+      buzzvm_push(vm, lv->data);
+      buzzvm_tput(vm);
+      /* Call closure with 2 arguments */
+      buzzvm_push(vm, loc);
+      buzzvm_closure_call(vm, 2);
+   }
 }
 
 /****************************************/

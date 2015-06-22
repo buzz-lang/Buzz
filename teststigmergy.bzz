@@ -9,8 +9,16 @@ var t
 # Executed at init time
 #
 function init() {
-  robots = 10
+  robots = 3
   s = stigmergy.create(1)
+  s.setonconflict(function(k, l, r){
+      log("fb ", id, ": conflict on vstig[", k, "]: r", l.robot, " / r", r.robot)
+      if(l.robot > r.robot) { return l }
+      else                  { return r }
+    })
+  s.setonconflictlost(function(k, l){
+      log("fb ", id, ": lost conflict on vstig[", k, "]")
+    })
   t = 0
   return
 }
@@ -22,7 +30,7 @@ function step() {
   # Increase step count
   t = t + 1
   if(t < 10) {
-    # Put step count, using own id as key
+    # Put step count
     s.put(id, t)
     # Print other known values in stigmergy
     i = 0

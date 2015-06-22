@@ -208,6 +208,12 @@ extern "C" {
                                uint32_t bcode_size);
 
    /*
+    * Processes the input message queue.
+    * @param vm The VM data.
+    */
+   extern void buzzvm_process_inmsgs(buzzvm_t vm);
+
+   /*
     * Executes the next step in the bytecode, if possible.
     * @param vm The VM data.
     * @return The updated VM state.
@@ -308,6 +314,42 @@ extern "C" {
     * @return The VM state.
     */
    extern buzzvm_state buzzvm_pop(buzzvm_t vm);
+
+   /*
+    * Pushes a string on the stack.
+    * @param vm The VM data.
+    * @param strid The string id.
+    */
+   extern buzzvm_state buzzvm_pushs(buzzvm_t vm, uint16_t strid);
+
+   /*
+    * Stores a (idx,value) pair in a table.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * The stack is expected to be as follows:
+    * #1 value
+    * #2 idx
+    * #3 table
+    * This operation pops #1 and #2, leaving the table at the stack top.
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_tput(buzzvm_t vm);
+   
+   /*
+    * Fetches a (idx,value) pair from a table.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * The stack is expected to be as follows:
+    * #1 idx
+    * #2 table
+    * This operation pops #1 and pushes the value, leaving the table at
+    * stack #2. If the element for the given idx is not found, nil is
+    * pushed as value.
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_tget(buzzvm_t vm);
 
    /*
     * Returns from a closure without setting a return value.
@@ -411,23 +453,6 @@ extern "C" {
  * @param v The value.
  */
 #define buzzvm_pushi(vm, v) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_INT); o->i.value = (v); buzzvm_push(vm, o); }
-
-/*
- * Pushes a string on the stack.
- * @param vm The VM data.
- * @param strid The string id.
- */
-#define buzzvm_pushs(vm, strid) {                                       \
-      if((strid) >= buzzdarray_size((vm)->strings)) {                   \
-         (vm)->state = BUZZVM_STATE_ERROR;                              \
-         (vm)->error = BUZZVM_ERROR_STRING;                             \
-         return (vm)->state;                                            \
-      }                                                                 \
-      buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_STRING);       \
-      o->s.value.sid = (strid);                                         \
-      o->s.value.str = buzzdarray_get((vm)->strings, (strid), char*);   \
-      buzzvm_push(vm, o);                                               \
-   }
 
 /*
  * Pushes a float value on the stack.
@@ -956,69 +981,6 @@ extern "C" {
  * @param vm The VM data.
  */
 #define buzzvm_pusht(vm) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_TABLE); buzzvm_push(vm, o); }
-
-/*
- * Stores a (idx,value) pair in a table.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * The stack is expected to be as follows:
- * #1 value
- * #2 idx
- * #3 table
- * This operation pops #1 and #2, leaving the table at the stack top.
- * @param vm The VM data.
- */
-#define buzzvm_tput(vm) {                                               \
-      buzzvm_stack_assert(vm, 3);                                       \
-      buzzvm_type_assert(vm, 3, BUZZTYPE_TABLE);                        \
-      buzzobj_t v = buzzvm_stack_at(vm, 1);                             \
-      buzzobj_t k = buzzvm_stack_at(vm, 2);                             \
-      buzzobj_t t = buzzvm_stack_at(vm, 3);                             \
-      buzzvm_pop(vm);                                                   \
-      buzzvm_pop(vm);                                                   \
-      buzzvm_pop(vm);                                                   \
-      if(v->o.type == BUZZTYPE_CLOSURE) {                               \
-         int i;                                                         \
-         buzzobj_t o = buzzheap_newobj(((vm)->heap), BUZZTYPE_CLOSURE); \
-         o->c.value.isnative = v->c.value.isnative;                     \
-         o->c.value.ref = v->c.value.ref;                               \
-         buzzdarray_push(o->c.value.actrec, &t);                        \
-         for(i = 1; i < buzzdarray_size(v->c.value.actrec); ++i)        \
-            buzzdarray_push(o->c.value.actrec,                          \
-                            &buzzdarray_get(v->c.value.actrec,          \
-                                            i, buzzobj_t));             \
-         buzzdict_set(t->t.value, &k, &o);                              \
-      }                                                                 \
-      else {                                                            \
-         buzzdict_set(t->t.value, &k, &v);                              \
-      }                                                                 \
-   }
-   
-/*
- * Fetches a (idx,value) pair from a table.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * The stack is expected to be as follows:
- * #1 idx
- * #2 table
- * This operation pops #1 and pushes the value, leaving the table at
- * stack #2. If the element for the given idx is not found, nil is
- * pushed as value.
- * @param vm The VM data.
- */
-#define buzzvm_tget(vm) {                                     \
-      buzzvm_stack_assert(vm, 2);                             \
-      buzzvm_type_assert(vm, 2, BUZZTYPE_TABLE);              \
-      buzzobj_t k = buzzvm_stack_at(vm, 1);                   \
-      buzzobj_t t = buzzvm_stack_at(vm, 2);                   \
-      buzzvm_pop(vm);                                         \
-      buzzvm_pop(vm);                                         \
-      buzzobj_t* v = buzzdict_get(t->t.value, &k, buzzobj_t); \
-      if(v) buzzvm_push(vm, *v);                              \
-      else buzzvm_pushnil(vm);                                \
-   }
 
 /*
  * Pushes an empty array onto the stack.
