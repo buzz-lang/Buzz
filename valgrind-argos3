@@ -8,6 +8,28 @@ else
 fi
 export DYLD_LIBRARY_PATH
 
+# Preload all dynamically linked libraries
+if [ -n "${ARGOS_PLUGIN_PATH}" ]; then
+    ARGOS_PLUGIN_PATH=${DYLD_LIBRARY_PATH}:${ARGOS_PLUGIN_PATH}
+else
+    ARGOS_PLUGIN_PATH=${DYLD_LIBRARY_PATH}
+fi
+# Find how many directories are in ARGOS_PLUGIN_PATH
+COUNT=`echo ${ARGOS_PLUGIN_PATH} | sed 's/[^:]//g' | wc -c`; let "COUNT+=1"
+# Keep looping until the field is less than the count+1 (until all fields are caught in the loop)
+IDX=1
+while [ "$IDX" -lt "$COUNT" ]; do
+    # Get the directory
+    DIR=`echo ${ARGOS_PLUGIN_PATH} | cut -d: -f${IDX}`
+    # Add every element to LD_PRELOAD
+    LD_PRELOAD=${LD_PRELOAD}:`ls ${DIR}/*.dylib 2> /dev/null | xargs | sed 's| |:|g'`
+    LD_PRELOAD=${LD_PRELOAD}:`ls ${DIR}/*.so 2> /dev/null | xargs | sed 's| |:|g'`
+    # Increment the FIELD variable
+    let "IDX+=1"
+done
+export LD_PRELOAD
+
+
 # Execute argos3 with bash-internal command 'exec', which
 # replaces the script with the argos3 executable. In this
 # way, there is only one PID and the return value is handled

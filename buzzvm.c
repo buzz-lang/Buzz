@@ -652,7 +652,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       }
       case BUZZVM_INSTR_GSTORE: {
          inc_pc();
-         buzzvm_gstore(vm);
+         if(buzzvm_gstore(vm) != BUZZVM_STATE_READY) return vm->state;
          break;
       }
       case BUZZVM_INSTR_PUSHT: {
@@ -667,6 +667,11 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       }
       case BUZZVM_INSTR_TGET: {
          if(buzzvm_tget(vm) != BUZZVM_STATE_READY) return vm->state;
+         inc_pc();
+         break;
+      }
+      case BUZZVM_INSTR_TSIZE: {
+         if(buzzvm_tsize(vm) != BUZZVM_STATE_READY) return vm->state;
          inc_pc();
          break;
       }
@@ -1002,6 +1007,32 @@ buzzvm_state buzzvm_tget(buzzvm_t vm) {
    if(v) buzzvm_push(vm, *v);
    else buzzvm_pushnil(vm);
    return BUZZVM_STATE_READY;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state buzzvm_tsize(buzzvm_t vm) {
+   buzzvm_stack_assert(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_TABLE);
+   buzzobj_t t = buzzvm_stack_at(vm, 1);
+   buzzvm_pop(vm);
+   buzzvm_pushi(vm, buzzdict_size(t->t.value));
+   return BUZZVM_STATE_READY;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state buzzvm_gstore(buzzvm_t vm) {
+   buzzvm_stack_assert((vm), 2);
+   buzzvm_type_assert((vm), 2, BUZZTYPE_STRING);
+   buzzobj_t str = buzzvm_stack_at((vm), 2);
+   buzzobj_t o = buzzvm_stack_at((vm), 1);
+   buzzvm_pop(vm);
+   buzzvm_pop(vm);
+   buzzdict_set((vm)->gsyms, &(str->s.value), &o);
+   return buzzvm_pop(vm);
 }
 
 /****************************************/

@@ -816,6 +816,14 @@ int parse_operand(buzzparser_t par) {
          return PARSE_OK;
       }
    }
+   else if(par->tok->type == BUZZTOK_SIZE) {
+      fetchtok();
+      DEBUG("Operand is table size\n");
+      struct idrefinfo_s idrefinfo;
+      if(!parse_idref(par, 0, &idrefinfo)) return PARSE_ERROR;
+      chunk_append("\ttsize\n");
+      DEBUG("Table size operand end\n");
+   }
    DEBUG("Operand is idref\n");
    struct idrefinfo_s  idrefinfo;
    return parse_idref(par, 0, &idrefinfo);

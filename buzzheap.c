@@ -7,7 +7,7 @@
 /****************************************/
 
 #define BUZZHEAP_GC_INIT_MAXOBJS 1
-#define BUZZHEAP_TABLE_BUCKETS   100
+#define BUZZHEAP_TABLE_BUCKETS   10
 
 /****************************************/
 /****************************************/

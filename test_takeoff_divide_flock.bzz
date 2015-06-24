@@ -1,0 +1,240 @@
+########################################
+#
+# CONSTANTS
+#
+########################################
+
+#
+# State constants
+#
+STATE_WAITING     = 0
+STATE_TAKEOFF     = 1
+STATE_PICK_TARGET = 2
+STATE_DIVIDE      = 3
+STATE_GOTO_TARGET = 4
+
+#
+# Lennard-Jones parameters
+#
+TARGET_KIN     = 200.
+EPSILON_KIN    = 100.
+TARGET_NONKIN  = 300.
+EPSILON_NONKIN = 250.
+
+#
+# Other constants
+#
+BARRIER    = 1
+NUM_ROBOTS = 1
+
+########################################
+#
+# FLOCKING-RELATED FUNCTIONS
+#
+########################################
+
+#
+# Lennard-Jones interaction magnitude
+#
+function calc_lj(dist, target, epsilon) {
+  return -(epsilon / dist) * ((target / dist)^4 - (target / dist)^2)
+}
+
+#
+# Neighbor data to kin LJ interaction
+#
+function to_lj_kin(rid, data) {
+  var lj
+  lj = calc_lj(data.distance, TARGET_KIN, EPSILON_KIN)
+  data.x = lj * math.cos(data.azimuth)
+  data.y = lj * math.sin(data.azimuth)
+  return data
+}
+
+#
+# Neighbor data to non-kin LJ interaction
+#
+function to_lj_nonkin(rid, data) {
+  var lj
+  lj = calc_lj(data.distance, TARGET_NONKIN, EPSILON_NONKIN)
+  data.x = lj * math.cos(data.azimuth)
+  data.y = lj * math.sin(data.azimuth)
+  return data
+}
+
+#
+# Accumulator of neighbor LJ interactions
+#
+function vec2_sum(rid, data, accum) {
+  accum.x = accum.x + data.x
+  accum.y = accum.y + data.y
+  return accum
+}
+
+########################################
+#
+# BARRIER-RELATED FUNCTIONS
+#
+########################################
+
+#
+# Barrier initializer
+#
+function barrier_init() {
+  # Create a dedicated vstig
+  barrier = stigmergy.create(1)
+  # Zero the robot counter
+  barrier.put(BARRIER, 0)
+  # Set onconflict manager
+  barrier.setonconflict(function(k,l,r){
+      # Return local value if
+      # - Remote value is smaller than local, OR
+      # - Values are equal, robot of remote record is smaller than local one
+      if(r.data < l.data or
+        (r.data == l.data and r.robot < l.robot)) {
+        return l
+      }
+      # Otherwise return remote value
+      else {
+        return r
+      }
+    })
+  # Set onlostconflict manager
+  barrier.setonconflictlost(function(k,l){
+      # Ignore lost conflict when initializing BARRIER entry
+      if(l.data > 0) {
+        barrier.put(BARRIER, barrier.get(BARRIER) + 1)
+      }
+    })
+}
+
+#
+# Sets a barrier
+#
+function barrier_set(threshold, transf) {
+  state  = STATE_WAITING
+  statef = function() { barrier_wait(ROBOTS, transf); log("ROBOT ", id, " is waiting...") }
+  barrier.put(BARRIER, 0)
+}
+
+#
+# Make yourself ready
+#
+function barrier_ready() {
+  barrier.put(BARRIER, barrier.get(BARRIER) + 1)
+}
+
+#
+# Executes the barrier
+#
+function barrier_wait(threshold, transf) {
+  if(barrier.get(BARRIER) >= threshold) {
+    transf()
+  }
+}
+
+########################################
+#
+# STATE-RELATED FUNCTIONS
+#
+########################################
+
+#
+# Take-off state function
+#
+function state_takeoff() {
+  log("ROBOT ", id, ": state_takeoff()")
+  if(not takeoff()) {
+    barrier_set(ROBOTS, transition_to_pick_target)
+    barrier_ready()
+  }
+}
+
+#
+# Transition to pick target state function
+#
+function transition_to_pick_target() {
+  log("ROBOT ", id, ": transition_to_pick_target()")
+  state = STATE_PICK_TARGET
+  statef = state_pick_target
+  robot.camera.enable()
+}
+
+#
+# Pick target state function
+#
+function state_pick_target() {
+  log("ROBOT ", id, ": state_pick_target()")
+}
+
+#
+# Transition to divide state function
+#
+function transition_to_divide() {
+  state = STATE_DIVIDE
+  statef = state_divide
+}
+
+#
+# Pick target state function
+#
+function state_divide() {
+  # Create accumulator
+  var accum
+  accum = {}
+  accum.x = 0
+  accum.y = 0
+  # Calculate accumulator
+  accum = neighbors.kin().map(to_lj_kin).reduce(vec2_sum, accum)
+  accum = neighbors.nonkin().map(to_lj_nonkin).reduce(vec2_sum, accum)
+  if(neighbors.count() > 0) {
+    accum.x = accum.x / neighbors.count()
+    accum.y = accum.y / neighbors.count()
+  }
+  # Move according to vector
+  goto(accum.x, accum.y);
+}
+
+#
+# Transition to go to target state function
+#
+function transition_to_goto_target() {
+  state = STATE_GOTO_TARGET
+  statef = state_goto_target
+}
+
+#
+# Go to target state function
+#
+function state_goto_target {
+}
+
+########################################
+#
+# ARGoS HOOKS
+#
+########################################
+
+#
+# Executed at init time
+#
+function init() {
+  # Set initial state
+  state  = STATE_TAKEOFF
+  statef = state_takeoff
+  # Initialize the barrier
+  barrier_init()
+}
+
+#
+# Executed at each time step
+#
+function step() {
+  statef()
+}
+
+#
+# Executed at the experiment end
+#
+function destroy() {
+}

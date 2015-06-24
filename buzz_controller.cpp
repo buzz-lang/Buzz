@@ -70,8 +70,8 @@ CBuzzController::~CBuzzController() {
 void CBuzzController::Init(TConfigurationNode& t_node) {
    try {
       /* Get pointers to devices */
-      m_pcRABA   = GetActuator<CCI_RangeAndBearingActuator     >("range_and_bearing");
-      m_pcRABS   = GetSensor  <CCI_RangeAndBearingSensor       >("range_and_bearing");
+      m_pcRABA   = GetActuator<CCI_RangeAndBearingActuator>("range_and_bearing");
+      m_pcRABS   = GetSensor  <CCI_RangeAndBearingSensor  >("range_and_bearing");
       /* Get the script name */
       std::string strFName;
       GetNodeAttribute(t_node, "bytecode_file", strFName);
@@ -103,7 +103,6 @@ void CBuzzController::ControlStep() {
               m_strBytecodeFName.c_str(),
               buzzvm_error_desc[m_tBuzzVM->error]);
    }
-   UpdateActuators();
    ProcessOutMsgs();
 }
 
@@ -149,7 +148,7 @@ void CBuzzController::SetBytecode(const std::string& str_fname) {
 /****************************************/
 /****************************************/
 
-int CBuzzController::RegisterFunctions() {
+buzzvm_state CBuzzController::RegisterFunctions() {
    /* Pointer to this controller */
    buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "controller"));
    buzzvm_pushuserdata(m_tBuzzVM, this);
@@ -240,7 +239,291 @@ void CBuzzController::UpdateSensors() {
 /****************************************/
 /****************************************/
 
-void CBuzzController::UpdateActuators() {
+buzzvm_state CBuzzController::Register(const std::string& str_key,
+                                       buzzobj_t t_obj) {
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str()));
+   buzzvm_push(m_tBuzzVM, t_obj);
+   buzzvm_gstore(m_tBuzzVM);
+   return m_tBuzzVM->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::Register(const std::string& str_key,
+                                       SInt32 n_value) {
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str()));
+   buzzvm_pushi(m_tBuzzVM, n_value);
+   buzzvm_gstore(m_tBuzzVM);
+   return m_tBuzzVM->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::Register(const std::string& str_key,
+                                       Real f_value) {
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str()));
+   buzzvm_pushf(m_tBuzzVM, f_value);
+   buzzvm_gstore(m_tBuzzVM);
+   return m_tBuzzVM->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::Register(const std::string& str_key,
+                                       const CRadians& c_angle) {
+   return Register(str_key, c_angle.GetValue());
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::Register(const std::string& str_key,
+                                       const CVector3& c_vec) {
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str()));
+   buzzvm_pusht(m_tBuzzVM);
+   buzzobj_t tVecTable = buzzvm_stack_at(m_tBuzzVM, 1);
+   buzzvm_gstore(m_tBuzzVM);
+   TablePut(tVecTable, "x", c_vec.GetX());
+   TablePut(tVecTable, "y", c_vec.GetY());
+   TablePut(tVecTable, "z", c_vec.GetZ());
+   return m_tBuzzVM->state;
+}
+   
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::Register(const std::string& str_key,
+                                       const CQuaternion& c_quat) {
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str()));
+   buzzvm_pusht(m_tBuzzVM);
+   buzzobj_t tQuatTable = buzzvm_stack_at(m_tBuzzVM, 1);
+   buzzvm_gstore(m_tBuzzVM);
+   CRadians cYaw, cPitch, cRoll;
+   c_quat.ToEulerAngles(cYaw, cPitch, cRoll);
+   TablePut(tQuatTable, "yaw", cYaw);
+   TablePut(tQuatTable, "pitch", cPitch);
+   TablePut(tQuatTable, "roll", cRoll);
+   return m_tBuzzVM->state;
+}
+   
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::Register(const std::string& str_key,
+                                       const CColor& c_color) {
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str()));
+   buzzvm_pusht(m_tBuzzVM);
+   buzzobj_t tColorTable = buzzvm_stack_at(m_tBuzzVM, 1);
+   buzzvm_gstore(m_tBuzzVM);
+   TablePut(tColorTable, "red", c_color.GetRed());
+   TablePut(tColorTable, "green", c_color.GetGreen());
+   TablePut(tColorTable, "blue", c_color.GetBlue());
+   return m_tBuzzVM->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
+                                       const std::string& str_key,
+                                       buzzobj_t t_obj) {
+   buzzvm_push(m_tBuzzVM, t_table);
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str()));
+   buzzvm_push(m_tBuzzVM, t_obj);
+   buzzvm_tput(m_tBuzzVM);
+   return m_tBuzzVM->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
+                                       const std::string& str_key,
+                                       SInt32 n_value) {
+   buzzvm_push(m_tBuzzVM, t_table);
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str()));
+   buzzvm_pushi(m_tBuzzVM, n_value);
+   buzzvm_tput(m_tBuzzVM);
+   return m_tBuzzVM->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
+                                       const std::string& str_key,
+                                       Real f_value) {
+   buzzvm_push(m_tBuzzVM, t_table);
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str()));
+   buzzvm_pushf(m_tBuzzVM, f_value);
+   buzzvm_tput(m_tBuzzVM);
+   return m_tBuzzVM->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
+                                       const std::string& str_key,
+                                       const CRadians& c_angle) {
+   return TablePut(t_table, str_key, c_angle.GetValue());
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
+                                       const std::string& str_key,
+                                       const CVector3& c_vec) {
+   buzzvm_push(m_tBuzzVM, t_table);
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str()));
+   buzzvm_pusht(m_tBuzzVM);
+   buzzobj_t tVecTable = buzzvm_stack_at(m_tBuzzVM, 1);
+   buzzvm_tput(m_tBuzzVM);
+   TablePut(tVecTable, "x", c_vec.GetX());
+   TablePut(tVecTable, "y", c_vec.GetY());
+   TablePut(tVecTable, "z", c_vec.GetZ());
+   return m_tBuzzVM->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
+                                       const std::string& str_key,
+                                       const CQuaternion& c_quat) {
+   buzzvm_push(m_tBuzzVM, t_table);
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str()));
+   buzzvm_pusht(m_tBuzzVM);
+   buzzobj_t tQuatTable = buzzvm_stack_at(m_tBuzzVM, 1);
+   buzzvm_tput(m_tBuzzVM);
+   CRadians cYaw, cPitch, cRoll;
+   c_quat.ToEulerAngles(cYaw, cPitch, cRoll);
+   TablePut(tQuatTable, "yaw", cYaw);
+   TablePut(tQuatTable, "pitch", cPitch);
+   TablePut(tQuatTable, "roll", cRoll);
+   return m_tBuzzVM->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
+                                       const std::string& str_key,
+                                       const CColor& c_color) {
+   buzzvm_push(m_tBuzzVM, t_table);
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str()));
+   buzzvm_pusht(m_tBuzzVM);
+   buzzobj_t tColorTable = buzzvm_stack_at(m_tBuzzVM, 1);
+   buzzvm_tput(m_tBuzzVM);
+   TablePut(tColorTable, "red", c_color.GetRed());
+   TablePut(tColorTable, "green", c_color.GetGreen());
+   TablePut(tColorTable, "blue", c_color.GetBlue());
+   return m_tBuzzVM->state;   
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
+                                       SInt32 n_idx,
+                                       buzzobj_t t_obj) {
+   buzzvm_push(m_tBuzzVM, t_table);
+   buzzvm_pushi(m_tBuzzVM, n_idx);
+   buzzvm_push(m_tBuzzVM, t_obj);
+   buzzvm_tput(m_tBuzzVM);
+   return m_tBuzzVM->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
+                                       SInt32 n_idx,
+                                       SInt32 n_value) {
+   buzzvm_push(m_tBuzzVM, t_table);
+   buzzvm_pushi(m_tBuzzVM, n_idx);
+   buzzvm_pushi(m_tBuzzVM, n_value);
+   buzzvm_tput(m_tBuzzVM);
+   return m_tBuzzVM->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
+                                       SInt32 n_idx,
+                                       Real f_value) {
+   buzzvm_push(m_tBuzzVM, t_table);
+   buzzvm_pushi(m_tBuzzVM, n_idx);
+   buzzvm_pushf(m_tBuzzVM, f_value);
+   buzzvm_tput(m_tBuzzVM);
+   return m_tBuzzVM->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
+                                       SInt32 n_idx,
+                                       const CRadians& c_angle) {
+   return TablePut(t_table, n_idx, c_angle.GetValue());
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
+                                       SInt32 n_idx,
+                                       const CVector3& c_vec) {
+   buzzvm_push(m_tBuzzVM, t_table);
+   buzzvm_pushi(m_tBuzzVM, n_idx);
+   buzzvm_pusht(m_tBuzzVM);
+   buzzobj_t tVecTable = buzzvm_stack_at(m_tBuzzVM, 1);
+   buzzvm_tput(m_tBuzzVM);
+   TablePut(tVecTable, "x", c_vec.GetX());
+   TablePut(tVecTable, "y", c_vec.GetY());
+   TablePut(tVecTable, "z", c_vec.GetZ());
+   return m_tBuzzVM->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
+                                       SInt32 n_idx,
+                                       const CQuaternion& c_quat) {
+   buzzvm_push(m_tBuzzVM, t_table);
+   buzzvm_pushi(m_tBuzzVM, n_idx);
+   buzzvm_pusht(m_tBuzzVM);
+   buzzobj_t tQuatTable = buzzvm_stack_at(m_tBuzzVM, 1);
+   buzzvm_tput(m_tBuzzVM);
+   CRadians cYaw, cPitch, cRoll;
+   c_quat.ToEulerAngles(cYaw, cPitch, cRoll);
+   TablePut(tQuatTable, "yaw", cYaw);
+   TablePut(tQuatTable, "pitch", cPitch);
+   TablePut(tQuatTable, "roll", cRoll);
+   return m_tBuzzVM->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
+                                       SInt32 n_idx,
+                                       const CColor& c_color) {
+   buzzvm_push(m_tBuzzVM, t_table);
+   buzzvm_pushi(m_tBuzzVM, n_idx);
+   buzzvm_pusht(m_tBuzzVM);
+   buzzobj_t tColorTable = buzzvm_stack_at(m_tBuzzVM, 1);
+   buzzvm_tput(m_tBuzzVM);
+   TablePut(tColorTable, "red", c_color.GetRed());
+   TablePut(tColorTable, "green", c_color.GetGreen());
+   TablePut(tColorTable, "blue", c_color.GetBlue());
+   return m_tBuzzVM->state;   
 }
 
 /****************************************/

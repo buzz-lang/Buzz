@@ -39,6 +39,24 @@ static int BuzzGoTo(buzzvm_t vm) {
    return buzzvm_ret0(vm);
 }
 
+static int BuzzCameraEnable(buzzvm_t vm) {
+   /* Get pointer to the controller */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller"));
+   buzzvm_gload(vm);
+   /* Call function */
+   reinterpret_cast<CBuzzControllerSpiri*>(buzzvm_stack_at(vm, 1)->u.value)->CameraEnable();
+   return buzzvm_ret0(vm);
+}
+
+static int BuzzCameraDisable(buzzvm_t vm) {
+   /* Get pointer to the controller */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller"));
+   buzzvm_gload(vm);
+   /* Call function */
+   reinterpret_cast<CBuzzControllerSpiri*>(buzzvm_stack_at(vm, 1)->u.value)->CameraDisable();
+   return buzzvm_ret0(vm);
+}
+
 /****************************************/
 /****************************************/
 
@@ -58,8 +76,9 @@ CBuzzControllerSpiri::~CBuzzControllerSpiri() {
 void CBuzzControllerSpiri::Init(TConfigurationNode& t_node) {
    try {
       /* Get pointers to devices */
-      m_pcPropellers = GetActuator<CCI_QuadRotorPositionActuator>("quadrotor_position");
-      m_pcPosition   = GetSensor  <CCI_PositioningSensor>        ("positioning");
+      m_pcPropellers = GetActuator<CCI_QuadRotorPositionActuator>         ("quadrotor_position");
+      m_pcCamera     = GetSensor  <CCI_ColoredBlobPerspectiveCameraSensor>("colored_blob_perspective_camera");
+      m_pcPosition   = GetSensor  <CCI_PositioningSensor>                 ("positioning");
       /* Initialize the rest */
       CBuzzController::Init(t_node);
    }
@@ -71,13 +90,25 @@ void CBuzzControllerSpiri::Init(TConfigurationNode& t_node) {
 /****************************************/
 /****************************************/
 
-void CBuzzControllerSpiri::SetDirection(const CVector3& c_heading) {
-   CVector3 cDir = c_heading;
-   if(cDir.SquareLength() > 0.01f) {
-      cDir.Normalize();
-      cDir *= 0.01;
+void CBuzzControllerSpiri::UpdateSensors() {
+   /* Positioning */
+   Register("position", m_pcPosition->GetReading().Position);
+   Register("orientation", m_pcPosition->GetReading().Orientation);
+   /* Camera */
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "blobs"));
+   buzzvm_pusht(m_tBuzzVM);
+   buzzobj_t tBlobs = buzzvm_stack_at(m_tBuzzVM, 1);
+   buzzvm_gstore(m_tBuzzVM);
+   const CCI_ColoredBlobPerspectiveCameraSensor::SReadings& sBlobs = m_pcCamera->GetReadings();
+   for(size_t i = 0; i < sBlobs.BlobList.size(); ++i) {
+      buzzvm_pusht(m_tBuzzVM);
+      buzzobj_t tEntry = buzzvm_stack_at(m_tBuzzVM, 1);
+      buzzvm_pop(m_tBuzzVM);
+      TablePut(tBlobs, i, tEntry);
+      TablePut(tEntry, "px",    sBlobs.BlobList[i]->X);
+      TablePut(tEntry, "py",    sBlobs.BlobList[i]->Y);
+      TablePut(tEntry, "color", sBlobs.BlobList[i]->Color);
    }
-   m_pcPropellers->SetRelativePosition(cDir);
 }
 
 /****************************************/
@@ -105,7 +136,33 @@ bool CBuzzControllerSpiri::Land() {
 /****************************************/
 /****************************************/
 
-int CBuzzControllerSpiri::RegisterFunctions() {
+void CBuzzControllerSpiri::SetDirection(const CVector3& c_heading) {
+   CVector3 cDir = c_heading;
+   if(cDir.SquareLength() > 0.01f) {
+      cDir.Normalize();
+      cDir *= 0.01;
+   }
+   m_pcPropellers->SetRelativePosition(cDir);
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzControllerSpiri::CameraEnable() {
+   m_pcCamera->Enable();
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzControllerSpiri::CameraDisable() {
+   m_pcCamera->Disable();
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state CBuzzControllerSpiri::RegisterFunctions() {
    /* Register base functions */
    CBuzzController::RegisterFunctions();
    /* BuzzTakeOff */
@@ -119,6 +176,14 @@ int CBuzzControllerSpiri::RegisterFunctions() {
    /* BuzzGoTo */
    buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "goto"));
    buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGoTo));
+   buzzvm_gstore(m_tBuzzVM);
+   /* BuzzCameraEnable */
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "camera_enable"));
+   buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzCameraEnable));
+   buzzvm_gstore(m_tBuzzVM);
+   /* BuzzCameraDisable */
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "camera_disable"));
+   buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzCameraDisable));
    buzzvm_gstore(m_tBuzzVM);
    return m_tBuzzVM->state;
 }

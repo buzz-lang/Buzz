@@ -1,8 +1,8 @@
 # Lennard-Jones parameters
-TARGET_KIN     = 200.
-EPSILON_KIN    = 107.
-TARGET_NONKIN  = 150.
-EPSILON_NONKIN = 8000.
+TARGET_KIN     = 283.
+EPSILON_KIN    = 150.
+TARGET_NONKIN  = 200.
+EPSILON_NONKIN = 100.
 
 # Lennard-Jones interaction magnitude
 function lj(dist, target, epsilon) {
@@ -52,16 +52,16 @@ function flock() {
 function init() {
   s1 = swarm.create(1)
   s1.join()
-  # s1.select(id % 2 == 0)
-  # s2 = s1.others(2)
+  s1.select(id % 2 == 0)
+  s2 = s1.others(2)
 }
 
 # Executed every time step
 function step() {
   if(not takeoff()) {
     s1.exec(flock)
+    s2.exec(flock)
   }
-  # s2.exec(flock)
 }
 
 # Execute at exit

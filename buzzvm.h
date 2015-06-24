@@ -75,6 +75,7 @@ extern "C" {
       BUZZVM_INSTR_PUSHT,      // Push empty table
       BUZZVM_INSTR_TPUT,       // Put key (stack(#2)), value (stack #1) in table (stack #3), pop key and value
       BUZZVM_INSTR_TGET,       // Push value for key (stack(#1)) in table (stack #2), pop key
+      BUZZVM_INSTR_TSIZE,      // Push size of table (#1), pop table
       BUZZVM_INSTR_PUSHA,      // Push empty array
       BUZZVM_INSTR_APUT,       // Put idx (stack(#2)), value (stack #1) in array (stack #3), pop idx and value
       BUZZVM_INSTR_AGET,       // Push value for idx (stack(#1)) in array (stack #2), pop idx
@@ -97,7 +98,7 @@ extern "C" {
       BUZZVM_INSTR_JUMPZ,    // Set PC to argument if stack top is zero, pop operand
       BUZZVM_INSTR_JUMPNZ,   // Set PC to argument if stack top is not zero, pop operand
    } buzzvm_instr;
-   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "gload", "gstore", "pusht", "tput", "tget", "pusha", "aput", "aget", "callc", "calls", "pushf", "pushi", "pushs", "pushcn", "pushcc", "pushl", "lload", "lstore", "jump", "jumpz", "jumpnz"};
+   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "gload", "gstore", "pusht", "tput", "tget", "tsize", "pusha", "aput", "aget", "callc", "calls", "pushf", "pushi", "pushs", "pushcn", "pushcc", "pushl", "lload", "lstore", "jump", "jumpz", "jumpnz"};
 
    /*
     * Function pointer for BUZZVM_INSTR_CALL.
@@ -352,6 +353,24 @@ extern "C" {
    extern buzzvm_state buzzvm_tget(buzzvm_t vm);
 
    /*
+    * Pushes the size of a table.
+    * Internally checks whether the operation is valid.
+    * The stack is expected to be as follows:
+    * #1 table
+    * This operation pops #1 and pushes the value.
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_tsize(buzzvm_t vm);
+
+   /*
+    * Stores the object located at the stack top into the a global variable, pops operand.
+    * Internally checks whether the operation is valid.
+    * @param vm The VM data.
+    * @param idx The local variable index.
+    */
+   extern buzzvm_state buzzvm_gstore(buzzvm_t vm);
+
+   /*
     * Returns from a closure without setting a return value.
     * Internally checks whether the operation is valid.
     * This function expects at least two stacks to be present. The
@@ -573,24 +592,6 @@ extern "C" {
       else {                                                            \
          buzzvm_push(vm, (*o));                                         \
       }                                                                 \
-   }
-
-/*
- * Stores the object located at the stack top into the a global variable, pops operand.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- * @param idx The local variable index.
- */
-#define buzzvm_gstore(vm) {                                             \
-      buzzvm_stack_assert((vm), 2);                                     \
-      buzzvm_type_assert((vm), 2, BUZZTYPE_STRING);                     \
-      buzzobj_t str = buzzvm_stack_at((vm), 2);                         \
-      buzzobj_t o = buzzvm_stack_at((vm), 1);                           \
-      buzzvm_pop(vm);                                                   \
-      buzzvm_pop(vm);                                                   \
-      buzzdict_set((vm)->gsyms, &(str->s.value), &o);                   \
    }
 
 /*

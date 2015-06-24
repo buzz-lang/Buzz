@@ -46,7 +46,7 @@ public:
 
 private:
 
-   virtual int RegisterFunctions();
+   virtual buzzvm_state RegisterFunctions();
 
 protected:
 

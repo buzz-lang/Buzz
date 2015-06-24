@@ -186,6 +186,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
          lex->cur_col = 0;
          return tok;
       }
+      casetokchar('#', BUZZTOK_SIZE);
       casetokchar(';', BUZZTOK_STATEND);
       casetokchar('{', BUZZTOK_BLOCKOPEN);
       casetokchar('}', BUZZTOK_BLOCKCLOSE);

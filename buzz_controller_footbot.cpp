@@ -167,7 +167,7 @@ void CBuzzControllerFootBot::SetLEDs(const CColor& c_color) {
 /****************************************/
 /****************************************/
 
-int CBuzzControllerFootBot::RegisterFunctions() {
+buzzvm_state CBuzzControllerFootBot::RegisterFunctions() {
    /* Register base functions */
    CBuzzController::RegisterFunctions();
    /* BuzzGoTo */
