@@ -102,7 +102,8 @@ void CBuzzController::ControlStep() {
    if(buzzvm_function_call(m_tBuzzVM, "step", 0) != BUZZVM_STATE_READY) {
       fprintf(stderr, "%s: execution terminated abnormally: %s\n\n",
               m_strBytecodeFName.c_str(),
-              buzzvm_error_desc[m_tBuzzVM->error]);
+              buzzvm_strerror(m_tBuzzVM));
+      buzzvm_dump(m_tBuzzVM);
    }
    ProcessOutMsgs();
 }
@@ -139,6 +140,9 @@ void CBuzzController::SetBytecode(const std::string& str_fname) {
    cBCodeFile.read(reinterpret_cast<char*>(m_cBytecode.ToCArray()), unFileSize);
    /* Load the script */
    buzzvm_set_bcode(m_tBuzzVM, m_cBytecode.ToCArray(), m_cBytecode.Size());
+   if(buzzvm_set_bcode(m_tBuzzVM, m_cBytecode.ToCArray(), m_cBytecode.Size()) != BUZZVM_STATE_READY) {
+      THROW_ARGOSEXCEPTION("Error loading Buzz script \"" << str_fname << "\": " << buzzvm_strerror(m_tBuzzVM));
+   }
    /* Register basic function */
    if(RegisterFunctions() != BUZZVM_STATE_READY) {
       THROW_ARGOSEXCEPTION("Error while registering functions");

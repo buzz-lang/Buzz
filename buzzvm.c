@@ -55,6 +55,27 @@ void buzzvm_dump(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+char* buzzvm_strerror(buzzvm_t vm) {
+   if(vm->state != BUZZVM_STATE_ERROR) {
+      return strdup("No error");
+   }
+   else {
+      char* msg = (char*)malloc(
+         strlen(buzzvm_error_desc[vm->error]) +
+         strlen(" at offset ") +
+         10
+         );
+      sprintf(msg, "%s at offset %d",
+              buzzvm_error_desc[vm->error],
+              vm->pc
+         );
+      return msg;
+   }
+}
+
+/****************************************/
+/****************************************/
+
 #define BUZZVM_STACKS_INIT_CAPACITY  20
 #define BUZZVM_STACK_INIT_CAPACITY   20
 #define BUZZVM_LSYMTS_INIT_CAPACITY  20
@@ -825,6 +846,9 @@ buzzvm_state buzzvm_function_call(buzzvm_t vm,
    /* Reset the VM state if it's DONE */
    if(vm->state == BUZZVM_STATE_DONE)
       vm->state = BUZZVM_STATE_READY;
+   /* Don't continue if the VM has an error */
+   if(vm->state != BUZZVM_STATE_READY)
+      return vm->state;
    /* Push the function name (return with error if not found) */
    buzzvm_pushs(vm, buzzdarray_string_find(vm, &fname));
    /* Get associated symbol */
@@ -1032,7 +1056,7 @@ buzzvm_state buzzvm_gstore(buzzvm_t vm) {
    buzzvm_pop(vm);
    buzzvm_pop(vm);
    buzzdict_set((vm)->gsyms, &(str->s.value), &o);
-   return buzzvm_pop(vm);
+   return BUZZVM_STATE_READY;
 }
 
 /****************************************/

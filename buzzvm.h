@@ -183,6 +183,15 @@ extern "C" {
     */
    extern void buzzvm_dump(buzzvm_t vm);
 
+   /**
+    * Returns a description of the current error state.
+    * The returned string is created internally with malloc().
+    * You should free() it after use.
+    * @param vm The VM data.
+    * @return A description of the current error state.
+    */
+   extern char* buzzvm_strerror(buzzvm_t vm);
+
    /*
     * Creates a new VM.
     * @param robot The robot id.

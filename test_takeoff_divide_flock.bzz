@@ -24,8 +24,8 @@ EPSILON_NONKIN = 250.
 #
 # Other constants
 #
-BARRIER    = 1
-NUM_ROBOTS = 1
+BARRIER = 1
+ROBOTS  = 1
 
 ########################################
 #
@@ -111,8 +111,9 @@ function barrier_init() {
 # Sets a barrier
 #
 function barrier_set(threshold, transf) {
+  log("ROBOT ", id, " barrier_set(", threshold, ",", transf, ")")
   state  = STATE_WAITING
-  statef = function() { barrier_wait(ROBOTS, transf); log("ROBOT ", id, " is waiting...") }
+  statef = function() { barrier_wait(threshold, transf); log("ROBOT ", id, " is waiting...") }
   barrier.put(BARRIER, 0)
 }
 
@@ -156,7 +157,7 @@ function transition_to_pick_target() {
   log("ROBOT ", id, ": transition_to_pick_target()")
   state = STATE_PICK_TARGET
   statef = state_pick_target
-  robot.camera.enable()
+  camera_enable()
 }
 
 #

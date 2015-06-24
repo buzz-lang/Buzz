@@ -164,7 +164,8 @@ void CBuzzControllerSpiri::CameraDisable() {
 
 buzzvm_state CBuzzControllerSpiri::RegisterFunctions() {
    /* Register base functions */
-   CBuzzController::RegisterFunctions();
+   if(CBuzzController::RegisterFunctions() != BUZZVM_STATE_READY)
+      return m_tBuzzVM->state;
    /* BuzzTakeOff */
    buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "takeoff"));
    buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzTakeOff));
