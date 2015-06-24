@@ -21,6 +21,7 @@ public:
    bool TakeOff();
    bool Land();
    void SetDirection(const CVector3& c_heading);
+   void SetYaw(const CRadians& c_yaw);
    void CameraEnable();
    void CameraDisable();
 

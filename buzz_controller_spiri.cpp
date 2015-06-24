@@ -39,6 +39,19 @@ static int BuzzGoTo(buzzvm_t vm) {
    return buzzvm_ret0(vm);
 }
 
+static int BuzzRotate(buzzvm_t vm) {
+   /* Push the yaw angle */
+   buzzvm_lload(vm, 1);
+   /* Create a new angle with that */
+   CRadians cYaw(buzzvm_stack_at(vm, 1)->f.value);
+   /* Get pointer to the controller */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller"));
+   buzzvm_gload(vm);
+   /* Call function */
+   reinterpret_cast<CBuzzControllerSpiri*>(buzzvm_stack_at(vm, 1)->u.value)->SetYaw(cYaw);
+   return buzzvm_ret0(vm);
+}
+
 static int BuzzCameraEnable(buzzvm_t vm) {
    /* Get pointer to the controller */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "controller"));
@@ -148,6 +161,13 @@ void CBuzzControllerSpiri::SetDirection(const CVector3& c_heading) {
 /****************************************/
 /****************************************/
 
+void CBuzzControllerSpiri::SetYaw(const CRadians& c_yaw) {
+   m_pcPropellers->SetRelativeYaw(c_yaw);
+}
+
+/****************************************/
+/****************************************/
+
 void CBuzzControllerSpiri::CameraEnable() {
    m_pcCamera->Enable();
 }
@@ -177,6 +197,10 @@ buzzvm_state CBuzzControllerSpiri::RegisterFunctions() {
    /* BuzzGoTo */
    buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "goto"));
    buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGoTo));
+   buzzvm_gstore(m_tBuzzVM);
+   /* BuzzRotate */
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "rotate"));
+   buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzRotate));
    buzzvm_gstore(m_tBuzzVM);
    /* BuzzCameraEnable */
    buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "camera_enable"));
