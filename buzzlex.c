@@ -152,8 +152,8 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       }
       /* End of stream? No token */
       if(lex->cur_c >= lex->buf_size) return NULL;
-      /* If the current character is a '#' ignore the rest of the line */
-      if(lex->buf[lex->cur_c] == '#') {
+      /* If the current character is a '|' ignore the rest of the line */
+      if(lex->buf[lex->cur_c] == '|') {
          do {
             nextchar();
          }

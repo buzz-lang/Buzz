@@ -823,6 +823,7 @@ int parse_operand(buzzparser_t par) {
       if(!parse_idref(par, 0, &idrefinfo)) return PARSE_ERROR;
       chunk_append("\ttsize\n");
       DEBUG("Table size operand end\n");
+      return PARSE_OK;
    }
    DEBUG("Operand is idref\n");
    struct idrefinfo_s  idrefinfo;
