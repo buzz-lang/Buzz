@@ -2,6 +2,7 @@
 #include "buzzasm.h"
 #include <cstdlib>
 #include <fstream>
+#include <cerrno>
 #include <argos3/core/utility/logging/argos_log.h>
 
 /****************************************/
@@ -128,6 +129,9 @@ void CBuzzController::SetBytecode(const std::string& str_fname) {
    m_strBytecodeFName = str_fname;
    /* Load the bytecode */
    std::ifstream cBCodeFile(str_fname.c_str(), std::ios::binary | std::ios::ate);
+   if(cBCodeFile.fail()) {
+      THROW_ARGOSEXCEPTION("Can't open file \"" << str_fname << "\": " << strerror(errno));
+   }
    std::ifstream::pos_type unFileSize = cBCodeFile.tellg();
    m_cBytecode.Clear();
    m_cBytecode.Resize(unFileSize);

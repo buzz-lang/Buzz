@@ -90,8 +90,7 @@ function barrier_init() {
       # Return local value if
       # - Remote value is smaller than local, OR
       # - Values are equal, robot of remote record is smaller than local one
-      if(r.data < l.data or
-        (r.data == l.data and r.robot < l.robot)) {
+      if(r.data < l.data or (r.data == l.data and r.robot < l.robot)) {
         return l
       }
       # Otherwise return remote value
@@ -206,7 +205,7 @@ function transition_to_goto_target() {
 #
 # Go to target state function
 #
-function state_goto_target {
+function state_goto_target() {
 }
 
 ########################################

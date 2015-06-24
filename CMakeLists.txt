@@ -21,13 +21,17 @@ endif(NOT APPLE)
 project(buzz)
 
 # Find the ARGoS package
+include_directories(${CMAKE_SOURCE_DIR})
 find_package(PkgConfig)
 pkg_check_modules(ARGOS REQUIRED argos3_simulator)
+include_directories(${ARGOS_INCLUDE_DIRS})
+link_directories(${ARGOS_LIBRARY_DIRS})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ARGOS_PREFIX}/share/argos3/cmake)
 include(ARGoSCheckQTOpenGL)
 find_package(GSL REQUIRED)
-include_directories(${CMAKE_SOURCE_DIR} ${ARGOS_INCLUDE_DIRS} ${GSL_INCLUDE_DIR})
-link_directories(${ARGOS_LIBRARY_DIRS})
+include_directories(${GSL_INCLUDE_DIR})
+find_package(Lua52 REQUIRED)
+include_directories(${LUA_INCLUDE_DIR})
 
 # Create libbuzz
 add_library(buzz SHARED
