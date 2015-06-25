@@ -141,6 +141,7 @@ void buzzvm_outmsg_destroy(uint32_t pos, void* data, void* param) {
 }
 
 void buzzvm_process_inmsgs(buzzvm_t vm) {
+   if(vm->state != BUZZVM_STATE_READY) return;
    /* Go through the messages */
    while(!buzzinmsg_queue_isempty(vm->inmsgs)) {
       /* Extract the message data */
