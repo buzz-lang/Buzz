@@ -843,7 +843,7 @@ int parse_command(buzzparser_t par) {
          chunk_append("\tret0\n");
       }
       else {
-         if(!parse_expression(par)) return PARSE_ERROR;
+         if(!parse_condition(par)) return PARSE_ERROR;
          chunk_append("\tret1\n");
       }
       return PARSE_OK;
