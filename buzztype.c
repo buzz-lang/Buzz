@@ -6,6 +6,12 @@
 /****************************************/
 /****************************************/
 
+void buzzobj_clone_tableelem(const void* key, void* data, void* params) {
+   buzzobj_t k = buzzobj_clone(*(buzzobj_t*)key);
+   buzzobj_t d = buzzobj_clone(*(buzzobj_t*)data);
+   buzzdict_set((buzzdict_t)params, &k, &d);
+}
+
 buzzobj_t buzzobj_clone(const buzzobj_t o) {
    buzzobj_t x = (buzzobj_t)malloc(sizeof(union buzzobj_u));
    x->o.type = o->o.type;
@@ -37,7 +43,17 @@ buzzobj_t buzzobj_clone(const buzzobj_t o) {
          x->c.value.isnative = o->c.value.isnative;
          return x;
       }
-      case BUZZTYPE_TABLE:
+      case BUZZTYPE_TABLE: {
+         buzzdict_t orig = o->t.value;
+         x->t.value = buzzdict_new(orig->num_buckets,
+                                   orig->key_size,
+                                   orig->data_size,
+                                   orig->hashf,
+                                   orig->keycmpf,
+                                   orig->dstryf);
+         buzzdict_foreach(orig, buzzobj_clone_tableelem, x->t.value);
+         return x;
+      }
       case BUZZTYPE_ARRAY:
       default:
          fprintf(stderr, "[BUG] %s:%d: Clone for Buzz object type %d\n", __FILE__, __LINE__, o->o.type);
@@ -110,6 +126,16 @@ int buzzobj_eq(const buzzobj_t a,
 
 int buzzobj_cmp(const buzzobj_t a,
                 const buzzobj_t b) {
+   /* Nil */
+   if(a->o.type == BUZZTYPE_NIL && b->o.type == BUZZTYPE_NIL) {
+      return 0;
+   }
+   if(a->o.type == BUZZTYPE_NIL) {
+      return -1;
+   }
+   if(b->o.type == BUZZTYPE_NIL) {
+      return 1;
+   }
    /* Numeric types */
    if(a->o.type == BUZZTYPE_INT && b->o.type == BUZZTYPE_INT) {
       if(a->i.value < b->i.value) return -1;
@@ -131,6 +157,7 @@ int buzzobj_cmp(const buzzobj_t a,
       if(a->f.value > b->f.value) return 1;
       return 0;
    }
+   /* String and other types */
    if(a->o.type == BUZZTYPE_STRING && b->o.type == BUZZTYPE_STRING) {
       return strcmp(a->s.value.str, b->s.value.str);
    }
@@ -156,19 +183,20 @@ int buzzobj_cmp(const buzzobj_t a,
       sprintf(str, "%f", a->f.value);
       return strcmp(str, b->s.value.str);
    }
-
+   /* Tables */
    if(a->o.type == BUZZTYPE_TABLE && b->o.type == BUZZTYPE_TABLE) {
       if((uintptr_t)(a->t.value) < (uintptr_t)(b->t.value)) return -1;
       if((uintptr_t)(a->t.value) > (uintptr_t)(b->t.value)) return 1;
       return 0;
    }
+   /* Userdata */
    if(a->o.type == BUZZTYPE_USERDATA && b->o.type == BUZZTYPE_USERDATA) {
       if((uintptr_t)(a->u.value) < (uintptr_t)(b->u.value)) return -1;
       if((uintptr_t)(a->u.value) > (uintptr_t)(b->u.value)) return 1;
       return 0;
    }
    // TODO better error management
-   fprintf(stderr, "[TODO] %s:%d: error for comparison between Buzz objects of types %d and %d\n", __FILE__, __LINE__, a->o.type, b->o.type);
+   fprintf(stderr, "[TODO] %s:%d: Error for comparison between Buzz objects of types %d and %d\n", __FILE__, __LINE__, a->o.type, b->o.type);
    exit(1);
 }
 
@@ -254,13 +282,13 @@ int64_t buzzobj_deserialize(buzzobj_t* data,
          p = buzzmsg_deserialize_u32(&size, buf, p);
          if(p < 0) return -1;
          for(i = 0; i < size; ++i) {
-            buzzobj_t* k;
-            buzzobj_t* v;
-            p = buzzobj_deserialize(k, buf, p, vm);
+            buzzobj_t k;
+            buzzobj_t v;
+            p = buzzobj_deserialize(&k, buf, p, vm);
             if(p < 0) return -1;
-            p = buzzobj_deserialize(v, buf, p, vm);
+            p = buzzobj_deserialize(&v, buf, p, vm);
             if(p < 0) return -1;
-            buzzdict_set((*data)->t.value, k, v);
+            buzzdict_set((*data)->t.value, &k, &v);
          }
          return p;
       }
