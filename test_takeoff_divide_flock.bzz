@@ -5,27 +5,58 @@
 ||||||||||||||||||||||||||||||||||||||||
 
 |
-| State constants
+| Miscellaneous
 |
-STATE_WAITING     = 0
-STATE_TAKEOFF     = 1
-STATE_PICK_TARGET = 2
-STATE_DIVIDE      = 3
-STATE_GOTO_TARGET = 4
+TARGETDIST_VSTIG = 2
+ROBOTS           = 10
+DISTANCE_MAX     = 2000.
+
+|
+| Colors
+|
+TARGET_NOCOLOR = 0
+TARGET_RED     = 1
+TARGET_GREEN   = 2
+TARGET_BLUE    = 3
+
+|
+| Barrier
+|
+BARRIER_VSTIG = 1
+BARRIER_KEY   = 1
 
 |
 | Lennard-Jones parameters
 |
-TARGET_KIN     = 200.
+TARGET_KIN     = 100.
 EPSILON_KIN    = 100.
 TARGET_NONKIN  = 300.
 EPSILON_NONKIN = 250.
 
+||||||||||||||||||||||||||||||||||||||||
 |
-| Other constants
+| COLOR-RELATED FUNCTIONS
 |
-BARRIER = 1
-ROBOTS  = 1
+||||||||||||||||||||||||||||||||||||||||
+
+function isred(c) {
+  return (c.red == 255 and c.green == 0 and c.blue == 0)
+}
+
+function isgreen(c) {
+  return (c.red == 0 and c.green == 255 and c.blue == 0)
+}
+
+function isblue(c) {
+  return (c.red == 0 and c.green == 0 and c.blue == 255)
+}
+
+function color_to_code(c) {
+  if(isred(c))   { return TARGET_RED   }
+  if(isgreen(c)) { return TARGET_GREEN }
+  if(isblue(c))  { return TARGET_BLUE  }
+  return TARGET_NOCOLOR
+}
 
 ||||||||||||||||||||||||||||||||||||||||
 |
@@ -71,6 +102,27 @@ function vec2_sum(rid, data, accum) {
   return accum
 }
 
+|
+| Actual flocking logic
+|
+function flock() {
+  log("ROBOT ", id, ": swarm id = ", swarm.id())
+  | Create accumulator
+  var accum
+  accum = {}
+  accum.x = 0
+  accum.y = 0
+  | Calculate accumulator
+  accum = neighbors.kin().map(to_lj_kin).reduce(vec2_sum, accum)
+  accum = neighbors.nonkin().map(to_lj_nonkin).reduce(vec2_sum, accum)
+  if(neighbors.count() > 0) {
+    accum.x = accum.x / neighbors.count()
+    accum.y = accum.y / neighbors.count()
+  }
+  | Move according to vector
+  goto(accum.x, accum.y)
+}
+
 ||||||||||||||||||||||||||||||||||||||||
 |
 | BARRIER-RELATED FUNCTIONS
@@ -80,13 +132,11 @@ function vec2_sum(rid, data, accum) {
 |
 | Barrier initializer
 |
-function barrier_init() {
+function barrier_init(vstigid) {
   | Create a dedicated vstig
-  barrier = stigmergy.create(1)
-  | Zero the robot counter
-  barrier.put(BARRIER, 0)
+  barrier = stigmergy.create(vstigid)
   | Set onconflict manager
-  barrier.setonconflict(function(k,l,r){
+  barrier.onconflict(function(k,l,r){
       | Return local value if
       | - Remote value is smaller than local, OR
       | - Values are equal, robot of remote record is smaller than local one
@@ -99,10 +149,10 @@ function barrier_init() {
       }
     })
   | Set onlostconflict manager
-  barrier.setonconflictlost(function(k,l){
+  barrier.onconflictlost(function(k,l){
       | Ignore lost conflict when initializing BARRIER entry
       if(l.data > 0) {
-        barrier.put(BARRIER, barrier.get(BARRIER) + 1)
+        barrier.put(BARRIER_KEY, barrier.get(BARRIER_KEY) + 1)
       }
     })
 }
@@ -112,23 +162,31 @@ function barrier_init() {
 |
 function barrier_set(threshold, transf) {
   log("ROBOT ", id, " barrier_set(", threshold, ",", transf, ")")
-  state  = STATE_WAITING
   statef = function() { barrier_wait(threshold, transf); log("ROBOT ", id, " is waiting...") }
-  barrier.put(BARRIER, 0)
+  var v
+  v = barrier.get(BARRIER_KEY)
+  if(not v) {
+    barrier.put(BARRIER_KEY, 0)
+  }
+  else {
+    if(v >= threshold) {
+      barrier.put(BARRIER_KEY, 0)
+    }
+  }
 }
 
 |
 | Make yourself ready
 |
 function barrier_ready() {
-  barrier.put(BARRIER, barrier.get(BARRIER) + 1)
+  barrier.put(BARRIER_KEY, barrier.get(BARRIER_KEY) + 1)
 }
 
 |
 | Executes the barrier
 |
 function barrier_wait(threshold, transf) {
-  if(barrier.get(BARRIER) >= threshold) {
+  if(barrier.get(BARRIER_KEY) >= threshold) {
     transf()
   }
 }
@@ -145,8 +203,65 @@ function barrier_wait(threshold, transf) {
 function state_takeoff() {
   log("ROBOT ", id, ": state_takeoff()")
   if(not takeoff()) {
-    barrier_set(ROBOTS, transition_to_pick_target)
+    barrier_set(ROBOTS, transition_to_search_for_target)
     barrier_ready()
+  }
+}
+
+|
+| Transition to search for target state function
+|
+function transition_to_search_for_target() {
+  log("ROBOT ", id, ": transition_search_for_target()")
+  statef = state_search_for_target
+  yaw_start = orientation.yaw % (2. * math.pi)
+  camera_enable()
+  mytargetdata = {}
+  mytargetdata.dist = DISTANCE_MAX
+  mytargetdata.color = TARGET_NOCOLOR
+  mytargetdata.closest = nil
+}
+
+|
+| Search for target state function
+|
+function state_search_for_target() {
+  log("ROBOT ", id, ": state_search_for_target()")
+  | Can I see any object?
+  if(#blobs == 0) {
+    | No object in sight
+    var cur_yaw
+    var yaw_diff
+    cur_yaw = orientation.yaw % (2. * math.pi)
+    yaw_diff = (cur_yaw - yaw_start) % (2. * math.pi)
+    if(yaw_diff >= (0.95 * 2. * math.pi)) {
+      | Made a complete turn and no object found, give up
+      barrier_set(ROBOTS, transition_to_pick_target)
+      barrier_ready()
+    }
+    else {
+      | Rotate on the spot to look for target objects
+      rotate(math.pi / 180.0)
+    }
+  }
+  else {
+    | Pick the first object you see and rotate to center it
+    rotate(0.0)
+    if(blobs[0].px > 330) {
+      rotate(-math.pi / 180.0)
+    }
+    else {
+      if(blobs[0].px < 310) {
+        rotate( math.pi / 180.0)
+      }
+      else {
+        | Now pointing to the object, wait for others
+        mytargetdata.dist = 0.
+        mytargetdata.color = color_to_code(blobs[0].color)
+        barrier_set(ROBOTS, transition_to_pick_target)
+        barrier_ready()
+      }
+    }
   }
 }
 
@@ -155,9 +270,16 @@ function state_takeoff() {
 |
 function transition_to_pick_target() {
   log("ROBOT ", id, ": transition_to_pick_target()")
-  state = STATE_PICK_TARGET
   statef = state_pick_target
-  camera_enable()
+  targetdist = stigmergy.create(TARGETDIST_VSTIG)
+  if(mytargetdata.dist < DISTANCE_MAX) {
+    | I saw the target
+    | Put an entry about my distance in the vstig
+    targetdist.put(id, mytargetdata)
+    | Wait to get to the next state
+    barrier_set(ROBOTS, transition_to_divide)
+    barrier_ready()
+  }
 }
 
 |
@@ -165,43 +287,96 @@ function transition_to_pick_target() {
 |
 function state_pick_target() {
   log("ROBOT ", id, ": state_pick_target()")
-  log("ROBOT ", id, ": can see ", #blobs, " blobs")
-  rotate(math.pi / 360.0)
+  | Go through the neighbors and, for each, check its distance to the target
+  | Keep the neighbor with the shortest distance to the target
+  | Also, we're done when all neighbors have made a choice
+  var params
+  params = {}
+  params.dist    = mytargetdata.dist
+  params.color   = mytargetdata.color
+  params.closest = mytargetdata.closest
+  params.done    = 1
+  params = neighbors.reduce(
+    function(rid, rdata, accum) {
+      var d
+      d = targetdist.get(rid)
+      if(d != nil) {
+        log("ROBOT ", id, ": d.dist = ", d.dist)
+        log("ROBOT ", id, ": d.color = ", d.color)
+        if(d.dist < DISTANCE_MAX) {
+          log("ROBOT ", id, ": accum.dist = ", accum.dist)
+          log("ROBOT ", id, ": rdata.distance = ", rdata.distance)
+          if(accum.dist > rdata.distance + d.dist) {
+            accum.dist    = rdata.distance + d.dist
+            accum.closest = rid
+            accum.color   = d.color
+            log("ROBOT ", id, ": accum.color = ", accum.color)
+          }
+        }
+        else { accum.done = nil }
+      }
+      else { accum.done = nil }
+      return accum
+    },
+    params
+  )
+  log("ROBOT ", id, ": params.color = ", params.color)
+  | Advertise your choice
+  mytargetdata.closest = params.closest
+  mytargetdata.color   = params.color
+  mytargetdata.dist = params.dist
+  targetdist.put(id, mytargetdata)
+  log("ROBOT ", id, ": mytargetdata.dist = ", mytargetdata.dist)
+  log("ROBOT ", id, ": mytargetdata.color = ", mytargetdata.color)
+  | Are we done?
+  if(params.done) {
+    | Yes, move to the next state
+    barrier_set(ROBOTS, transition_to_divide)
+    barrier_ready()
+  }
+  else {
+    | No, check if we have info on the closest robot
+    if(mytargetdata.closest) {
+      | Yes, rotate towards it
+      var n
+      n = neighbors.get(mytargetdata.closest)
+      if(n.azimuth > math.pi / 36.0) {
+        rotate(math.pi / 360.0)
+      }
+      else {
+        if(n.azimuth < -math.pi / 36.0) {
+          rotate(-math.pi / 360.0)
+        }
+      }
+    }
+  }
 }
 
 |
 | Transition to divide state function
 |
 function transition_to_divide() {
-  state = STATE_DIVIDE
+  log("ROBOT ", id, ": transition_to_divide()")
   statef = state_divide
+  sred = swarm.create(TARGET_RED)
+  sred.select(mytargetdata.color == TARGET_RED)
+  sblue = swarm.create(TARGET_BLUE)
+  sblue.select(mytargetdata.color == TARGET_BLUE)
 }
 
 |
 | Pick target state function
 |
 function state_divide() {
-  | Create accumulator
-  var accum
-  accum = {}
-  accum.x = 0
-  accum.y = 0
-  | Calculate accumulator
-  accum = neighbors.kin().map(to_lj_kin).reduce(vec2_sum, accum)
-  accum = neighbors.nonkin().map(to_lj_nonkin).reduce(vec2_sum, accum)
-  if(neighbors.count() > 0) {
-    accum.x = accum.x / neighbors.count()
-    accum.y = accum.y / neighbors.count()
-  }
-  | Move according to vector
-  goto(accum.x, accum.y);
+  log("ROBOT ", id, ": state_divide()")
+  sred.exec(flock)
+  sblue.exec(flock)
 }
 
 |
 | Transition to go to target state function
 |
 function transition_to_goto_target() {
-  state = STATE_GOTO_TARGET
   statef = state_goto_target
 }
 
@@ -222,10 +397,9 @@ function state_goto_target() {
 |
 function init() {
   | Set initial state
-  state  = STATE_TAKEOFF
   statef = state_takeoff
   | Initialize the barrier
-  barrier_init()
+  barrier_init(BARRIER_VSTIG)
 }
 
 |
