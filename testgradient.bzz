@@ -1,12 +1,12 @@
 function init() {
   if(id == 0) {
-    # Source robot
+    | Source robot
     mydist = 0.
   }
   else {
-    # Other robots
+    | Other robots
     mydist = 1000.
-    # Listen to other robots' distances
+    | Listen to other robots' distances
     neighbors.listen("dist_to_source",
       function(value_id, value, robot_id) {
         log("ROBOT ", id, ": value = ", value, " from robot ", robot_id, " at ", neighbors.get(robot_id).distance)
