@@ -100,7 +100,8 @@ void CBuzzController::ControlStep() {
    ProcessInMsgs();
    UpdateSensors();
    if(buzzvm_function_call(m_tBuzzVM, "step", 0) != BUZZVM_STATE_READY) {
-      fprintf(stderr, "%s: execution terminated abnormally: %s\n\n",
+      fprintf(stderr, "[ROBOT %u] %s: execution terminated abnormally: %s\n\n",
+              m_tBuzzVM->robot,
               m_strBytecodeFName.c_str(),
               buzzvm_strerror(m_tBuzzVM));
       buzzvm_dump(m_tBuzzVM);
