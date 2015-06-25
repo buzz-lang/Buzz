@@ -134,6 +134,10 @@ int buzzvm_vstig_create(buzzvm_t vm) {
    /* Create a table and add data and methods */
    buzzobj_t t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
    buzzvm_push(vm, t);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "size"));
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_size));
+   buzzvm_tput(vm);
+   buzzvm_push(vm, t);
    buzzvm_pushs(vm, buzzvm_string_register(vm, "put"));
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_put));
    buzzvm_tput(vm);
@@ -142,11 +146,11 @@ int buzzvm_vstig_create(buzzvm_t vm) {
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_get));
    buzzvm_tput(vm);
    buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "setonconflict"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "onconflict"));
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_setonconflict));
    buzzvm_tput(vm);
    buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "setonconflictlost"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "onconflictlost"));
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_setonconflictlost));
    buzzvm_tput(vm);
    buzzvm_push(vm, t);
@@ -198,6 +202,29 @@ int buzzvm_vstig_put(buzzvm_t vm) {
    }
    /* Return */
    return buzzvm_ret0(vm);
+}
+
+/****************************************/
+/****************************************/
+
+int buzzvm_vstig_size(buzzvm_t vm) {
+   /* Get vstig id */
+   buzzvm_lload(vm, 0);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
+   buzzvm_tget(vm);
+   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
+   /* Look for virtual stigmergy */
+   buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
+   if(vs) {
+      /* Virtual stigmergy found, return its size */
+      buzzvm_pushi(vm, buzzdict_size((*vs)->data));
+   }
+   else {
+      /* Virtual stigmergy not found, return 0 */
+      buzzvm_pushi(vm, 0);
+   }
+   /* Return */
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -379,7 +406,6 @@ void buzzvm_vstig_onconflictlost(buzzvm_t vm,
                                  buzzvstig_t vs,
                                  buzzobj_t k,
                                  buzzvstig_elem_t lv) {
-   fprintf(stderr, "[DEBUG] [ROBOT %u] buzzvm_vstig_onconflictlost\n", vm->robot);
    /* Was a conflict manager defined? */
    if(vs->onconflictlost) {
       /* Push closure */

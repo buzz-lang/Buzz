@@ -103,6 +103,13 @@ extern "C" {
    int buzzvm_vstig_create(struct buzzvm_s* vm);
 
    /*
+    * Buzz C closure to get the number of elements in a virtual stigmergy structure.
+    * @param vm The Buzz VM state.
+    * @return The updated VM state.
+    */
+   int buzzvm_vstig_size(struct buzzvm_s* vm);
+
+   /*
     * Buzz C closure to put an element in a stigmergy object.
     * @param vm The Buzz VM state.
     * @return The updated VM state.
