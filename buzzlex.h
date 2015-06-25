@@ -46,7 +46,7 @@ extern "C" {
       "identifier", "numeric constant", "string", "variable",
       "nil", "if", "else", "function", "return",
       "for", "while", "and/or", "not", "+ or -", "* or /",
-      "%", "^", "{", "}", "(", ")", "[", "]", "; or newline",
+      "%", "^", "#", "{", "}", "(", ")", "[", "]", "; or newline",
       ",", "=", ".", "== != < <= > >=" };
 
    /*

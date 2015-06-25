@@ -63,7 +63,7 @@ buzzlex_t buzzlex_new(const char* fname) {
    retval->buf_size = lseek(fd, 0, SEEK_END);
    lseek(fd, 0, SEEK_SET);
    /* Create a buffer large enough to contain the data */
-   retval->buf = (char*)malloc(retval->buf_size + 1);
+   retval->buf = (char*)malloc(retval->buf_size + 2);
    /* Copy the content of the file in the buffer */
    ssize_t readnow;
    size_t readsofar = 0;
@@ -85,6 +85,7 @@ buzzlex_t buzzlex_new(const char* fname) {
    }
    while(readnow > 0);
    retval->buf[retval->buf_size] = '\n';
+   retval->buf[retval->buf_size+1] = '\0';
    /* Done reading, close file */
    if(close(fd) < 0) {
       /* I/O error */
