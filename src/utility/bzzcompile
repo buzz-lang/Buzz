@@ -1,5 +1,19 @@
 #!/usr/bin/env bash
 
+#
+# Stop after any error
+#
+set -e
+
+#
+# Check tools
+#
+command -v buzzc >/dev/null 2>&1 || { echo >&2 "$0: error: can't find buzzc"; exit 1; }
+command -v buzzasm >/dev/null 2>&1 || { echo >&2 "$0: error: can't find buzzasm"; exit 1; }
+
+#
+# Check command line
+#
 if [ $# -ne 1 ]; then
     echo "Usage: $0 script.bzz"
     exit 1
@@ -13,13 +27,6 @@ BASM=$(echo $BZZ | rev | cut -d. -f 2- | rev).basm
 BO=$(echo $BZZ | rev | cut -d. -f 2- | rev).bo
 
 #
-# Tools
-#
-BUZZC=../../build/buzzc
-BUZZASM=../../build/buzzasm
-
-#
 # Compilation
 #
-$BUZZC $BZZ $BASM && $BUZZASM $BASM $BO
-
+buzzc $BZZ $BASM && buzzasm $BASM $BO
