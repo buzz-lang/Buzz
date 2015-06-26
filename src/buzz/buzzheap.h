@@ -1,8 +1,8 @@
 #ifndef BUZZHEAP_H
 #define BUZZHEAP_H
 
-#include <buzztype.h>
-#include <buzzdarray.h>
+#include <buzz/buzztype.h>
+#include <buzz/buzzdarray.h>
 
 #ifdef __cplusplus
 extern "C" {

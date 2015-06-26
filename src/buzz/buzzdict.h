@@ -1,7 +1,7 @@
 #ifndef BUZZDICT_H
 #define BUZZDICT_H
 
-#include <buzzdarray.h>
+#include <buzz/buzzdarray.h>
 
 #ifdef __cplusplus
 extern "C" {

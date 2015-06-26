@@ -1,8 +1,8 @@
 #ifndef BUZZTYPE_H
 #define BUZZTYPE_H
 
-#include <buzzdict.h>
-#include <buzzmsg.h>
+#include <buzz/buzzdict.h>
+#include <buzz/buzzmsg.h>
 #include <stdint.h>
 
 /*

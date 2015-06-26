@@ -1,9 +1,9 @@
 #ifndef BUZZOUTMSG_H
 #define BUZZOUTMSG_H
 
-#include <buzzdarray.h>
-#include <buzzmsg.h>
-#include <buzzvstig.h>
+#include <buzz/buzzdarray.h>
+#include <buzz/buzzmsg.h>
+#include <buzz/buzzvstig.h>
 
 #ifdef __cplusplus
 extern "C" {

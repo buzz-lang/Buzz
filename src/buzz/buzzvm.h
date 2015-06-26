@@ -1,12 +1,12 @@
 #ifndef BUZZVM_H
 #define BUZZVM_H
 
-#include <buzzheap.h>
-#include <buzzinmsg.h>
-#include <buzzoutmsg.h>
-#include <buzzvstig.h>
-#include <buzzswarm.h>
-#include <buzzneighbors.h>
+#include <buzz/buzzheap.h>
+#include <buzz/buzzinmsg.h>
+#include <buzz/buzzoutmsg.h>
+#include <buzz/buzzvstig.h>
+#include <buzz/buzzswarm.h>
+#include <buzz/buzzneighbors.h>
 
 #include <stdlib.h>
 #include <math.h>

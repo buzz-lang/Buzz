@@ -1,4 +1,4 @@
-#include <buzzinmsg.h>
+#include <buzz/buzzinmsg.h>
 #include <stdio.h>
 #include <stdlib.h>
 

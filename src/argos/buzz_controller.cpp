@@ -1,5 +1,5 @@
 #include "buzz_controller.h"
-#include "buzzasm.h"
+#include <buzz/buzzasm.h>
 #include <cstdlib>
 #include <fstream>
 #include <cerrno>

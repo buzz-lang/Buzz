@@ -1,4 +1,4 @@
-#include "buzzlex.h"
+#include <buzz/buzzlex.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

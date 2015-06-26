@@ -1,4 +1,4 @@
-#include "buzzdict.h"
+#include <buzz/buzzdict.h>
 #include <stdio.h>
 
 void di_print_elem(const void* key, void* data, void* params) {

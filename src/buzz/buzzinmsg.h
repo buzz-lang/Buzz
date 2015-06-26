@@ -1,8 +1,8 @@
 #ifndef BUZZINMSG_H
 #define BUZZINMSG_H
 
-#include <buzzdarray.h>
-#include <buzzmsg.h>
+#include <buzz/buzzdarray.h>
+#include <buzz/buzzmsg.h>
 
 #ifdef __cplusplus
 extern "C" {

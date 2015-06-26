@@ -6,9 +6,7 @@
 #include <argos3/plugins/robots/generic/control_interface/ci_leds_actuator.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_range_and_bearing_actuator.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_range_and_bearing_sensor.h>
-
-#include "buzzvm.h"
-
+#include <buzz/buzzvm.h>
 #include <string>
 
 using namespace argos;

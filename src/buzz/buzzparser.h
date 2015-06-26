@@ -1,9 +1,9 @@
 #ifndef BUZZPARSER_H
 #define BUZZPARSER_H
 
-#include <buzzlex.h>
-#include <buzzdarray.h>
-#include "buzzdict.h"
+#include <buzz/buzzlex.h>
+#include <buzz/buzzdarray.h>
+#include <buzz/buzzdict.h>
 #include <stdio.h>
 
 #ifdef __cplusplus

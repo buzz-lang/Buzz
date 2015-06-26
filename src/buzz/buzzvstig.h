@@ -1,8 +1,8 @@
 #ifndef BUZZVMSTIG_H
 #define BUZZVMSTIG_H
 
-#include <buzztype.h>
-#include <buzzdict.h>
+#include <buzz/buzztype.h>
+#include <buzz/buzzdict.h>
 
 #ifdef __cplusplus
 extern "C" {

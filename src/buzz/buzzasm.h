@@ -1,7 +1,7 @@
 #ifndef BUZZASM_H
 #define BUZZASM_H
 
-#include "buzzvm.h"
+#include <buzz/buzzvm.h>
 
 #ifdef __cplusplus
 extern "C" {

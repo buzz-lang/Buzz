@@ -1,7 +1,7 @@
 #ifndef BUZZNEIGHBORS_H
 #define BUZZNEIGHBORS_H
 
-#include <buzzdict.h>
+#include <buzz/buzzdict.h>
 #include <stdint.h>
 
 #ifdef __cplusplus

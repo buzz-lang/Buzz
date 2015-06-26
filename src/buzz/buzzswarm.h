@@ -1,7 +1,7 @@
 #ifndef BUZZSWARM_H
 #define BUZZSWARM_H
 
-#include <buzzdict.h>
+#include <buzz/buzzdict.h>
 
 #ifdef __cplusplus
 extern "C" {

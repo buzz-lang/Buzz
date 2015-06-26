@@ -1,88 +1,61 @@
+#
+# Set minimum required version
+#
 cmake_minimum_required(VERSION 2.8.3)
 
-# Debug flags
-set(CMAKE_C_FLAGS "-std=c99")
-if(NOT APPLE)
-  set(CMAKE_C_FLAGS_DEBUG             "-g -ggdb3")
-  set(CMAKE_CXX_FLAGS_DEBUG           "-g -ggdb3")
-  set(CMAKE_EXE_LINKER_FLAGS_DEBUG    "-ggdb3")
-  set(CMAKE_MODULE_LINKER_FLAGS_DEBUG "-ggdb3")
-  set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "-ggdb3")
-  add_definitions(-D_GNU_SOURCE)
-else(NOT APPLE)
-  set(CMAKE_C_FLAGS_DEBUG             "-g -gdwarf-4")
-  set(CMAKE_CXX_FLAGS_DEBUG           "-g -gdwarf-4")
-  set(CMAKE_EXE_LINKER_FLAGS_DEBUG    "-gdwarf-4")
-  set(CMAKE_MODULE_LINKER_FLAGS_DEBUG "-gdwarf-4")
-  set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "-gdwarf-4")  
-endif(NOT APPLE)
+#
+# Set the path additional cmake files must be searched for
+#
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
-# Project name
-project(buzz)
+#
+# Set CMake policies to select wanted behaviors
+#
+# Use new policies introduced up to this version
+cmake_policy(VERSION 2.8.12)
+if(POLICY CMP0042)
+  cmake_policy(SET CMP0042 NEW)
+endif(POLICY CMP0042)
 
-# Find the ARGoS package
-include_directories(${CMAKE_SOURCE_DIR})
-find_package(PkgConfig)
-pkg_check_modules(ARGOS REQUIRED argos3_simulator)
-include_directories(${ARGOS_INCLUDE_DIRS})
-link_directories(${ARGOS_LIBRARY_DIRS})
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ARGOS_PREFIX}/share/argos3/cmake)
-include(ARGoSCheckQTOpenGL)
-find_package(GSL REQUIRED)
-include_directories(${GSL_INCLUDE_DIR})
-find_package(Lua52 REQUIRED)
-include_directories(${LUA_INCLUDE_DIR})
+#
+# Include path points to the base source dir
+#
+include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 
-# Create libbuzz
-add_library(buzz SHARED
-  buzzdarray.h buzzdarray.c
-  buzzdict.h buzzdict.c
-  buzztype.h buzztype.c
-  buzzheap.h buzzheap.c
-  buzzmsg.h buzzmsg.c
-  buzzinmsg.h buzzinmsg.c
-  buzzoutmsg.h buzzoutmsg.c
-  buzzvstig.h buzzvstig.c
-  buzzswarm.h buzzswarm.c
-  buzzneighbors.h buzzneighbors.c
-  buzzmath.h buzzmath.c
-  buzzvm.h buzzvm.c
-  buzzasm.h buzzasm.c
-  buzzlex.h buzzlex.c
-  buzzparser.h buzzparser.c)
-target_link_libraries(buzz m)
+#
+# Set build options
+#
+include(${CMAKE_SOURCE_DIR}/cmake/BuzzBuildOptions.cmake)
 
-# Create libbuzzargos
-add_library(buzzargos SHARED
-  buzz_controller.h buzz_controller.cpp
-  buzz_controller_footbot.h buzz_controller_footbot.cpp
-  buzz_controller_spiri.h buzz_controller_spiri.cpp)
-target_link_libraries(buzzargos
-  argos3core_simulator
-  argos3plugin_simulator_genericrobot
-  buzz)
+#
+# Set compiler flags
+#
+include(${CMAKE_SOURCE_DIR}/cmake/BuzzBuildFlags.cmake)
 
-# Test programs
-add_executable(testbuzzdarray testbuzzdarray.c)
-target_link_libraries(testbuzzdarray buzz)
+#
+# Check for libraries
+#
+include(${CMAKE_SOURCE_DIR}/cmake/BuzzBuildChecks.cmake)
 
-add_executable(testbuzzdict testbuzzdict.c)
-target_link_libraries(testbuzzdict buzz)
+#
+# Set up CPack for later use
+#
+#include(${CMAKE_SOURCE_DIR}/cmake/BuzzPackaging.cmake)
 
-add_executable(testbuzzmsg testbuzzmsg.c)
-target_link_libraries(testbuzzmsg buzz)
+#
+# Create config file with settings that must be accessed from C
+#
+# configure_file(
+#   ${CMAKE_SOURCE_DIR}/buzz/config.h.in
+#   ${CMAKE_BINARY_DIR}/buzz/config.h
+#   @ONLY)
+# install(FILES ${CMAKE_BINARY_DIR}/buzz/config.h DESTINATION include/buzz)
 
-add_executable(testbuzzlex testbuzzlex.c)
-target_link_libraries(testbuzzlex buzz)
-
-add_executable(buzzasm buzzasm_main.c)
-target_link_libraries(buzzasm buzz)
-
-add_executable(buzzdeasm buzzdeasm_main.c)
-target_link_libraries(buzzdeasm buzz)
-
-add_executable(buzzc buzzc.c)
-target_link_libraries(buzzc buzz)
-
-add_executable(testbuzz testbuzz.c)
-target_link_libraries(testbuzz buzz)
+#
+# Compile stuff
+#
+add_subdirectory(buzz)
+if(ARGOS_FOUND)
+  add_subdirectory(argos)
+endif(ARGOS_FOUND)
+add_subdirectory(testing)
