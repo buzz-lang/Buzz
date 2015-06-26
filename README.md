@@ -2,23 +2,32 @@ What is Buzz?
 =============
 
 Buzz is a novel programming language for heterogeneous robots
-swarms. Buzz advocates a compositional approach, by offering
-primitives to define swarm behaviors both in a bottom-up and in a
-top-down fashion. Bottom-up primitives include robot-wise commands and
-manipulation of neighborhood data through mapping/reducing/filtering
-operations. Top-down primitives allow for the dynamic management of
-robot teams, and for sharing information globally across the
-swarm. Self-organization results from the fact that the Buzz run-time
-platform is purely distributed. The language can be extended to add
-new primitives (thus supporting heterogeneous robot swarms) and can be
-laid on top of other frameworks, such as ROS.
+swarms.
+
+Buzz advocates a compositional approach, by offering primitives to
+define swarm behaviors both in a bottom-up and in a top-down
+fashion.
+
+Bottom-up primitives include robot-wise commands and manipulation of
+neighborhood data through mapping/reducing/filtering
+operations.
+
+Top-down primitives allow for the dynamic management of robot teams,
+and for sharing information globally across the swarm.
+
+Self-organization results from the fact that the Buzz run-time
+platform is purely distributed.
+
+The language can be extended to add new primitives (thus supporting
+heterogeneous robot swarms) and can be laid on top of other
+frameworks, such as ROS.
 
 Downloading Buzz
 ================
 
 You can download the development sources through git:
 
- $ git clone https://github.com/MIST/Buzz.git buzz
+ $ git clone https://github.com/MISTLab/Buzz.git buzz
 
 Compiling Buzz
 ==============
@@ -51,6 +60,5 @@ Installation
 
 Execute these commands:
 
-    $ cd buzz
-    $ cd build
+    $ cd buzz/build
     $ sudo make install
