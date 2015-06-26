@@ -19,6 +19,7 @@ add_library(buzz SHARED
   buzzparser.h buzzparser.c)
 target_link_libraries(buzz m)
 install(TARGETS buzz LIBRARY DESTINATION lib)
+install(DIRECTORY . DESTINATION include/buzz FILES_MATCHING PATTERN "*.h")
 
 #
 # Compile buzzasm

@@ -40,16 +40,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/BuzzBuildChecks.cmake)
 #
 # Set up CPack for later use
 #
-#include(${CMAKE_SOURCE_DIR}/cmake/BuzzPackaging.cmake)
-
-#
-# Create config file with settings that must be accessed from C
-#
-# configure_file(
-#   ${CMAKE_SOURCE_DIR}/buzz/config.h.in
-#   ${CMAKE_BINARY_DIR}/buzz/config.h
-#   @ONLY)
-# install(FILES ${CMAKE_BINARY_DIR}/buzz/config.h DESTINATION include/buzz)
+include(${CMAKE_SOURCE_DIR}/cmake/BuzzPackaging.cmake)
 
 #
 # Compile stuff
@@ -59,3 +50,9 @@ if(ARGOS_FOUND)
   add_subdirectory(argos)
 endif(ARGOS_FOUND)
 add_subdirectory(testing)
+add_subdirectory(utility)
+
+#
+# Install the README in doc/buzz
+#
+install(FILES ${CMAKE_SOURCE_DIR}/../README.md DESTINATION doc/buzz)
