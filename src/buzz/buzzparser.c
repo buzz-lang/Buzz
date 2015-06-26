@@ -11,7 +11,6 @@ static int PARSE_OK       =  1;
 static int TYPE_BASIC     = -1;
 static int TYPE_CLOSURE   = -2;
 static int TYPE_TABLE     = -3;
-static int TYPE_STIGMERGY = -4;
 
 static int SCOPE_LOCAL    =  0;
 static int SCOPE_GLOBAL   =  1;
