@@ -1,0 +1,10 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+includedir=${prefix}/include
+libdir=${exec_prefix}/lib
+
+Name: buzz
+Description: Buzz (programming language for robot swarms)
+Version: @CPACK_PACKAGE_VERSION@-@CPACK_PACKAGE_RELEASE@
+Cflags: -I${includedir} -Wno-unknown-pragmas @BUZZ_PC_CFLAGS@
+Libs: @CMAKE_SHARED_LINKER_FLAGS@ -L${libdir} -lbuzz

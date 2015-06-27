@@ -1,0 +1,21 @@
+#!/usr/bin/env bash -e
+
+echo '===================='
+echo '= Buzz Uninstaller ='
+echo '===================='
+echo
+echo 'To complete this operation, you will need administrative privileges.'
+echo
+read -p 'Press CTRL-C to exit, or any other key to proceed...'
+echo
+echo 'Uninstalling Buzz... '
+
+sudo rm -rf @CMAKE_INSTALL_PREFIX@/doc/buzz
+sudo rm -rf @CMAKE_INSTALL_PREFIX@/lib/libbuzz.*
+sudo rm -rf @CMAKE_INSTALL_PREFIX@/lib/pkgconfig/buzz.pc
+sudo rm -rf @CMAKE_INSTALL_PREFIX@/include/buzz
+sudo rm -rf @CMAKE_INSTALL_PREFIX@/bin/buzzasm
+sudo rm -rf @CMAKE_INSTALL_PREFIX@/bin/buzzdeasm
+sudo rm -rf @CMAKE_INSTALL_PREFIX@/bin/buzzc
+sudo rm -rf @CMAKE_INSTALL_PREFIX@/bin/bzzcompile
+sudo rm -rf @CMAKE_INSTALL_PREFIX@/share/buzz
