@@ -1,5 +1,6 @@
 #include "buzzmath.h"
 #include "buzztype.h"
+#include <stdio.h>
 #include <math.h>
 
 /****************************************/
@@ -45,6 +46,7 @@ int buzzmath_register(buzzvm_t vm) {
 /****************************************/
 
 int buzzmath_log(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get argument */
    float arg;
    buzzvm_lload(vm, 1);
@@ -66,6 +68,7 @@ int buzzmath_log(buzzvm_t vm) {
 /****************************************/
 
 int buzzmath_log2(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get argument */
    float arg;
    buzzvm_lload(vm, 1);
@@ -87,6 +90,7 @@ int buzzmath_log2(buzzvm_t vm) {
 /****************************************/
 
 int buzzmath_log10(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get argument */
    float arg;
    buzzvm_lload(vm, 1);
@@ -108,6 +112,7 @@ int buzzmath_log10(buzzvm_t vm) {
 /****************************************/
 
 int buzzmath_sqrt(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get argument */
    float arg;
    buzzvm_lload(vm, 1);
@@ -129,6 +134,7 @@ int buzzmath_sqrt(buzzvm_t vm) {
 /****************************************/
 
 int buzzmath_sin(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get argument */
    float arg;
    buzzvm_lload(vm, 1);
@@ -150,6 +156,7 @@ int buzzmath_sin(buzzvm_t vm) {
 /****************************************/
 
 int buzzmath_cos(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get argument */
    float arg;
    buzzvm_lload(vm, 1);
@@ -171,6 +178,7 @@ int buzzmath_cos(buzzvm_t vm) {
 /****************************************/
 
 int buzzmath_tan(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get argument */
    float arg;
    buzzvm_lload(vm, 1);
@@ -192,6 +200,7 @@ int buzzmath_tan(buzzvm_t vm) {
 /****************************************/
 
 int buzzmath_asin(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get argument */
    float arg;
    buzzvm_lload(vm, 1);
@@ -213,6 +222,7 @@ int buzzmath_asin(buzzvm_t vm) {
 /****************************************/
 
 int buzzmath_acos(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get argument */
    float arg;
    buzzvm_lload(vm, 1);
@@ -234,6 +244,7 @@ int buzzmath_acos(buzzvm_t vm) {
 /****************************************/
 
 int buzzmath_atan(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get first argument */
    float y;
    buzzvm_lload(vm, 1);
@@ -266,6 +277,7 @@ int buzzmath_atan(buzzvm_t vm) {
 /****************************************/
 
 int buzzmath_min(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 2);
    /* Get arguments */
    buzzvm_lload(vm, 1);
    buzzobj_t a = buzzvm_stack_at(vm, 1);
@@ -283,6 +295,7 @@ int buzzmath_min(buzzvm_t vm) {
 /****************************************/
 
 int buzzmath_max(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 2);
    /* Get arguments */
    buzzvm_lload(vm, 1);
    buzzobj_t a = buzzvm_stack_at(vm, 1);

@@ -30,7 +30,7 @@
   "Comment or uncomment current line or region in a smart way.
 For detail, see `comment-dwim'."
   (interactive "*P")
-  (let ((comment-start "|") (comment-end ""))
+  (let ((comment-start "#") (comment-end ""))
     (comment-dwim arg)))
 
 ;;
@@ -39,7 +39,7 @@ For detail, see `comment-dwim'."
 (setq buzz-syntax-table
       (let ((synTable (make-syntax-table)))
         ;; Comment syntax
-        (modify-syntax-entry ?| "< b" synTable)
+        (modify-syntax-entry ?# "< b" synTable)
         (modify-syntax-entry ?\n "> b" synTable)
         ;; Arithmetic operators as punctuation
         (modify-syntax-entry ?+ "." synTable)

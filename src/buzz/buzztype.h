@@ -13,9 +13,8 @@
 #define BUZZTYPE_FLOAT    2
 #define BUZZTYPE_STRING   3
 #define BUZZTYPE_TABLE    4
-#define BUZZTYPE_ARRAY    5
-#define BUZZTYPE_CLOSURE  6
-#define BUZZTYPE_USERDATA 7
+#define BUZZTYPE_CLOSURE  5
+#define BUZZTYPE_USERDATA 6
 
 /*
  * Info extraction from an object
@@ -25,6 +24,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+   static const char *buzztype_desc[] = {"nil", "integer", "float", "string", "table", "closure", "userdata" };
 
    /*
     * Nil
@@ -129,11 +130,24 @@ extern "C" {
    struct buzzvm_s;
 
    /*
+    * Create a Buzz object.
+    * @param type The type of the Buzz object.
+    * @return The created object.
+    */
+   extern buzzobj_t buzzobj_new(uint16_t type);
+
+   /*
     * Clones a Buzz object.
     * @param o The Buzz object to clone.
     * @return The cloned object.
     */
    extern buzzobj_t buzzobj_clone(const buzzobj_t o);
+
+   /*
+    * Destroys a Buzz object.
+    * @param o The object to destroy.
+    */
+   extern void buzzobj_destroy(buzzobj_t* o);
 
    /*
     * Returns the hash of the passed Buzz object.
@@ -170,6 +184,12 @@ extern "C" {
     */
    extern int buzzobj_cmp(const buzzobj_t a,
                           const buzzobj_t b);
+
+   /*
+    * C-closure to return the size of a table.
+    * @param vm The VM data.
+    */
+   extern int buzzobj_size(struct buzzvm_s* vm);
 
    /*
     * Serializes a Buzz object.

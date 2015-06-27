@@ -209,8 +209,10 @@ static int make_table(buzzvm_t vm, uint16_t id) {
 /****************************************/
 
 int buzzvm_swarm_create(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get the id */
    buzzvm_lload(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
    /* Add a new entry if necessary */
    if(!buzzdict_exists(vm->swarms, &id)) {
@@ -236,7 +238,7 @@ int buzzvm_swarm_id(struct buzzvm_s* vm) {
       /* Take the stack top by default */
       uint16_t stackpos = 1;
       /* Do we have an argument? */
-      if(buzzdarray_size(vm->lsyms->syms) > 1) {
+      if(buzzvm_lnum(vm) > 1) {
          buzzvm_lload(vm, 1);
          buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
          stackpos = buzzvm_stack_at(vm, 1)->i.value;
@@ -259,6 +261,7 @@ int buzzvm_swarm_id(struct buzzvm_s* vm) {
 /****************************************/
 
 int buzzvm_swarm_others(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get the id of the current swarm */
    buzzvm_lload(vm, 0);
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
@@ -273,6 +276,7 @@ int buzzvm_swarm_others(buzzvm_t vm) {
    }
    /* Get the id of the new swarm to create */
    buzzvm_lload(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
    uint16_t id2 = buzzvm_stack_at(vm, 1)->i.value;
    /* Add a new entry for the swarm */
    uint8_t v = *x ? 0 : 1;
@@ -291,6 +295,7 @@ int buzzvm_swarm_others(buzzvm_t vm) {
 /****************************************/
 
 int buzzvm_swarm_join(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 0);
    /* Get the id */
    buzzvm_lload(vm, 0);
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
@@ -318,6 +323,7 @@ int buzzvm_swarm_join(buzzvm_t vm) {
 /****************************************/
 
 int buzzvm_swarm_leave(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 0);
    /* Get the id */
    buzzvm_lload(vm, 0);
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
@@ -345,6 +351,7 @@ int buzzvm_swarm_leave(buzzvm_t vm) {
 /****************************************/
 
 int buzzvm_swarm_in(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 0);
    /* Get the id */
    buzzvm_lload(vm, 0);
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
@@ -367,6 +374,7 @@ int buzzvm_swarm_in(buzzvm_t vm) {
 /****************************************/
 
 int buzzvm_swarm_select(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get the id */
    buzzvm_lload(vm, 0);
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
@@ -374,6 +382,7 @@ int buzzvm_swarm_select(buzzvm_t vm) {
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
    /* Get the result of the condition check */
    buzzvm_lload(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
    uint8_t in = buzzvm_stack_at(vm, 1)->i.value;
    /* Update the swarm, if known */
    if(buzzdict_exists(vm->swarms, &id)) {
@@ -398,6 +407,7 @@ int buzzvm_swarm_select(buzzvm_t vm) {
 /****************************************/
 
 int buzzvm_swarm_exec(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get the id */
    buzzvm_lload(vm, 0);
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
@@ -414,6 +424,7 @@ int buzzvm_swarm_exec(buzzvm_t vm) {
    if(*x) {
       /* Get the closure */
       buzzvm_lload(vm, 1);
+      buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
       buzzobj_t c = buzzvm_stack_at(vm, 1);
       /* Get rid of the current call structure */
       if(buzzvm_ret0(vm) != BUZZVM_STATE_READY) return vm->state;

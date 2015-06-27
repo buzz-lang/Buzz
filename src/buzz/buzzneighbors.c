@@ -112,6 +112,7 @@ int buzzneighbors_add(buzzvm_t vm,
 /****************************************/
 
 int buzzneighbors_broadcast(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 2);
    /* Get value id argument */
    buzzvm_lload(vm, 1);
    buzzvm_type_assert(vm, 1, BUZZTYPE_STRING);
@@ -129,6 +130,7 @@ int buzzneighbors_broadcast(buzzvm_t vm) {
 /****************************************/
 
 int buzzneighbors_listen(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 2);
    /* Get value id argument */
    buzzvm_lload(vm, 1);
    buzzvm_type_assert(vm, 1, BUZZTYPE_STRING);
@@ -147,6 +149,7 @@ int buzzneighbors_listen(buzzvm_t vm) {
 /****************************************/
 
 int buzzneighbors_ignore(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get value id argument */
    buzzvm_lload(vm, 1);
    buzzvm_type_assert(vm, 1, BUZZTYPE_STRING);
@@ -179,6 +182,7 @@ void neighbor_filter_kin(const void* key, void* data, void* params) {
 }
 
 int buzzneighbors_kin(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 0);
    /* Initialize the swarm id to 'unknown' */
    int32_t swarmid = -1;
    /* If the swarm stack is not empty, look for the swarm id */
@@ -241,6 +245,7 @@ void neighbor_filter_nonkin(const void* key, void* data, void* params) {
 }
 
 int buzzneighbors_nonkin(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 0);
    /* Initialize the swarm id to 'unknown' */
    int32_t swarmid = -1;
    /* If the swarm stack is not empty, look for the swarm id */
@@ -290,6 +295,7 @@ int buzzneighbors_nonkin(buzzvm_t vm) {
 /****************************************/
 
 int buzzneighbors_get(struct buzzvm_s* vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get self table */
    buzzvm_lload(vm, 0);
    /* Get data field */
@@ -330,6 +336,7 @@ void neighbor_for_each(const void* key, void* data, void* params) {
 }
 
 int buzzneighbors_foreach(struct buzzvm_s* vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get self table */
    buzzvm_lload(vm, 0);
    /* Get data field */
@@ -379,6 +386,7 @@ void neighbor_map_each(const void* key, void* data, void* params) {
 }
 
 int buzzneighbors_map(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get the self table */
    buzzvm_lload(vm, 0);
    buzzvm_type_assert(vm, 1, BUZZTYPE_TABLE);
@@ -442,6 +450,7 @@ void neighbor_reduce(const void* key, void* data, void* params) {
 }
 
 int buzzneighbors_reduce(struct buzzvm_s* vm) {
+   buzzvm_lnum_assert(vm, 2);
    /* Get self table */
    buzzvm_lload(vm, 0);
    /* Get data field */
@@ -501,6 +510,7 @@ void neighbor_filter_each(const void* key, void* data, void* params) {
 }
 
 int buzzneighbors_filter(struct buzzvm_s* vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get the self table */
    buzzvm_lload(vm, 0);
    buzzvm_type_assert(vm, 1, BUZZTYPE_TABLE);
@@ -543,6 +553,7 @@ int buzzneighbors_filter(struct buzzvm_s* vm) {
 /****************************************/
 
 int buzzneighbors_count(struct buzzvm_s* vm) {
+   buzzvm_lnum_assert(vm, 0);
    /* Get self table */
    buzzvm_lload(vm, 0);
    /* Get data field */

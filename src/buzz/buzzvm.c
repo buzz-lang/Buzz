@@ -31,9 +31,6 @@ void buzzvm_dump(buzzvm_t vm) {
          case BUZZTYPE_TABLE:
             fprintf(stderr, "[table] %d elements\n", buzzdict_size(o->t.value));
             break;
-         case BUZZTYPE_ARRAY:
-            fprintf(stderr, "[array] %lld\n", buzzdarray_size(o->a.value));
-            break;
          case BUZZTYPE_CLOSURE:
             if(o->c.value.isnative) {
                fprintf(stderr, "[n-closure] %d\n", o->c.value.ref);
@@ -60,15 +57,8 @@ char* buzzvm_strerror(buzzvm_t vm) {
       return strdup("No error");
    }
    else {
-      char* msg = (char*)malloc(
-         strlen(buzzvm_error_desc[vm->error]) +
-         strlen(" at offset ") +
-         10
-         );
-      sprintf(msg, "%s at offset %d",
-              buzzvm_error_desc[vm->error],
-              vm->pc
-         );
+      char* msg;
+      asprintf(&msg, "%s at offset %d", vm->errormsg, vm->pc);
       return msg;
    }
 }
@@ -530,6 +520,12 @@ int buzzvm_set_bcode(buzzvm_t vm,
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_id));
    buzzvm_tput(vm);
+   /*
+    * Register size() function
+    */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "size"));
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzobj_size));
+   buzzvm_gstore(vm);
    /* 
     * Initialize empty neighbors
     */
@@ -689,26 +685,6 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       }
       case BUZZVM_INSTR_TGET: {
          if(buzzvm_tget(vm) != BUZZVM_STATE_READY) return vm->state;
-         inc_pc();
-         break;
-      }
-      case BUZZVM_INSTR_TSIZE: {
-         if(buzzvm_tsize(vm) != BUZZVM_STATE_READY) return vm->state;
-         inc_pc();
-         break;
-      }
-      case BUZZVM_INSTR_PUSHA: {
-         buzzvm_pusha(vm);
-         inc_pc();
-         break;
-      }
-      case BUZZVM_INSTR_APUT: {
-         buzzvm_aput(vm);
-         inc_pc();
-         break;
-      }
-      case BUZZVM_INSTR_AGET: {
-         buzzvm_aget(vm);
          inc_pc();
          break;
       }
@@ -1031,18 +1007,6 @@ buzzvm_state buzzvm_tget(buzzvm_t vm) {
    buzzobj_t* v = buzzdict_get(t->t.value, &k, buzzobj_t);
    if(v) buzzvm_push(vm, *v);
    else buzzvm_pushnil(vm);
-   return BUZZVM_STATE_READY;
-}
-
-/****************************************/
-/****************************************/
-
-buzzvm_state buzzvm_tsize(buzzvm_t vm) {
-   buzzvm_stack_assert(vm, 1);
-   buzzvm_type_assert(vm, 1, BUZZTYPE_TABLE);
-   buzzobj_t t = buzzvm_stack_at(vm, 1);
-   buzzvm_pop(vm);
-   buzzvm_pushi(vm, buzzdict_size(t->t.value));
    return BUZZVM_STATE_READY;
 }
 

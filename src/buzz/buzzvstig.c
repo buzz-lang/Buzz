@@ -119,8 +119,10 @@ int64_t buzzvstig_elem_deserialize(buzzobj_t* key,
 /****************************************/
 
 int buzzvm_vstig_create(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get vstig id */
    buzzvm_lload(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
    buzzvm_pop(vm);
    /* Look for virtual stigmergy */
@@ -167,6 +169,7 @@ int buzzvm_vstig_create(buzzvm_t vm) {
 /****************************************/
 
 int buzzvm_vstig_put(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 2);
    /* Get vstig id */
    buzzvm_lload(vm, 0);
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
@@ -208,6 +211,7 @@ int buzzvm_vstig_put(buzzvm_t vm) {
 /****************************************/
 
 int buzzvm_vstig_size(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 0);
    /* Get vstig id */
    buzzvm_lload(vm, 0);
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
@@ -231,6 +235,7 @@ int buzzvm_vstig_size(buzzvm_t vm) {
 /****************************************/
 
 int buzzvm_vstig_get(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get vstig id */
    buzzvm_lload(vm, 0);
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
@@ -275,6 +280,7 @@ int buzzvm_vstig_get(buzzvm_t vm) {
 /****************************************/
 
 int buzzvm_vstig_setonconflict(struct buzzvm_s* vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get vstig id */
    buzzvm_lload(vm, 0);
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
@@ -305,6 +311,7 @@ int buzzvm_vstig_setonconflict(struct buzzvm_s* vm) {
 /****************************************/
 
 int buzzvm_vstig_setonconflictlost(struct buzzvm_s* vm) {
+   buzzvm_lnum_assert(vm, 1);
    /* Get vstig id */
    buzzvm_lload(vm, 0);
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));

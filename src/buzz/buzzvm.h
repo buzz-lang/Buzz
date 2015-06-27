@@ -33,13 +33,14 @@ extern "C" {
       BUZZVM_ERROR_NONE = 0, // No error
       BUZZVM_ERROR_INSTR,    // Unknown instruction 
       BUZZVM_ERROR_STACK,    // Empty stack
+      BUZZVM_ERROR_LNUM,     // Wrong number of local variables
       BUZZVM_ERROR_PC,       // Program counter out of range
       BUZZVM_ERROR_FLIST,    // Function call id out of range
       BUZZVM_ERROR_TYPE,     // Type mismatch
       BUZZVM_ERROR_STRING,   // Unknown string id
       BUZZVM_ERROR_SWARM     // Unknown swarm id
    } buzzvm_error;
-   static const char *buzzvm_error_desc[] = { "none", "unknown instruction", "empty stack", "pc out of range", "function id out of range", "type mismatch", "unknown string id", "unknown swarm id" };
+   static const char *buzzvm_error_desc[] = { "none", "unknown instruction", "empty stack", "wrong number of local variables", "pc out of range", "function id out of range", "type mismatch", "unknown string id", "unknown swarm id" };
 
    /*
     * VM instructions
@@ -75,10 +76,6 @@ extern "C" {
       BUZZVM_INSTR_PUSHT,      // Push empty table
       BUZZVM_INSTR_TPUT,       // Put key (stack(#2)), value (stack #1) in table (stack #3), pop key and value
       BUZZVM_INSTR_TGET,       // Push value for key (stack(#1)) in table (stack #2), pop key
-      BUZZVM_INSTR_TSIZE,      // Push size of table (#1), pop table
-      BUZZVM_INSTR_PUSHA,      // Push empty array
-      BUZZVM_INSTR_APUT,       // Put idx (stack(#2)), value (stack #1) in array (stack #3), pop idx and value
-      BUZZVM_INSTR_AGET,       // Push value for idx (stack(#1)) in array (stack #2), pop idx
       BUZZVM_INSTR_CALLC,      // Calls the closure on top of the stack as a normal closure
       BUZZVM_INSTR_CALLS,      // Calls the closure on top of the stack as a swarm closure
       /*
@@ -98,7 +95,7 @@ extern "C" {
       BUZZVM_INSTR_JUMPZ,    // Set PC to argument if stack top is zero, pop operand
       BUZZVM_INSTR_JUMPNZ,   // Set PC to argument if stack top is not zero, pop operand
    } buzzvm_instr;
-   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "gload", "gstore", "pusht", "tput", "tget", "tsize", "pusha", "aput", "aget", "callc", "calls", "pushf", "pushi", "pushs", "pushcn", "pushcc", "pushl", "lload", "lstore", "jump", "jumpz", "jumpnz"};
+   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "gload", "gstore", "pusht", "tput", "tget", "callc", "calls", "pushf", "pushi", "pushs", "pushcn", "pushcc", "pushl", "lload", "lstore", "jump", "jumpz", "jumpnz"};
 
    /*
     * Function pointer for BUZZVM_INSTR_CALL.
@@ -172,6 +169,8 @@ extern "C" {
       buzzvm_state state;
       /* Current VM error */
       buzzvm_error error;
+      /* Current VM error message */
+      char* errormsg;
       /* Robot id */
       uint16_t robot;
    };
@@ -362,16 +361,6 @@ extern "C" {
    extern buzzvm_state buzzvm_tget(buzzvm_t vm);
 
    /*
-    * Pushes the size of a table.
-    * Internally checks whether the operation is valid.
-    * The stack is expected to be as follows:
-    * #1 table
-    * This operation pops #1 and pushes the value.
-    * @param vm The VM data.
-    */
-   extern buzzvm_state buzzvm_tsize(buzzvm_t vm);
-
-   /*
     * Stores the object located at the stack top into the a global variable, pops operand.
     * Internally checks whether the operation is valid.
     * @param vm The VM data.
@@ -419,7 +408,7 @@ extern "C" {
  * @param vm The VM data.
  * @param idx The stack index, where 0 is the stack top and >0 goes down the stack.
  */
-#define buzzvm_stack_assert(vm, idx) if(buzzvm_stack_top(vm) - (idx) < 0) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_STACK; return (vm)->state; }
+#define buzzvm_stack_assert(vm, idx) if(buzzvm_stack_top(vm) - (idx) < 0) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_STACK; asprintf(&(vm)->errormsg, "%s", buzzvm_error_desc[(vm)->error]); return (vm)->state; }
 
 /*
  * Checks whether the type at the given stack position is correct.
@@ -428,9 +417,9 @@ extern "C" {
  * BuzzVM hook functions or buzzvm_step().
  * @param vm The VM data.
  * @param idx The stack index, where 0 is the stack top and >0 goes down the stack.
- * @param type The type to check
+ * @param tpe The type to check
  */
-#define buzzvm_type_assert(vm, idx, tpe) if(buzzvm_stack_at(vm, idx)->o.type != tpe) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_TYPE; return (vm)->state; }
+#define buzzvm_type_assert(vm, idx, tpe) if(buzzvm_stack_at(vm, idx)->o.type != tpe) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_TYPE; asprintf(&(vm)->errormsg, "%s: expected %s, got %s", buzzvm_error_desc[(vm)->error], buzztype_desc[tpe], buzztype_desc[buzzvm_stack_at(vm, idx)->o.type]); return (vm)->state; }
 
 /*
  * Returns the size of the stack.
@@ -555,6 +544,22 @@ extern "C" {
       }                                                               \
       buzzvm_push(vm, o);                                             \
    }
+
+/*
+ * Returns the number of local variables in the current local symbol stack.
+ * @param vm The VM data.
+ */
+#define buzzvm_lnum(vm) (buzzdarray_size((vm)->lsyms->syms)-1)
+
+/*
+ * Checks whether the current function was passed a certain number of parameters.
+ * If the check fails, this function updates the VM state and exits the current function.
+ * This function is designed to be used within int-returning functions such as
+ * BuzzVM hook functions or buzzvm_step().
+ * @param vm The VM data.
+ * @param num The number of expected local variables.
+ */
+#define buzzvm_lnum_assert(vm, num) if(buzzvm_lnum(vm) != num) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_LNUM; asprintf(&(vm)->errormsg, "%s: expected %d, got %lld", buzzvm_error_desc[(vm)->error], num, buzzvm_lnum(vm)); return (vm)->state; }
 
 /*
  * Pushes the local variable located at the given stack index.
@@ -975,58 +980,5 @@ extern "C" {
  * @param vm The VM data.
  */
 #define buzzvm_pusht(vm) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_TABLE); buzzvm_push(vm, o); }
-
-/*
- * Pushes an empty array onto the stack.
- * @param vm The VM data.
- */
-#define buzzvm_pusha(vm) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_ARRAY); buzzvm_push(vm, o); }
-
-/*
- * Stores a (idx,value) pair in a array.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * The stack is expected to be as follows:
- * #1 value
- * #2 idx
- * #3 array
- * This operation pops #1 and #2, leaving the array at the stack top.
- * @param vm The VM data.
- */
-#define buzzvm_aput(vm) {                         \
-      buzzvm_stack_assert(vm, 3);                 \
-      buzzobj_t v = buzzvm_stack_at(vm, 1);       \
-      buzzobj_t i = buzzvm_stack_at(vm, 2);       \
-      buzzobj_t a = buzzvm_stack_at(vm, 3);       \
-      buzzdarray_set(a->a.value, i->i.value, &v); \
-      buzzvm_pop(vm);                             \
-      buzzvm_pop(vm);                             \
-   }
-
-/*
- * Fetches a (idx,value) pair from a array.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * The stack is expected to be as follows:
- * #1 idx
- * #2 array
- * This operation pops #1 and pushes the value, leaving the array at
- * stack #2. If the element for the given idx is not found, nil is
- * pushed as value.
- * @param vm The VM data.
- */
-#define buzzvm_aget(vm) {                                               \
-      buzzvm_stack_assert(vm, 2);                                       \
-      buzzobj_t i = buzzvm_stack_at(vm, 1);                             \
-      buzzobj_t a = buzzvm_stack_at(vm, 2);                             \
-      buzzvm_pop(vm);                                                   \
-      if(i->i.value < buzzdarray_size(a->a.value)) {                    \
-         buzzobj_t v = buzzdarray_get(a->a.value, i->i.value, buzzobj_t); \
-         buzzvm_push(vm, v);                                            \
-      }                                                                 \
-      else buzzvm_pushnil(vm);                                          \
-   }
 
 #endif

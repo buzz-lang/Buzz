@@ -238,10 +238,6 @@ int buzz_asm(const char* fname,
       noarg_instr(BUZZVM_INSTR_PUSHT);
       noarg_instr(BUZZVM_INSTR_TPUT);
       noarg_instr(BUZZVM_INSTR_TGET);
-      noarg_instr(BUZZVM_INSTR_TSIZE);
-      noarg_instr(BUZZVM_INSTR_PUSHA);
-      noarg_instr(BUZZVM_INSTR_APUT);
-      noarg_instr(BUZZVM_INSTR_AGET);
       noarg_instr(BUZZVM_INSTR_CALLC);
       noarg_instr(BUZZVM_INSTR_CALLS);
       f_arg_instr(BUZZVM_INSTR_PUSHF);

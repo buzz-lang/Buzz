@@ -27,9 +27,6 @@ int BuzzLOG (buzzvm_t vm) {
          case BUZZTYPE_TABLE:
             LOG << "[table with " << (buzzdict_size(o->t.value)) << " elems]";
             break;
-         case BUZZTYPE_ARRAY:
-            LOG << "[array with " << (buzzdict_size(o->a.value)) << " elems]";
-            break;
          case BUZZTYPE_CLOSURE:
             if(o->c.value.isnative)
                LOG << "[n-closure @" << o->c.value.ref << "]";

@@ -360,6 +360,7 @@ int parse_script(buzzparser_t par) {
    /* Finalize the output */
    chunk_append("\n@__exitpoint\n");
    chunk_append("\tdone\n");
+   chunk_pop();
    return PARSE_OK;
 }
 
@@ -814,15 +815,6 @@ int parse_operand(buzzparser_t par) {
          DEBUG("Signed operand +- end\n");
          return PARSE_OK;
       }
-   }
-   else if(par->tok->type == BUZZTOK_SIZE) {
-      fetchtok();
-      DEBUG("Operand is table size\n");
-      struct idrefinfo_s idrefinfo;
-      if(!parse_idref(par, 0, &idrefinfo)) return PARSE_ERROR;
-      chunk_append("\ttsize\n");
-      DEBUG("Table size operand end\n");
-      return PARSE_OK;
    }
    DEBUG("Operand is idref\n");
    struct idrefinfo_s  idrefinfo;

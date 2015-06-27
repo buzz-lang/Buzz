@@ -10,25 +10,7 @@
 extern "C" {
 #endif
 
-   typedef enum {
-      BUZZNODE_SCRIPT = 0,
-      BUZZNODE_BLOCK,
-      BUZZNODE_STAT,
-      BUZZNODE_FUNDEF,
-      BUZZNODE_IF,
-      BUZZNODE_FORLOOP,
-      BUZZNODE_WHILELOOP,
-      BUZZNODE_CONDITION,
-      BUZZNODE_COMPARISON,
-      BUZZNODE_EXPRESSION,
-      BUZZNODE_PRODUCT,
-      BUZZNODE_MODULO,
-      BUZZNODE_POWER,
-      BUZZNODE_OPERAND,
-      BUZZNODE_COMMAND,
-      BUZZNODE_IDREF
-   } buzzptree_nodetype_e;
-
+   /* Forward declaration to contain a code chunk */
    struct chunk_s;
 
    /* The parser state */
