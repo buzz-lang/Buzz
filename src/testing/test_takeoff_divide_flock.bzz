@@ -1,43 +1,43 @@
-||||||||||||||||||||||||||||||||||||||||
-|
-| CONSTANTS
-|
-||||||||||||||||||||||||||||||||||||||||
+########################################
+#
+# CONSTANTS
+#
+########################################
 
-|
-| Miscellaneous
-|
+#
+# Miscellaneous
+#
 TARGETDIST_VSTIG = 2
 ROBOTS           = 10
 DISTANCE_MAX     = 2000.
 
-|
-| Colors
-|
+#
+# Colors
+#
 TARGET_NOCOLOR = 0
 TARGET_RED     = 1
 TARGET_GREEN   = 2
 TARGET_BLUE    = 3
 
-|
-| Barrier
-|
+#
+# Barrier
+#
 BARRIER_VSTIG = 1
 BARRIER_KEY   = 1
 
-|
-| Lennard-Jones parameters
-|
+#
+# Lennard-Jones parameters
+#
 TARGET_KIN     = 100.
 EPSILON_KIN    = 100.
 TARGET_NONKIN  = 300.
 EPSILON_NONKIN = 250.
 
-||||||||||||||||||||||||||||||||||||||||
-|
-| COLOR-RELATED FUNCTIONS
-|
-||||||||||||||||||||||||||||||||||||||||
+########################################
+#
+# COLOR-RELATED FUNCTIONS
+#
+########################################
 
 function isred(c) {
   return (c.red == 255 and c.green == 0 and c.blue == 0)
@@ -58,22 +58,22 @@ function color_to_code(c) {
   return TARGET_NOCOLOR
 }
 
-||||||||||||||||||||||||||||||||||||||||
-|
-| FLOCKING-RELATED FUNCTIONS
-|
-||||||||||||||||||||||||||||||||||||||||
+########################################
+#
+# FLOCKING-RELATED FUNCTIONS
+#
+########################################
 
-|
-| Lennard-Jones interaction magnitude
-|
+#
+# Lennard-Jones interaction magnitude
+#
 function calc_lj(dist, target, epsilon) {
   return -(epsilon / dist) * ((target / dist)^4 - (target / dist)^2)
 }
 
-|
-| Neighbor data to kin LJ interaction
-|
+#
+# Neighbor data to kin LJ interaction
+#
 function to_lj_kin(rid, data) {
   var lj
   lj = calc_lj(data.distance, TARGET_KIN, EPSILON_KIN)
@@ -82,9 +82,9 @@ function to_lj_kin(rid, data) {
   return data
 }
 
-|
-| Neighbor data to non-kin LJ interaction
-|
+#
+# Neighbor data to non-kin LJ interaction
+#
 function to_lj_nonkin(rid, data) {
   var lj
   lj = calc_lj(data.distance, TARGET_NONKIN, EPSILON_NONKIN)
@@ -93,73 +93,73 @@ function to_lj_nonkin(rid, data) {
   return data
 }
 
-|
-| Accumulator of neighbor LJ interactions
-|
+#
+# Accumulator of neighbor LJ interactions
+#
 function vec2_sum(rid, data, accum) {
   accum.x = accum.x + data.x
   accum.y = accum.y + data.y
   return accum
 }
 
-|
-| Actual flocking logic
-|
+#
+# Actual flocking logic
+#
 function flock() {
   log("ROBOT ", id, ": swarm id = ", swarm.id())
-  | Create accumulator
+  # Create accumulator
   var accum
   accum = {}
   accum.x = 0
   accum.y = 0
-  | Calculate accumulator
+  # Calculate accumulator
   accum = neighbors.kin().map(to_lj_kin).reduce(vec2_sum, accum)
   accum = neighbors.nonkin().map(to_lj_nonkin).reduce(vec2_sum, accum)
   if(neighbors.count() > 0) {
     accum.x = accum.x / neighbors.count()
     accum.y = accum.y / neighbors.count()
   }
-  | Move according to vector
+  # Move according to vector
   goto(accum.x, accum.y)
 }
 
-||||||||||||||||||||||||||||||||||||||||
-|
-| BARRIER-RELATED FUNCTIONS
-|
-||||||||||||||||||||||||||||||||||||||||
+########################################
+#
+# BARRIER-RELATED FUNCTIONS
+#
+########################################
 
-|
-| Barrier initializer
-|
+#
+# Barrier initializer
+#
 function barrier_init(vstigid) {
-  | Create a dedicated vstig
+  # Create a dedicated vstig
   barrier = stigmergy.create(vstigid)
-  | Set onconflict manager
+  # Set onconflict manager
   barrier.onconflict(function(k,l,r){
-      | Return local value if
-      | - Remote value is smaller than local, OR
-      | - Values are equal, robot of remote record is smaller than local one
+      # Return local value if
+      # - Remote value is smaller than local, OR
+      # - Values are equal, robot of remote record is smaller than local one
       if(r.data < l.data or (r.data == l.data and r.robot < l.robot)) {
         return l
       }
-      | Otherwise return remote value
+      # Otherwise return remote value
       else {
         return r
       }
     })
-  | Set onlostconflict manager
+  # Set onlostconflict manager
   barrier.onconflictlost(function(k,l){
-      | Ignore lost conflict when initializing BARRIER entry
+      # Ignore lost conflict when initializing BARRIER entry
       if(l.data > 0) {
         barrier.put(BARRIER_KEY, barrier.get(BARRIER_KEY) + 1)
       }
     })
 }
 
-|
-| Sets a barrier
-|
+#
+# Sets a barrier
+#
 function barrier_set(threshold, transf) {
   log("ROBOT ", id, " barrier_set(", threshold, ",", transf, ")")
   statef = function() { barrier_wait(threshold, transf); log("ROBOT ", id, " is waiting...") }
@@ -175,31 +175,31 @@ function barrier_set(threshold, transf) {
   }
 }
 
-|
-| Make yourself ready
-|
+#
+# Make yourself ready
+#
 function barrier_ready() {
   barrier.put(BARRIER_KEY, barrier.get(BARRIER_KEY) + 1)
 }
 
-|
-| Executes the barrier
-|
+#
+# Executes the barrier
+#
 function barrier_wait(threshold, transf) {
   if(barrier.get(BARRIER_KEY) >= threshold) {
     transf()
   }
 }
 
-||||||||||||||||||||||||||||||||||||||||
-|
-| STATE-RELATED FUNCTIONS
-|
-||||||||||||||||||||||||||||||||||||||||
+########################################
+#
+# STATE-RELATED FUNCTIONS
+#
+########################################
 
-|
-| Take-off state function
-|
+#
+# Take-off state function
+#
 function state_takeoff() {
   log("ROBOT ", id, ": state_takeoff()")
   if(not takeoff()) {
@@ -208,9 +208,9 @@ function state_takeoff() {
   }
 }
 
-|
-| Transition to search for target state function
-|
+#
+# Transition to search for target state function
+#
 function transition_to_search_for_target() {
   log("ROBOT ", id, ": transition_search_for_target()")
   statef = state_search_for_target
@@ -222,30 +222,30 @@ function transition_to_search_for_target() {
   mytargetdata.closest = nil
 }
 
-|
-| Search for target state function
-|
+#
+# Search for target state function
+#
 function state_search_for_target() {
   log("ROBOT ", id, ": state_search_for_target()")
-  | Can I see any object?
-  if(#blobs == 0) {
-    | No object in sight
+  # Can I see any object?
+  if(size(blobs) == 0) {
+    # No object in sight
     var cur_yaw
     var yaw_diff
     cur_yaw = orientation.yaw % (2. * math.pi)
     yaw_diff = (cur_yaw - yaw_start) % (2. * math.pi)
     if(yaw_diff >= (0.95 * 2. * math.pi)) {
-      | Made a complete turn and no object found, give up
+      # Made a complete turn and no object found, give up
       barrier_set(ROBOTS, transition_to_pick_target)
       barrier_ready()
     }
     else {
-      | Rotate on the spot to look for target objects
+      # Rotate on the spot to look for target objects
       rotate(math.pi / 180.0)
     }
   }
   else {
-    | Pick the first object you see and rotate to center it
+    # Pick the first object you see and rotate to center it
     rotate(0.0)
     if(blobs[0].px > 330) {
       rotate(-math.pi / 180.0)
@@ -255,7 +255,7 @@ function state_search_for_target() {
         rotate( math.pi / 180.0)
       }
       else {
-        | Now pointing to the object, wait for others
+        # Now pointing to the object, wait for others
         mytargetdata.dist = 0.
         mytargetdata.color = color_to_code(blobs[0].color)
         barrier_set(ROBOTS, transition_to_pick_target)
@@ -265,31 +265,31 @@ function state_search_for_target() {
   }
 }
 
-|
-| Transition to pick target state function
-|
+#
+# Transition to pick target state function
+#
 function transition_to_pick_target() {
   log("ROBOT ", id, ": transition_to_pick_target()")
   statef = state_pick_target
   targetdist = stigmergy.create(TARGETDIST_VSTIG)
   if(mytargetdata.dist < DISTANCE_MAX) {
-    | I saw the target
-    | Put an entry about my distance in the vstig
+    # I saw the target
+    # Put an entry about my distance in the vstig
     targetdist.put(id, mytargetdata)
-    | Wait to get to the next state
+    # Wait to get to the next state
     barrier_set(ROBOTS, transition_to_divide)
     barrier_ready()
   }
 }
 
-|
-| Pick target state function
-|
+#
+# Pick target state function
+#
 function state_pick_target() {
   log("ROBOT ", id, ": state_pick_target()")
-  | Go through the neighbors and, for each, check its distance to the target
-  | Keep the neighbor with the shortest distance to the target
-  | Also, we're done when all neighbors have made a choice
+  # Go through the neighbors and, for each, check its distance to the target
+  # Keep the neighbor with the shortest distance to the target
+  # Also, we're done when all neighbors have made a choice
   var params
   params = {}
   params.dist    = mytargetdata.dist
@@ -321,23 +321,23 @@ function state_pick_target() {
     params
   )
   log("ROBOT ", id, ": params.color = ", params.color)
-  | Advertise your choice
+  # Advertise your choice
   mytargetdata.closest = params.closest
   mytargetdata.color   = params.color
   mytargetdata.dist = params.dist
   targetdist.put(id, mytargetdata)
   log("ROBOT ", id, ": mytargetdata.dist = ", mytargetdata.dist)
   log("ROBOT ", id, ": mytargetdata.color = ", mytargetdata.color)
-  | Are we done?
+  # Are we done?
   if(params.done) {
-    | Yes, move to the next state
+    # Yes, move to the next state
     barrier_set(ROBOTS, transition_to_divide)
     barrier_ready()
   }
   else {
-    | No, check if we have info on the closest robot
+    # No, check if we have info on the closest robot
     if(mytargetdata.closest) {
-      | Yes, rotate towards it
+      # Yes, rotate towards it
       var n
       n = neighbors.get(mytargetdata.closest)
       if(n.azimuth > math.pi / 36.0) {
@@ -352,9 +352,9 @@ function state_pick_target() {
   }
 }
 
-|
-| Transition to divide state function
-|
+#
+# Transition to divide state function
+#
 function transition_to_divide() {
   log("ROBOT ", id, ": transition_to_divide()")
   statef = state_divide
@@ -364,53 +364,53 @@ function transition_to_divide() {
   sblue.select(mytargetdata.color == TARGET_BLUE)
 }
 
-|
-| Pick target state function
-|
+#
+# Pick target state function
+#
 function state_divide() {
   log("ROBOT ", id, ": state_divide()")
   sred.exec(flock)
   sblue.exec(flock)
 }
 
-|
-| Transition to go to target state function
-|
+#
+# Transition to go to target state function
+#
 function transition_to_goto_target() {
   statef = state_goto_target
 }
 
-|
-| Go to target state function
-|
+#
+# Go to target state function
+#
 function state_goto_target() {
 }
 
-||||||||||||||||||||||||||||||||||||||||
-|
-| ARGoS HOOKS
-|
-||||||||||||||||||||||||||||||||||||||||
+########################################
+#
+# ARGoS HOOKS
+#
+########################################
 
-|
-| Executed at init time
-|
+#
+# Executed at init time
+#
 function init() {
-  | Set initial state
+  # Set initial state
   statef = state_takeoff
-  | Initialize the barrier
+  # Initialize the barrier
   barrier_init(BARRIER_VSTIG)
 }
 
-|
-| Executed at each time step
-|
+#
+# Executed at each time step
+#
 function step() {
   statef()
 }
 
-|
-| Executed at the experiment end
-|
+#
+# Executed at the experiment end
+#
 function destroy() {
 }

@@ -27,9 +27,6 @@ void dump(buzzvm_t vm) {
          case BUZZTYPE_TABLE:
             fprintf(stdout, "[table] %d elements\n", buzzdict_size(o->t.value));
             break;
-         case BUZZTYPE_ARRAY:
-            fprintf(stdout, "[array] %lld\n", buzzdarray_size(o->a.value));
-            break;
          case BUZZTYPE_CLOSURE:
             if(o->c.value.isnative)
                fprintf(stdout, "[n-closure] %d\n", o->c.value.ref);

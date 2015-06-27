@@ -11,6 +11,10 @@
 
 # f(1)
 
+function g() {
+  return 6
+}
+
 EPSILON = 4000.
 
 function f() {
