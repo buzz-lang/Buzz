@@ -27,7 +27,7 @@ Downloading Buzz
 
 You can download the development sources through git:
 
- $ git clone https://github.com/MISTLab/Buzz.git buzz
+    $ git clone https://github.com/MISTLab/Buzz.git buzz
 
 Compiling Buzz
 ==============
