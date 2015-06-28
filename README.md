@@ -1,26 +1,17 @@
 What is Buzz?
 =============
 
-Buzz is a novel programming language for heterogeneous robots
-swarms.
+Buzz is a novel programming language for heterogeneous robots swarms.
 
-Buzz advocates a compositional approach, by offering primitives to
-define swarm behaviors both in a bottom-up and in a top-down
-fashion.
+Buzz advocates a compositional approach, by offering primitives to define swarm behaviors both in a bottom-up and in a top-down fashion.
 
-Bottom-up primitives include robot-wise commands and manipulation of
-neighborhood data through mapping/reducing/filtering
-operations.
+Bottom-up primitives include robot-wise commands and manipulation of neighborhood data through mapping/reducing/filtering operations.
 
-Top-down primitives allow for the dynamic management of robot teams,
-and for sharing information globally across the swarm.
+Top-down primitives allow for the dynamic management of robot teams, and for sharing information globally across the swarm.
 
-Self-organization results from the fact that the Buzz run-time
-platform is purely distributed.
+Self-organization results from the fact that the Buzz run-time platform is purely distributed.
 
-The language can be extended to add new primitives (thus supporting
-heterogeneous robot swarms) and can be laid on top of other
-frameworks, such as ROS.
+The language can be extended to add new primitives (thus supporting heterogeneous robot swarms) and can be laid on top of other frameworks, such as ROS.
 
 Downloading Buzz
 ================
