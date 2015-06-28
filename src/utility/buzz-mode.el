@@ -1,3 +1,10 @@
+;;; buzz-mode.el --- Summary
+;;; Commentary:
+;;;
+;;; TODO
+;;;
+;;; Code:
+
 (require 'newcomment)
 
 ;;
@@ -158,3 +165,5 @@ For detail, see `comment-dwim'."
 ;; End with 'provide' statement
 ;;
 (provide 'buzz-mode)
+
+;;; buzz-mode.el ends here
