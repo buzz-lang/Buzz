@@ -129,7 +129,7 @@ void sym_print(const void* key,
                void* params) {
    char* k = *(char**)key;
    struct sym_s* d = (struct sym_s*)data;
-   fprintf(stderr, "[DEBUG]  Symbol '%s' pos=%lld type=%u global=%u\n",
+   fprintf(stderr, "[DEBUG]  Symbol '%s' pos=%lld type=%d global=%d\n",
            k, d->pos, d->type, d->global);
 }
 
@@ -309,8 +309,8 @@ int parse_script(buzzparser_t par);
 
 int parse_statlist(buzzparser_t par);
 int parse_stat(buzzparser_t par);
-
 int parse_block(buzzparser_t par);
+int parse_blockstat(buzzparser_t par);
 
 int parse_var(buzzparser_t par);
 int parse_fun(buzzparser_t par);
@@ -458,14 +458,63 @@ int parse_block(buzzparser_t par) {
 /****************************************/
 /****************************************/
 
+int parse_blockstat(buzzparser_t par) {
+   if(par->tok->type == BUZZTOK_BLOCKOPEN) {
+      /* It's a block */
+      return parse_block(par);
+   }
+   else {
+      /* It's a single statement, eat extra statement end characters */
+      while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
+      return parse_stat(par);
+   }
+}
+
+/****************************************/
+/****************************************/
+
 int parse_var(buzzparser_t par) {
    DEBUG("Parsing variable definition\n");
+   /* Match the 'var' token */
    tokmatch(BUZZTOK_VAR);
    fetchtok();
+   /* Match an id */
    tokmatch(BUZZTOK_ID);
+   /* Look it up in the symbol table */
+   struct sym_s* s = sym_lookup(par->tok->value, par->symstack);
+   if(s) {
+      fprintf(stderr,
+              "%s:%llu:%llu: Duplicated symbol '%s'\n",
+              par->lex->fname,
+              par->tok->line,
+              par->tok->col,
+              par->tok->value);
+      return PARSE_ERROR;
+   }
    /* Add a symbol for this variable */
    sym_add(par, par->tok->value, SCOPE_AUTO);
+   s = sym_lookup(par->tok->value, par->symstack);
    fetchtok();
+   if(par->tok->type == BUZZTOK_ASSIGN) {
+      /* lvalue is OK */
+      DEBUG("Parsing assignment\n");
+      /* Is lvalue a global symbol? If so, push its string id */
+      if(s->global) chunk_append("\tpushs %lld\n", s->pos);
+      /* Consume the = */
+      fetchtok();
+      /* Parse the expression */
+      if(!parse_expression(par)) return PARSE_ERROR;
+      if(s->global) {
+         /* The lvalue is a global symbol, just add gstore */
+         chunk_append("\tgstore\n");
+      }
+      else {
+         /* Local variable */
+         chunk_append("\tlstore %lld\n", s->pos);
+      }
+      DEBUG("Assignment statement end\n");
+      return PARSE_OK;
+   }
    return PARSE_OK;
 }
 
@@ -518,7 +567,7 @@ int parse_if(buzzparser_t par) {
    /* Jamp to label 1 if the condition is false */
    /* Label 1 is either if end (in case of no else branch) or else branch */
    chunk_append("\tjumpz " LABELREF "%u\n", lab1);
-   if(!parse_block(par)) return PARSE_ERROR;
+   if(!parse_blockstat(par)) return PARSE_ERROR;
    /* Eat away the newlines, if any */
    while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
    if(par->tok->type == BUZZTOK_ELSE) {
@@ -528,7 +577,7 @@ int parse_if(buzzparser_t par) {
       chunk_append("\tjump " LABELREF "%u\n", lab2);
       /* Mark this place as label 1 and keep parsing */
       chunk_append(LABELREF "%u\n", lab1);
-      if(!parse_block(par)) return PARSE_ERROR;
+      if(!parse_blockstat(par)) return PARSE_ERROR;
       /* Mark the if end as label 2 */
       chunk_append(LABELREF "%u\n", lab2);
    }
@@ -591,7 +640,7 @@ int parse_while(buzzparser_t par) {
    /* If the condition is false, jump to the end */
    chunk_append("\tjumpz " LABELREF "%u\n", wend);
    /* Parse block */
-   if(!parse_block(par)) return PARSE_ERROR;
+   if(!parse_blockstat(par)) return PARSE_ERROR;
    /* Jump back to while start */
    chunk_append("\tjump " LABELREF "%u\n", wstart);
    /* Place while end label */
@@ -1003,11 +1052,8 @@ int parse_idref(buzzparser_t par,
          fetchtok();
          tokmatch(BUZZTOK_ID);
          uint32_t* sid = buzzdict_get(par->strings, &par->tok->value, uint32_t);
-         if(!sid) {
-            uint32_t pos = string_add(par->strings, par->tok->value);
-            sid = &pos;
-         }
-         chunk_append("\tpushs %u\n", *sid);
+         if(!sid) { chunk_append("\tpushs %u\n", string_add(par->strings, par->tok->value)); }
+         else { chunk_append("\tpushs %u\n", *sid); }
          fetchtok();
       }
       else if(par->tok->type == BUZZTOK_IDXOPEN) {
