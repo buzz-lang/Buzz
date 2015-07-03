@@ -46,17 +46,12 @@ include(${CMAKE_SOURCE_DIR}/cmake/BuzzPackaging.cmake)
 # Compile stuff
 #
 add_subdirectory(buzz)
-if(ARGOS_FOUND)
-  add_subdirectory(argos)
-endif(ARGOS_FOUND)
 add_subdirectory(testing)
 add_subdirectory(utility)
 
 #
 # Install headers
 #
-install(DIRECTORY buzz DESTINATION include FILES_MATCHING PATTERN "*.h")
-install(DIRECTORY buzz/argos DESTINATION include/buzz FILES_MATCHING PATTERN "*.h")
 
 #
 # Install the README in doc/buzz

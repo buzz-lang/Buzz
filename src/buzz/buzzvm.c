@@ -1013,6 +1013,20 @@ buzzvm_state buzzvm_tget(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+buzzvm_state buzzvm_gload(buzzvm_t vm) {
+   buzzvm_stack_assert(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_STRING);
+   buzzobj_t str = buzzvm_stack_at(vm, 1);
+   buzzvm_pop(vm);
+   buzzobj_t* o = buzzdict_get(vm->gsyms, &(str->s.value), buzzobj_t);
+   if(!o) { buzzvm_pushnil(vm); }
+   else { buzzvm_push(vm, (*o)); }
+   return BUZZVM_STATE_READY;
+}
+
+/****************************************/
+/****************************************/
+
 buzzvm_state buzzvm_gstore(buzzvm_t vm) {
    buzzvm_stack_assert((vm), 2);
    buzzvm_type_assert((vm), 2, BUZZTYPE_STRING);

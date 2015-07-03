@@ -19,6 +19,7 @@ add_library(buzz SHARED
   buzzparser.h buzzparser.c)
 target_link_libraries(buzz m)
 install(TARGETS buzz LIBRARY DESTINATION lib)
+install(DIRECTORY . DESTINATION include/buzz FILES_MATCHING PATTERN "*.h")
 
 #
 # Compile buzzasm
@@ -40,3 +41,7 @@ install(TARGETS buzzdeasm RUNTIME DESTINATION bin)
 add_executable(buzzc buzzc.c)
 target_link_libraries(buzzc buzz)
 install(TARGETS buzzc RUNTIME DESTINATION bin)
+
+if(ARGOS_FOUND)
+  add_subdirectory(argos)
+endif(ARGOS_FOUND)

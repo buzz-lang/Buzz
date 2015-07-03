@@ -361,6 +361,13 @@ extern "C" {
    extern buzzvm_state buzzvm_tget(buzzvm_t vm);
 
    /*
+    * Pushes the global variable located at the given stack index.
+    * Internally checks whether the operation is valid.
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_gload(buzzvm_t vm);
+
+   /*
     * Stores the object located at the stack top into the a global variable, pops operand.
     * Internally checks whether the operation is valid.
     * @param vm The VM data.
@@ -584,28 +591,6 @@ extern "C" {
       buzzobj_t o = buzzvm_stack_at(vm, 1);                       \
       buzzvm_pop(vm);                                             \
       buzzdarray_set((vm)->lsyms->syms, idx, &o);                 \
-   }
-
-/*
- * Pushes the global variable located at the given stack index.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- * @param idx The local variable index.
- */
-#define buzzvm_gload(vm) {                                              \
-      buzzvm_stack_assert((vm), 1);                                     \
-      buzzvm_type_assert((vm), 1, BUZZTYPE_STRING);                     \
-      buzzobj_t str = buzzvm_stack_at((vm), 1);                         \
-      buzzvm_pop(vm);                                                   \
-      buzzobj_t* o = buzzdict_get((vm)->gsyms, &(str->s.value), buzzobj_t); \
-      if(!o) {                                                          \
-         buzzvm_pushnil(vm);                                            \
-      }                                                                 \
-      else {                                                            \
-         buzzvm_push(vm, (*o));                                         \
-      }                                                                 \
    }
 
 /*

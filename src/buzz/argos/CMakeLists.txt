@@ -9,4 +9,5 @@ target_link_libraries(argos3plugin_simulator_buzz
   argos3core_simulator
   argos3plugin_simulator_genericrobot
   buzz)
-install(TARGETS argos3plugin_simulator_buzz LIBRARY DESTINATION lib/argos3)
+install(TARGETS argos3plugin_simulator_buzz LIBRARY DESTINATION ${ARGOS_PREFIX}/lib/argos3)
+install(DIRECTORY . DESTINATION include/buzz/argos FILES_MATCHING PATTERN "*.h")

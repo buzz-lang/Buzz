@@ -25,6 +25,14 @@ public:
 
    virtual void SetBytecode(const std::string& str_fname);
 
+   inline const buzzvm_t GetBuzzVM() const {
+      return m_tBuzzVM;
+   }
+
+   inline buzzvm_t GetBuzzVM() {
+      return m_tBuzzVM;
+   }
+
 protected:
 
    virtual buzzvm_state RegisterFunctions();
