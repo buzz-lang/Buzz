@@ -1,7 +1,7 @@
 #ifndef BUZZ_CONTROLLER_SPIRI_H
 #define BUZZ_CONTROLLER_SPIRI_H
 
-#include "buzz_controller.h"
+#include <buzz/argos/buzz_controller.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_quadrotor_position_actuator.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_colored_blob_perspective_camera_sensor.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_positioning_sensor.h>

@@ -53,6 +53,12 @@ add_subdirectory(testing)
 add_subdirectory(utility)
 
 #
+# Install headers
+#
+install(DIRECTORY buzz DESTINATION include FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY buzz/argos DESTINATION include/buzz FILES_MATCHING PATTERN "*.h")
+
+#
 # Install the README in doc/buzz
 #
 install(FILES ${CMAKE_SOURCE_DIR}/../README.md DESTINATION doc/buzz)

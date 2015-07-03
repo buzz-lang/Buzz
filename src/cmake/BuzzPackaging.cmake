@@ -39,7 +39,7 @@ endif(NOT DEFINED CPACK_PACKAGE_RELEASE)
 # Other stuff
 set(CPACK_PACKAGE_DESCRIPTION "Buzz (programming language)
  Buzz is a programming language specifically designed for swarm robotics systems.")
-set(CPACK_PACKAGE_HOMEPAGE "http://github.com/MIST/Buzz/")
+set(CPACK_PACKAGE_HOMEPAGE "http://github.com/MISTLab/Buzz/")
 set(CPACK_PACKAGE_MAINTAINER "Carlo Pinciroli <ilpincy@gmail.com>")
 set(CPACK_PACKAGE_NAME "buzz")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Programming language for robot swarms")

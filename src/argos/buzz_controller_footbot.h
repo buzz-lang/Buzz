@@ -1,7 +1,7 @@
 #ifndef BUZZ_CONTROLLER_FOOTBOT_H
 #define BUZZ_CONTROLLER_FOOTBOT_H
 
-#include "buzz_controller.h"
+#include <buzz/argos/buzz_controller.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_differential_steering_actuator.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_leds_actuator.h>
 
