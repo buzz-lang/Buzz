@@ -78,10 +78,16 @@ CBuzzControllerFootBot::~CBuzzControllerFootBot() {
 void CBuzzControllerFootBot::Init(TConfigurationNode& t_node) {
    try {
       /* Get pointers to devices */
-      m_pcWheels = GetActuator<CCI_DifferentialSteeringActuator>("differential_steering");
-      m_pcLEDs   = GetActuator<CCI_LEDsActuator                >("leds");
+      try {
+         m_pcWheels = GetActuator<CCI_DifferentialSteeringActuator>("differential_steering");
+         m_sWheelTurningParams.Init(GetNode(t_node, "wheel_turning"));
+      }
+      catch(CARGoSException& ex) {}
+      try {
+         m_pcLEDs = GetActuator<CCI_LEDsActuator>("leds");
+      }
+      catch(CARGoSException& ex) {}
       /* Initialize the rest */
-      m_sWheelTurningParams.Init(GetNode(t_node, "wheel_turning"));
       CBuzzController::Init(t_node);
    }
    catch(CARGoSException& ex) {
@@ -170,14 +176,18 @@ void CBuzzControllerFootBot::SetLEDs(const CColor& c_color) {
 buzzvm_state CBuzzControllerFootBot::RegisterFunctions() {
    /* Register base functions */
    CBuzzController::RegisterFunctions();
-   /* BuzzGoTo */
-   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "goto"));
-   buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGoTo));
-   buzzvm_gstore(m_tBuzzVM);
-   /* BuzzSetLEDs */
-   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "setleds"));
-   buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzSetLEDs));
-   buzzvm_gstore(m_tBuzzVM);
+   if(m_pcWheels) {
+      /* BuzzGoTo */
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "goto"));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGoTo));
+      buzzvm_gstore(m_tBuzzVM);
+   }
+   if(m_pcLEDs) {
+      /* BuzzSetLEDs */
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "setleds"));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzSetLEDs));
+      buzzvm_gstore(m_tBuzzVM);
+   }
    return m_tBuzzVM->state;
 }
 
