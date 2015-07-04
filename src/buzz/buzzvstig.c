@@ -362,6 +362,10 @@ buzzvstig_elem_t buzzvm_vstig_onconflict(buzzvm_t vm,
       buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
       buzzvm_push(vm, lv->data);
       buzzvm_tput(vm);
+      buzzvm_push(vm, loc);
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "timestamp"));
+      buzzvm_pushi(vm, lv->timestamp);
+      buzzvm_tput(vm);
       /* Make table for remote value */
       buzzvm_pusht(vm);
       buzzobj_t rem = buzzvm_stack_at(vm, 1);
@@ -371,6 +375,10 @@ buzzvstig_elem_t buzzvm_vstig_onconflict(buzzvm_t vm,
       buzzvm_push(vm, rem);
       buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
       buzzvm_push(vm, rv->data);
+      buzzvm_tput(vm);
+      buzzvm_push(vm, rem);
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "timestamp"));
+      buzzvm_pushi(vm, rv->timestamp);
       buzzvm_tput(vm);
       /* Call closure with 3 arguments */
       buzzvm_push(vm, loc);
@@ -428,6 +436,10 @@ void buzzvm_vstig_onconflictlost(buzzvm_t vm,
       buzzvm_push(vm, loc);
       buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
       buzzvm_push(vm, lv->data);
+      buzzvm_tput(vm);
+      buzzvm_push(vm, loc);
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "timestamp"));
+      buzzvm_pushi(vm, lv->timestamp);
       buzzvm_tput(vm);
       /* Call closure with 2 arguments */
       buzzvm_push(vm, loc);

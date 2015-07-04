@@ -201,6 +201,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                /* Local element must be updated */
                /* Store element */
                buzzvstig_store(*vs, &k, &v);
+               buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, v);
             }
             else if(((*l)->timestamp == v->timestamp) && /* Same timestamp */
                     ((*l)->robot != v->robot)) {         /* Different robot */
@@ -228,8 +229,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                   /* Just propagate the PUT message */
                   buzzvstig_store(*vs, &k, &c);
                }
-            }
-            else {
+               buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, c);
             }
             break;
          }
@@ -259,11 +259,40 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                (*l)->timestamp < v->timestamp) { /* Local element is older */
                /* Store element */
                buzzvstig_store(*vs, &k, &v);
+               buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, v);
             }
             else if((*l)->timestamp > v->timestamp) {
                /* Local element is newer */
                /* Append a PUT message to the out message queue */
                buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, *l);
+            }
+            else if(((*l)->timestamp == v->timestamp) && /* Same timestamp */
+                    ((*l)->robot != v->robot)) {         /* Different robot */
+               /* Conflict! */
+               /* Call conflict manager */
+               buzzvstig_elem_t c = 
+                  buzzvm_vstig_onconflict(vm, *vs, k, *l, v);
+               if(!c) {
+                  fprintf(stderr, "[WARNING] [ROBOT %u] Error resolving PUT conflict\n", vm->robot);
+                  break;
+               }
+               /* Did this robot lose the conflict? */
+               if((c->robot != vm->robot) &&
+                  ((*l)->robot == vm->robot)) {
+                  /* Yes */
+                  /* Save current local entry */
+                  buzzvstig_elem_t ol = buzzvstig_elem_clone(*l);
+                  /* Store winning value */
+                  buzzvstig_store(*vs, &k, &c);
+                  /* Call conflict lost manager */
+                  buzzvm_vstig_onconflictlost(vm, *vs, k, ol);
+               }
+               else {
+                  /* This robot did not lose the conflict */
+                  /* Just propagate the PUT message */
+                  buzzvstig_store(*vs, &k, &c);
+               }
+               buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, c);
             }
             break;
          }
