@@ -33,6 +33,14 @@ public:
       return m_tBuzzVM;
    }
 
+   inline const std::string& GetDebugMsg() const {
+      return m_strDebugMsg;
+   }
+
+   inline void SetDebugMsg(const std::string& str_msg) {
+      m_strDebugMsg = str_msg;
+   }
+
 protected:
 
    virtual buzzvm_state RegisterFunctions();
@@ -134,6 +142,8 @@ protected:
    std::string m_strBytecodeFName;
    /* The actual bytecode */
    CByteArray m_cBytecode;
+   /* Debug message */
+   std::string m_strDebugMsg;
 
 };
 

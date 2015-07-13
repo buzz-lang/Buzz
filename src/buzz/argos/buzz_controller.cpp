@@ -51,6 +51,54 @@ int BuzzLOG (buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+int BuzzDebug(buzzvm_t vm) {
+   /* Get pointer to controller user data */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller"));
+   buzzvm_gload(vm);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_USERDATA);
+   CBuzzController& cContr = *reinterpret_cast<CBuzzController*>(buzzvm_stack_at(vm, 1));
+   /* Fill message */
+   std::ostringstream oss;
+   for(UInt32 i = 1; i < buzzdarray_size(vm->lsyms->syms); ++i) {
+      buzzvm_lload(vm, i);
+      buzzobj_t o = buzzvm_stack_at(vm, 1);
+      buzzvm_pop(vm);
+      switch(o->o.type) {
+         case BUZZTYPE_NIL:
+            oss << "[nil]";
+            break;
+         case BUZZTYPE_INT:
+            oss << o->i.value;
+            break;
+         case BUZZTYPE_FLOAT:
+            oss << o->f.value;
+            break;
+         case BUZZTYPE_TABLE:
+            oss << "[table with " << (buzzdict_size(o->t.value)) << " elems]";
+            break;
+         case BUZZTYPE_CLOSURE:
+            if(o->c.value.isnative)
+               oss << "[n-closure @" << o->c.value.ref << "]";
+            else
+               oss << "[c-closure @" << o->c.value.ref << "]";
+            break;
+         case BUZZTYPE_STRING:
+            oss << o->s.value.str;
+            break;
+         case BUZZTYPE_USERDATA:
+            oss << "[userdata @" << o->u.value << "]";
+            break;
+         default:
+            break;
+      }
+   }
+   cContr.SetDebugMsg(oss.str());
+   return buzzvm_ret0(vm);
+}
+
+/****************************************/
+/****************************************/
+
 CBuzzController::CBuzzController() :
    m_pcRABA(NULL),
    m_pcRABS(NULL) {
@@ -162,6 +210,10 @@ buzzvm_state CBuzzController::RegisterFunctions() {
    /* BuzzLOG */
    buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "log"));
    buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzLOG));
+   buzzvm_gstore(m_tBuzzVM);
+   /* BuzzDebug */
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "debug"));
+   buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzDebug));
    buzzvm_gstore(m_tBuzzVM);
    return m_tBuzzVM->state;
 }
