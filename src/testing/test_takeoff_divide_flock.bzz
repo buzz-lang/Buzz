@@ -6,7 +6,7 @@
 
 TARGETDIST_VSTIG = 2
 ROBOTS           = 10
-DISTANCE_MAX     = 2000.
+DISTANCE_MAX     = 60000.
 
 ########################################
 #
@@ -64,7 +64,6 @@ function vec2_sum(rid, data, accum) {
 # Actual flocking logic
 #
 function flock() {
-  log("ROBOT ", id, ": swarm id = ", swarm.id())
   # Create accumulator
   var accum = {}
   accum.x = 0
@@ -90,64 +89,33 @@ function flock() {
 # Constants
 #
 BARRIER_VSTIG = 1
-BARRIER_KEY   = 1
-
-#
-# Barrier initializer
-#
-function barrier_init(vstigid) {
-  # Create a dedicated vstig
-  barrier = stigmergy.create(vstigid)
-  # Set onconflict manager
-  barrier.onconflict(function(k,l,r){
-      # Return local value if
-      # - Remote value is smaller than local, OR
-      # - Values are equal, robot of remote record is smaller than local one
-      if(r.data < l.data or (r.data == l.data and r.robot < l.robot)) {
-        return l
-      }
-      # Otherwise return remote value
-      else {
-        return r
-      }
-    })
-  # Set onlostconflict manager
-  barrier.onconflictlost(function(k,l){
-      # Ignore lost conflict when initializing BARRIER entry
-      if(l.data > 0) {
-        barrier.put(BARRIER_KEY, barrier.get(BARRIER_KEY) + 1)
-      }
-    })
-}
 
 #
 # Sets a barrier
 #
 function barrier_set(threshold, transf) {
-  log("ROBOT ", id, " barrier_set(", threshold, ",", transf, ")")
   statef = function() {
     barrier_wait(threshold, transf);
-    log("ROBOT ", id, " is waiting...")
   }
-  var v = barrier.get(BARRIER_KEY)
-  if(not v)
-    barrier.put(BARRIER_KEY, 0)
-  else if(v >= threshold)
-    barrier.put(BARRIER_KEY, 0)
+  barrier = stigmergy.create(BARRIER_VSTIG)
 }
 
 #
 # Make yourself ready
 #
 function barrier_ready() {
-  barrier.put(BARRIER_KEY, barrier.get(BARRIER_KEY) + 1)
+  barrier.put(id, 1)
+  debug("ready (", barrier.size() ,")")
 }
 
 #
 # Executes the barrier
 #
 function barrier_wait(threshold, transf) {
-  if(barrier.get(BARRIER_KEY) >= threshold) {
+  barrier.get(id)
+  if(barrier.size() >= threshold) {
+    debug("done waiting")
+    barrier = nil
     transf()
   }
 }
@@ -195,7 +163,6 @@ function color_to_code(c) {
 # Take-off state function
 #
 function state_takeoff() {
-  log("ROBOT ", id, ": state_takeoff()")
   if(not takeoff()) {
     barrier_set(ROBOTS, transition_to_search_for_target)
     barrier_ready()
@@ -206,7 +173,6 @@ function state_takeoff() {
 # Transition to search for target state function
 #
 function transition_to_search_for_target() {
-  log("ROBOT ", id, ": transition_search_for_target()")
   statef = state_search_for_target
   yaw_start = orientation.yaw % (2. * math.pi)
   camera_enable()
@@ -220,7 +186,6 @@ function transition_to_search_for_target() {
 # Search for target state function
 #
 function state_search_for_target() {
-  log("ROBOT ", id, ": state_search_for_target()")
   # Can I see any object?
   if(size(blobs) == 0) {
     # No object in sight
@@ -256,7 +221,6 @@ function state_search_for_target() {
 # Transition to pick target state function
 #
 function transition_to_pick_target() {
-  log("ROBOT ", id, ": transition_to_pick_target()")
   statef = state_pick_target
   targetdist = stigmergy.create(TARGETDIST_VSTIG)
   if(mytargetdata.dist < DISTANCE_MAX) {
@@ -273,7 +237,6 @@ function transition_to_pick_target() {
 # Pick target state function
 #
 function state_pick_target() {
-  log("ROBOT ", id, ": state_pick_target()")
   # Go through the neighbors and, for each, check its distance to the target
   # Keep the neighbor with the shortest distance to the target
   # Also, we're done when all neighbors have made a choice
@@ -286,16 +249,11 @@ function state_pick_target() {
     function(rid, rdata, accum) {
       var d = targetdist.get(rid)
       if(d != nil) {
-        log("ROBOT ", id, ": d.dist = ", d.dist)
-        log("ROBOT ", id, ": d.color = ", d.color)
         if(d.dist < DISTANCE_MAX) {
-          log("ROBOT ", id, ": accum.dist = ", accum.dist)
-          log("ROBOT ", id, ": rdata.distance = ", rdata.distance)
           if(accum.dist > rdata.distance + d.dist) {
             accum.dist    = rdata.distance + d.dist
             accum.closest = rid
             accum.color   = d.color
-            log("ROBOT ", id, ": accum.color = ", accum.color)
           }
         }
         else accum.done = nil
@@ -305,14 +263,11 @@ function state_pick_target() {
     },
     params
   )
-  log("ROBOT ", id, ": params.color = ", params.color)
   # Advertise your choice
   mytargetdata.closest = params.closest
   mytargetdata.color   = params.color
   mytargetdata.dist = params.dist
   targetdist.put(id, mytargetdata)
-  log("ROBOT ", id, ": mytargetdata.dist = ", mytargetdata.dist)
-  log("ROBOT ", id, ": mytargetdata.color = ", mytargetdata.color)
   # Are we done?
   if(params.done) {
     # Yes, move to the next state
@@ -337,7 +292,6 @@ function state_pick_target() {
 # Transition to divide state function
 #
 function transition_to_divide() {
-  log("ROBOT ", id, ": transition_to_divide()")
   statef = state_divide
   sred = swarm.create(TARGET_RED)
   sred.select(mytargetdata.color == TARGET_RED)
@@ -349,7 +303,6 @@ function transition_to_divide() {
 # Pick target state function
 #
 function state_divide() {
-  log("ROBOT ", id, ": state_divide()")
   sred.exec(flock)
   sblue.exec(flock)
 }
@@ -379,8 +332,6 @@ function state_goto_target() {
 function init() {
   # Set initial state
   statef = state_takeoff
-  # Initialize the barrier
-  barrier_init(BARRIER_VSTIG)
 }
 
 #

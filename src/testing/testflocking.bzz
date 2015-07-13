@@ -1,54 +1,54 @@
-| Lennard-Jones parameters
+# Lennard-Jones parameters
 TARGET_KIN     = 283.
 EPSILON_KIN    = 150.
 TARGET_NONKIN  = 200.
 EPSILON_NONKIN = 100.
 
-| Lennard-Jones interaction magnitude
+# Lennard-Jones interaction magnitude
 function lj(dist, target, epsilon) {
   return -(epsilon / dist) * ((target / dist)^4 - (target / dist)^2)
 }
 
-| Neighbor data to kin LJ interaction
+# Neighbor data to kin LJ interaction
 function to_lj_kin(rid, data) {
   data.x = lj(data.distance, TARGET_KIN, EPSILON_KIN) * math.cos(data.azimuth)
   data.y = lj(data.distance, TARGET_KIN, EPSILON_KIN) * math.sin(data.azimuth)
   return data
 }
 
-| Neighbor data to non-kin LJ interaction
+# Neighbor data to non-kin LJ interaction
 function to_lj_nonkin(rid, data) {
   data.x = lj(data.distance, TARGET_NONKIN, EPSILON_NONKIN) * math.cos(data.azimuth)
   data.y = lj(data.distance, TARGET_NONKIN, EPSILON_NONKIN) * math.sin(data.azimuth)
   return data
 }
 
-| Accumulator of neighbor LJ interactions
+# Accumulator of neighbor LJ interactions
 function sum(rid, data, accum) {
   accum.x = accum.x + data.x
   accum.y = accum.y + data.y
   return accum
 }
 
-| Calculates and actuates the flocking interaction
+# Calculates and actuates the flocking interaction
 function flock() {
-  | Create accumulator
+  # Create accumulator
   var accum
   accum = {}
   accum.x = 0
   accum.y = 0
-  | Calculate accumulator
+  # Calculate accumulator
   accum = neighbors.kin().map(to_lj_kin).reduce(sum, accum)
   accum = neighbors.nonkin().map(to_lj_nonkin).reduce(sum, accum)
   if(neighbors.count() > 0) {
     accum.x = accum.x / neighbors.count()
     accum.y = accum.y / neighbors.count()
   }
-  | Move according to vector
+  # Move according to vector
   goto(accum.x, accum.y);
 }
 
-| Executed at init time
+# Executed at init time
 function init() {
   s1 = swarm.create(1)
   s1.join()
@@ -56,7 +56,7 @@ function init() {
   s2 = s1.others(2)
 }
 
-| Executed every time step
+# Executed every time step
 function step() {
   if(not takeoff()) {
     s1.exec(flock)
@@ -64,6 +64,6 @@ function step() {
   }
 }
 
-| Execute at exit
+# Execute at exit
 function destroy() {
 }
