@@ -56,7 +56,7 @@ int BuzzDebug(buzzvm_t vm) {
    buzzvm_pushs(vm, buzzvm_string_register(vm, "controller"));
    buzzvm_gload(vm);
    buzzvm_type_assert(vm, 1, BUZZTYPE_USERDATA);
-   CBuzzController& cContr = *reinterpret_cast<CBuzzController*>(buzzvm_stack_at(vm, 1));
+   CBuzzController& cContr = *reinterpret_cast<CBuzzController*>(buzzvm_stack_at(vm, 1)->u.value);
    /* Fill message */
    std::ostringstream oss;
    for(UInt32 i = 1; i < buzzdarray_size(vm->lsyms->syms); ++i) {

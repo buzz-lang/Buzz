@@ -87,16 +87,16 @@
   <!-- * Visualization * -->
   <!-- ****************** -->
   <visualization>
-    <!-- <qt-opengl> -->
-    <!--   <camera> -->
-    <!--     <placement idx="0" position="0,0,30" look_at="0,0,29" lens_focal_length="20" /> -->
-    <!--   </camera> -->
-    <!--   <frame_grabbing directory="frames" -->
-    <!--                   base_name="frame_" -->
-    <!--                   format="png" -->
-    <!--                   quality="100" /> -->
-    <!--   <user_functions label="buzz_qt" /> -->
-    <!-- </qt-opengl> -->
+    <qt-opengl>
+      <camera>
+        <placement idx="0" position="0,0,30" look_at="0,0,29" lens_focal_length="20" />
+      </camera>
+      <frame_grabbing directory="frames"
+                      base_name="frame_"
+                      format="png"
+                      quality="100" />
+      <user_functions label="buzz_qt" />
+    </qt-opengl>
   </visualization>
 
 </argos-configuration>

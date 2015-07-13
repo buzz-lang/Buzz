@@ -287,22 +287,24 @@ void buzzoutmsg_queue_append_vstig(buzzoutmsg_queue_t msgq,
                                    const buzzvstig_elem_t data) {
    /* Look for a duplicate message in the dictionary */
    struct buzzoutmsg_vstig_s** e = NULL;
+   /* Virtual stigmergy to actually use */
+   buzzdict_t vs = NULL;
    /* Look for the virtual stigmergy */
-   buzzdict_t* vs = buzzdict_get(msgq->vstig, &id, buzzdict_t);
-   if(vs) {
+   buzzdict_t* tvs = buzzdict_get(msgq->vstig, &id, buzzdict_t);
+   if(tvs) {
       /* Virtual stigmergy found, look for the key */
-      e = buzzdict_get(*vs, &key, struct buzzoutmsg_vstig_s*);
+      vs = *tvs;
+      e = buzzdict_get(vs, &key, struct buzzoutmsg_vstig_s*);
    }
    else {
       /* Virtual stigmergy not found, create it */
-      buzzdict_t nvs = buzzdict_new(10,
-                                    sizeof(buzzobj_t),
-                                    sizeof(struct buzzoutmsg_vstig_s*),
-                                    buzzoutmsg_obj_hash,
-                                    buzzoutmsg_obj_cmp,
-                                    NULL);
-      vs = &nvs;
-      buzzdict_set(msgq->vstig, &id, vs);
+      vs = buzzdict_new(10,
+                        sizeof(buzzobj_t),
+                        sizeof(struct buzzoutmsg_vstig_s*),
+                        buzzoutmsg_obj_hash,
+                        buzzoutmsg_obj_cmp,
+                        NULL);
+      buzzdict_set(msgq->vstig, &id, &vs);
    }
    /* Do we have a duplicate? */
    if(e) {
@@ -321,7 +323,7 @@ void buzzoutmsg_queue_append_vstig(buzzoutmsg_queue_t msgq,
    m->vs.key = buzzobj_clone(key);
    m->vs.data = buzzvstig_elem_clone(data);
    /* Update the dictionary */
-   buzzdict_set(*vs, &m->vs.key, &m);
+   buzzdict_set(vs, &m->vs.key, &m);
    /* Add a new message to the queue */
    buzzdarray_push(msgq->queues[type], &m);
 }
