@@ -63,9 +63,7 @@ void buzzoutmsg_destroy(uint32_t pos, void* data, void* params) {
    buzzoutmsg_t m = *(buzzoutmsg_t*)data;
    switch(m->type) {
       case BUZZMSG_BROADCAST:
-         // Leaks memory if structured Buzz objs are stored
-         // Should call buzzobj_destroy
-         free(m->bc.value);
+         buzzobj_destroy(&m->bc.value);
          break;
       case BUZZMSG_SWARM_JOIN:
       case BUZZMSG_SWARM_LEAVE:
@@ -74,9 +72,8 @@ void buzzoutmsg_destroy(uint32_t pos, void* data, void* params) {
          break;
       case BUZZMSG_VSTIG_PUT:
       case BUZZMSG_VSTIG_QUERY:
-         // Leaks memory if structured Buzz objs are stored
-         // Should call buzzobj_destroy
          free(m->vs.key);
+         buzzobj_destroy(&m->vs.data->data);
          free(m->vs.data);
          break;
    }
@@ -84,7 +81,9 @@ void buzzoutmsg_destroy(uint32_t pos, void* data, void* params) {
 }
 
 void buzzoutmsg_vstig_destroy(const void* key, void* data, void* params) {
-   free(*(buzzdict_t*)data);
+   free(key);
+   buzzdict_destroy((buzzdict_t*)data);
+   free(data);
 }
 
 int buzzoutmsg_vstig_cmp(const void* a, const void* b) {

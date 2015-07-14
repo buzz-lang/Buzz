@@ -272,6 +272,7 @@ void CBuzzController::ProcessOutMsgs() {
       if(cData.Size() + buzzmsg_payload_size(m) + sizeof(UInt16)
          >
          m_pcRABA->GetSize()) {
+         buzzmsg_payload_destroy(&m);
          break;
       }
       /* Add message length to data buffer */

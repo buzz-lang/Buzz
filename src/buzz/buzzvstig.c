@@ -43,7 +43,9 @@ buzzvstig_elem_t buzzvstig_elem_clone(const buzzvstig_elem_t e) {
 /****************************************/
 
 void buzzvstig_elem_destroy(const void* key, void* data, void* params) {
+   free(key);
    free(*(buzzvstig_elem_t*)data);
+   free(data);
 }
 
 /****************************************/
@@ -52,7 +54,7 @@ void buzzvstig_elem_destroy(const void* key, void* data, void* params) {
 buzzvstig_t buzzvstig_new() {
    buzzvstig_t x = (buzzvstig_t)malloc(sizeof(struct buzzvstig_s));
    x->data = buzzdict_new(
-      20,
+      10,
       sizeof(buzzobj_t),
       sizeof(buzzvstig_elem_t),
       buzzvstig_key_hash,
@@ -70,6 +72,7 @@ void buzzvstig_destroy(buzzvstig_t* vs) {
    buzzdict_destroy(&((*vs)->data));
    free((*vs)->onconflict);
    free((*vs)->onconflictlost);
+   free(*vs);
 }
 
 /****************************************/
@@ -99,7 +102,6 @@ int64_t buzzvstig_elem_deserialize(buzzobj_t* key,
    /* Initialize the position */
    int64_t p = pos;
    /* Create a new vstig entry */
-   *data = (buzzvstig_elem_t)malloc(sizeof(struct buzzvstig_elem_s));
    /* Deserialize the key */
    p = buzzobj_deserialize(key, buf, p, vm);
    if(p < 0) return -1;
@@ -129,7 +131,7 @@ int buzzvm_vstig_create(buzzvm_t vm) {
    buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
    if(vs)
       /* Found, destroy it */
-      buzzvstig_destroy(vs);
+      buzzdict_remove(vm->vstigs, &id);
    /* Create a new virtual stigmergy */
    buzzvstig_t nvs = buzzvstig_new();
    buzzdict_set(vm->vstigs, &id, &nvs);

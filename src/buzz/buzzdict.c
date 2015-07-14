@@ -102,7 +102,12 @@ void buzzdict_set(buzzdict_t dt,
       /* Create new entry list */
       dt->buckets[h] = buzzdarray_new(1, sizeof(struct buzzdict_entry_s), NULL);
       /* Add entry */
-      buzzdict_entry_new(dt, e, key, data);
+      /* buzzdict_entry_new(dt, e, key, data); */
+   struct buzzdict_entry_s e;
+   e.key = malloc(dt->key_size);
+   memcpy(e.key, key, dt->key_size);
+   e.data = malloc(dt->data_size);
+   memcpy(e.data, data, dt->data_size);
       buzzdarray_push(dt->buckets[h], &e);
       /* Increase size */
       ++(dt->size);
@@ -113,12 +118,13 @@ void buzzdict_set(buzzdict_t dt,
       for(i = 0; i < buzzdarray_size(dt->buckets[h]); ++i) {
          struct buzzdict_entry_s* e = &buzzdarray_get(dt->buckets[h], i, struct buzzdict_entry_s);
          if(dt->keycmpf(key, e->key) == 0) {
-            /* Yes, copy the data into it */
-            memcpy(e->data, data, dt->data_size);
-            return;
+            /* Yes, destroy the entry */
+            dt->dstryf(e->key, e->data, dt);
+            buzzdarray_remove(dt->buckets[h], i);
+            break;
          }
       }
-      /* Entry not found, add it */
+      /* Add new entry */
       buzzdict_entry_new(dt, e, key, data);
       buzzdarray_push(dt->buckets[h], &e);
       /* Increase size */
@@ -140,6 +146,7 @@ int buzzdict_remove(buzzdict_t dt,
       struct buzzdict_entry_s* e = &buzzdarray_get(dt->buckets[h], i, struct buzzdict_entry_s);
       if(dt->keycmpf(key, e->key) == 0) {
          /* Entry found - remove it */
+         dt->dstryf(e->key, e->data, dt);
          buzzdarray_remove(dt->buckets[h], i);
          /* Is the entry list empty? If so, free the memory */
          if(buzzdarray_isempty(dt->buckets[h]))

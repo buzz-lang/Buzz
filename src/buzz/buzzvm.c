@@ -116,7 +116,9 @@ int buzzvm_string_cmp(const void* a, const void* b) {
 /****************************************/
 
 void buzzvm_vstig_destroy(const void* key, void* data, void* params) {
+   free(key);
    buzzvstig_destroy((buzzvstig_t*)data);
+   free(data);
 }
 
 /****************************************/
@@ -187,8 +189,9 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
             if(!vs) break;
             /* Virtual stigmergy found */
             /* Deserialize key and value from msg */
-            buzzobj_t k;        // key
-            buzzvstig_elem_t v; // value
+            buzzobj_t k;          // key
+            buzzvstig_elem_t v =  // value
+               (buzzvstig_elem_t)malloc(sizeof(struct buzzvstig_elem_s));
             if(buzzvstig_elem_deserialize(&k, &v, msg, pos, vm) < 0) {
                fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_VSTIG_PUT message received\n", vm->robot);
                break;
@@ -213,6 +216,8 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                   fprintf(stderr, "[WARNING] [ROBOT %u] Error resolving PUT conflict\n", vm->robot);
                   break;
                }
+               /* Get rid of useless vstig element */
+               free(v);
                /* Did this robot lose the conflict? */
                if((c->robot != vm->robot) &&
                   ((*l)->robot == vm->robot)) {
@@ -231,6 +236,11 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                }
                buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, c);
             }
+            else {
+               /* Remote element is older, ignore it */
+               /* Get rid of useless vstig element */
+               free(v);
+            }
             break;
          }
          case BUZZMSG_VSTIG_QUERY: {
@@ -246,8 +256,9 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
             if(!vs) break;
             /* Virtual stigmergy found */
             /* Deserialize key and value from msg */
-            buzzobj_t k;        // key
-            buzzvstig_elem_t v; // value
+            buzzobj_t k;         // key
+            buzzvstig_elem_t v = // value
+               (buzzvstig_elem_t)malloc(sizeof(struct buzzvstig_elem_s));
             if(buzzvstig_elem_deserialize(&k, &v, msg, pos, vm) < 0) {
                fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_VSTIG_PUT message received\n", vm->robot);
                break;
@@ -265,6 +276,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                /* Local element is newer */
                /* Append a PUT message to the out message queue */
                buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, *l);
+               free(v);
             }
             else if(((*l)->timestamp == v->timestamp) && /* Same timestamp */
                     ((*l)->robot != v->robot)) {         /* Different robot */
@@ -272,6 +284,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                /* Call conflict manager */
                buzzvstig_elem_t c = 
                   buzzvm_vstig_onconflict(vm, *vs, k, *l, v);
+               free(v);
                if(!c) {
                   fprintf(stderr, "[WARNING] [ROBOT %u] Error resolving PUT conflict\n", vm->robot);
                   break;
@@ -293,6 +306,11 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                   buzzvstig_store(*vs, &k, &c);
                }
                buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, c);
+            }
+            else {
+               /* Remote element is same as local, ignore it */
+               /* Get rid of useless vstig element */
+               free(v);
             }
             break;
          }
