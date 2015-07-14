@@ -6,7 +6,7 @@
   <!-- ************************* -->
   <framework>
     <system threads="0" />
-    <experiment length="0"
+    <experiment length="60"
                 ticks_per_second="10"
                 random_seed="123" />
   </framework>
@@ -56,9 +56,9 @@
     </box>
 
     <distribute>
-      <position method="uniform" min="-2,14,0" max="2,18,0" />
+      <position method="uniform" min="-18,-18,0" max="18,18,0" />
       <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0" />
-      <entity quantity="10" max_trials="100">
+      <entity quantity="100" max_trials="100">
         <spiri id="sp" rab_range="10" rab_data_size="100" camera_range="5">
           <controller config="bcs" />
         </spiri>
@@ -87,16 +87,16 @@
   <!-- * Visualization * -->
   <!-- ****************** -->
   <visualization>
-    <qt-opengl>
-      <camera>
-        <placement idx="0" position="0,0,30" look_at="0,0,29" lens_focal_length="20" />
-      </camera>
-      <frame_grabbing directory="frames"
-                      base_name="frame_"
-                      format="png"
-                      quality="100" />
-      <user_functions label="buzz_qt" />
-    </qt-opengl>
+    <!-- <qt-opengl> -->
+    <!--   <camera> -->
+    <!--     <placement idx="0" position="0,0,30" look_at="0,0,29" lens_focal_length="20" /> -->
+    <!--   </camera> -->
+    <!--   <frame_grabbing directory="frames" -->
+    <!--                   base_name="frame_" -->
+    <!--                   format="png" -->
+    <!--                   quality="100" /> -->
+    <!--   <user_functions label="buzz_qt" /> -->
+    <!-- </qt-opengl> -->
   </visualization>
 
 </argos-configuration>
