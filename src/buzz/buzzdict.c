@@ -102,12 +102,7 @@ void buzzdict_set(buzzdict_t dt,
       /* Create new entry list */
       dt->buckets[h] = buzzdarray_new(1, sizeof(struct buzzdict_entry_s), NULL);
       /* Add entry */
-      /* buzzdict_entry_new(dt, e, key, data); */
-   struct buzzdict_entry_s e;
-   e.key = malloc(dt->key_size);
-   memcpy(e.key, key, dt->key_size);
-   e.data = malloc(dt->data_size);
-   memcpy(e.data, data, dt->data_size);
+      buzzdict_entry_new(dt, e, key, data);
       buzzdarray_push(dt->buckets[h], &e);
       /* Increase size */
       ++(dt->size);
@@ -121,6 +116,7 @@ void buzzdict_set(buzzdict_t dt,
             /* Yes, destroy the entry */
             dt->dstryf(e->key, e->data, dt);
             buzzdarray_remove(dt->buckets[h], i);
+            --(dt->size);
             break;
          }
       }
