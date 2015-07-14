@@ -193,7 +193,6 @@ int buzzvm_vstig_put(buzzvm_t vm) {
          (*x)->data = v;
          ++((*x)->timestamp);
          (*x)->robot = vm->robot;
-         buzzvstig_store(*vs, &k, x);
          /* Append a PUT message to the out message queue */
          buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, *x);
       }
@@ -411,8 +410,8 @@ buzzvstig_elem_t buzzvm_vstig_onconflict(buzzvm_t vm,
    }
    else {
       /* No conflict manager, use default behavior */
-      if(lv->robot > rv->robot) return lv;
-      else return rv;
+      if(lv->robot > rv->robot) return buzzvstig_elem_clone(lv);
+      else return buzzvstig_elem_clone(rv);
    }
 }
 
