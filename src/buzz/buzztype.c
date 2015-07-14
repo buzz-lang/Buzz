@@ -21,7 +21,7 @@ uint32_t buzzobj_table_hash(const void* key) {
          return ((uint32_t)(k->f.value) % BUZZTYPE_TABLE_BUCKETS);
       }
       case BUZZTYPE_STRING: {
-         return ((uint32_t)(k->f.value) % BUZZTYPE_TABLE_BUCKETS);
+         return ((uint32_t)(k->s.value.sid) % BUZZTYPE_TABLE_BUCKETS);
       }
       default:
          fprintf(stderr, "[TODO] %s:%d\n", __FILE__, __LINE__);
