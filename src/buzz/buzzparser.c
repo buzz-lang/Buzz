@@ -124,6 +124,10 @@ void sym_add(buzzparser_t par, const char* sym, int scope) {
    else       buzzdict_set(par->syms, &key, &symdata);
 }
 
+void sym_clone(const void* key, void* data, void* params) {
+   sym_add((buzzparser_t)params, *(char**)key, SCOPE_LOCAL);
+}
+
 void sym_print(const void* key,
                void* data,
                void* params) {
@@ -142,6 +146,8 @@ void sym_destroy(const void* key,
 #define SYMT_BUCKETS 100
 
 #define symt_push() par->syms = buzzdict_new(SYMT_BUCKETS, sizeof(char*), sizeof(struct sym_s), buzzdict_strkeyhash, buzzdict_strkeycmp, sym_destroy); buzzdarray_push(par->symstack, &(par->syms));
+
+#define symt_clone() { buzzdict_t toclone = buzzdarray_last(par->symstack, buzzdict_t); symt_push(); buzzdict_foreach(toclone, sym_clone, par); }
 
 #define symt_pop() buzzdarray_pop(par->symstack); par->syms = buzzdarray_last(par->symstack, buzzdict_t);
 
@@ -1104,12 +1110,12 @@ int parse_lambda(buzzparser_t par) {
    chunk_push(NULL);
    tokmatch(BUZZTOK_PAROPEN);
    fetchtok();
-   /* Check whether it's necessary to create a new symbol table
-    * If the parent symtable is the global one, it is necessary
-    * otherwise, reuse the parent's
+   /* Check whether it's necessary to create a brand new symbol table
+    * or clone the current one
+    * If the parent symtable is the global one, it is necessary;
+    * otherwise, clone the parent's
     */
-   int symtpush = (buzzdarray_size(par->symstack) == 1);
-   if(symtpush) {
+   if((buzzdarray_size(par->symstack) == 1)) {
       DEBUG("Added dedicated symtable for lambda\n");
       /* Add new symtable */
       symt_push();
@@ -1118,7 +1124,11 @@ int parse_lambda(buzzparser_t par) {
       if(!sym || sym->global) { sym_add(par, "self", SCOPE_LOCAL); }
    }
    else {
-      DEBUG("Lambda uses parent's symtable containing %u elements:\n",
+      DEBUG("Lambda clones parent's symtable containing %u elements:\n",
+            buzzdict_size(par->syms));
+      buzzdict_foreach(par->syms, sym_print, NULL);
+      symt_clone();
+      DEBUG("Clone contains %u elements:\n",
             buzzdict_size(par->syms));
       buzzdict_foreach(par->syms, sym_print, NULL);
    }
@@ -1131,7 +1141,7 @@ int parse_lambda(buzzparser_t par) {
    /* Add a default return */
    chunk_append("\tret0\n");
    /* Get rid of symbol table and close chunk */
-   if(symtpush) { symt_pop(); }
+   symt_pop();
    chunk_pop();
    DEBUG("Lambda done\n");
    return PARSE_OK;
