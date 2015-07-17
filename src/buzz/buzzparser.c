@@ -1115,7 +1115,7 @@ int parse_lambda(buzzparser_t par) {
     * If the parent symtable is the global one, it is necessary;
     * otherwise, clone the parent's
     */
-   if((buzzdarray_size(par->symstack) == 1)) {
+   if(buzzdarray_size(par->symstack) == 1) {
       DEBUG("Added dedicated symtable for lambda\n");
       /* Add new symtable */
       symt_push();
