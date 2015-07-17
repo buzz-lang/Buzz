@@ -6,7 +6,7 @@
   <!-- ************************* -->
   <framework>
     <system threads="0" />
-    <experiment length="0"
+    <experiment length="20"
                 ticks_per_second="10"
                 random_seed="123" />
   </framework>
@@ -16,7 +16,7 @@
   <!-- *************** -->
   <controllers>
 
-    <buzz_controller_footbot id="bcf" library="../../build/libbuzzargos">
+    <buzz_controller_footbot id="bcf">
       <actuators>
         <differential_steering implementation="default" />
         <leds                  implementation="default" medium="leds" />
@@ -25,7 +25,7 @@
       <sensors>
         <range_and_bearing implementation="medium" medium="rab" show_rays="true" noise_std_dev="0" />
       </sensors>
-      <params bytecode_file="teststigmergy.bo">
+      <params bytecode_file="testflocking.bo">
         <wheel_turning hard_turn_angle_threshold="90"
                        soft_turn_angle_threshold="70"
                        no_turn_angle_threshold="10"
@@ -33,7 +33,7 @@
       </params>
     </buzz_controller_footbot>
 
-    <buzz_controller_spiri id="bcs" library="../../build/libbuzzargos">
+    <buzz_controller_spiri id="bcs">
       <actuators>
         <quadrotor_position implementation="default" />
         <range_and_bearing  implementation="default" />
@@ -42,12 +42,7 @@
         <range_and_bearing implementation="medium" medium="rab" show_rays="false" />
         <positioning       implementation="default" />
       </sensors>
-      <params bytecode_file="teststigmergy.bo">
-        <wheel_turning hard_turn_angle_threshold="90"
-                       soft_turn_angle_threshold="70"
-                       no_turn_angle_threshold="10"
-                       max_speed="10" />
-      </params>
+      <params bytecode_file="testflocking.bo" />
     </buzz_controller_spiri>
 
   </controllers>
@@ -70,25 +65,25 @@
     <!--   <body position="-2,0,0" orientation="0,0,0" /> -->
     <!-- </box> -->
 
-    <distribute>
-      <position method="uniform" min="-1,-1,0" max="1,1,0" />
-      <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0" />
-      <entity quantity="3" max_trials="100">
-        <foot-bot id="fb" rab_data_size="30">
-          <controller config="bcf" />
-        </foot-bot>
-      </entity>
-    </distribute>
-
     <!-- <distribute> -->
-    <!--   <position method="uniform" min="-5,-5,0" max="5,5,0" /> -->
+    <!--   <position method="uniform" min="-1,-1,0" max="1,1,0" /> -->
     <!--   <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0" /> -->
-    <!--   <entity quantity="30" max_trials="100"> -->
-    <!--     <spiri id="sp" rab_range="10" rab_data_size="100"> -->
-    <!--       <controller config="bcs" /> -->
-    <!--     </spiri> -->
+    <!--   <entity quantity="10" max_trials="100"> -->
+    <!--     <foot-bot id="fb" rab_data_size="30"> -->
+    <!--       <controller config="bcf" /> -->
+    <!--     </foot-bot> -->
     <!--   </entity> -->
     <!-- </distribute> -->
+
+    <distribute>
+      <position method="uniform" min="-5,-5,0" max="5,5,0" />
+      <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0" />
+      <entity quantity="10" max_trials="100">
+        <spiri id="sp" rab_range="10" rab_data_size="100">
+          <controller config="bcs" />
+        </spiri>
+      </entity>
+    </distribute>
 
     <!--
         We distribute 5 boxes uniformly in position and rotation around Z.
@@ -121,7 +116,7 @@
   <!-- ******************* -->
   <physics_engines>
     <dynamics2d id="dyn2d" />
-    <!-- <pointmass3d id="pm3d" /> -->
+    <pointmass3d id="pm3d" />
   </physics_engines>
 
   <!-- ********* -->
@@ -136,15 +131,17 @@
   <!-- * Visualization * -->
   <!-- ****************** -->
   <visualization>
-    <qt-opengl>
-      <camera>
-        <placement idx="0" position="-1.40203,0,3.23277" look_at="-1.08235,0,2.28525" lens_focal_length="20" />
-      </camera>
-      <frame_grabbing directory="frames"
-                      base_name="frame_"
-                      format="png"
-                      quality="100" />
-    </qt-opengl>
+    <!-- <qt-opengl> -->
+    <!--   <camera> -->
+    <!--     <placement idx="0" position="-3.81904,0.306014,10.4364" look_at="-3.49366,0.212449,9.49544" lens_focal_length="20" /> -->
+    <!--     <placement idx="1" position="-1.40203,0,3.23277" look_at="-1.08235,0,2.28525" lens_focal_length="20" /> -->
+    <!--   </camera> -->
+    <!--   <frame_grabbing directory="frames" -->
+    <!--                   base_name="frame_" -->
+    <!--                   format="png" -->
+    <!--                   quality="100" /> -->
+    <!--   <user_functions label="buzz_qt" /> -->
+    <!-- </qt-opengl> -->
   </visualization>
 
 </argos-configuration>
