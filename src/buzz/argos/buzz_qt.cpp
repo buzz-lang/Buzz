@@ -28,13 +28,9 @@ void CBuzzQT::Draw(CSpiriEntity& c_entity) {
 void CBuzzQT::Draw(CBuzzController& c_contr) {
    /* This is the message that will be shown */
    std::string strMsg("R" + ToString(c_contr.GetBuzzVM()->robot));
-   /* Get 'debug' variable */
-   buzzvm_pushs(c_contr.GetBuzzVM(),
-                buzzvm_string_register(c_contr.GetBuzzVM(), "debug"));
-   buzzvm_gload(c_contr.GetBuzzVM());
-   if(buzzvm_stack_at(c_contr.GetBuzzVM(), 1)->o.type == BUZZTYPE_STRING) {
-      strMsg += ": " + std::string(buzzvm_stack_at(c_contr.GetBuzzVM(), 1)->s.value.str);
-   }
+   /* Append debug message */
+   if(c_contr.GetDebugMsg() != "")
+      strMsg += ": " + c_contr.GetDebugMsg();
    /* Disable face culling to be sure the text is visible from anywhere */
    glDisable(GL_CULL_FACE);
    /* Disable lighting, so it does not interfere with the chosen text color */
