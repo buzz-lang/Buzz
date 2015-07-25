@@ -281,6 +281,43 @@ int buzzobj_size(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+struct buzzobj_foreach_params {
+   buzzvm_t vm;
+   buzzobj_t fun;
+};
+
+void buzzobj_foreach_entry(const void* key, void* data, void* params) {
+   /* Cast params */
+   struct buzzobj_foreach_params* p = (struct buzzobj_foreach_params*)params;
+   if(p->vm->state != BUZZVM_STATE_READY) return;
+   /* Push closure and params (key and value) */
+   buzzvm_push(p->vm, p->fun);
+   buzzvm_push(p->vm, *(buzzobj_t*)key);
+   buzzvm_push(p->vm, *(buzzobj_t*)data);
+   /* Call closure */
+   p->vm->state = buzzvm_closure_call(p->vm, 2);
+}
+
+int buzzobj_foreach(buzzvm_t vm) {
+   /* Table and closure expected */
+   buzzvm_lnum_assert(vm, 2);
+   /* Get table */
+   buzzvm_lload(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_TABLE);
+   buzzobj_t t = buzzvm_stack_at(vm, 1);
+   /* Get closure */
+   buzzvm_lload(vm, 2);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
+   buzzobj_t c = buzzvm_stack_at(vm, 1);
+   /* Go through the table element and apply the closure */
+   struct buzzobj_foreach_params p = { .vm = vm, .fun = c };
+   buzzdict_foreach(t->t.value, buzzobj_foreach_entry, &p);
+   return buzzvm_ret0(vm);
+}
+
+/****************************************/
+/****************************************/
+
 void buzzobj_serialize_tableelem(const void* key, void* data, void* params) {
    buzzobj_serialize((buzzdarray_t)params, *(buzzobj_t*)key);
    buzzobj_serialize((buzzdarray_t)params, *(buzzobj_t*)data);

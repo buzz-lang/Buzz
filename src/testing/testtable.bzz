@@ -1,0 +1,16 @@
+t = {}
+t.x = 1
+t.y = 2
+t.z = 3
+
+print("size = ", size(t))
+foreach(t, function(k, v) {
+    print(" ", k, " -> ", v)
+  })
+
+t.y = nil
+
+print("size = ", size(t))
+foreach(t, function(k, v) {
+    print(" ", k, " -> ", v)
+  })

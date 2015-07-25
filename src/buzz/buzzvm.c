@@ -116,7 +116,7 @@ int buzzvm_string_cmp(const void* a, const void* b) {
 /****************************************/
 
 void buzzvm_vstig_destroy(const void* key, void* data, void* params) {
-   free(key);
+   free((void*)key);
    buzzvstig_destroy((buzzvstig_t*)data);
    free(data);
 }
@@ -573,6 +573,12 @@ int buzzvm_set_bcode(buzzvm_t vm,
    buzzvm_pushs(vm, buzzvm_string_register(vm, "size"));
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzobj_size));
    buzzvm_gstore(vm);
+   /*
+    * Register foreach() function
+    */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "foreach"));
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzobj_foreach));
+   buzzvm_gstore(vm);
    /* 
     * Initialize empty neighbors
     */
@@ -1023,7 +1029,12 @@ buzzvm_state buzzvm_tput(buzzvm_t vm) {
    buzzvm_pop(vm);
    buzzvm_pop(vm);
    buzzvm_pop(vm);
-   if(v->o.type == BUZZTYPE_CLOSURE) {
+   if(v->o.type == BUZZTYPE_NIL) {
+      /* Nil, erase entry */
+      buzzdict_remove(t->t.value, &k);
+   }
+   else if(v->o.type == BUZZTYPE_CLOSURE) {
+      /* Method call */
       int i;
       buzzobj_t o = buzzheap_newobj((vm->heap), BUZZTYPE_CLOSURE);
       o->c.value.isnative = v->c.value.isnative;
