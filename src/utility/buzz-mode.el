@@ -65,7 +65,10 @@ For detail, see `comment-dwim'."
 ;;
 ;; Define token classes and regular expressions
 ;;
-(setq buzz-identifier-regexp "[a-zA-Z_][a-zA-Z0-9_]*")
+;; Identifiers
+(setq buzz-identifier-regexp "[[:alpha:]_][[:alnum:]_]*")
+;; Constants
+(setq buzz-constant-regexp "[[:upper:]_][[:upper:][:digit:]_]*")
 ;; Keywords
 (setq buzz-keywords '("var" "nil" "if" "else" "function" "return" "for" "while" "and" "or" "not" "size" "foreach"))
 (setq buzz-keywords-regexp (regexp-opt buzz-keywords 'words))
@@ -75,7 +78,7 @@ For detail, see `comment-dwim'."
 (setq buzz-builtins-regexp (regexp-opt buzz-builtins 'words))
 (setq buzz-builtins nil)
 ;; Functions
-(setq buzz-functions-regexp (concat "function\\s-+\\(" buzz-identifier-regexp "\\)"))
+(setq buzz-functions-regexp (concat "\\(" buzz-identifier-regexp "\\)\\s-*("))
 
 ;;
 ;; Create font lock list
@@ -85,6 +88,7 @@ For detail, see `comment-dwim'."
         (,buzz-functions-regexp  1 font-lock-function-name-face)
         (,buzz-builtins-regexp   . font-lock-builtin-face)
         (,buzz-keywords-regexp   . font-lock-keyword-face)
+        (,buzz-constant-regexp   . font-lock-constant-face)
         (,buzz-identifier-regexp . font-lock-variable-face)
         ))
 
