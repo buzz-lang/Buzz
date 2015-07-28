@@ -13,6 +13,8 @@ Self-organization results from the fact that the Buzz run-time platform is purel
 
 The language can be extended to add new primitives (thus supporting heterogeneous robot swarms) and can be laid on top of other frameworks, such as ROS.
 
+More information is available at http://the.swarming.buzz/wiki/doku.php?id=start.
+
 Downloading Buzz
 ================
 
