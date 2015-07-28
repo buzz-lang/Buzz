@@ -79,8 +79,6 @@ For detail, see `comment-dwim'."
 (setq buzz-builtins nil)
 ;; Functions
 (setq buzz-functions-regexp (concat "\\(" buzz-identifier-regexp "\\)\\s-*("))
-;; Function params
-(setq buzz-function-params-regexp (concat "function[[:alnum:]_ ]*(\\(" buzz-identifier-regexp "\\)\\|function[[:alnum:]_ ]*([[:alnum:]_ ]*,\\s-*\\(" buzz-identifier-regexp "\\)"))
 
 ;;
 ;; Create font lock list
@@ -89,8 +87,7 @@ For detail, see `comment-dwim'."
       `(
         (,buzz-builtins-regexp        . font-lock-builtin-face)
         (,buzz-keywords-regexp        . font-lock-keyword-face)
-        (,buzz-functions-regexp       1 font-lock-function-name-face t)
-        (,buzz-function-params-regexp 1 font-lock-function-type-face t)
+        (,buzz-functions-regexp       1 font-lock-function-name-face)
         (,buzz-constant-regexp        . font-lock-constant-face)
         (,buzz-identifier-regexp      . font-lock-variable-face)
         ))
