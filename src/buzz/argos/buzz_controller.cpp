@@ -125,6 +125,7 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
       m_tBuzzVM = NULL;
       m_unRobotId = FromString<UInt16>(GetId().substr(2));
       SetBytecode(strFName);
+      UpdateSensors();
    }
    catch(CARGoSException& ex) {
       THROW_ARGOSEXCEPTION_NESTED("Error initializing the Buzz controller", ex);

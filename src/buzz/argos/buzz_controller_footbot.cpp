@@ -1,4 +1,5 @@
 #include "buzz_controller_footbot.h"
+#include <argos3/core/utility/logging/argos_log.h>
 
 /****************************************/
 /****************************************/
@@ -63,7 +64,8 @@ int BuzzSetLEDs(buzzvm_t vm) {
 
 CBuzzControllerFootBot::CBuzzControllerFootBot() :
    m_pcWheels(NULL),
-   m_pcLEDs(NULL) {
+   m_pcLEDs(NULL),
+   m_pcProximity(NULL) {
 }
 
 /****************************************/
@@ -87,11 +89,50 @@ void CBuzzControllerFootBot::Init(TConfigurationNode& t_node) {
          m_pcLEDs = GetActuator<CCI_LEDsActuator>("leds");
       }
       catch(CARGoSException& ex) {}
+      try {
+         m_pcProximity = GetSensor<CCI_FootBotProximitySensor>("footbot_proximity");
+      }
+      catch(CARGoSException& ex) {}
       /* Initialize the rest */
       CBuzzController::Init(t_node);
    }
    catch(CARGoSException& ex) {
       THROW_ARGOSEXCEPTION_NESTED("Error initializing the Buzz controller for the foot-bot", ex);
+   }
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzControllerFootBot::UpdateSensors() {
+   /*
+    * Update generic sensors
+    */
+   CBuzzController::UpdateSensors();
+   /*
+    * Update proximity sensor table
+    */
+   if(m_pcProximity != NULL) {
+      /* Create empty proximity table */
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "proximity"));
+      buzzvm_pusht(m_tBuzzVM);
+      buzzobj_t tProxTable = buzzvm_stack_at(m_tBuzzVM, 1);
+      buzzvm_gstore(m_tBuzzVM);
+      /* Get proximity readings */
+      const CCI_FootBotProximitySensor::TReadings& tProxReads = m_pcProximity->GetReadings();
+      /* Fill into the proximity table */
+      buzzobj_t tProxRead;
+      for(size_t i = 0; i < tProxReads.size(); ++i) {
+         /* Create table for i-th read */
+         buzzvm_pusht(m_tBuzzVM);
+         tProxRead = buzzvm_stack_at(m_tBuzzVM, 1);
+         buzzvm_pop(m_tBuzzVM);
+         /* Fill in the read */
+         TablePut(tProxRead, "value", tProxReads[i].Value);
+         TablePut(tProxRead, "angle", tProxReads[i].Angle);
+         /* Store read table in the proximity table */
+         TablePut(tProxTable, i, tProxRead);
+      }
    }
 }
 

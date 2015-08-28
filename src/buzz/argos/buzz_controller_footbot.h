@@ -4,6 +4,7 @@
 #include <buzz/argos/buzz_controller.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_differential_steering_actuator.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_leds_actuator.h>
+#include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_proximity_sensor.h>
 
 using namespace argos;
 
@@ -41,6 +42,8 @@ public:
 
    virtual void Init(TConfigurationNode& t_node);
 
+   virtual void UpdateSensors();
+
    void SetWheelSpeedsFromVector(const CVector2& c_heading);
    void SetLEDs(const CColor& c_color);
 
@@ -54,6 +57,8 @@ protected:
    CCI_DifferentialSteeringActuator* m_pcWheels;
    /* Pointer to the LEDs actuator */
    CCI_LEDsActuator* m_pcLEDs;
+   /* Pointer to the proximity sensor */
+   CCI_FootBotProximitySensor* m_pcProximity;
 
    /* The turning parameters. */
    SWheelTurningParams m_sWheelTurningParams;

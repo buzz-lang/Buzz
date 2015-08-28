@@ -25,6 +25,7 @@ int buzzmath_register(buzzvm_t vm) {
    function_register(t, "log",   buzzmath_log);
    function_register(t, "log2",  buzzmath_log2);
    function_register(t, "log10", buzzmath_log10);
+   function_register(t, "sqrt",  buzzmath_sqrt);
    function_register(t, "sin",   buzzmath_sin);
    function_register(t, "cos",   buzzmath_cos);
    function_register(t, "tan",   buzzmath_tan);
@@ -244,7 +245,7 @@ int buzzmath_acos(buzzvm_t vm) {
 /****************************************/
 
 int buzzmath_atan(buzzvm_t vm) {
-   buzzvm_lnum_assert(vm, 1);
+   buzzvm_lnum_assert(vm, 2);
    /* Get first argument */
    float y;
    buzzvm_lload(vm, 1);
