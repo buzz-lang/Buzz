@@ -125,7 +125,17 @@ void sym_add(buzzparser_t par, const char* sym, int scope) {
 }
 
 void sym_clone(const void* key, void* data, void* params) {
-   sym_add((buzzparser_t)params, *(char**)key, SCOPE_LOCAL);
+   struct sym_s* toclone = (struct sym_s*)data;
+   /* Copy key */
+   char* newkey = strdup(*(char**)key);
+   /* Create symbol */
+   struct sym_s newsym = {
+      .pos  = toclone->pos,
+      .type = toclone->type,
+      .global = toclone->global
+   };
+   /* Store the symbol */
+   buzzdict_set(((buzzparser_t)params)->syms, &newkey, &newsym);
 }
 
 void sym_print(const void* key,
