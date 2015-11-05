@@ -606,6 +606,14 @@ extern "C" {
    buzzvm_stack_assert((vm), 2);                                        \
    buzzobj_t op1 = buzzvm_stack_at(vm, 1);                              \
    buzzobj_t op2 = buzzvm_stack_at(vm, 2);                              \
+   if((op1->o.type != BUZZTYPE_INT &&                                   \
+       op1->o.type != BUZZTYPE_FLOAT) ||                                \
+      (op2->o.type != BUZZTYPE_INT &&                                   \
+       op2->o.type != BUZZTYPE_FLOAT))  {                               \
+      (vm)->state = BUZZVM_STATE_ERROR;                                 \
+      (vm)->error = BUZZVM_ERROR_TYPE;                                  \
+      return (vm)->state;                                               \
+   }                                                                    \
    buzzdarray_pop(vm->stack);                                           \
    buzzdarray_pop(vm->stack);                                           \
    if(op1->o.type == BUZZTYPE_INT &&                                    \
@@ -626,16 +634,10 @@ extern "C" {
       res->f.value = op2->i.value oper op1->f.value;                    \
       buzzvm_push(vm, res);                                             \
    }                                                                    \
-   else if(op1->o.type == BUZZTYPE_FLOAT &&                             \
-           op2->o.type == BUZZTYPE_FLOAT) {                             \
+   else {                                                               \
       buzzobj_t res = buzzheap_newobj((vm)->heap, BUZZTYPE_FLOAT);      \
       res->f.value = op2->f.value oper op1->f.value;                    \
       buzzvm_push(vm, res);                                             \
-   }                                                                    \
-   else {                                                               \
-      (vm)->state = BUZZVM_STATE_ERROR;                                 \
-      (vm)->error = BUZZVM_ERROR_TYPE;                                  \
-      return (vm)->state;                                               \
    }
 
 /*
