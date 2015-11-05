@@ -22,6 +22,7 @@ int buzzmath_register(buzzvm_t vm) {
    /* Make "math" table */
    buzzobj_t t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
    /* Register methods */
+   function_register(t, "abs",   buzzmath_abs);
    function_register(t, "log",   buzzmath_log);
    function_register(t, "log2",  buzzmath_log2);
    function_register(t, "log10", buzzmath_log10);
@@ -41,6 +42,29 @@ int buzzmath_register(buzzvm_t vm) {
    buzzvm_push(vm, t);
    buzzvm_gstore(vm);
    return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
+int buzzmath_abs(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
+   /* Get argument */
+   buzzvm_lload(vm, 1);
+   buzzobj_t o = buzzvm_stack_at(vm, 1);
+   if(o->o.type == BUZZTYPE_FLOAT) {
+      buzzvm_pushf(vm, fabsf(o->f.value));
+   }
+   else if(o->o.type == BUZZTYPE_INT) {
+      buzzvm_pushi(vm, abs(o->i.value));
+   }
+   else {
+      vm->state = BUZZVM_STATE_ERROR;
+      vm->error = BUZZVM_ERROR_TYPE;
+      return vm->state;
+   }
+   /* Return result */
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
