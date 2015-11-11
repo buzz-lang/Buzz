@@ -81,7 +81,7 @@ void buzzoutmsg_destroy(uint32_t pos, void* data, void* params) {
 }
 
 void buzzoutmsg_vstig_destroy(const void* key, void* data, void* params) {
-   free(key);
+   free((void*)key);
    buzzdict_destroy((buzzdict_t*)data);
    free(data);
 }
