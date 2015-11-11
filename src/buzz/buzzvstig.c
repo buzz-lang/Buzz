@@ -43,7 +43,7 @@ buzzvstig_elem_t buzzvstig_elem_clone(const buzzvstig_elem_t e) {
 /****************************************/
 
 void buzzvstig_elem_destroy(const void* key, void* data, void* params) {
-   free(key);
+   free((void*)key);
    free(*(buzzvstig_elem_t*)data);
    free(data);
 }
