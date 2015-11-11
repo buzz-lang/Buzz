@@ -325,11 +325,75 @@ extern "C" {
    extern buzzvm_state buzzvm_pop(buzzvm_t vm);
 
    /*
+    * Pushes a variable on the stack.
+    * @param vm The VM data.
+    * @param v The variable.
+    * @return The VM state.
+    */
+   extern buzzvm_state buzzvm_push(buzzvm_t vm, buzzobj_t v);
+
+   /*
+    * Pushes a userdata on the stack.
+    * @param vm The VM data.
+    * @param v The C pointer to the user data.
+    * @return The VM state.
+    */
+   extern buzzvm_state buzzvm_pushuserdata(buzzvm_t vm, void* v);
+
+   /*
+    * Pushes nil on the stack.
+    * @param vm The VM data.
+    * @return The VM state.
+    */
+   extern buzzvm_state buzzvm_pushnil(buzzvm_t vm);
+
+   /*
+    * Pushes a 32 bit signed int value on the stack.
+    * @param vm The VM data.
+    * @param v The value.
+    * @return The VM state.
+    */
+   extern buzzvm_state buzzvm_pushi(buzzvm_t vm, int32_t v);
+
+   /*
+    * Pushes a float value on the stack.
+    * @param vm The VM data.
+    * @param v The value.
+    * @return The VM state.
+    */
+   extern buzzvm_state buzzvm_pushf(buzzvm_t vm, float v);
+
+   /*
+    * Pushes a native closure on the stack.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    * @param rfrnc The closure reference.
+    * @param nat 1 if the closure in native, 0 if not
+    * @param v The value.
+    * @return The VM state.
+    */
+   extern buzzvm_state buzzvm_pushc(buzzvm_t vm, int32_t rfrnc, int32_t nat);
+
+   /*
     * Pushes a string on the stack.
     * @param vm The VM data.
     * @param strid The string id.
+    * @return The VM state.
     */
    extern buzzvm_state buzzvm_pushs(buzzvm_t vm, uint16_t strid);
+
+   /*
+    * Pushes a lambda native closure on the stack.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    * @param addr The closure address.
+    * @return The VM state.
+    */
+   extern buzzvm_state buzzvm_pushl(buzzvm_t vm, int32_t addr);
 
    /*
     * Stores a (idx,value) pair in a table.
@@ -452,58 +516,6 @@ extern "C" {
 #define buzzvm_done(vm) { (vm)->state = BUZZVM_STATE_DONE; return (vm)->state; }
 
 /*
- * Pushes a variable on the stack.
- * @param vm The VM data.
- * @param v The variable.
- */
-#define buzzvm_push(vm, v) buzzdarray_push((vm)->stack, &(v))
-
-/*
- * Pushes a userdata on the stack.
- * @param vm The VM data.
- * @param v The C pointer to the user data.
- */
-#define buzzvm_pushuserdata(vm, v) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_USERDATA); o->u.value = (v); buzzvm_push(vm, o); }
-
-/*
- * Pushes nil on the stack.
- * @param vm The VM data.
- */
-#define buzzvm_pushnil(vm) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_NIL); buzzvm_push(vm, o); }
-
-/*
- * Pushes a 32 bit signed int value on the stack.
- * @param vm The VM data.
- * @param v The value.
- */
-#define buzzvm_pushi(vm, v) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_INT); o->i.value = (v); buzzvm_push(vm, o); }
-
-/*
- * Pushes a float value on the stack.
- * @param vm The VM data.
- * @param v The value.
- */
-#define buzzvm_pushf(vm, v) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_FLOAT); o->f.value = (v); buzzvm_push(vm, o); }
-
-/*
- * Pushes a native closure on the stack.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- * @param rfrnc The closure reference.
- * @param nat 1 if the closure in native, 0 if not
- */
-#define buzzvm_pushc(vm, rfrnc, nat) {                                \
-      buzzobj_t o = buzzheap_newobj(((vm)->heap), BUZZTYPE_CLOSURE);  \
-      o->c.value.isnative = (nat);                                    \
-      o->c.value.ref = (rfrnc);                                       \
-      buzzobj_t nil = buzzheap_newobj(vm->heap, BUZZTYPE_NIL);        \
-      buzzdarray_push(o->c.value.actrec, &nil);                       \
-      buzzvm_push(vm, o);                                             \
-   }
-
-/*
  * Pushes a native closure on the stack.
  * Internally checks whether the operation is valid.
  * This function is designed to be used within int-returning functions such as
@@ -524,33 +536,6 @@ extern "C" {
  * @param cid The closure id.
  */
 #define buzzvm_pushcc(vm, cid) buzzvm_pushc(vm, cid, 0)
-
-/*
- * Pushes a lambda native closure on the stack.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- * @param addr The closure address.
- */
-#define buzzvm_pushl(vm, addr) {                                      \
-      buzzobj_t o = buzzheap_newobj(((vm)->heap), BUZZTYPE_CLOSURE);  \
-      o->c.value.isnative = 1;                                        \
-      o->c.value.ref = (addr);                                        \
-      if((vm)->lsyms) {                                               \
-         int i;                                                       \
-         for(i = 0; i < buzzdarray_size((vm)->lsyms->syms); ++i)      \
-            buzzdarray_push(o->c.value.actrec,                        \
-                            &buzzdarray_get((vm)->lsyms->syms,        \
-                                            i, buzzobj_t));           \
-      }                                                               \
-      else {                                                          \
-         buzzobj_t nil = buzzheap_newobj(vm->heap, BUZZTYPE_NIL);     \
-         buzzdarray_push(o->c.value.actrec,                           \
-                         &nil);                                       \
-      }                                                               \
-      buzzvm_push(vm, o);                                             \
-   }
 
 /*
  * Returns the number of local variables in the current local symbol stack.

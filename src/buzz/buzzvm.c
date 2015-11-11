@@ -210,7 +210,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                     ((*l)->robot != v->robot)) {         /* Different robot */
                /* Conflict! */
                /* Call conflict manager */
-               buzzvstig_elem_t c = 
+               buzzvstig_elem_t c =
                   buzzvm_vstig_onconflict(vm, *vs, k, *l, v);
                if(!c) {
                   fprintf(stderr, "[WARNING] [ROBOT %u] Error resolving PUT conflict\n", vm->robot);
@@ -282,7 +282,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                     ((*l)->robot != v->robot)) {         /* Different robot */
                /* Conflict! */
                /* Call conflict manager */
-               buzzvstig_elem_t c = 
+               buzzvstig_elem_t c =
                   buzzvm_vstig_onconflict(vm, *vs, k, *l, v);
                free(v);
                if(!c) {
@@ -579,7 +579,13 @@ int buzzvm_set_bcode(buzzvm_t vm,
    buzzvm_pushs(vm, buzzvm_string_register(vm, "foreach"));
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzobj_foreach));
    buzzvm_gstore(vm);
-   /* 
+   /*
+    * Register reduce() function
+    */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "reduce"));
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzobj_reduce));
+   buzzvm_gstore(vm);
+   /*
     * Initialize empty neighbors
     */
    buzzneighbors_reset(vm);
@@ -756,13 +762,13 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       case BUZZVM_INSTR_PUSHF: {
          inc_pc();
          get_arg(float);
-         buzzvm_pushf(vm, arg);
+         if(buzzvm_pushf(vm, arg) != BUZZVM_STATE_READY) return vm->state;
          break;
       }
       case BUZZVM_INSTR_PUSHI: {
          inc_pc();
          get_arg(int32_t);
-         buzzvm_pushi(vm, arg);
+         if(buzzvm_pushi(vm, arg) != BUZZVM_STATE_READY) return vm->state;
          break;
       }
       case BUZZVM_INSTR_PUSHS: {
@@ -774,19 +780,19 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
       case BUZZVM_INSTR_PUSHCN: {
          inc_pc();
          get_arg(uint32_t);
-         buzzvm_pushcn(vm, arg);
+         if(buzzvm_pushcn(vm, arg) != BUZZVM_STATE_READY) return vm->state;
          break;
       }
       case BUZZVM_INSTR_PUSHCC: {
          inc_pc();
          get_arg(uint32_t);
-         buzzvm_pushcc(vm, arg);
+         if(buzzvm_pushcc(vm, arg) != BUZZVM_STATE_READY) return vm->state;
          break;
       }
       case BUZZVM_INSTR_PUSHL: {
          inc_pc();
          get_arg(uint32_t);
-         buzzvm_pushl(vm, arg);
+         if(buzzvm_pushl(vm, arg) != BUZZVM_STATE_READY) return vm->state;
          break;
       }
       case BUZZVM_INSTR_LLOAD: {
@@ -1004,6 +1010,63 @@ buzzvm_state buzzvm_pop(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+buzzvm_state buzzvm_push(buzzvm_t vm, buzzobj_t v) {
+   buzzdarray_push(vm->stack, &v);
+   return vm->state;
+}
+
+buzzvm_state buzzvm_pushuserdata(buzzvm_t vm, void* v) {
+   buzzobj_t o = buzzheap_newobj(vm->heap, BUZZTYPE_USERDATA);
+   o->u.value = v;
+   buzzvm_push(vm, o);
+   return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state buzzvm_pushnil(buzzvm_t vm) {
+   buzzobj_t o = buzzheap_newobj(vm->heap, BUZZTYPE_NIL);
+   buzzvm_push(vm, o);
+   return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state buzzvm_pushc(buzzvm_t vm, int32_t rfrnc, int32_t nat) {
+   buzzobj_t o = buzzheap_newobj((vm->heap), BUZZTYPE_CLOSURE);
+   o->c.value.isnative = nat;
+   o->c.value.ref = rfrnc;
+   buzzobj_t nil = buzzheap_newobj(vm->heap, BUZZTYPE_NIL);
+   buzzdarray_push(o->c.value.actrec, &nil);
+   buzzvm_push(vm, o);
+   return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state buzzvm_pushi(buzzvm_t vm, int32_t v) {
+   buzzobj_t o = buzzheap_newobj(vm->heap, BUZZTYPE_INT);
+   o->i.value = v;
+   buzzvm_push(vm, o);
+   return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state buzzvm_pushf(buzzvm_t vm, float v) {
+   buzzobj_t o = buzzheap_newobj(vm->heap, BUZZTYPE_FLOAT);
+   o->f.value = v;
+   buzzvm_push(vm, o);
+   return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
 buzzvm_state buzzvm_pushs(buzzvm_t vm, uint16_t strid) {
    if((strid) >= buzzdarray_size(vm->strings)) {
       vm->state = BUZZVM_STATE_ERROR;
@@ -1015,6 +1078,28 @@ buzzvm_state buzzvm_pushs(buzzvm_t vm, uint16_t strid) {
    o->s.value.str = buzzdarray_get(vm->strings, (strid), char*);
    buzzvm_push(vm, o);
    return BUZZVM_STATE_READY;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state buzzvm_pushl(buzzvm_t vm, int32_t addr) {
+   buzzobj_t o = buzzheap_newobj(((vm)->heap), BUZZTYPE_CLOSURE);
+   o->c.value.isnative = 1;
+   o->c.value.ref = addr;
+   if(vm->lsyms) {
+      int i;
+      for(i = 0; i < buzzdarray_size(vm->lsyms->syms); ++i)
+         buzzdarray_push(o->c.value.actrec,
+                         &buzzdarray_get(vm->lsyms->syms,
+                                         i, buzzobj_t));
+   }
+   else {
+      buzzobj_t nil = buzzheap_newobj(vm->heap, BUZZTYPE_NIL);
+      buzzdarray_push(o->c.value.actrec,
+                      &nil);
+   }
+   return buzzvm_push(vm, o);
 }
 
 /****************************************/
@@ -1100,18 +1185,26 @@ buzzvm_state buzzvm_gstore(buzzvm_t vm) {
 /****************************************/
 
 buzzvm_state buzzvm_ret0(buzzvm_t vm) {
-   if(vm->lsyms->isswarm) {
+   /* Pop swarm stack */
+   if(vm->lsyms->isswarm)
       buzzdarray_pop(vm->swarmstack);
-   }
+   /* Pop local symbol table */
    buzzdarray_pop(vm->lsymts);
+   /* Set local symbol table pointer */
    vm->lsyms = !buzzdarray_isempty(vm->lsymts) ?
       buzzdarray_last(vm->lsymts, buzzvm_lsyms_t) :
       NULL;
+   /* Pop stack */
    buzzdarray_pop(vm->stacks);
+   /* Set stack pointer */
    vm->stack = buzzdarray_last(vm->stacks, buzzdarray_t);
+   /* Make sure the stack contains at least one element */
    buzzvm_stack_assert(vm, 1);
+   /* Make sure that element is an integer */
    buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+   /* Use that element as program counter */
    vm->pc = buzzvm_stack_at(vm, 1)->i.value;
+   /* Pop the return address */
    return buzzvm_pop(vm);
 }
 
@@ -1119,23 +1212,33 @@ buzzvm_state buzzvm_ret0(buzzvm_t vm) {
 /****************************************/
 
 buzzvm_state buzzvm_ret1(buzzvm_t vm) {
-   if(vm->lsyms->isswarm) {
+   /* Pop swarm stack */
+   if(vm->lsyms->isswarm)
       buzzdarray_pop(vm->swarmstack);
-   }
+   /* Pop local symbol table */
    buzzdarray_pop(vm->lsymts);
+   /* Set local symbol table pointer */
    vm->lsyms = !buzzdarray_isempty(vm->lsymts) ?
       buzzdarray_last(vm->lsymts, buzzvm_lsyms_t) :
       NULL;
+   /* Make sure there's an element on the stack */
    buzzvm_stack_assert(vm, 1);
+   /* Save it, it's the return value to pass to the lower stack */
    buzzobj_t ret = buzzvm_stack_at(vm, 1);
+   /* Pop stack */
    buzzdarray_pop(vm->stacks);
+   /* Set stack pointer */
    vm->stack = buzzdarray_last(vm->stacks, buzzdarray_t);
+   /* Make sure the stack contains at least one element */
    buzzvm_stack_assert(vm, 1);
+   /* Make sure that element is an integer */
    buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+   /* Use that element as program counter */
    vm->pc = buzzvm_stack_at(vm, 1)->i.value;
+   /* Pop the return address */
    buzzvm_pop(vm);
-   buzzvm_push(vm, ret);
-   return vm->state;
+   /* Push the return value */
+   return buzzvm_push(vm, ret);
 }
 
 /****************************************/
