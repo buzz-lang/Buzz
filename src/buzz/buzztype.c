@@ -318,6 +318,50 @@ int buzzobj_foreach(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+struct buzzobj_reduce_params {
+   buzzvm_t vm;
+   buzzobj_t fun;
+};
+
+void buzzobj_reduce_entry(const void* key, void* data, void* params) {
+   /* Cast params */
+   struct buzzobj_reduce_params* p = (struct buzzobj_reduce_params*)params;
+   if(p->vm->state != BUZZVM_STATE_READY) return;
+   /* Save and pop accumulator from the stack */
+   buzzobj_t accum = buzzvm_stack_at(p->vm, 1);
+   buzzvm_pop(p->vm);
+   /* Push closure and params (key and value) */
+   buzzvm_push(p->vm, p->fun);
+   buzzvm_push(p->vm, *(buzzobj_t*)key);
+   buzzvm_push(p->vm, *(buzzobj_t*)data);
+   buzzvm_push(p->vm, accum);
+   /* Call closure */
+   p->vm->state = buzzvm_closure_call(p->vm, 3);
+}
+
+int buzzobj_reduce(buzzvm_t vm) {
+   /* Table, closure, and initial value expected */
+   buzzvm_lnum_assert(vm, 3);
+   /* Get table */
+   buzzvm_lload(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_TABLE);
+   buzzobj_t t = buzzvm_stack_at(vm, 1);
+   /* Get closure */
+   buzzvm_lload(vm, 2);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
+   buzzobj_t c = buzzvm_stack_at(vm, 1);
+   /* Put initial accumulator value on the stack */
+   buzzvm_lload(vm, 3);
+   /* Go through the table element and apply the closure */
+   struct buzzobj_reduce_params p = { .vm = vm, .fun = c };
+   buzzdict_foreach(t->t.value, buzzobj_reduce_entry, &p);
+   /* The final value of the accumulator is on the stack */
+   return buzzvm_ret1(vm);
+}
+
+/****************************************/
+/****************************************/
+
 void buzzobj_serialize_tableelem(const void* key, void* data, void* params) {
    buzzobj_serialize((buzzdarray_t)params, *(buzzobj_t*)key);
    buzzobj_serialize((buzzdarray_t)params, *(buzzobj_t*)data);
