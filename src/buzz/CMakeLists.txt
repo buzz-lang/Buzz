@@ -21,14 +21,14 @@ install(DIRECTORY . DESTINATION include/buzz FILES_MATCHING PATTERN "*.h")
 #
 # Compile buzzasm
 #
-add_executable(buzzasm buzzasm.h buzzasm.c buzzasm_main.c)
+add_executable(buzzasm buzzdebug.h buzzdebug.c buzzasm.h buzzasm.c buzzasm_main.c)
 target_link_libraries(buzzasm buzz)
 install(TARGETS buzzasm RUNTIME DESTINATION bin)
 
 #
 # Compile buzzdeasm
 #
-add_executable(buzzdeasm buzzasm.h buzzasm.c buzzdeasm_main.c)
+add_executable(buzzdeasm buzzdebug.h buzzdebug.c buzzasm.h buzzasm.c buzzdeasm_main.c)
 target_link_libraries(buzzdeasm buzz)
 install(TARGETS buzzdeasm RUNTIME DESTINATION bin)
 

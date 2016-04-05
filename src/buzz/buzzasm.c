@@ -1,5 +1,5 @@
 #include "buzzasm.h"
-#include "buzzdict.h"
+#include "buzzdebug.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -71,6 +71,9 @@
    buzzdict_set(labsubs, &pos, &label);                                 \
    (*size) += sizeof(int32_t);
 
+/****************************************/
+/****************************************/
+
 /*
  * Prints a warning if an argument is passed for an opcode that doesn't want one
  */
@@ -84,6 +87,9 @@
 #define f_arg_instr(OP) if(strcmp(instr, buzzvm_instr_desc[OP]) == 0) { bcode_add_instr(OP); bcode_add_arg_f(); continue; }
 #define l_arg_instr(OP) if(strcmp(instr, buzzvm_instr_desc[OP]) == 0) { bcode_add_instr(OP); bcode_add_arg_l(); continue; }
 
+/****************************************/
+/****************************************/
+
 void strkeydstryf(const void* key, void* data, void* params) {
    free(*(char**)key);
 }
@@ -91,6 +97,9 @@ void strkeydstryf(const void* key, void* data, void* params) {
 void strdatadstryf(const void* key, void* data, void* params) {
    free(*(char**)data);
 }
+
+/****************************************/
+/****************************************/
 
 struct buzz_asm_info_s {
    const char* fname;
@@ -127,9 +136,13 @@ void buzz_asm_labsub(const void* key, void* data, void* params) {
    }
 }
 
+/****************************************/
+/****************************************/
+
 int buzz_asm(const char* fname,
              uint8_t** buf,
-             uint32_t* size) {
+             uint32_t* size,
+             buzzdebuginfo_t* dbg) {
    /* Make new label position dictionary */
    buzzdict_t labpos = buzzdict_new(100,
                                     sizeof(char*),
@@ -144,6 +157,8 @@ int buzz_asm(const char* fname,
                                      buzzdict_int32keyhash,
                                      buzzdict_int32keycmp,
                                      strdatadstryf);
+   /* Make new debug data structure */
+   *dbg = buzzdebuginfo_new();
    /* Open file */
    FILE* fd = fopen(fname, "r");
    if(!fd) {
@@ -197,19 +212,54 @@ int buzz_asm(const char* fname,
       }      
       /* Is the line a label? */
       if(*trimline == '@') {
-         char* label = strdup(trimline);
+         /* Parse label and debug info */
+         char* labelinfo = strsep(&trimline, "|\n");
+         char* debuginfo = strsep(&trimline, "|\n");
+         /* Add debug information, if any */
+         if(debuginfo && *debuginfo) {
+            /* Parse line and column data */
+            char* line = strsep(&debuginfo, ",\n");
+            char* col = strsep(&debuginfo, ",\n");
+            uint64_t l = strtol(line, NULL, 10);
+            uint64_t c = strtol(col, NULL, 10);
+            buzzdebuginfo_set(*dbg, *size, l, c);
+            fprintf(stderr, "[DEBUG] Added debug information O%u:L%llu:C%llu\n", *size, l, c);
+         }
+         /* Remove trailing space from label info */
+         endc = labelinfo + strlen(labelinfo) - 1;
+         while(endc > labelinfo && isspace(*endc)) --endc;
+         *(endc + 1) = 0;
+         /* Copy label information for storage */
+         char* label = strdup(labelinfo);
          buzzdict_set(labpos, &label, size);
-         fprintf(stderr, "[DEBUG] %s:%zu LABEL %s at %u\n", fname, lineno, label, *size);
+         fprintf(stderr, "[DEBUG] %s:%zu LABEL '%s' at %u", fname, lineno, label, *size);
+         if(debuginfo)
+            fprintf(stderr, "\t|%s", debuginfo);
+         fprintf(stderr, "\n");
          continue;
       }
       /* Fetch the instruction */
       fprintf(stderr, "[DEBUG] %s:%zu \t%s", fname, lineno, trimline);
-      char* instr = strsep(&trimline, " \n\t");
-      char* argstr = strsep(&trimline, " \n\t");
-      if(argstr)
-         fprintf(stderr, "\t[%s] [%s]\n", instr, argstr);
-      else
-         fprintf(stderr, "\t[%s]\n", instr);
+      char* instrinfo = strsep(&trimline, "|\n");
+      char* debuginfo = strsep(&trimline, "|\n");
+      char* instr = strsep(&instrinfo, " \n\t");
+      char* argstr = strsep(&instrinfo, " \n\t");
+      fprintf(stderr, "\t[%s]", instr);
+      if(argstr && *argstr)
+         fprintf(stderr, " [%s]", argstr);
+      if(debuginfo && *debuginfo)
+         fprintf(stderr, "\t|%s", debuginfo);
+      fprintf(stderr, "\n");
+      /* Add debug information, if any */
+      if(debuginfo && *debuginfo) {
+         /* Parse line and column data */
+         char* line = strsep(&debuginfo, ",\n");
+         char* col = strsep(&debuginfo, ",\n");
+         uint64_t l = strtol(line, NULL, 10);
+         uint64_t c = strtol(col, NULL, 10);
+         buzzdebuginfo_set(*dbg, *size, l, c);
+         fprintf(stderr, "[DEBUG] Added debug information O%u:L%llu:C%llu\n", *size, l, c);
+      }
       /* Interpret the instruction */
       noarg_instr(BUZZVM_INSTR_NOP);
       noarg_instr(BUZZVM_INSTR_DONE);
@@ -282,13 +332,20 @@ int buzz_asm(const char* fname,
 #define write_arg(T, FMT)                                               \
    if(i + sizeof(T) >= size) {                                          \
       fprintf(stderr, "ERROR: %s: not enough bytes in bytecode for argument of %s at %u\n", fname, buzzvm_instr_desc[op], i); \
+      fclose(fd);                                                       \
       return 2;                                                         \
    }                                                                    \
    fprintf(fd, " " FMT, (*(T*)(buf+i+1)));                              \
+   if(buzzdebuginfo_exists(dbg, &i)) {                                  \
+      fprintf(fd, "\t|%llu,%llu",                                       \
+              buzzdebuginfo_get(dbg, &i)->line,                         \
+              buzzdebuginfo_get(dbg, &i)->col);                         \
+   }                                                                    \
    i += sizeof(T);
 
 int buzz_deasm(const uint8_t* buf,
                uint32_t size,
+               buzzdebuginfo_t dbg,
                const char* fname) {
    /* Open file */
    FILE* fd = fopen(fname, "w");
@@ -315,6 +372,7 @@ int buzz_deasm(const uint8_t* buf,
    }
    if(c < count) {
       fprintf(stderr, "ERROR: %s: scanning string went up to end of file (%ld still to parse)\n", fname, (count - c));
+      fclose(fd);
       return 2;
    }
    /*
@@ -329,6 +387,7 @@ int buzz_deasm(const uint8_t* buf,
       /* Check that it's in the allowed range */
       if(op >= maxop) {
          fprintf(stderr, "ERROR: %s: unknown opcode %u at %u\n", fname, op, i);
+         fclose(fd);
          return 2;
       }
       /* Write the op description */
@@ -341,6 +400,13 @@ int buzz_deasm(const uint8_t* buf,
       else if(op > BUZZVM_INSTR_PUSHF) {
          /* Integer argument */
          write_arg(int32_t, "%d");
+      }
+      else {
+         if(buzzdebuginfo_exists(dbg, &i)) {
+            fprintf(fd, "\t|%llu,%llu",
+                    buzzdebuginfo_get(dbg, &i)->line,
+                    buzzdebuginfo_get(dbg, &i)->col);
+         }
       }
       /* Newline */
       fprintf(fd, "\n");

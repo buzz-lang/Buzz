@@ -7,6 +7,7 @@
 #include <argos3/plugins/robots/generic/control_interface/ci_range_and_bearing_actuator.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_range_and_bearing_sensor.h>
 #include <buzz/buzzvm.h>
+#include <buzz/buzzdebug.h>
 #include <string>
 
 using namespace argos;
@@ -23,7 +24,8 @@ public:
    virtual void ControlStep();
    virtual void Destroy();
 
-   virtual void SetBytecode(const std::string& str_fname);
+   virtual void SetBytecode(const std::string& str_bc_fname,
+                            const std::string& str_dbg_fname);
 
    inline const buzzvm_t GetBuzzVM() const {
       return m_tBuzzVM;
@@ -127,6 +129,10 @@ protected:
                          SInt32 n_idx,
                          const CColor& c_color);
 
+private:
+
+   std::string ErrorInfo();
+
 protected:
 
    /* Pointer to the range and bearing actuator */
@@ -138,8 +144,12 @@ protected:
    UInt16 m_unRobotId;
    /* Buzz VM state */
    buzzvm_t m_tBuzzVM;
+   /* Buzz debug info */
+   buzzdebuginfo_t m_tBuzzDbgInfo;
    /* Name of the bytecode file */
    std::string m_strBytecodeFName;
+   /* Name of the debug info file */
+   std::string m_strDbgInfoFName;
    /* The actual bytecode */
    CByteArray m_cBytecode;
    /* Debug message */

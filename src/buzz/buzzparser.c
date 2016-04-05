@@ -215,18 +215,28 @@ void chunk_destroy(uint32_t pos, void* data, void* params) {
    *c = NULL;
 }
 
-void chunk_addcode(chunk_t c, char* code) {
+void chunk_addcode(chunk_t c, char* code, buzztok_t tok) {
+   /* Append code to debug information */
+   char* instr;
+   if(tok) {
+      asprintf(&instr, "%s\t|%llu,%llu\n", code, tok->line, tok->col);
+   }
+   else {
+      asprintf(&instr, "%s\n", code);
+   }
    /* Get length of the code */
-   size_t l = strlen(code);
+   size_t l = strlen(instr);
    /* Resize the code buffer */
    if(c->csize + l >= c->ccap) {
       do { c->ccap *= 2; } while(c->csize + l >= c->ccap);
       c->code = realloc(c->code, c->ccap);
    }
    /* Copy the code */
-   strncpy(c->code + c->csize, code, l);
+   strncpy(c->code + c->csize, instr, l);
    /* Update size */
    c->csize += l;
+   /* Cleanup */
+   free(instr);
 }
 
 void chunk_finalize(chunk_t c) {
@@ -240,7 +250,7 @@ void chunk_finalize(chunk_t c) {
 #define chunk_append(...) {                         \
       char* str;                                    \
       asprintf(&str, ##__VA_ARGS__);                \
-      chunk_addcode(par->chunk, str);               \
+      chunk_addcode(par->chunk, str, par->tok);     \
       free(str);                                    \
    }
 
@@ -374,8 +384,8 @@ int parse_script(buzzparser_t par) {
    /* Parse the statements */
    if(!parse_statlist(par)) return PARSE_ERROR;
    /* Finalize the output */
-   chunk_append("\n@__exitpoint\n");
-   chunk_append("\tdone\n");
+   chunk_append("\n@__exitpoint");
+   chunk_append("\tdone");
    chunk_pop();
    return PARSE_OK;
 }
@@ -515,18 +525,18 @@ int parse_var(buzzparser_t par) {
       /* lvalue is OK */
       DEBUG("Parsing assignment\n");
       /* Is lvalue a global symbol? If so, push its string id */
-      if(s->global) chunk_append("\tpushs %lld\n", s->pos);
+      if(s->global) chunk_append("\tpushs %lld", s->pos);
       /* Consume the = */
       fetchtok();
       /* Parse the expression */
       if(!parse_expression(par)) return PARSE_ERROR;
       if(s->global) {
          /* The lvalue is a global symbol, just add gstore */
-         chunk_append("\tgstore\n");
+         chunk_append("\tgstore");
       }
       else {
          /* Local variable */
-         chunk_append("\tlstore %lld\n", s->pos);
+         chunk_append("\tlstore %lld", s->pos);
       }
       DEBUG("Assignment statement end\n");
       return PARSE_OK;
@@ -558,7 +568,7 @@ int parse_fun(buzzparser_t par) {
    /* Parse block */
    if(!parse_block(par)) return PARSE_ERROR;
    /* Add a default return */
-   chunk_append("\tret0\n");
+   chunk_append("\tret0");
    /* Get rid of symbol table and close chunk */
    symt_pop();
    chunk_pop();
@@ -582,7 +592,7 @@ int parse_if(buzzparser_t par) {
    /* True branch follows condition; false branch follows true one */
    /* Jamp to label 1 if the condition is false */
    /* Label 1 is either if end (in case of no else branch) or else branch */
-   chunk_append("\tjumpz " LABELREF "%u\n", lab1);
+   chunk_append("\tjumpz " LABELREF "%u", lab1);
    if(!parse_blockstat(par)) return PARSE_ERROR;
    /* Eat away the newlines, if any */
    while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
@@ -590,16 +600,16 @@ int parse_if(buzzparser_t par) {
       DEBUG("Else found\n");
       fetchtok();
       /* Make true branch jump to label 2 => if end */
-      chunk_append("\tjump " LABELREF "%u\n", lab2);
+      chunk_append("\tjump " LABELREF "%u", lab2);
       /* Mark this place as label 1 and keep parsing */
-      chunk_append(LABELREF "%u\n", lab1);
+      chunk_append(LABELREF "%u", lab1);
       if(!parse_blockstat(par)) return PARSE_ERROR;
       /* Mark the if end as label 2 */
-      chunk_append(LABELREF "%u\n", lab2);
+      chunk_append(LABELREF "%u", lab2);
    }
    else {
       /* Mark the if end as label 1 */
-      chunk_append(LABELREF "%u\n", lab1);
+      chunk_append(LABELREF "%u", lab1);
    }
    DEBUG("If end\n");
    return PARSE_OK;
@@ -648,19 +658,19 @@ int parse_while(buzzparser_t par) {
    tokmatch(BUZZTOK_PAROPEN);
    fetchtok();
    /* Place while start label */
-   chunk_append(LABELREF "%u\n", wstart);
+   chunk_append(LABELREF "%u", wstart);
    /* Place the condition */
    if(!parse_condition(par)) return PARSE_ERROR;
    tokmatch(BUZZTOK_PARCLOSE);
    fetchtok();
    /* If the condition is false, jump to the end */
-   chunk_append("\tjumpz " LABELREF "%u\n", wend);
+   chunk_append("\tjumpz " LABELREF "%u", wend);
    /* Parse block */
    if(!parse_blockstat(par)) return PARSE_ERROR;
    /* Jump back to while start */
-   chunk_append("\tjump " LABELREF "%u\n", wstart);
+   chunk_append("\tjump " LABELREF "%u", wstart);
    /* Place while end label */
-   chunk_append(LABELREF "%u\n", wend);
+   chunk_append(LABELREF "%u", wend);
    return PARSE_OK;
 }
 
@@ -695,7 +705,7 @@ int parse_condition(buzzparser_t par) {
       strcpy(op, par->tok->value);
       fetchtok();
       if(!parse_comparison(par)) return PARSE_ERROR;
-      chunk_append("\t%s\n", op);
+      chunk_append("\t%s", op);
    }
    DEBUG("Condition end\n");
    return PARSE_OK;
@@ -715,7 +725,7 @@ int parse_comparison(buzzparser_t par) {
       DEBUG("Parsing NOT condition start\n");
       fetchtok();
       if(!parse_comparison(par)) return PARSE_ERROR;
-      chunk_append("\tnot\n");
+      chunk_append("\tnot");
       DEBUG("NOT condition end\n");
       return PARSE_OK;
    }
@@ -732,7 +742,7 @@ int parse_comparison(buzzparser_t par) {
          else if(strcmp(par->tok->value, ">=") == 0) strcpy(op, "gte");
          fetchtok();
          if(!parse_expression(par)) return PARSE_ERROR;
-         chunk_append("\t%s\n", op);
+         chunk_append("\t%s", op);
       }
       DEBUG("Parsing comparison condition end\n");
       return PARSE_OK;
@@ -748,7 +758,7 @@ int parse_expression(buzzparser_t par) {
       fetchtok();
       tokmatch(BUZZTOK_BLOCKCLOSE);
       fetchtok();
-      chunk_append("\tpusht\n");
+      chunk_append("\tpusht");
       DEBUG("Expression end\n");
       return PARSE_OK;
    }
@@ -758,8 +768,8 @@ int parse_expression(buzzparser_t par) {
       char op = par->tok->value[0];
       fetchtok();
       if(!parse_product(par)) return PARSE_ERROR;
-      if     (op == '+') { chunk_append("\tadd\n"); }
-      else if(op == '-') { chunk_append("\tsub\n"); }
+      if     (op == '+') { chunk_append("\tadd"); }
+      else if(op == '-') { chunk_append("\tsub"); }
    }
    DEBUG("Expression end\n");
    return PARSE_OK;
@@ -774,10 +784,10 @@ int parse_product(buzzparser_t par) {
       fetchtok();
       if(!parse_modulo(par)) return PARSE_ERROR;
       if(op == '*') {
-         chunk_append("\tmul\n");
+         chunk_append("\tmul");
       }
       else if(op == '/') {
-         chunk_append("\tdiv\n");
+         chunk_append("\tdiv");
       }
    }
    DEBUG("Product end\n");
@@ -791,7 +801,7 @@ int parse_modulo(buzzparser_t par) {
       DEBUG("Parsing modulo\n");
       fetchtok();
       if(!parse_power(par)) return PARSE_ERROR;
-      chunk_append("\tmod\n");
+      chunk_append("\tmod");
    }
    DEBUG("Modulo end\n");
    return PARSE_OK;
@@ -808,7 +818,7 @@ int parse_powerrest(buzzparser_t par) {
       DEBUG("Parsing power\n");
       fetchtok();
       if(!parse_power(par)) return PARSE_ERROR;
-      chunk_append("\tpow\n");
+      chunk_append("\tpow");
    }
    DEBUG("End power\n");
    return PARSE_OK;
@@ -818,13 +828,13 @@ int parse_operand(buzzparser_t par) {
    DEBUG("Parsing operand\n");
    if(par->tok->type == BUZZTOK_FUN) {
       DEBUG("Operand is lambda\n");
-      chunk_append("\tpushl " LABELREF "%u\n", par->labels);
+      chunk_append("\tpushl " LABELREF "%u", par->labels);
       if(!parse_lambda(par)) return PARSE_ERROR;
       return PARSE_OK;
    }
    else if(par->tok->type == BUZZTOK_NIL) {
       DEBUG("Operand is token nil\n");
-      chunk_append("\tpushnil\n");      
+      chunk_append("\tpushnil");      
       fetchtok();
       return PARSE_OK;
    }
@@ -832,11 +842,11 @@ int parse_operand(buzzparser_t par) {
       DEBUG("Operand is numeric constant\n");
       if(strchr(par->tok->value, '.')) {
          /* Floating-point constant */
-         chunk_append("\tpushf %s\n", par->tok->value);
+         chunk_append("\tpushf %s", par->tok->value);
       }
       else {
          /* Integer constant */
-         chunk_append("\tpushi %s\n", par->tok->value);
+         chunk_append("\tpushi %s", par->tok->value);
       }
       fetchtok();
       return PARSE_OK;
@@ -844,7 +854,7 @@ int parse_operand(buzzparser_t par) {
    else if(par->tok->type == BUZZTOK_STRING) {
       DEBUG("Operand is string\n");
       uint32_t pos = string_add(par->strings, par->tok->value);
-      chunk_append("\tpushs %u\n", pos);
+      chunk_append("\tpushs %u", pos);
       fetchtok();
       return PARSE_OK;
    }
@@ -864,11 +874,11 @@ int parse_operand(buzzparser_t par) {
          DEBUG("Operand is signed +- constant\n");
          if(strchr(par->tok->value, '.')) {
             /* Floating-point constant */
-            chunk_append("\tpushf %c%s\n", op, par->tok->value);
+            chunk_append("\tpushf %c%s", op, par->tok->value);
          }
          else {
             /* Integer constant */
-            chunk_append("\tpushi %c%s\n", op, par->tok->value);
+            chunk_append("\tpushi %c%s", op, par->tok->value);
          }
          fetchtok();
          return PARSE_OK;
@@ -876,7 +886,7 @@ int parse_operand(buzzparser_t par) {
       else {
          DEBUG("Operand is signed +-\n");
          if(!parse_power(par)) return PARSE_ERROR;
-         if(op == '-') chunk_append("\tunm\n");
+         if(op == '-') chunk_append("\tunm");
          DEBUG("Signed operand +- end\n");
          return PARSE_OK;
       }
@@ -896,11 +906,11 @@ int parse_command(buzzparser_t par) {
       fetchtok();
       if(par->tok->type == BUZZTOK_STATEND ||
          par->tok->type == BUZZTOK_BLOCKCLOSE) {
-         chunk_append("\tret0\n");
+         chunk_append("\tret0");
       }
       else {
          if(!parse_condition(par)) return PARSE_ERROR;
-         chunk_append("\tret1\n");
+         chunk_append("\tret1");
       }
       return PARSE_OK;
    }
@@ -921,24 +931,24 @@ int parse_command(buzzparser_t par) {
          /* lvalue is OK */
          DEBUG("Parsing assignment\n");
          /* Is lvalue a global symbol? If so, push its string id */
-         if(idrefinfo.global) chunk_append("\tpushs %d\n", idrefinfo.info);
+         if(idrefinfo.global) chunk_append("\tpushs %d", idrefinfo.info);
          /* Consume the = */
          fetchtok();
          /* Parse the expression */
          if(!parse_expression(par)) return PARSE_ERROR;
          if(idrefinfo.global) {
             /* The lvalue is a global symbol, just add gstore */
-            chunk_append("\tgstore\n");
+            chunk_append("\tgstore");
          }
          else {
             /* The lvalue is a local symbol or a table reference */
             if(idrefinfo.info >= 0) {
                /* Local variable */
-               chunk_append("\tlstore %d\n", idrefinfo.info);
+               chunk_append("\tlstore %d", idrefinfo.info);
             }
             else if(idrefinfo.info == TYPE_TABLE) {
                /* Table reference */
-               chunk_append("\ttput\n");
+               chunk_append("\ttput");
             }
          }
          DEBUG("Assignment statement end\n");
@@ -1056,10 +1066,13 @@ int parse_idref(buzzparser_t par,
          par->tok->type == BUZZTOK_IDXOPEN ||
          par->tok->type == BUZZTOK_PAROPEN) {
       /* Take care of structured types */
-      if(idrefinfo->global)                    { chunk_append("\tpushs %d\n\tgload\n", idrefinfo->info); }
-      else if(idrefinfo->info >= 0)            { chunk_append("\tlload %lld\n", s->pos); }
-      else if(idrefinfo->info == TYPE_TABLE)   { chunk_append("\ttget\n"); }
-      else if(idrefinfo->info == TYPE_CLOSURE) { chunk_append("\tcallc\n"); }
+      if(idrefinfo->global) {
+         chunk_append("\tpushs %d", idrefinfo->info);
+         chunk_append("\tgload");
+      }
+      else if(idrefinfo->info >= 0)            { chunk_append("\tlload %lld", s->pos); }
+      else if(idrefinfo->info == TYPE_TABLE)   { chunk_append("\ttget"); }
+      else if(idrefinfo->info == TYPE_CLOSURE) { chunk_append("\tcallc"); }
       idrefinfo->global = 0;
       /* Go on parsing structure type */
       if(par->tok->type == BUZZTOK_DOT) {
@@ -1068,8 +1081,8 @@ int parse_idref(buzzparser_t par,
          fetchtok();
          tokmatch(BUZZTOK_ID);
          uint32_t* sid = buzzdict_get(par->strings, &par->tok->value, uint32_t);
-         if(!sid) { chunk_append("\tpushs %u\n", string_add(par->strings, par->tok->value)); }
-         else { chunk_append("\tpushs %u\n", *sid); }
+         if(!sid) { chunk_append("\tpushs %u", string_add(par->strings, par->tok->value)); }
+         else { chunk_append("\tpushs %u", *sid); }
          fetchtok();
       }
       else if(par->tok->type == BUZZTOK_IDXOPEN) {
@@ -1087,22 +1100,23 @@ int parse_idref(buzzparser_t par,
          if(!parse_conditionlist(par, &numargs)) return PARSE_ERROR;
          tokmatch(BUZZTOK_PARCLOSE);
          fetchtok();
-         chunk_append("\tpushi %d\n", numargs);
+         chunk_append("\tpushi %d", numargs);
       }
    }
    if(!lvalue ||
       idrefinfo->info == TYPE_CLOSURE) {
       if(idrefinfo->global) {
-         chunk_append("\tpushs %d\n\tgload\n", idrefinfo->info);
+         chunk_append("\tpushs %d", idrefinfo->info);
+         chunk_append("\tgload");
       }
       else if(idrefinfo->info >= 0) {
-         chunk_append("\tlload %d\n", idrefinfo->info);
+         chunk_append("\tlload %d", idrefinfo->info);
       }
       else if(idrefinfo->info == TYPE_TABLE) {
-         chunk_append("\ttget\n");
+         chunk_append("\ttget");
       }
       else if(idrefinfo->info == TYPE_CLOSURE) {
-         chunk_append("\tcallc\n");
+         chunk_append("\tcallc");
       }
    }
    DEBUG("Idref end\n");
@@ -1149,7 +1163,7 @@ int parse_lambda(buzzparser_t par) {
    /* Parse block */
    if(!parse_block(par)) return PARSE_ERROR;
    /* Add a default return */
-   chunk_append("\tret0\n");
+   chunk_append("\tret0");
    /* Get rid of symbol table and close chunk */
    symt_pop();
    chunk_pop();

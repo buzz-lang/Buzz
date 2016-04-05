@@ -1,4 +1,6 @@
-#include "buzzasm.h"
+#include <buzz/buzzasm.h>
+#include <buzz/buzzdebug.h>
+
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -8,11 +10,11 @@
 
 int main(int argc, char** argv) {
    /* Parse command line */
-   if(argc != 3) {
-      fprintf(stderr, "Usage:\n\t%s <infile.bo> <outfile.basm>\n\n", argv[0]);
+   if(argc != 4) {
+      fprintf(stderr, "Usage:\n\t%s <bytecodefile.bo> <debugfile.bdbg> <outfile.basm>\n\n", argv[0]);
       return 0;
    }
-   /* Open input file */
+   /* Open bytecode file */
    int ifd = open(argv[1], O_RDONLY);
    if(ifd < 0) perror(argv[1]);
    /* Read data */
@@ -27,9 +29,14 @@ int main(int argc, char** argv) {
       tot += rd;
    }
    close(ifd);
+   /* Read debug information */
+   buzzdebuginfo_t dbg = buzzdebuginfo_new();
+   if(!buzzdebuginfo_fromfile(dbg, argv[2]))
+      perror(argv[2]);
    /* Go through bytecode */
-   int rv = buzz_deasm(bcode_buf, bcode_size, argv[2]);
+   int rv = buzz_deasm(bcode_buf, bcode_size, dbg, argv[3]);
    /* Cleanup */
    free(bcode_buf);
+   buzzdebuginfo_destroy(&dbg);
    return rv;
 }

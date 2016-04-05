@@ -2,6 +2,7 @@
 #define BUZZASM_H
 
 #include <buzz/buzzvm.h>
+#include <buzz/buzzdebug.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -12,21 +13,25 @@ extern "C" {
  * @param fname The file name where the code is located.
  * @param buf The buffer in which the bytecode will be stored. Created internally.
  * @param size The size of the bytecode buffer.
+ * @param dbg The debug data structure to fill into. Created internally.
  * @return 0 if no error occurred, 1 for I/O error, 2 for compilation error.
  */
 extern int buzz_asm(const char* fname,
                     uint8_t** buf,
-                    uint32_t* size);
+                    uint32_t* size,
+                    buzzdebuginfo_t* dbg);
 
 /*
  * Decompiles bytecode into an assembly file.
  * @param buf The buffer in which the bytecode is stored.
  * @param size The size of the bytecode buffer.
+ * @param dbg The debug data structure.
  * @param fname The file name where the assembly will be written.
  * @return 0 if no error occurred, 1 for I/O error, 2 for decompilation error.
  */
 extern int buzz_deasm(const uint8_t* buf,
                       uint32_t size,
+                      buzzdebuginfo_t dbg,
                       const char* fname);
 
 #ifdef __cplusplus

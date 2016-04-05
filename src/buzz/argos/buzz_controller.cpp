@@ -1,5 +1,6 @@
 #include "buzz_controller.h"
 #include <buzz/buzzasm.h>
+#include <buzz/buzzdebug.h>
 #include <cstdlib>
 #include <fstream>
 #include <cerrno>
@@ -119,12 +120,15 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
       m_pcRABA   = GetActuator<CCI_RangeAndBearingActuator>("range_and_bearing");
       m_pcRABS   = GetSensor  <CCI_RangeAndBearingSensor  >("range_and_bearing");
       /* Get the script name */
-      std::string strFName;
-      GetNodeAttribute(t_node, "bytecode_file", strFName);
+      std::string strBCFName;
+      GetNodeAttribute(t_node, "bytecode_file", strBCFName);
+      /* Get the script name */
+      std::string strDbgFName;
+      GetNodeAttribute(t_node, "debug_file", strDbgFName);
       /* Initialize the rest */
       m_tBuzzVM = NULL;
       m_unRobotId = FromString<UInt16>(GetId().substr(2));
-      SetBytecode(strFName);
+      SetBytecode(strBCFName, strDbgFName);
       UpdateSensors();
    }
    catch(CARGoSException& ex) {
@@ -136,7 +140,7 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
 /****************************************/
 
 void CBuzzController::Reset() {
-   SetBytecode(m_strBytecodeFName);
+   SetBytecode(m_strBytecodeFName, m_strDbgInfoFName);
 }
 
 /****************************************/
@@ -149,7 +153,7 @@ void CBuzzController::ControlStep() {
       fprintf(stderr, "[ROBOT %u] %s: execution terminated abnormally: %s\n\n",
               m_tBuzzVM->robot,
               m_strBytecodeFName.c_str(),
-              buzzvm_strerror(m_tBuzzVM));
+              ErrorInfo().c_str());
       buzzvm_dump(m_tBuzzVM);
    }
    ProcessOutMsgs();
@@ -169,26 +173,35 @@ void CBuzzController::Destroy() {
 /****************************************/
 /****************************************/
 
-void CBuzzController::SetBytecode(const std::string& str_fname) {
+void CBuzzController::SetBytecode(const std::string& str_bc_fname,
+                                  const std::string& str_dbg_fname) {
    /* Reset the BuzzVM */
    if(m_tBuzzVM) buzzvm_destroy(&m_tBuzzVM);
    m_tBuzzVM = buzzvm_new(m_unRobotId);
-   /* Save the bytecode filename */
-   m_strBytecodeFName = str_fname;
+   /* Get rid of debug info */
+   buzzdebuginfo_destroy(&m_tBuzzDbgInfo);
+   m_tBuzzDbgInfo = buzzdebuginfo_new();
+   /* Save the filenames */
+   m_strBytecodeFName = str_bc_fname;
+   m_strDbgInfoFName = str_dbg_fname;
    /* Load the bytecode */
-   std::ifstream cBCodeFile(str_fname.c_str(), std::ios::binary | std::ios::ate);
+   std::ifstream cBCodeFile(str_bc_fname.c_str(), std::ios::binary | std::ios::ate);
    if(cBCodeFile.fail()) {
-      THROW_ARGOSEXCEPTION("Can't open file \"" << str_fname << "\": " << strerror(errno));
+      THROW_ARGOSEXCEPTION("Can't open file \"" << str_bc_fname << "\": " << strerror(errno));
    }
    std::ifstream::pos_type unFileSize = cBCodeFile.tellg();
    m_cBytecode.Clear();
    m_cBytecode.Resize(unFileSize);
    cBCodeFile.seekg(0, std::ios::beg);
    cBCodeFile.read(reinterpret_cast<char*>(m_cBytecode.ToCArray()), unFileSize);
+   /* Load the debug symbols */
+   if(!buzzdebuginfo_fromfile(m_tBuzzDbgInfo, m_strDbgInfoFName.c_str())) {
+      THROW_ARGOSEXCEPTION("Can't open file \"" << str_dbg_fname << "\": " << strerror(errno));
+   }
    /* Load the script */
    buzzvm_set_bcode(m_tBuzzVM, m_cBytecode.ToCArray(), m_cBytecode.Size());
    if(buzzvm_set_bcode(m_tBuzzVM, m_cBytecode.ToCArray(), m_cBytecode.Size()) != BUZZVM_STATE_READY) {
-      THROW_ARGOSEXCEPTION("Error loading Buzz script \"" << str_fname << "\": " << buzzvm_strerror(m_tBuzzVM));
+      THROW_ARGOSEXCEPTION("Error loading Buzz script \"" << str_bc_fname << "\": " << ErrorInfo());
    }
    /* Register basic function */
    if(RegisterFunctions() != BUZZVM_STATE_READY) {
@@ -198,6 +211,14 @@ void CBuzzController::SetBytecode(const std::string& str_fname) {
    buzzvm_execute_script(m_tBuzzVM);
    /* Call the Init() function */
    buzzvm_function_call(m_tBuzzVM, "init", 0);
+}
+
+/****************************************/
+/****************************************/
+
+std::string CBuzzController::ErrorInfo() {
+   buzzdebuginfo_entry_t tInfo = buzzdebuginfo_get(m_tBuzzDbgInfo, &m_tBuzzVM->pc);
+   return "at line " + ToString(tInfo->line) + ", column " + ToString(tInfo->col);
 }
 
 /****************************************/
