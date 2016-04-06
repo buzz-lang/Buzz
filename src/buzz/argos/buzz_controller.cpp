@@ -218,7 +218,22 @@ void CBuzzController::SetBytecode(const std::string& str_bc_fname,
 
 std::string CBuzzController::ErrorInfo() {
    buzzdebuginfo_entry_t tInfo = buzzdebuginfo_get(m_tBuzzDbgInfo, &m_tBuzzVM->pc);
-   return "at line " + ToString(tInfo->line) + ", column " + ToString(tInfo->col);
+   if(tInfo) {
+      return
+         std::string(buzzvm_strerror(m_tBuzzVM)) +
+         " at " +
+         std::string(tInfo->fname) +
+         ":" +
+         ToString(tInfo->line) +
+         ":" +
+         ToString(tInfo->col);
+   }
+   else {
+      return
+         std::string(buzzvm_strerror(m_tBuzzVM)) +
+         " at bytecode offset " +
+         ToString(m_tBuzzVM->pc);
+   }
 }
 
 /****************************************/

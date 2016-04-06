@@ -10,6 +10,7 @@ extern "C" {
    struct buzzdebuginfo_entry_s {
       uint64_t line;
       uint64_t col;
+      char* fname;
    };
    typedef struct buzzdebuginfo_entry_s* buzzdebuginfo_entry_t;
 
@@ -55,11 +56,13 @@ extern "C" {
     * @param offset The bytecode offset.
     * @param line The script line number.
     * @param col The script column number.
+    * @param fname The file name.
     */
    void buzzdebuginfo_set(buzzdebuginfo_t dbg,
                           uint32_t offset,
                           uint64_t line,
-                          uint64_t col);
+                          uint64_t col,
+                          char* fname);
 
    /*
     * Returns the debug data corresponding to the given offset.

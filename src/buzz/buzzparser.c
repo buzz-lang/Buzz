@@ -219,7 +219,7 @@ void chunk_addcode(chunk_t c, char* code, buzztok_t tok) {
    /* Append code to debug information */
    char* instr;
    if(tok) {
-      asprintf(&instr, "%s\t|%llu,%llu\n", code, tok->line, tok->col);
+      asprintf(&instr, "%s\t|%llu,%llu,%s\n", code, tok->line, tok->col, tok->fname);
    }
    else {
       asprintf(&instr, "%s\n", code);

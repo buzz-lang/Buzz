@@ -189,7 +189,7 @@ extern "C" {
     * @param vm The VM data.
     * @return A description of the current error state.
     */
-   extern char* buzzvm_strerror(buzzvm_t vm);
+   extern const char* buzzvm_strerror(buzzvm_t vm);
 
    /*
     * Creates a new VM.

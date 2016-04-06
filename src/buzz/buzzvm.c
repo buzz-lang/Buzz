@@ -52,15 +52,12 @@ void buzzvm_dump(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
-char* buzzvm_strerror(buzzvm_t vm) {
-   if(vm->state != BUZZVM_STATE_ERROR) {
-      return strdup("No error");
-   }
-   else {
-      char* msg;
-      asprintf(&msg, "%s at offset %d", vm->errormsg, vm->pc);
-      return msg;
-   }
+const char* buzzvm_strerror(buzzvm_t vm) {
+   static const char* noerr = "No error";
+   return vm->state == BUZZVM_STATE_ERROR ?
+      vm->errormsg
+      :
+      noerr;
 }
 
 /****************************************/

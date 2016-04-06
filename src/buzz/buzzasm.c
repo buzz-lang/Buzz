@@ -220,10 +220,11 @@ int buzz_asm(const char* fname,
             /* Parse line and column data */
             char* line = strsep(&debuginfo, ",\n");
             char* col = strsep(&debuginfo, ",\n");
+            char* srcfname = strsep(&debuginfo, ",\n");
             uint64_t l = strtol(line, NULL, 10);
             uint64_t c = strtol(col, NULL, 10);
-            buzzdebuginfo_set(*dbg, *size, l, c);
-            fprintf(stderr, "[DEBUG] Added debug information O%u:L%llu:C%llu\n", *size, l, c);
+            buzzdebuginfo_set(*dbg, *size, l, c,srcfname);
+            fprintf(stderr, "[DEBUG] Added debug information O%u:L%llu:C%llu:F%s\n", *size, l, c, srcfname);
          }
          /* Remove trailing space from label info */
          endc = labelinfo + strlen(labelinfo) - 1;
@@ -255,10 +256,11 @@ int buzz_asm(const char* fname,
          /* Parse line and column data */
          char* line = strsep(&debuginfo, ",\n");
          char* col = strsep(&debuginfo, ",\n");
+         char* srcfname = strsep(&debuginfo, ",\n");
          uint64_t l = strtol(line, NULL, 10);
          uint64_t c = strtol(col, NULL, 10);
-         buzzdebuginfo_set(*dbg, *size, l, c);
-         fprintf(stderr, "[DEBUG] Added debug information O%u:L%llu:C%llu\n", *size, l, c);
+         buzzdebuginfo_set(*dbg, *size, l, c,srcfname);
+         fprintf(stderr, "[DEBUG] Added debug information O%u:L%llu:C%llu:F%s\n", *size, l, c, srcfname);
       }
       /* Interpret the instruction */
       noarg_instr(BUZZVM_INSTR_NOP);
@@ -337,9 +339,10 @@ int buzz_asm(const char* fname,
    }                                                                    \
    fprintf(fd, " " FMT, (*(T*)(buf+i+1)));                              \
    if(buzzdebuginfo_exists(dbg, &i)) {                                  \
-      fprintf(fd, "\t|%llu,%llu",                                       \
+      fprintf(fd, "\t|%llu,%llu,%s",                                    \
               buzzdebuginfo_get(dbg, &i)->line,                         \
-              buzzdebuginfo_get(dbg, &i)->col);                         \
+              buzzdebuginfo_get(dbg, &i)->col,                          \
+              buzzdebuginfo_get(dbg, &i)->fname);                       \
    }                                                                    \
    i += sizeof(T);
 
@@ -403,9 +406,10 @@ int buzz_deasm(const uint8_t* buf,
       }
       else {
          if(buzzdebuginfo_exists(dbg, &i)) {
-            fprintf(fd, "\t|%llu,%llu",
+            fprintf(fd, "\t|%llu,%llu,%s",
                     buzzdebuginfo_get(dbg, &i)->line,
-                    buzzdebuginfo_get(dbg, &i)->col);
+                    buzzdebuginfo_get(dbg, &i)->col,
+                    buzzdebuginfo_get(dbg, &i)->fname);
          }
       }
       /* Newline */

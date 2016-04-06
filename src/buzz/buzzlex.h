@@ -60,6 +60,8 @@ extern "C" {
       uint64_t line;
       /* Column number where the token is located */
       uint64_t col;
+      /* Source file name */
+      char* fname;
    };
    typedef struct buzztok_s* buzztok_t;
 

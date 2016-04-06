@@ -37,12 +37,14 @@ static int buzzlex_isnumber(char c) {
 static buzztok_t buzzlex_newtok(buzztok_type_e type,
                                 char* value,
                                 uint64_t line,
-                                uint64_t col) {
+                                uint64_t col,
+                                char* fname) {
    buzztok_t retval = (buzztok_t)malloc(sizeof(struct buzztok_s));
    retval->type = type;
    retval->value = value;
    retval->line = line;
    retval->col = col;
+   retval->fname = strdup(fname);
    return retval;
 }
 
@@ -124,7 +126,8 @@ void buzzlex_destroy(buzzlex_t* lex) {
       return buzzlex_newtok(TOKTYPE,            \
                             NULL,               \
                             lex->cur_line,      \
-                            lex->cur_col);      \
+                            lex->cur_col,       \
+                            lex->fname);        \
    }
 
 #define readval(CHARCOND)                                       \
@@ -142,7 +145,8 @@ void buzzlex_destroy(buzzlex_t* lex) {
       return buzzlex_newtok(TOKTYPE,            \
                             val,                \
                             lex->cur_line,      \
-                            lex->cur_col);
+                            lex->cur_col,       \
+                            lex->fname);
 
 buzztok_t buzzlex_nexttok(buzzlex_t lex) {
    do {
@@ -182,7 +186,8 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
          buzztok_t tok = buzzlex_newtok(BUZZTOK_STATEND,
                                         NULL,
                                         lex->cur_line,
-                                        lex->cur_col);
+                                        lex->cur_col,
+                                        lex->fname);
          ++lex->cur_line;
          lex->cur_col = 0;
          return tok;
@@ -206,7 +211,8 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       return buzzlex_newtok(BUZZTOK_CONST,
                             val,
                             lex->cur_line,
-                            lex->cur_col);
+                            lex->cur_col,
+                            lex->fname);
    }
    else if(isalpha(c)) {
       /* It's either a keyword or an identifier */
@@ -227,7 +233,8 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       return buzzlex_newtok(BUZZTOK_ID,
                             val,
                             lex->cur_line,
-                            lex->cur_col);
+                            lex->cur_col,
+                            lex->fname);
    }
    else if(c == '=') {
       /* Either an assignment or a comparison */
@@ -238,14 +245,16 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
          return buzzlex_newtok(BUZZTOK_CMP,
                                strdup("=="),
                                lex->cur_line,
-                               lex->cur_col);
+                               lex->cur_col,
+                               lex->fname);
       }
       else {
          /* It's an assignment */
          return buzzlex_newtok(BUZZTOK_ASSIGN,
                                NULL,
                                lex->cur_line,
-                               lex->cur_col);
+                               lex->cur_col,
+                               lex->fname);
       }
    }
    else if(c == '!') {
@@ -257,7 +266,8 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
          return buzzlex_newtok(BUZZTOK_CMP,
                                strdup("!="),
                                lex->cur_line,
-                               lex->cur_col);
+                               lex->cur_col,
+                               lex->fname);
       }
       else {
          /* Syntax error */
@@ -283,7 +293,8 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       return buzzlex_newtok(BUZZTOK_CMP,
                             val,
                             lex->cur_line,
-                            lex->cur_col);
+                            lex->cur_col,
+                            lex->fname);
    }
    else if(buzzlex_isarith(c)) {
       /* Arithmetic operator */
@@ -295,25 +306,29 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
             return buzzlex_newtok(BUZZTOK_ADDSUB,
                                   val,
                                   lex->cur_line,
-                                  lex->cur_col);
+                                  lex->cur_col,
+                                  lex->fname);
          }
          case '*': case '/': {
             return buzzlex_newtok(BUZZTOK_MULDIV,
                                   val,
                                   lex->cur_line,
-                                  lex->cur_col);
+                                  lex->cur_col,
+                                  lex->fname);
          }
          case '%': {
             return buzzlex_newtok(BUZZTOK_MOD,
                                   val,
                                   lex->cur_line,
-                                  lex->cur_col);
+                                  lex->cur_col,
+                                  lex->fname);
          }
          case '^': {
             return buzzlex_newtok(BUZZTOK_POW,
                                   val,
                                   lex->cur_line,
-                                  lex->cur_col);
+                                  lex->cur_col,
+                                  lex->fname);
          }
          default:
             return NULL;
@@ -350,7 +365,8 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       return buzzlex_newtok(BUZZTOK_STRING,
                             val,
                             lex->cur_line,
-                            lex->cur_col);
+                            lex->cur_col,
+                            lex->fname);
    }
    else {
       /* Unknown character */
@@ -371,13 +387,15 @@ buzztok_t buzzlex_clonetok(buzztok_t tok) {
    return buzzlex_newtok(tok->type,
                          tok->value ? strdup(tok->value) : NULL,
                          tok->line,
-                         tok->col);
+                         tok->col,
+                         tok->fname);
 }
 
 /****************************************/
 /****************************************/
 
 void buzzlex_destroytok(buzztok_t* tok) {
+   free((*tok)->fname);
    free((*tok)->value);
    free(*tok);
    *tok = NULL;
