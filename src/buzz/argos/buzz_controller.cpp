@@ -102,8 +102,9 @@ int BuzzDebug(buzzvm_t vm) {
 
 CBuzzController::CBuzzController() :
    m_pcRABA(NULL),
-   m_pcRABS(NULL) {
-}
+   m_pcRABS(NULL),
+   m_tBuzzVM(NULL),
+   m_tBuzzDbgInfo(NULL) {}
 
 /****************************************/
 /****************************************/
@@ -126,7 +127,6 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
       std::string strDbgFName;
       GetNodeAttribute(t_node, "debug_file", strDbgFName);
       /* Initialize the rest */
-      m_tBuzzVM = NULL;
       m_unRobotId = FromString<UInt16>(GetId().substr(2));
       SetBytecode(strBCFName, strDbgFName);
       UpdateSensors();
@@ -179,7 +179,7 @@ void CBuzzController::SetBytecode(const std::string& str_bc_fname,
    if(m_tBuzzVM) buzzvm_destroy(&m_tBuzzVM);
    m_tBuzzVM = buzzvm_new(m_unRobotId);
    /* Get rid of debug info */
-   buzzdebuginfo_destroy(&m_tBuzzDbgInfo);
+   if(m_tBuzzDbgInfo) buzzdebuginfo_destroy(&m_tBuzzDbgInfo);
    m_tBuzzDbgInfo = buzzdebuginfo_new();
    /* Save the filenames */
    m_strBytecodeFName = str_bc_fname;
