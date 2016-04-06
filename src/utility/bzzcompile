@@ -25,8 +25,9 @@ fi
 BZZ=$1
 BASM=$(echo $BZZ | rev | cut -d. -f 2- | rev).basm
 BO=$(echo $BZZ | rev | cut -d. -f 2- | rev).bo
+BDBG=$(echo $BZZ | rev | cut -d. -f 2- | rev).bdbg
 
 #
 # Compilation
 #
-buzzc $BZZ $BASM && buzzasm $BASM $BO
+buzzc $BZZ $BASM && buzzasm $BASM $BO $BDBG
