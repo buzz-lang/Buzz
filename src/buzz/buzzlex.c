@@ -11,6 +11,58 @@
 /****************************************/
 /****************************************/
 
+buzzlex_file_t buzzlex_file_new(char* fname) {
+   buzzlex_file_t x = (buzzlex_file_t)malloc(sizeof(struct buzzlex_file_s));
+   /* Open the file */
+   FILE* fd = fopen(fname, "rb");
+   if(!fd) {
+      perror(fname);
+      free(x);
+      return NULL;
+   }
+   /* Get the file size */
+   fseek(fd, 0, SEEK_END);
+   x->buf_size = ftell(fd);
+   rewind(fd);
+   /* Create a buffer large enough to contain the data */
+   x->buf = (char*)malloc(x->buf_size + 2);
+   /* Copy the content of the file in the buffer */
+   if(fread(x->buf, 1, x->buf_size, fd) < x->buf_size) {
+      /* Read error */
+      fclose(fd);
+      free(x->buf);
+      free(x);
+      perror(fname);
+      return NULL;
+   }
+   x->buf[x->buf_size] = '\n';
+   x->buf[x->buf_size+1] = '\0';
+   /* Done reading, close file */
+   fclose(fd);
+   /* Copy the file name (the duplicated is created by caller) */
+   x->fname = fname;
+   /* Initialize line and column counters */
+   x->cur_line = 1;
+   x->cur_col = 0;
+   return x;
+}
+
+void buzzlex_file_destroy(uint32_t pos, void* data, void* params) {
+   buzzlex_file_t f = *(buzzlex_file_t*)data;
+   free(f->buf);
+   free(f->fname);
+   free(f);
+}
+
+int buzzlex_file_cmp(const void* a, const void* b) {
+   buzzlex_file_t f1 = *(buzzlex_file_t*)a;
+   buzzlex_file_t f2 = *(buzzlex_file_t*)b;
+   return strcmp(f1->fname, f2->fname);
+}
+
+/****************************************/
+/****************************************/
+
 static int buzzlex_isspace(char c) {
    return (c == ' ') || (c == '\t') || (c == '\r');
 }
@@ -52,144 +104,171 @@ static buzztok_t buzzlex_newtok(buzztok_type_e type,
 /****************************************/
 
 buzzlex_t buzzlex_new(const char* fname) {
-   /* Create the lexer - calloc() zeroes everything by default */
-   buzzlex_t retval = (buzzlex_t)calloc(1, sizeof(struct buzzlex_s));
-   /* Open the file */
-   int fd = open(fname, O_RDONLY);
-   if(fd < 0) {
-      perror(fname);
-      free(retval);
-      return NULL;
-   }
-   /* Get the file size */
-   retval->buf_size = lseek(fd, 0, SEEK_END);
-   lseek(fd, 0, SEEK_SET);
-   /* Create a buffer large enough to contain the data */
-   retval->buf = (char*)malloc(retval->buf_size + 2);
-   /* Copy the content of the file in the buffer */
-   ssize_t readnow;
-   size_t readsofar = 0;
-   do {
-      readnow = read(fd,
-                     retval->buf + readsofar,
-                     retval->buf_size - readsofar);
-      if(readnow == -1) {
-         /* Read error */
-         free(retval->buf);
-         free(retval);
-         perror(fname);
-         return NULL;
-      }
-      else {
-         /* More characters read */
-         readsofar += readnow;
-      }
-   }
-   while(readnow > 0);
-   retval->buf[retval->buf_size] = '\n';
-   retval->buf[retval->buf_size+1] = '\0';
-   /* Done reading, close file */
-   if(close(fd) < 0) {
-      /* I/O error */
-      free(retval->buf);
-      free(retval);
-      perror(fname);
-      return NULL;
-   }
-   /* Copy the file name */
-   retval->fname = strdup(fname);
-   /* Copy the file name */
-   retval->cur_line = 1;
-   retval->cur_col = 0;
-   /* Return the lexer */
-   return retval;
+   /* The lexer corresponds to a stack of file information */
+   buzzlex_t x = buzzdarray_new(10,
+                                sizeof(struct buzzlex_file_s*),
+                                buzzlex_file_destroy);
+   /* Read file */
+   buzzlex_file_t f = buzzlex_file_new(strdup(fname));
+   if(!f) return NULL;
+   buzzdarray_push(x, &f);
+   /* Return the lexer state */
+   return x;
 }
 
 /****************************************/
 /****************************************/
 
-void buzzlex_destroy(buzzlex_t* lex) {
-   free((*lex)->buf);
-   free((*lex)->fname);
-   free(*lex);
-   *lex = NULL;
-}
+#define nextchar() ++lexf->cur_c; ++lexf->cur_col;
 
-/****************************************/
-/****************************************/
-
-#define nextchar() ++lex->cur_c; ++lex->cur_col;
-
-
-#define casetokchar(CHAR, TOKTYPE)              \
-   case (CHAR): {                               \
-      return buzzlex_newtok(TOKTYPE,            \
-                            NULL,               \
-                            lex->cur_line,      \
-                            lex->cur_col,       \
-                            lex->fname);        \
+#define casetokchar(CHAR, TOKTYPE)               \
+   case (CHAR): {                                \
+      return buzzlex_newtok(TOKTYPE,             \
+                            NULL,                \
+                            lexf->cur_line,      \
+                            lexf->cur_col,       \
+                            lexf->fname);        \
    }
 
-#define readval(CHARCOND)                                       \
-   size_t start = lex->cur_c - 1;                               \
-   while(lex->cur_c < lex->buf_size &&                          \
-         CHARCOND(lex->buf[lex->cur_c])) {                      \
-      nextchar();                                               \
-   }                                                            \
-   char* val = (char*)malloc(lex->cur_c - start + 1);           \
-   strncpy(val, lex->buf + start, lex->cur_c - start);          \
-   val[lex->cur_c - start] = '\0';
+#define readval(CHARCOND)                                         \
+   size_t start = lexf->cur_c - 1;                                \
+   while(lexf->cur_c < lexf->buf_size &&                          \
+         CHARCOND(lexf->buf[lexf->cur_c])) {                      \
+      nextchar();                                                 \
+   }                                                              \
+   char* val = (char*)malloc(lexf->cur_c - start + 1);            \
+   strncpy(val, lexf->buf + start, lexf->cur_c - start);          \
+   val[lexf->cur_c - start] = '\0';
 
-#define checkkeyword(KW, TOKTYPE)               \
-   if(strcmp(val, KW) == 0)                     \
-      return buzzlex_newtok(TOKTYPE,            \
-                            val,                \
-                            lex->cur_line,      \
-                            lex->cur_col,       \
-                            lex->fname);
+#define checkkeyword(KW, TOKTYPE)                \
+   if(strcmp(val, KW) == 0)                      \
+      return buzzlex_newtok(TOKTYPE,             \
+                            val,                 \
+                            lexf->cur_line,      \
+                            lexf->cur_col,       \
+                            lexf->fname);
 
 buzztok_t buzzlex_nexttok(buzzlex_t lex) {
+   buzzlex_file_t lexf = buzzlex_getfile(lex);
    do {
-      /* Keep reading until you find a non-space character or end of stream */
-      while(lex->cur_c < lex->buf_size &&
-            buzzlex_isspace(lex->buf[lex->cur_c])) {
-         nextchar();
-      }
-      /* End of stream? No token */
-      if(lex->cur_c >= lex->buf_size) return NULL;
+      /* Look for a non-space character */
+      do {
+         /* Keep reading until you find a non-space character or end of stream */
+         while(lexf->cur_c < lexf->buf_size &&
+               buzzlex_isspace(lexf->buf[lexf->cur_c])) {
+            nextchar();
+         }
+         /* End of stream? */
+         if(lexf->cur_c >= lexf->buf_size) {
+            /* Done with current file, go back to previous */
+            buzzdarray_pop(lex);
+            if(buzzdarray_isempty(lex))
+               /* No file to go back to, done parsing */
+               return NULL;
+            lexf = buzzlex_getfile(lex);
+         }
+         else
+            /* Non-space character found */
+            break;
+      } while(1);
+      /* Non-space character found */
       /* If the current character is a '#' ignore the rest of the line */
-      if(lex->buf[lex->cur_c] == '#') {
+      if(lexf->buf[lexf->cur_c] == '#') {
          do {
             nextchar();
          }
-         while(lex->cur_c < lex->buf_size &&
-               lex->buf[lex->cur_c] != '\n');
-         /* End of stream? No token */
-         if(lex->cur_c >= lex->buf_size) return NULL;
-         /* New line and carry on */
-         ++lex->cur_line;
-         lex->cur_col = 0;
-         ++lex->cur_c;
+         while(lexf->cur_c < lexf->buf_size &&
+               lexf->buf[lexf->cur_c] != '\n');
+         /* End of stream? */
+         if(lexf->cur_c >= lexf->buf_size) {
+            /* Done with current file, go back to previous */
+            buzzdarray_pop(lex);
+            if(buzzdarray_isempty(lex))
+               /* No file to go back to, done parsing */
+               return NULL;
+            lexf = buzzlex_getfile(lex);
+         }
+         else {
+            /* New line and carry on */
+            ++lexf->cur_line;
+            lexf->cur_col = 0;
+            ++lexf->cur_c;
+         }
       }
-      else {
-         /* The current character must be parsed */
+      else if(strncmp(lexf->buf + lexf->cur_c, "include", 7) == 0) {
+         /* Manage file inclusion */
+         lexf->cur_c += 7;
+         lexf->cur_col += 7;
+         /* Skip whitespace */
+         while(lexf->cur_c < lexf->buf_size &&
+               buzzlex_isspace(lexf->buf[lexf->cur_c])) {
+            nextchar();
+         }
+         /* End of file or not-string opening -> syntax error */
+         if(lexf->cur_c >= lexf->buf_size ||
+            !buzzlex_isquote(lexf->buf[lexf->cur_c])) {
+            fprintf(stderr,
+                    "%s:%llu:%llu: Syntax error: expected string after include\n",
+                    lexf->fname,
+                    lexf->cur_line,
+                    lexf->cur_col);
+            return NULL;
+         }
+         /* Read string */
+         char quote = lexf->buf[lexf->cur_c];
+         size_t start = lexf->cur_c + 1;
+         nextchar();
+         while(lexf->cur_c < lexf->buf_size &&
+               lexf->buf[lexf->cur_c] != quote &&
+               lexf->buf[lexf->cur_c] != '\n') {
+            nextchar();
+         }
+         /* End of file or newline -> syntax error */
+         if(lexf->cur_c >= lexf->buf_size ||
+            lexf->buf[lexf->cur_c] == '\n') {
+            fprintf(stderr,
+                    "%s:%llu:%llu: Syntax error: expected end of string\n",
+                    lexf->fname,
+                    lexf->cur_line,
+                    lexf->cur_col);
+            return NULL;
+         }
+         /* Copy data into a new string */
+         char* fname = (char*)malloc(lexf->cur_c - start + 1);
+         strncpy(fname, lexf->buf + start, lexf->cur_c - start);
+         fname[lexf->cur_c - start] = '\0';
+         /* Get to next character in this file */
+         nextchar();
+         /* Create new file structure */
+         buzzlex_file_t f = buzzlex_file_new(fname);
+         /* Make sure the file hasn't been already included */
+         if(buzzdarray_find(lex, buzzlex_file_cmp, &f) < buzzdarray_size(lex)) {
+            buzzlex_file_destroy(0, &f, NULL);
+         }
+         else {
+            /* Push file structure */
+            buzzdarray_push(lex, &f);
+            lexf = buzzlex_getfile(lex);
+         }
+      }
+      else
+         /* The character must be parsed */
          break;
-      }
    }
    while(1);
-   /* If we get here it's because we read a non-space character */
-   char c = lex->buf[lex->cur_c];
+   /* If we get here it's because we read potential token character */
+   char c = lexf->buf[lexf->cur_c];
    nextchar();
    /* Consider the 1-char non-alphanumeric cases first */
    switch(c) {
       case '\n': {
          buzztok_t tok = buzzlex_newtok(BUZZTOK_STATEND,
                                         NULL,
-                                        lex->cur_line,
-                                        lex->cur_col,
-                                        lex->fname);
-         ++lex->cur_line;
-         lex->cur_col = 0;
+                                        lexf->cur_line,
+                                        lexf->cur_col,
+                                        lexf->fname);
+         ++lexf->cur_line;
+         lexf->cur_col = 0;
          return tok;
       }
       casetokchar(';', BUZZTOK_STATEND);
@@ -210,9 +289,9 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       readval(buzzlex_isnumber);
       return buzzlex_newtok(BUZZTOK_CONST,
                             val,
-                            lex->cur_line,
-                            lex->cur_col,
-                            lex->fname);
+                            lexf->cur_line,
+                            lexf->cur_col,
+                            lexf->fname);
    }
    else if(isalpha(c)) {
       /* It's either a keyword or an identifier */
@@ -232,103 +311,103 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       /* No keyword found, consider it an id */
       return buzzlex_newtok(BUZZTOK_ID,
                             val,
-                            lex->cur_line,
-                            lex->cur_col,
-                            lex->fname);
+                            lexf->cur_line,
+                            lexf->cur_col,
+                            lexf->fname);
    }
    else if(c == '=') {
       /* Either an assignment or a comparison */
-      if(lex->cur_c < lex->buf_size &&
-         lex->buf[lex->cur_c] == '=') {
+      if(lexf->cur_c < lexf->buf_size &&
+         lexf->buf[lexf->cur_c] == '=') {
          /* It's a comparison */
          nextchar();
          return buzzlex_newtok(BUZZTOK_CMP,
                                strdup("=="),
-                               lex->cur_line,
-                               lex->cur_col,
-                               lex->fname);
+                               lexf->cur_line,
+                               lexf->cur_col,
+                               lexf->fname);
       }
       else {
          /* It's an assignment */
          return buzzlex_newtok(BUZZTOK_ASSIGN,
                                NULL,
-                               lex->cur_line,
-                               lex->cur_col,
-                               lex->fname);
+                               lexf->cur_line,
+                               lexf->cur_col,
+                               lexf->fname);
       }
    }
    else if(c == '!') {
       /* Comparison operator? */
-      if(lex->cur_c < lex->buf_size &&
-         lex->buf[lex->cur_c] == '=') {
+      if(lexf->cur_c < lexf->buf_size &&
+         lexf->buf[lexf->cur_c] == '=') {
          /* It's a comparison */
          nextchar();
          return buzzlex_newtok(BUZZTOK_CMP,
                                strdup("!="),
-                               lex->cur_line,
-                               lex->cur_col,
-                               lex->fname);
+                               lexf->cur_line,
+                               lexf->cur_col,
+                               lexf->fname);
       }
       else {
          /* Syntax error */
          fprintf(stderr,
                  "%s:%llu:%llu: Syntax error: expected '=' after '!'\n",
-                 lex->fname,
-                 lex->cur_line,
-                 lex->cur_col);
+                 lexf->fname,
+                 lexf->cur_line,
+                 lexf->cur_col);
          return NULL;
       }
    }
    else if((c == '<') || (c == '>')) {
       /* It's a comparison operator */
-      size_t start = lex->cur_c - 1;
+      size_t start = lexf->cur_c - 1;
       /* Include the '=' if present */
-      if(lex->cur_c < lex->buf_size &&
-         lex->buf[lex->cur_c] == '=') {
+      if(lexf->cur_c < lexf->buf_size &&
+         lexf->buf[lexf->cur_c] == '=') {
          nextchar();
       }
-      char* val = (char*)malloc(lex->cur_c - start + 1);
-      strncpy(val, lex->buf + start, lex->cur_c - start);
-      val[lex->cur_c - start] = 0;
+      char* val = (char*)malloc(lexf->cur_c - start + 1);
+      strncpy(val, lexf->buf + start, lexf->cur_c - start);
+      val[lexf->cur_c - start] = 0;
       return buzzlex_newtok(BUZZTOK_CMP,
                             val,
-                            lex->cur_line,
-                            lex->cur_col,
-                            lex->fname);
+                            lexf->cur_line,
+                            lexf->cur_col,
+                            lexf->fname);
    }
    else if(buzzlex_isarith(c)) {
       /* Arithmetic operator */
       char* val = (char*)malloc(2);
-      strncpy(val, lex->buf + lex->cur_c - 1, 1);
+      strncpy(val, lexf->buf + lexf->cur_c - 1, 1);
       val[1] = 0;
       switch(c) {
          case '+': case '-': {
             return buzzlex_newtok(BUZZTOK_ADDSUB,
                                   val,
-                                  lex->cur_line,
-                                  lex->cur_col,
-                                  lex->fname);
+                                  lexf->cur_line,
+                                  lexf->cur_col,
+                                  lexf->fname);
          }
          case '*': case '/': {
             return buzzlex_newtok(BUZZTOK_MULDIV,
                                   val,
-                                  lex->cur_line,
-                                  lex->cur_col,
-                                  lex->fname);
+                                  lexf->cur_line,
+                                  lexf->cur_col,
+                                  lexf->fname);
          }
          case '%': {
             return buzzlex_newtok(BUZZTOK_MOD,
                                   val,
-                                  lex->cur_line,
-                                  lex->cur_col,
-                                  lex->fname);
+                                  lexf->cur_line,
+                                  lexf->cur_col,
+                                  lexf->fname);
          }
          case '^': {
             return buzzlex_newtok(BUZZTOK_POW,
                                   val,
-                                  lex->cur_line,
-                                  lex->cur_col,
-                                  lex->fname);
+                                  lexf->cur_line,
+                                  lexf->cur_col,
+                                  lexf->fname);
          }
          default:
             return NULL;
@@ -336,45 +415,45 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
    }
    else if(buzzlex_isquote(c)) {
       /* String - eat any character until you find the next matching quote */
-      size_t start = lex->cur_c;
-      while(lex->cur_c < lex->buf_size &&
-            lex->buf[lex->cur_c] != c) {
-         if(lex->buf[lex->cur_c] != '\n') {
+      size_t start = lexf->cur_c;
+      while(lexf->cur_c < lexf->buf_size &&
+            lexf->buf[lexf->cur_c] != c) {
+         if(lexf->buf[lexf->cur_c] != '\n') {
             nextchar();
          }
          else {
-            ++lex->cur_line;
-            lex->cur_col = 0;
-            ++lex->cur_c;
+            ++lexf->cur_line;
+            lexf->cur_col = 0;
+            ++lexf->cur_c;
          }
       }
       /* End of stream? Syntax error */
-      if(lex->cur_c >= lex->buf_size) {
+      if(lexf->cur_c >= lexf->buf_size) {
          fprintf(stderr,
                  "%s:%llu:%llu: Syntax error: string closing quote not found\n",
-                 lex->fname,
-                 lex->cur_line,
-                 lex->cur_col);
+                 lexf->fname,
+                 lexf->cur_line,
+                 lexf->cur_col);
          return NULL;
       }
       /* Valid string */
-      char* val = (char*)malloc(lex->cur_c - start + 1);
-      strncpy(val, lex->buf + start, lex->cur_c - start);
-      val[lex->cur_c - start] = '\0';
+      char* val = (char*)malloc(lexf->cur_c - start + 1);
+      strncpy(val, lexf->buf + start, lexf->cur_c - start);
+      val[lexf->cur_c - start] = '\0';
       nextchar();
       return buzzlex_newtok(BUZZTOK_STRING,
                             val,
-                            lex->cur_line,
-                            lex->cur_col,
-                            lex->fname);
+                            lexf->cur_line,
+                            lexf->cur_col,
+                            lexf->fname);
    }
    else {
       /* Unknown character */
       fprintf(stderr,
               "%s:%llu:%llu: Syntax error: unknown character '%c' (octal: %o; hex: %x)\n",
-              lex->fname,
-              lex->cur_line,
-              lex->cur_col,
+              lexf->fname,
+              lexf->cur_line,
+              lexf->cur_col,
               c, c, c);
       return NULL;
    }

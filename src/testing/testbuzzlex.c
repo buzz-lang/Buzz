@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
    if(!lex) {
       return 1;
    }
-   fprintf(stderr, "PARSED\n\n%s\n\n", lex->buf);
+   fprintf(stderr, "PARSED\n\n%s\n\n", buzzlex_getfile(lex)->buf);
    /* Parse the script */
    buzztok_t tok;
    int done = 0;

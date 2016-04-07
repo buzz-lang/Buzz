@@ -70,7 +70,7 @@ For detail, see `comment-dwim'."
 ;; Constants
 (setq buzz-constant-regexp "[[:upper:]_][[:upper:][:digit:]_]*")
 ;; Keywords
-(setq buzz-keywords '("var" "nil" "if" "else" "function" "return" "for" "while" "and" "or" "not" "size" "foreach"))
+(setq buzz-keywords '("var" "nil" "if" "else" "function" "return" "for" "while" "and" "or" "not" "size" "foreach" "include"))
 (setq buzz-keywords-regexp (regexp-opt buzz-keywords 'words))
 (setq buzz-keywords nil)
 ;; Builtins

@@ -294,7 +294,7 @@ void chunk_print(uint32_t pos, void* data, void* params) {
    if(!par->tok) {                                              \
       fprintf(stderr,                                           \
               "%s: Syntax error: expected token, found EOF\n",  \
-              par->lex->fname);                                 \
+              buzzlex_getfile(par->lex)->fname);                                 \
       return PARSE_ERROR;                                       \
    }                                                            \
 
@@ -303,13 +303,13 @@ int match(buzzparser_t par,
    if(!par->tok) {
       fprintf(stderr,
               "%s: Syntax error: expected token, found EOFn",
-              par->lex->fname);
+              buzzlex_getfile(par->lex)->fname);
       return PARSE_ERROR;
    }
    if(par->tok->type != type) {
       fprintf(stderr,
               "%s:%llu:%llu: Syntax error: expected %s, found %s\n",
-              par->lex->fname,
+              buzzlex_getfile(par->lex)->fname,
               par->tok->line,
               par->tok->col,
               buzztok_desc[type],
@@ -318,7 +318,7 @@ int match(buzzparser_t par,
    }
    else {
       DEBUG("%s:%llu:%llu: Matched %s\n",
-            par->lex->fname,
+            buzzlex_getfile(par->lex)->fname,
             par->tok->line,
             par->tok->col,
             buzztok_desc[type]);
@@ -374,7 +374,7 @@ int parse_script(buzzparser_t par) {
    par->tok = buzzlex_nexttok(par->lex);
    if(!par->tok) {
       DEBUG("%s: Empty file\n",
-            par->lex->fname);
+            buzzlex_getfile(par->lex)->fname);
       return PARSE_ERROR;
    }
    /* Add a symbol table */
@@ -511,7 +511,7 @@ int parse_var(buzzparser_t par) {
    if(s) {
       fprintf(stderr,
               "%s:%llu:%llu: Duplicated symbol '%s'\n",
-              par->lex->fname,
+              buzzlex_getfile(par->lex)->fname,
               par->tok->line,
               par->tok->col,
               par->tok->value);
@@ -923,7 +923,7 @@ int parse_command(buzzparser_t par) {
          if(idrefinfo.info == TYPE_CLOSURE) {
             fprintf(stderr,
                     "%s:%llu:%llu: Syntax error: can't have a function call as lvalue\n",
-                    par->lex->fname,
+                    buzzlex_getfile(par->lex)->fname,
                     par->tok->line,
                     par->tok->col);
             return PARSE_ERROR;
@@ -961,7 +961,7 @@ int parse_command(buzzparser_t par) {
       }
       fprintf(stderr,
               "%s:%llu:%llu: Syntax error: expected function call or assignment\n",
-              par->lex->fname,
+              buzzlex_getfile(par->lex)->fname,
               par->tok->line,
               par->tok->col);
       return PARSE_ERROR;
@@ -1029,7 +1029,7 @@ int parse_idreflist(buzzparser_t par) {
    }
    fprintf(stderr,
            "%s:%llu:%llu: Syntax error: expected , or ), found %s\n",
-           par->lex->fname,
+           buzzlex_getfile(par->lex)->fname,
            par->tok->line,
            par->tok->col,
            buzztok_desc[par->tok->type]);

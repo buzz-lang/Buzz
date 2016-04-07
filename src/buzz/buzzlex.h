@@ -1,6 +1,7 @@
 #ifndef BUZZLEX_H
 #define BUZZLEX_H
 
+#include <buzz/buzzdarray.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -66,9 +67,9 @@ extern "C" {
    typedef struct buzztok_s* buzztok_t;
 
    /*
-    * State of the lexer
+    * State of a file being parsed.
     */
-   struct buzzlex_s {
+   struct buzzlex_file_s {
       /* The current line being read */
       uint64_t cur_line;
       /* The current column within the current line */
@@ -82,7 +83,13 @@ extern "C" {
       /* The name of the file */
       char* fname;
    };
-   typedef struct buzzlex_s* buzzlex_t;
+   typedef struct buzzlex_file_s* buzzlex_file_t;
+
+   /*
+    * State of a lexer.
+    * It is simply a stack of buzzlex_file_t.
+    */
+   typedef buzzdarray_t buzzlex_t;
 
    /*
     * Creates a new lexer.
@@ -95,7 +102,13 @@ extern "C" {
     * Destroys the lexer.
     * @param lex The lexer state.
     */
-   extern void buzzlex_destroy(buzzlex_t* lex);
+#define buzzlex_destroy(lex) buzzdarray_destroy(lex)
+
+   /*
+    * Returns the current file being processed.
+    * @param lex The lexer state.
+    */
+#define buzzlex_getfile(lex) buzzdarray_last((lex), buzzlex_file_t)
    
    /*
     * Processes the next token.
