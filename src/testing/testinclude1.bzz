@@ -1,0 +1,7 @@
+include "testinclude2.bzz"
+
+function f() {
+  log("f()")
+}
+
+f()
