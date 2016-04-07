@@ -23,7 +23,7 @@ extern "C" {
     * Creates a new debug structure.
     * @return A new debug structure.
     */
-   buzzdebuginfo_t buzzdebuginfo_new();
+   extern buzzdebuginfo_t buzzdebuginfo_new();
 
    /*
     * Destroys the given debug structure.
@@ -38,8 +38,8 @@ extern "C" {
     * @param fname The file to read from.
     * @returns 1 if no error, 0 otherwise.
     */
-   int buzzdebuginfo_fromfile(buzzdebuginfo_t dbg,
-                              const char* fname);
+   extern int buzzdebuginfo_fromfile(buzzdebuginfo_t dbg,
+                                     const char* fname);
 
    /*
     * Writes the content of a data structure to file.
@@ -48,7 +48,8 @@ extern "C" {
     * @param dbg The debug structure.
     * @returns 1 if no error, 0 otherwise.
     */
-   int buzzdebuginfo_tofile(const char* fname, buzzdebuginfo_t dbg);
+   extern int buzzdebuginfo_tofile(const char* fname,
+                                   buzzdebuginfo_t dbg);
 
    /*
     * Sets the given debug information for a specific bytecode offset.
@@ -58,11 +59,15 @@ extern "C" {
     * @param col The script column number.
     * @param fname The file name.
     */
-   void buzzdebuginfo_set(buzzdebuginfo_t dbg,
-                          uint32_t offset,
-                          uint64_t line,
-                          uint64_t col,
-                          char* fname);
+   extern void buzzdebuginfo_set(buzzdebuginfo_t dbg,
+                                 uint32_t offset,
+                                 uint64_t line,
+                                 uint64_t col,
+                                 char* fname);
+
+#ifdef __cplusplus
+}
+#endif
 
    /*
     * Returns the debug data corresponding to the given offset.
@@ -90,9 +95,5 @@ extern "C" {
     * @param off The bytecode offset.
     */
 #define buzzdebuginfo_exists(dbg, off) buzzdict_exists(dbg, off)
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
