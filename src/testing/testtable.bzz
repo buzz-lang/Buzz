@@ -1,7 +1,7 @@
-t = {}
-t.x = 1
-t.y = 2
-t.z = 3
+t = {.x = 1, .y = 2, .z = 3, .7 = 6, .3.5 = 9}
+# t.x = 1
+# t.y = 2
+# t.z = 3
 
 print("size = ", size(t))
 foreach(t, function(k, v) {
@@ -14,3 +14,12 @@ print("size = ", size(t))
 foreach(t, function(k, v) {
     print(" ", k, " -> ", v)
   })
+
+function f(tbl) {
+  print("tbl size = ", size(tbl))
+  foreach(tbl, function(k, v) {
+      print(" ", k, " -> ", v)
+    })
+}
+
+f({.a = 1, .b = 2, .1 = "a", .2.5 = "b.5"})

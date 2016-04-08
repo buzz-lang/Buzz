@@ -52,6 +52,7 @@ extern "C" {
       BUZZVM_INSTR_NOP = 0,    // No operation
       BUZZVM_INSTR_DONE,       // End of the program
       BUZZVM_INSTR_PUSHNIL,    // Push nil onto stack
+      BUZZVM_INSTR_DUP,        // Duplicate stack top
       BUZZVM_INSTR_POP,        // Pop value from stack
       BUZZVM_INSTR_RET0,       // Returns from closure call, see buzzvm_ret0()
       BUZZVM_INSTR_RET1,       // Returns from closure call, see buzzvm_ret1()
@@ -95,7 +96,7 @@ extern "C" {
       BUZZVM_INSTR_JUMPZ,    // Set PC to argument if stack top is zero, pop operand
       BUZZVM_INSTR_JUMPNZ,   // Set PC to argument if stack top is not zero, pop operand
    } buzzvm_instr;
-   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "gload", "gstore", "pusht", "tput", "tget", "callc", "calls", "pushf", "pushi", "pushs", "pushcn", "pushcc", "pushl", "lload", "lstore", "jump", "jumpz", "jumpnz"};
+   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "dup", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "gload", "gstore", "pusht", "tput", "tget", "callc", "calls", "pushf", "pushi", "pushs", "pushcn", "pushcc", "pushl", "lload", "lstore", "jump", "jumpz", "jumpnz"};
 
    /*
     * Function pointer for BUZZVM_INSTR_CALL.
@@ -323,6 +324,13 @@ extern "C" {
     * @return The VM state.
     */
    extern buzzvm_state buzzvm_pop(buzzvm_t vm);
+
+   /*
+    * Duplicates the current stack top.
+    * @param vm The VM data.
+    * @return The VM state.
+    */
+   extern buzzvm_state buzzvm_dup(buzzvm_t vm);
 
    /*
     * Pushes a variable on the stack.

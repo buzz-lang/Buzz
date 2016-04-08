@@ -2,11 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
 
 void usage(const char* path, int status) {
-   fprintf(stderr, "Usage:\n\t%s [--trace] <file.bo>\n\n", path);
+   fprintf(stderr, "Usage:\n\t%s [--trace] <file.bo> <file.bdbg>\n\n", path);
    exit(status);
 }
 
@@ -87,34 +85,40 @@ int print(buzzvm_t vm) {
 }
 
 int main(int argc, char** argv) {
-   char* fname;
+   char* bcfname;
+   char* dbgfname;
    int trace = 0;
    /* Parse command line */
-   if(argc < 2 || argc > 3) usage(argv[0], 0);
-   if(argc == 2) fname = argv[1];
+   if(argc < 3 || argc > 4) usage(argv[0], 0);
+   if(argc == 3) {
+      bcfname = argv[1];
+      dbgfname = argv[2];
+   }
    else {
-      fname = argv[2];
+      bcfname = argv[2];
+      dbgfname = argv[3];
       if(strcmp(argv[1], "--trace") != 0) {
          fprintf(stderr, "error: %s: unrecognized option '%s'\n", argv[0], argv[1]);
          usage(argv[0], 1);
       }
       trace = 1;
    }
-   /* Open file */
-   int fd = open(fname, O_RDONLY);
-   if(fd < 0) perror(fname);
-   /* Read data */
-   size_t bcode_size = lseek(fd, 0, SEEK_END);
-   lseek(fd, 0, SEEK_SET);
+   /* Read bytecode and fill in data structure */
+   FILE* fd = fopen(bcfname, "rb");
+   if(!fd) perror(bcfname);
+   fseek(fd, 0, SEEK_END);
+   size_t bcode_size = ftell(fd);
+   rewind(fd);
    uint8_t* bcode_buf = (uint8_t*)malloc(bcode_size);
-   ssize_t rd;
-   size_t tot = 0;
-   while(tot < bcode_size) {
-      rd = read(fd, bcode_buf + tot, bcode_size - tot);
-      if(rd < 0) perror(fname);
-      tot += rd;
+   if(fread(bcode_buf, 1, bcode_size, fd) < bcode_size) {
+      perror(bcfname);
    }
-   close(fd);
+   fclose(fd);
+   /* Read debug information */
+   buzzdebuginfo_t dbg_buf = buzzdebuginfo_new();
+   if(!buzzdebuginfo_fromfile(dbg_buf, dbgfname)) {
+      perror(dbgfname);
+   }
    /* Create new VM */
    buzzvm_t vm = buzzvm_new(1);
    /* Set byte code */
@@ -129,16 +133,29 @@ int main(int argc, char** argv) {
    if(vm->state == BUZZVM_STATE_DONE) {
       if(trace) dump(vm);
       fprintf(stdout, "%s: execution terminated correctly\n\n",
-              fname);
+              bcfname);
    }
    else {
       if(trace) dump(vm);
-      fprintf(stderr, "%s: execution terminated abnormally: %s\n\n",
-              fname,
-              buzzvm_error_desc[vm->error]);
+      if(buzzdebuginfo_exists(dbg_buf, &vm->pc)) {
+         buzzdebuginfo_entry_t dbg = buzzdebuginfo_get(dbg_buf, &vm->pc);
+         fprintf(stderr, "%s: execution terminated abnormally at %s:%llu:%llu : %s\n\n",
+                 bcfname,
+                 dbg->fname,
+                 dbg->line,
+                 dbg->col,
+                 buzzvm_error_desc[vm->error]);
+      }
+      else {
+         fprintf(stderr, "%s: execution terminated abnormally at bytecode offset %d: %s\n\n",
+                 bcfname,
+                 vm->pc,
+                 buzzvm_error_desc[vm->error]);
+      }
    }
    /* Destroy VM */
    free(bcode_buf);
+   buzzdebuginfo_destroy(&dbg_buf);
    buzzvm_destroy(&vm);
    return 0;
 }

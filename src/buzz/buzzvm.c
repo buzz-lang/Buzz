@@ -624,6 +624,11 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          buzzvm_pushnil(vm);
          break;
       }
+      case BUZZVM_INSTR_DUP: {
+         inc_pc();
+         buzzvm_dup(vm);
+         break;
+      }
       case BUZZVM_INSTR_POP: {
          if(buzzvm_pop(vm) != BUZZVM_STATE_READY) return vm->state;
          inc_pc();
@@ -1007,10 +1012,28 @@ buzzvm_state buzzvm_pop(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+buzzvm_state buzzvm_dup(buzzvm_t vm) {
+   if(buzzdarray_isempty(vm->stack)) {
+      vm->state = BUZZVM_STATE_ERROR;
+      vm->error = BUZZVM_ERROR_STACK;
+      return vm->state;
+   }
+   else {
+      buzzdarray_push(vm->stack, &buzzdarray_last(vm->stack, buzzobj_t));
+   }
+   return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
 buzzvm_state buzzvm_push(buzzvm_t vm, buzzobj_t v) {
    buzzdarray_push(vm->stack, &v);
    return vm->state;
 }
+
+/****************************************/
+/****************************************/
 
 buzzvm_state buzzvm_pushuserdata(buzzvm_t vm, void* v) {
    buzzobj_t o = buzzheap_newobj(vm->heap, BUZZTYPE_USERDATA);

@@ -755,10 +755,100 @@ int parse_comparison(buzzparser_t par) {
 int parse_expression(buzzparser_t par) {
    DEBUG("Parsing expression start\n");
    if(par->tok->type == BUZZTOK_BLOCKOPEN) {
+      /* Table definition */
+      DEBUG("Parsing table definition\n");
+      /* Consume the { */
       fetchtok();
+      /* Make sure either id = expression or } follow */
+      if(par->tok->type != BUZZTOK_DOT &&
+         par->tok->type != BUZZTOK_BLOCKCLOSE) {
+         fprintf(stderr,
+                 "%s:%llu:%llu: Syntax error: expected .id = expression or }\n",
+                 buzzlex_getfile(par->lex)->fname,
+                 par->tok->line,
+                 par->tok->col);
+         return PARSE_ERROR;
+      }
+      /* Push empty table */
+      chunk_append("\tpusht");
+      if(par->tok->type == BUZZTOK_DOT) {
+         /* Assignment list is present */
+         DEBUG("Parsing assignment list\n");
+         /* Duplicate table on top of stack */
+         chunk_append("\tdup");
+         /* Consume the id */
+         fetchtok();
+         if(par->tok->type == BUZZTOK_ID) {
+            uint32_t* sid = buzzdict_get(par->strings, &par->tok->value, uint32_t);
+            if(!sid) { chunk_append("\tpushs %u", string_add(par->strings, par->tok->value)); }
+            else { chunk_append("\tpushs %u", *sid); }
+         }
+         else if(par->tok->type == BUZZTOK_CONST) {
+            if(strchr(par->tok->value, '.')) {
+               chunk_append("\tpushf %s", par->tok->value);
+            } else {
+               chunk_append("\tpushi %s", par->tok->value);
+            }
+         }
+         else {
+            fprintf(stderr,
+                    "%s:%llu:%llu: Syntax error: expected id or numeric constant, found %s\n",
+                    buzzlex_getfile(par->lex)->fname,
+                    par->tok->line,
+                    par->tok->col,
+                    buzztok_desc[par->tok->type]);
+            return PARSE_ERROR;
+         }
+         fetchtok();
+         /* Consume the = */
+         tokmatch(BUZZTOK_ASSIGN);
+         fetchtok();
+         /* Parse expression */
+         if(!parse_expression(par)) return PARSE_ERROR;
+         /* Store expression in the table */
+         chunk_append("\ttput");
+         /* Is there a , following? */
+         while(par->tok->type == BUZZTOK_LISTSEP) {
+            /* Duplicate table on top of stack */
+            chunk_append("\tdup");
+            /* Consume the , */
+            fetchtok();
+            /* Make sure .id is present */
+            tokmatch(BUZZTOK_DOT);
+            fetchtok();
+            if(par->tok->type == BUZZTOK_ID) {
+               uint32_t* sid = buzzdict_get(par->strings, &par->tok->value, uint32_t);
+               if(!sid) { chunk_append("\tpushs %u", string_add(par->strings, par->tok->value)); }
+               else { chunk_append("\tpushs %u", *sid); }
+            }
+            else if(par->tok->type == BUZZTOK_CONST) {
+               if(strchr(par->tok->value, '.')) {
+                  chunk_append("\tpushf %s", par->tok->value);
+               } else {
+                  chunk_append("\tpushi %s", par->tok->value);
+               }
+            }
+            else {
+               fprintf(stderr,
+                       "%s:%llu:%llu: Syntax error: expected id or numeric constant, found %s\n",
+                       buzzlex_getfile(par->lex)->fname,
+                       par->tok->line,
+                       par->tok->col,
+                       buzztok_desc[par->tok->type]);
+               return PARSE_ERROR;
+            }
+            fetchtok();
+            /* Make sure an = is present */
+            tokmatch(BUZZTOK_ASSIGN);
+            fetchtok();
+            /* Parse expression */
+            if(!parse_expression(par)) return PARSE_ERROR;
+            /* Store expression in the table */
+            chunk_append("\ttput");
+         }
+      }
       tokmatch(BUZZTOK_BLOCKCLOSE);
       fetchtok();
-      chunk_append("\tpusht");
       DEBUG("Expression end\n");
       return PARSE_OK;
    }
