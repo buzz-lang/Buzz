@@ -12,14 +12,20 @@
 /****************************************/
 
 buzzlex_file_t buzzlex_file_new(char* fname) {
-   buzzlex_file_t x = (buzzlex_file_t)malloc(sizeof(struct buzzlex_file_s));
-   /* Open the file */
-   FILE* fd = fopen(fname, "rb");
-   if(!fd) {
-      perror(fname);
-      free(x);
+   /* Get real path */
+   char* fpath = realpath(fname, NULL);
+   if(!fpath) {
+      perror(fpath);
       return NULL;
    }
+   /* Open the file */
+   FILE* fd = fopen(fpath, "rb");
+   if(!fd) {
+      perror(fpath);
+      return NULL;
+   }
+   /* Create memory structure */
+   buzzlex_file_t x = (buzzlex_file_t)malloc(sizeof(struct buzzlex_file_s));
    /* Get the file size */
    fseek(fd, 0, SEEK_END);
    x->buf_size = ftell(fd);
@@ -32,15 +38,15 @@ buzzlex_file_t buzzlex_file_new(char* fname) {
       fclose(fd);
       free(x->buf);
       free(x);
-      perror(fname);
+      perror(fpath);
       return NULL;
    }
    x->buf[x->buf_size] = '\n';
    x->buf[x->buf_size+1] = '\0';
    /* Done reading, close file */
    fclose(fd);
-   /* Copy the file name (the duplicated is created by caller) */
-   x->fname = fname;
+   /* Store the file name */
+   x->fname = fpath;
    /* Initialize line and column counters */
    x->cur_line = 1;
    x->cur_col = 0;
@@ -109,7 +115,7 @@ buzzlex_t buzzlex_new(const char* fname) {
                                 sizeof(struct buzzlex_file_s*),
                                 buzzlex_file_destroy);
    /* Read file */
-   buzzlex_file_t f = buzzlex_file_new(strdup(fname));
+   buzzlex_file_t f = buzzlex_file_new(fname);
    if(!f) return NULL;
    buzzdarray_push(x, &f);
    /* Return the lexer state */
@@ -241,6 +247,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
          nextchar();
          /* Create new file structure */
          buzzlex_file_t f = buzzlex_file_new(fname);
+         free(fname);
          /* Make sure the file hasn't been already included */
          if(buzzdarray_find(lex, buzzlex_file_cmp, &f) < buzzdarray_size(lex)) {
             buzzlex_file_destroy(0, &f, NULL);
