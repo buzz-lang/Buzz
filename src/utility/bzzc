@@ -8,8 +8,8 @@ set -e
 #
 # Check tools
 #
-command -v buzzc >/dev/null 2>&1 || { echo >&2 "$0: error: can't find buzzc"; exit 1; }
-command -v buzzasm >/dev/null 2>&1 || { echo >&2 "$0: error: can't find buzzasm"; exit 1; }
+command -v bzzparse >/dev/null 2>&1 || { echo >&2 "$0: error: can't find bzzparse"; exit 1; }
+command -v bzzasm >/dev/null 2>&1 || { echo >&2 "$0: error: can't find bzzasm"; exit 1; }
 
 #
 # Check command line
