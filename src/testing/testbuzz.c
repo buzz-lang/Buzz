@@ -139,18 +139,20 @@ int main(int argc, char** argv) {
       if(trace) dump(vm);
       if(buzzdebug_off2script_exists(dbg_buf, &vm->pc)) {
          buzzdebug_entry_t dbg = buzzdebug_off2script_get(dbg_buf, &vm->pc);
-         fprintf(stderr, "%s: execution terminated abnormally at %s:%llu:%llu : %s\n\n",
+         fprintf(stderr, "%s: execution terminated abnormally at %s:%llu:%llu : %s: %s\n\n",
                  bcfname,
                  dbg->fname,
                  dbg->line,
                  dbg->col,
-                 buzzvm_error_desc[vm->error]);
+                 buzzvm_error_desc[vm->error],
+                 vm->errormsg);
       }
       else {
-         fprintf(stderr, "%s: execution terminated abnormally at bytecode offset %d: %s\n\n",
+         fprintf(stderr, "%s: execution terminated abnormally at bytecode offset %d: %s: %s\n\n",
                  bcfname,
                  vm->pc,
-                 buzzvm_error_desc[vm->error]);
+                 buzzvm_error_desc[vm->error],
+                 vm->errormsg);
       }
    }
    /* Destroy VM */
