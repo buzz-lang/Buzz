@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
    /* Parse script */
    uint8_t* bcode_buf;
    uint32_t bcode_size;
-   buzzdebuginfo_t dbg;
+   buzzdebug_t dbg;
    if(buzz_asm(argv[1], &bcode_buf, &bcode_size, &dbg) != 0) {
       return 1;
    }
@@ -32,10 +32,10 @@ int main(int argc, char** argv) {
       if(written < 0) perror(argv[2]);
       tot += written;
    }
-   buzzdebuginfo_tofile(argv[3], dbg);
+   buzzdebug_tofile(argv[3], dbg);
    /* Cleanup */
    free(bcode_buf);
-   buzzdebuginfo_destroy(&dbg);
+   buzzdebug_destroy(&dbg);
    close(of);
    return 0;
 }

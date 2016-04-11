@@ -11,7 +11,7 @@
 /****************************************/
 /****************************************/
 
-buzzlex_file_t buzzlex_file_new(char* fname) {
+buzzlex_file_t buzzlex_file_new(const char* fname) {
    /* Get real path */
    char* fpath = realpath(fname, NULL);
    if(!fpath) {
@@ -101,7 +101,7 @@ static buzztok_t buzzlex_newtok(buzztok_type_e type,
    retval->type = type;
    retval->value = value;
    retval->line = line;
-   retval->col = col;
+   retval->col = col + 1;
    retval->fname = strdup(fname);
    return retval;
 }

@@ -30,13 +30,13 @@ int main(int argc, char** argv) {
    }
    close(ifd);
    /* Read debug information */
-   buzzdebuginfo_t dbg = buzzdebuginfo_new();
-   if(!buzzdebuginfo_fromfile(dbg, argv[2]))
+   buzzdebug_t dbg = buzzdebug_new();
+   if(!buzzdebug_fromfile(dbg, argv[2]))
       perror(argv[2]);
    /* Go through bytecode */
    int rv = buzz_deasm(bcode_buf, bcode_size, dbg, argv[3]);
    /* Cleanup */
    free(bcode_buf);
-   buzzdebuginfo_destroy(&dbg);
+   buzzdebug_destroy(&dbg);
    return rv;
 }

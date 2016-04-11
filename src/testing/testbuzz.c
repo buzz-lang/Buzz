@@ -115,8 +115,8 @@ int main(int argc, char** argv) {
    }
    fclose(fd);
    /* Read debug information */
-   buzzdebuginfo_t dbg_buf = buzzdebuginfo_new();
-   if(!buzzdebuginfo_fromfile(dbg_buf, dbgfname)) {
+   buzzdebug_t dbg_buf = buzzdebug_new();
+   if(!buzzdebug_fromfile(dbg_buf, dbgfname)) {
       perror(dbgfname);
    }
    /* Create new VM */
@@ -137,8 +137,8 @@ int main(int argc, char** argv) {
    }
    else {
       if(trace) dump(vm);
-      if(buzzdebuginfo_exists(dbg_buf, &vm->pc)) {
-         buzzdebuginfo_entry_t dbg = buzzdebuginfo_get(dbg_buf, &vm->pc);
+      if(buzzdebug_off2script_exists(dbg_buf, &vm->pc)) {
+         buzzdebug_entry_t dbg = buzzdebug_off2script_get(dbg_buf, &vm->pc);
          fprintf(stderr, "%s: execution terminated abnormally at %s:%llu:%llu : %s\n\n",
                  bcfname,
                  dbg->fname,
@@ -155,7 +155,7 @@ int main(int argc, char** argv) {
    }
    /* Destroy VM */
    free(bcode_buf);
-   buzzdebuginfo_destroy(&dbg_buf);
+   buzzdebug_destroy(&dbg_buf);
    buzzvm_destroy(&vm);
    return 0;
 }

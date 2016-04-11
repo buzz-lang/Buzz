@@ -179,8 +179,8 @@ void CBuzzController::SetBytecode(const std::string& str_bc_fname,
    if(m_tBuzzVM) buzzvm_destroy(&m_tBuzzVM);
    m_tBuzzVM = buzzvm_new(m_unRobotId);
    /* Get rid of debug info */
-   if(m_tBuzzDbgInfo) buzzdebuginfo_destroy(&m_tBuzzDbgInfo);
-   m_tBuzzDbgInfo = buzzdebuginfo_new();
+   if(m_tBuzzDbgInfo) buzzdebug_destroy(&m_tBuzzDbgInfo);
+   m_tBuzzDbgInfo = buzzdebug_new();
    /* Save the filenames */
    m_strBytecodeFName = str_bc_fname;
    m_strDbgInfoFName = str_dbg_fname;
@@ -195,7 +195,7 @@ void CBuzzController::SetBytecode(const std::string& str_bc_fname,
    cBCodeFile.seekg(0, std::ios::beg);
    cBCodeFile.read(reinterpret_cast<char*>(m_cBytecode.ToCArray()), unFileSize);
    /* Load the debug symbols */
-   if(!buzzdebuginfo_fromfile(m_tBuzzDbgInfo, m_strDbgInfoFName.c_str())) {
+   if(!buzzdebug_fromfile(m_tBuzzDbgInfo, m_strDbgInfoFName.c_str())) {
       THROW_ARGOSEXCEPTION("Can't open file \"" << str_dbg_fname << "\": " << strerror(errno));
    }
    /* Load the script */
@@ -217,7 +217,7 @@ void CBuzzController::SetBytecode(const std::string& str_bc_fname,
 /****************************************/
 
 std::string CBuzzController::ErrorInfo() {
-   buzzdebuginfo_entry_t tInfo = buzzdebuginfo_get(m_tBuzzDbgInfo, &m_tBuzzVM->pc);
+   buzzdebug_entry_t tInfo = buzzdebug_off2script_get(m_tBuzzDbgInfo, &m_tBuzzVM->pc);
    if(tInfo) {
       return
          std::string(buzzvm_strerror(m_tBuzzVM)) +

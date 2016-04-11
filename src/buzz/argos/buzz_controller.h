@@ -145,7 +145,7 @@ protected:
    /* Buzz VM state */
    buzzvm_t m_tBuzzVM;
    /* Buzz debug info */
-   buzzdebuginfo_t m_tBuzzDbgInfo;
+   buzzdebug_t m_tBuzzDbgInfo;
    /* Name of the bytecode file */
    std::string m_strBytecodeFName;
    /* Name of the debug info file */

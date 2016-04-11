@@ -19,7 +19,7 @@ extern "C" {
 extern int buzz_asm(const char* fname,
                     uint8_t** buf,
                     uint32_t* size,
-                    buzzdebuginfo_t* dbg);
+                    buzzdebug_t* dbg);
 
 /*
  * Decompiles bytecode into an assembly file.
@@ -31,7 +31,7 @@ extern int buzz_asm(const char* fname,
  */
 extern int buzz_deasm(const uint8_t* buf,
                       uint32_t size,
-                      buzzdebuginfo_t dbg,
+                      buzzdebug_t dbg,
                       const char* fname);
 
 #ifdef __cplusplus
