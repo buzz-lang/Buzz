@@ -19,9 +19,11 @@ buzzdebug_entry_t buzzdebug_entry_new(uint64_t l,
 }
 
 void buzzdebug_entry_destroyf(const void* key, void* data, void* params) {
+   free((void*)key);
    buzzdebug_entry_t x = *(buzzdebug_entry_t*)data;
    free(x->fname);
    free(x);
+   free(data);
 }
 
 /****************************************/
@@ -45,6 +47,7 @@ buzzdebug_t buzzdebug_new() {
 void buzzdebug_destroy(buzzdebug_t* dbg) {
    buzzdarray_destroy(&(*dbg)->breakpoints);
    buzzdict_destroy(&(*dbg)->off2script);
+   free(*dbg);
    *dbg = NULL;
 }
 
@@ -78,9 +81,10 @@ int buzzdebug_fromfile(buzzdebug_t dbg,
          }
       }
    }
+   int err = ferror(fd);
    free(srcfname);
    fclose(fd);
-   return ferror(fd) ? 0 : 1;
+   return err ? 0 : 1;
 }
 
 /****************************************/
