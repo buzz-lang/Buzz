@@ -30,4 +30,4 @@ BDBG=$(echo $BZZ | rev | cut -d. -f 2- | rev).bdbg
 #
 # Compilation
 #
-buzzc $BZZ $BASM && buzzasm $BASM $BO $BDBG
+bzzparse $BZZ $BASM && bzzasm $BASM $BO $BDBG
