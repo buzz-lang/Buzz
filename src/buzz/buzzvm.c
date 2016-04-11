@@ -1019,7 +1019,8 @@ buzzvm_state buzzvm_dup(buzzvm_t vm) {
       return vm->state;
    }
    else {
-      buzzdarray_push(vm->stack, &buzzdarray_last(vm->stack, buzzobj_t));
+      buzzobj_t x = buzzvm_stack_at(vm, 1);
+      buzzdarray_push(vm->stack, &x);
    }
    return vm->state;
 }
