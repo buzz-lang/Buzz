@@ -38,6 +38,8 @@ extern "C" {
     * Decompiles the bytecode of a single instruction.
     * This function writes the decompiled instruction into a new string pointed to by
     * *buf. When you're done with it, you must free it.
+    * NOTE: no sanity check is performed to make sure that this function does not
+    * read beyond the bcode buffer size.
     * @param bcode The buffer in which the bytecode is stored.
     * @param off The offset at which decompilation must occur.
     * @param buf The bytecode where the 
