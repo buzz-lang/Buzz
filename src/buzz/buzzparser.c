@@ -1,6 +1,7 @@
 #include "buzzparser.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 /****************************************/
 /****************************************/
@@ -143,7 +144,7 @@ void sym_print(const void* key,
                void* params) {
    char* k = *(char**)key;
    struct sym_s* d = (struct sym_s*)data;
-   fprintf(stderr, "[DEBUG]  Symbol '%s' pos=%lld type=%d global=%d\n",
+   fprintf(stderr, "[DEBUG]  Symbol '%s' pos=%" PRIu64 " type=%d global=%d\n",
            k, d->pos, d->type, d->global);
 }
 
@@ -219,7 +220,7 @@ void chunk_addcode(chunk_t c, char* code, buzztok_t tok) {
    /* Append code to debug information */
    char* instr;
    if(tok) {
-      asprintf(&instr, "%s\t|%llu,%llu,%s\n", code, tok->line, tok->col, tok->fname);
+      asprintf(&instr, "%s\t|%" PRIu64 ",%" PRIu64 ",%s\n", code, tok->line, tok->col, tok->fname);
    }
    else {
       asprintf(&instr, "%s\n", code);
@@ -260,10 +261,10 @@ void chunk_register(uint32_t pos, void* data, void* params) {
    FILE* f = (FILE*)params;
    /* Print registration code */
    if(c->sym) {
-      if(c->sym->global) fprintf(f, "\tpushs %lld\n", c->sym->pos);
+      if(c->sym->global) fprintf(f, "\tpushs %" PRId64 "\n", c->sym->pos);
       fprintf(f, "\tpushcn " LABELREF "%u\n", c->label);
       if(c->sym->global) fprintf(f, "\tgstore\n");
-      else               fprintf(f, "\tlstore %lld\n", c->sym->pos);
+      else               fprintf(f, "\tlstore %" PRId64 "\n", c->sym->pos);
    }
 }
 
@@ -308,7 +309,7 @@ int match(buzzparser_t par,
    }
    if(par->tok->type != type) {
       fprintf(stderr,
-              "%s:%llu:%llu: Syntax error: expected %s, found %s\n",
+              "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: expected %s, found %s\n",
               buzzlex_getfile(par->lex)->fname,
               par->tok->line,
               par->tok->col,
@@ -317,7 +318,7 @@ int match(buzzparser_t par,
       return PARSE_ERROR;
    }
    else {
-      DEBUG("%s:%llu:%llu: Matched %s\n",
+      DEBUG("%s:%" PRIu64 ":%" PRIu64 ": Matched %s\n",
             buzzlex_getfile(par->lex)->fname,
             par->tok->line,
             par->tok->col,
@@ -510,7 +511,7 @@ int parse_var(buzzparser_t par) {
    const struct sym_s* s = sym_lookup(par->tok->value, par->symstack);
    if(s) {
       fprintf(stderr,
-              "%s:%llu:%llu: Duplicated symbol '%s'\n",
+              "%s:%" PRIu64 ":%" PRIu64 ": Duplicated symbol '%s'\n",
               buzzlex_getfile(par->lex)->fname,
               par->tok->line,
               par->tok->col,
@@ -525,7 +526,7 @@ int parse_var(buzzparser_t par) {
       /* lvalue is OK */
       DEBUG("Parsing assignment\n");
       /* Is lvalue a global symbol? If so, push its string id */
-      if(s->global) chunk_append("\tpushs %lld", s->pos);
+      if(s->global) chunk_append("\tpushs %" PRId64, s->pos);
       /* Consume the = */
       fetchtok();
       /* Parse the expression */
@@ -536,7 +537,7 @@ int parse_var(buzzparser_t par) {
       }
       else {
          /* Local variable */
-         chunk_append("\tlstore %lld", s->pos);
+         chunk_append("\tlstore %" PRId64, s->pos);
       }
       DEBUG("Assignment statement end\n");
       return PARSE_OK;
@@ -763,7 +764,7 @@ int parse_expression(buzzparser_t par) {
       if(par->tok->type != BUZZTOK_DOT &&
          par->tok->type != BUZZTOK_BLOCKCLOSE) {
          fprintf(stderr,
-                 "%s:%llu:%llu: Syntax error: expected .id = expression or }\n",
+                 "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: expected .id = expression or }\n",
                  buzzlex_getfile(par->lex)->fname,
                  par->tok->line,
                  par->tok->col);
@@ -792,7 +793,7 @@ int parse_expression(buzzparser_t par) {
          }
          else {
             fprintf(stderr,
-                    "%s:%llu:%llu: Syntax error: expected id or numeric constant, found %s\n",
+                    "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: expected id or numeric constant, found %s\n",
                     buzzlex_getfile(par->lex)->fname,
                     par->tok->line,
                     par->tok->col,
@@ -830,7 +831,7 @@ int parse_expression(buzzparser_t par) {
             }
             else {
                fprintf(stderr,
-                       "%s:%llu:%llu: Syntax error: expected id or numeric constant, found %s\n",
+                       "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: expected id or numeric constant, found %s\n",
                        buzzlex_getfile(par->lex)->fname,
                        par->tok->line,
                        par->tok->col,
@@ -1012,7 +1013,7 @@ int parse_command(buzzparser_t par) {
          /* Is lvalue a closure? ERROR */
          if(idrefinfo.info == TYPE_CLOSURE) {
             fprintf(stderr,
-                    "%s:%llu:%llu: Syntax error: can't have a function call as lvalue\n",
+                    "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: can't have a function call as lvalue\n",
                     buzzlex_getfile(par->lex)->fname,
                     par->tok->line,
                     par->tok->col);
@@ -1050,7 +1051,7 @@ int parse_command(buzzparser_t par) {
          return PARSE_OK;
       }
       fprintf(stderr,
-              "%s:%llu:%llu: Syntax error: expected function call or assignment\n",
+              "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: expected function call or assignment\n",
               buzzlex_getfile(par->lex)->fname,
               par->tok->line,
               par->tok->col);
@@ -1118,7 +1119,7 @@ int parse_idreflist(buzzparser_t par) {
       return PARSE_OK;
    }
    fprintf(stderr,
-           "%s:%llu:%llu: Syntax error: expected , or ), found %s\n",
+           "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: expected , or ), found %s\n",
            buzzlex_getfile(par->lex)->fname,
            par->tok->line,
            par->tok->col,
@@ -1142,7 +1143,7 @@ int parse_idref(buzzparser_t par,
    }
    else {
       /* Symbol found */
-      DEBUG("Found idref %s, pos = %lld, global = %d\n",
+      DEBUG("Found idref %s, pos = %" PRId64 ", global = %d\n",
             par->tok->value,
             s->pos,
             s->global);
@@ -1160,7 +1161,7 @@ int parse_idref(buzzparser_t par,
          chunk_append("\tpushs %d", idrefinfo->info);
          chunk_append("\tgload");
       }
-      else if(idrefinfo->info >= 0)            { chunk_append("\tlload %lld", s->pos); }
+      else if(idrefinfo->info >= 0)            { chunk_append("\tlload %" PRId64, s->pos); }
       else if(idrefinfo->info == TYPE_TABLE)   { chunk_append("\ttget"); }
       else if(idrefinfo->info == TYPE_CLOSURE) { chunk_append("\tcallc"); }
       idrefinfo->global = 0;

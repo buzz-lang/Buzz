@@ -8,6 +8,8 @@
 
 #define BUZZTYPE_TABLE_BUCKETS 10
 
+const char *buzztype_desc[] = {"nil", "integer", "float", "string", "table", "closure", "userdata" };
+
 /****************************************/
 /****************************************/
 

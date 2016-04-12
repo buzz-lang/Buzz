@@ -7,6 +7,17 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/uio.h>
+#include <inttypes.h>
+
+/****************************************/
+/****************************************/
+
+char *buzztok_desc[] = {
+      "identifier", "numeric constant", "string", "variable",
+      "nil", "if", "else", "function", "return",
+      "for", "while", "and/or", "not", "+ or -", "* or /",
+      "%", "^", "{", "}", "(", ")", "[", "]", "; or newline",
+      ",", "=", ".", "== != < <= > >=" };
 
 /****************************************/
 /****************************************/
@@ -214,7 +225,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
          if(lexf->cur_c >= lexf->buf_size ||
             !buzzlex_isquote(lexf->buf[lexf->cur_c])) {
             fprintf(stderr,
-                    "%s:%llu:%llu: Syntax error: expected string after include\n",
+                    "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: expected string after include\n",
                     lexf->fname,
                     lexf->cur_line,
                     lexf->cur_col);
@@ -233,7 +244,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
          if(lexf->cur_c >= lexf->buf_size ||
             lexf->buf[lexf->cur_c] == '\n') {
             fprintf(stderr,
-                    "%s:%llu:%llu: Syntax error: expected end of string\n",
+                    "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: expected end of string\n",
                     lexf->fname,
                     lexf->cur_line,
                     lexf->cur_col);
@@ -358,7 +369,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       else {
          /* Syntax error */
          fprintf(stderr,
-                 "%s:%llu:%llu: Syntax error: expected '=' after '!'\n",
+                 "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: expected '=' after '!'\n",
                  lexf->fname,
                  lexf->cur_line,
                  lexf->cur_col);
@@ -437,7 +448,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       /* End of stream? Syntax error */
       if(lexf->cur_c >= lexf->buf_size) {
          fprintf(stderr,
-                 "%s:%llu:%llu: Syntax error: string closing quote not found\n",
+                 "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: string closing quote not found\n",
                  lexf->fname,
                  lexf->cur_line,
                  lexf->cur_col);
@@ -457,7 +468,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
    else {
       /* Unknown character */
       fprintf(stderr,
-              "%s:%llu:%llu: Syntax error: unknown character '%c' (octal: %o; hex: %x)\n",
+              "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: unknown character '%c' (octal: %o; hex: %x)\n",
               lexf->fname,
               lexf->cur_line,
               lexf->cur_col,

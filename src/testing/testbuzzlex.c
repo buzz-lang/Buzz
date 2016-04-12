@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 int main(int argc, char* argv[]) {
    /* Parse command line */
@@ -22,7 +23,7 @@ int main(int argc, char* argv[]) {
       tok = buzzlex_nexttok(lex);
       if(!tok) done = 1;
       else {
-         fprintf(stdout, "TOKEN %2llu %2llu %-20s %s\n",
+         fprintf(stdout, "TOKEN %2" PRIu64 " %2" PRIu64 " %-20s %s\n",
                  tok->line,
                  tok->col,
                  buzztok_desc[tok->type],

@@ -9,14 +9,23 @@
 /****************************************/
 /****************************************/
 
+const char *buzzvm_state_desc[] = { "no code", "ready", "done", "error", "stopped" };
+
+const char *buzzvm_error_desc[] = { "none", "unknown instruction", "empty stack", "wrong number of local variables", "pc out of range", "function id out of range", "type mismatch", "unknown string id", "unknown swarm id" };
+
+const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "dup", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "gload", "gstore", "pusht", "tput", "tget", "callc", "calls", "pushf", "pushi", "pushs", "pushcn", "pushcc", "pushl", "lload", "lstore", "jump", "jumpz", "jumpnz"};
+
+/****************************************/
+/****************************************/
+
 void buzzvm_dump(buzzvm_t vm) {
    int64_t i;
    fprintf(stderr, "============================================================\n");
    fprintf(stderr, "state: %d\terror: %d\n", vm->state, vm->error);
    fprintf(stderr, "code size: %u\tpc: %d\n", vm->bcode_size, vm->pc);
-   fprintf(stderr, "stacks: %lld\tcur elem: %lld (size %lld)\n", buzzdarray_size(vm->stacks), buzzvm_stack_top(vm), buzzvm_stack_top(vm));
+   fprintf(stderr, "stacks: %" PRId64 "\tcur elem: %" PRId64 " (size %" PRId64 ")\n", buzzdarray_size(vm->stacks), buzzvm_stack_top(vm), buzzvm_stack_top(vm));
    for(i = buzzvm_stack_top(vm)-1; i >= 0; --i) {
-      fprintf(stderr, "\t%lld\t", i);
+      fprintf(stderr, "\t%" PRId64 "\t", i);
       buzzobj_t o = buzzdarray_get(vm->stack, i, buzzobj_t);
       switch(o->o.type) {
          case BUZZTYPE_NIL:

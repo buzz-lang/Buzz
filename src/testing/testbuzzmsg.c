@@ -1,6 +1,7 @@
 #include <buzz/buzzinmsg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 int main() {
    buzzmsg_payload_t buf = buzzmsg_payload_new(10);
@@ -25,24 +26,24 @@ int main() {
    char* s;
    fprintf(stderr, "Deserializing 10:");
    pos = buzzmsg_deserialize_u32((uint32_t*)(&x), buf2, pos);
-   fprintf(stderr, "%d (%lld)\n", x, pos);
+   fprintf(stderr, "%d (%" PRId64 ")\n", x, pos);
    if(pos < 0) return 1;
    fprintf(stderr, "Deserializing -2.5:");
    pos = buzzmsg_deserialize_float(&y, buf2, pos);
-   fprintf(stderr, "%f (%lld)\n", y, pos);
+   fprintf(stderr, "%f (%" PRId64 ")\n", y, pos);
    if(pos < 0) return 1;
    fprintf(stderr, "Deserializing 'sti gran cazzi':");
    pos = buzzmsg_deserialize_string(&s, buf2, pos);
-   fprintf(stderr, "%s (%lld)\n", s, pos);
+   fprintf(stderr, "%s (%" PRId64 ")\n", s, pos);
    free(s);
    if(pos < 0) return 1;
    fprintf(stderr, "Deserializing -30:");
    pos = buzzmsg_deserialize_u32((uint32_t*)(&x), buf2, pos);
-   fprintf(stderr, "%d (%lld)\n", x, pos);
+   fprintf(stderr, "%d (%" PRId64 ")\n", x, pos);
    if(pos < 0) return 1;
    fprintf(stderr, "Deserializing 3.14:");
    pos = buzzmsg_deserialize_float(&y, buf2, pos);
-   fprintf(stderr, "%f (%lld)\n", y, pos);
+   fprintf(stderr, "%f (%" PRId64 ")\n", y, pos);
    if(pos < 0) return 1;
    
    buzzmsg_payload_destroy(&buf2);

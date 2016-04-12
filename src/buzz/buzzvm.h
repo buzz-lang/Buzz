@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 #include <math.h>
+#include <inttypes.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,7 +26,7 @@ extern "C" {
       BUZZVM_STATE_ERROR,      // Error occurred
       BUZZVM_STATE_STOPPED     // Stopped due to a breakpoint
    } buzzvm_state;
-   static const char *buzzvm_state_desc[] = { "no code", "ready", "done", "error", "stopped" };
+   extern const char *buzzvm_state_desc[];
 
    /*
     * VM error codes
@@ -41,7 +42,7 @@ extern "C" {
       BUZZVM_ERROR_STRING,   // Unknown string id
       BUZZVM_ERROR_SWARM     // Unknown swarm id
    } buzzvm_error;
-   static const char *buzzvm_error_desc[] = { "none", "unknown instruction", "empty stack", "wrong number of local variables", "pc out of range", "function id out of range", "type mismatch", "unknown string id", "unknown swarm id" };
+   extern const char *buzzvm_error_desc[];
 
    /*
     * VM instructions
@@ -96,8 +97,9 @@ extern "C" {
       BUZZVM_INSTR_JUMP,     // Set PC to argument
       BUZZVM_INSTR_JUMPZ,    // Set PC to argument if stack top is zero, pop operand
       BUZZVM_INSTR_JUMPNZ,   // Set PC to argument if stack top is not zero, pop operand
+      BUZZVM_INSTR_COUNT     // Used to count how many instructions have been defined
    } buzzvm_instr;
-   static const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "dup", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "gload", "gstore", "pusht", "tput", "tget", "callc", "calls", "pushf", "pushi", "pushs", "pushcn", "pushcc", "pushl", "lload", "lstore", "jump", "jumpz", "jumpnz"};
+   extern const char *buzzvm_instr_desc[];
 
    /*
     * Function pointer for BUZZVM_INSTR_CALL.
@@ -560,7 +562,7 @@ extern "C" {
  * @param vm The VM data.
  * @param num The number of expected local variables.
  */
-#define buzzvm_lnum_assert(vm, num) if(buzzvm_lnum(vm) != num) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_LNUM; asprintf(&(vm)->errormsg, "%s: expected %d, got %lld", buzzvm_error_desc[(vm)->error], num, buzzvm_lnum(vm)); return (vm)->state; }
+#define buzzvm_lnum_assert(vm, num) if(buzzvm_lnum(vm) != num) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_LNUM; asprintf(&(vm)->errormsg, "%s: expected %d, got %" PRId64, buzzvm_error_desc[(vm)->error], num, buzzvm_lnum(vm)); return (vm)->state; }
 
 /*
  * Pushes the local variable located at the given stack index.

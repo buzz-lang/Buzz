@@ -25,7 +25,7 @@
 extern "C" {
 #endif
 
-   static const char *buzztype_desc[] = {"nil", "integer", "float", "string", "table", "closure", "userdata" };
+   extern const char *buzztype_desc[];
 
    /*
     * Nil

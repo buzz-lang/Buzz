@@ -42,12 +42,7 @@ extern "C" {
       BUZZTOK_DOT,
       BUZZTOK_CMP,
    } buzztok_type_e;
-   static char *buzztok_desc[] = {
-      "identifier", "numeric constant", "string", "variable",
-      "nil", "if", "else", "function", "return",
-      "for", "while", "and/or", "not", "+ or -", "* or /",
-      "%", "^", "{", "}", "(", ")", "[", "]", "; or newline",
-      ",", "=", ".", "== != < <= > >=" };
+   extern char *buzztok_desc[];
 
    /*
     * Token data record

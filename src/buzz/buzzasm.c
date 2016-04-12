@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <inttypes.h>
 
 /****************************************/
 /****************************************/
@@ -224,7 +225,7 @@ int buzz_asm(const char* fname,
             uint64_t l = strtol(line, NULL, 10);
             uint64_t c = strtol(col, NULL, 10);
             buzzdebug_info_set(*dbg, *size, l, c,srcfname);
-            fprintf(stderr, "[DEBUG] Added debug information O%u:L%llu:C%llu:F%s\n", *size, l, c, srcfname);
+            fprintf(stderr, "[DEBUG] Added debug information O%u:L%" PRIu64 ":C%" PRIu64 ":F%s\n", *size, l, c, srcfname);
          }
          /* Remove trailing space from label info */
          endc = labelinfo + strlen(labelinfo) - 1;
@@ -260,7 +261,7 @@ int buzz_asm(const char* fname,
          uint64_t l = strtol(line, NULL, 10);
          uint64_t c = strtol(col, NULL, 10);
          buzzdebug_info_set(*dbg, *size, l, c,srcfname);
-         fprintf(stderr, "[DEBUG] Added debug information O%u:L%llu:C%llu:F%s\n", *size, l, c, srcfname);
+         fprintf(stderr, "[DEBUG] Added debug information O%u:L%" PRIu64 ":C%" PRIu64 ":F%s\n", *size, l, c, srcfname);
       }
       /* Interpret the instruction */
       noarg_instr(BUZZVM_INSTR_NOP);
@@ -334,13 +335,13 @@ int buzz_asm(const char* fname,
 
 #define write_arg(T, FMT)                                               \
    if(i + sizeof(T) >= size) {                                          \
-      fprintf(stderr, "ERROR: %s: not enough bytes in bytecode for argument of %s at %u\n", fname, buzzvm_instr_desc[op], i); \
+      fprintf(stderr, "ERROR: %s: not enough bytes in bytecode for argument of %s at %" PRIu32 "\n", fname, buzzvm_instr_desc[op], i); \
       fclose(fd);                                                       \
       return 2;                                                         \
    }                                                                    \
    fprintf(fd, " " FMT, (*(T*)(buf+i+1)));                              \
    if(buzzdebug_info_exists_offset(dbg, &i)) {                          \
-      fprintf(fd, "\t|%llu,%llu,%s",                                    \
+      fprintf(fd, "\t|%" PRIu64 ",%" PRIu64 ",%s",                                    \
               (*buzzdebug_info_get_fromoffset(dbg, &i))->line,          \
               (*buzzdebug_info_get_fromoffset(dbg, &i))->col,           \
               (*buzzdebug_info_get_fromoffset(dbg, &i))->fname);        \
@@ -383,7 +384,7 @@ int buzz_deasm(const uint8_t* buf,
     * Phase 2: deassemble the opcodes
     */
    /* Calculate max opcode */
-   uint32_t maxop = sizeof(buzzvm_instr_desc) / sizeof(char*);
+   uint32_t maxop = BUZZVM_INSTR_COUNT;
    /* Go through the bytecode */
    for(; i < size; ++i) {
       /* Fetch instruction */
@@ -403,11 +404,11 @@ int buzz_deasm(const uint8_t* buf,
       }
       else if(op > BUZZVM_INSTR_PUSHF) {
          /* Integer argument */
-         write_arg(int32_t, "%d");
+         write_arg(int32_t, "%" PRId32);
       }
       else {
          if(buzzdebug_info_exists_offset(dbg, &i)) {
-            fprintf(fd, "\t|%llu,%llu,%s",
+            fprintf(fd, "\t|%" PRIu64 ",%" PRIu64 ",%s",
                     (*buzzdebug_info_get_fromoffset(dbg, &i))->line,
                     (*buzzdebug_info_get_fromoffset(dbg, &i))->col,
                     (*buzzdebug_info_get_fromoffset(dbg, &i))->fname);
@@ -430,7 +431,7 @@ int buzz_instruction_deasm(const uint8_t* bcode,
    /* Fetch instruction */
    uint8_t op = bcode[off];
    /* Check that it's in the allowed range */
-   if(op >= sizeof(buzzvm_instr_desc) / sizeof(char*)) return 0;
+   if(op >= BUZZVM_INSTR_COUNT) return 0;
    /* Does the opcode have an argument? */
    if(op == BUZZVM_INSTR_PUSHF) {
       /* Float argument */

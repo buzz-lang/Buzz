@@ -101,7 +101,7 @@ int main(int argc, char** argv) {
       if(trace) buzzdebug_stack_dump(vm, 1, stdout);
       buzzdebug_entry_t dbg = *buzzdebug_info_get_fromoffset(dbg_buf, &vm->pc);
       if(dbg != NULL) {
-         fprintf(stderr, "%s: execution terminated abnormally at %s:%llu:%llu : %s: %s\n\n",
+         fprintf(stderr, "%s: execution terminated abnormally at %s:%" PRIu64 ":%" PRIu64 " : %s: %s\n\n",
                  bcfname,
                  dbg->fname,
                  dbg->line,

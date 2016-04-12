@@ -2,9 +2,8 @@
 #include "buzzasm.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <string.h>
+#include <inttypes.h>
 
 /****************************************/
 /****************************************/
@@ -41,7 +40,7 @@ uint32_t buzzdebug_entryhash(const void* key) {
    buzzdebug_entry_t x = *(const buzzdebug_entry_t*)key;
    char* str;
    uint32_t h;
-   asprintf(&str, "%s:%llu:%llu", x->fname, x->line, x->col);
+   asprintf(&str, "%s:%" PRIu64 ":%" PRIu64, x->fname, x->line, x->col);
    h = buzzdict_strkeyhash(&str);
    free(str);
    return h;
@@ -344,10 +343,10 @@ void buzzdebug_stack_dump(buzzvm_t vm,
    fprintf(stream, "============================================================\n");
    fprintf(stream, "state: %s\terror: %d\n", buzzvm_state_desc[vm->state], vm->error);
    fprintf(stream, "code size: %u\tpc: %d\n", vm->bcode_size, vm->pc);
-   fprintf(stream, "stacks: %lld\tcur: %u\n", buzzdarray_size(vm->stacks), idx);
+   fprintf(stream, "stacks: %" PRIu64 "\tcur: %u\n", buzzdarray_size(vm->stacks), idx);
    fprintf(stream, "next instr: %s\n", instr);
    for(i = buzzdarray_size(s)-1; i >= 0; --i) {
-      fprintf(stream, "\t%lld\t", i);
+      fprintf(stream, "\t%" PRIu64 "\t", i);
       buzzobj_t o = buzzdarray_get(s, i, buzzobj_t);
       switch(o->o.type) {
          case BUZZTYPE_NIL:
