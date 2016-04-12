@@ -1,4 +1,5 @@
 #include "buzzdebug.h"
+#include "buzzasm.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -233,6 +234,134 @@ void buzzdebug_breakpoint_set_offset(buzzdebug_t dbg,
       buzzdarray_size(dbg->breakpoints)) {
       buzzdarray_push(dbg->breakpoints, &off);
    }
+}
+
+/****************************************/
+/****************************************/
+
+int buzzdebug_breakpoint_exists(buzzdebug_t dbg,
+                                int32_t off) {
+   return
+      buzzdarray_find(dbg->breakpoints, offset_compare, &off) <
+      buzzdarray_size(dbg->breakpoints);
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state buzzdebug_continue(buzzvm_t vm,
+                                buzzdebug_t dbg) {
+   while(!buzzdebug_breakpoint_exists(dbg, vm->pc) &&
+         buzzvm_step(vm) == BUZZVM_STATE_READY);
+   if(buzzdebug_breakpoint_exists(dbg, vm->pc))
+      vm->state = BUZZVM_STATE_STOPPED;
+   return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
+buzzvm_state buzzdebug_closure_call(buzzvm_t vm,
+                                    uint32_t argc,
+                                    buzzdebug_t dbg) {
+   /* Push the argument count */
+   buzzvm_pushi(vm, argc);
+   /* Save the current stack depth */
+   uint32_t stacks = buzzdarray_size(vm->stacks);
+   /* Call the closure and keep stepping until
+    * the stack count is back to the saved value */
+   buzzvm_callc(vm);
+   do {
+      if(buzzdebug_breakpoint_exists(dbg, vm->pc))
+         vm->state = BUZZVM_STATE_STOPPED;
+      if(buzzvm_step(vm) != BUZZVM_STATE_READY)
+         return vm->state;
+   }
+   while(stacks < buzzdarray_size(vm->stacks));
+   return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
+int buzzvm_string_cmp(const void* a, const void* b) {
+   return strcmp(*(char**)a, *(char**)b);
+}
+
+#define buzzdarray_string_find(vm, str) buzzdarray_find(vm->strings, buzzvm_string_cmp, str)
+
+buzzvm_state buzzdebug_function_call(buzzvm_t vm,
+                                     const char* fname,
+                                     uint32_t argc,
+                                     buzzdebug_t dbg) {
+   /* Reset the VM state if it's DONE */
+   if(vm->state == BUZZVM_STATE_DONE)
+      vm->state = BUZZVM_STATE_READY;
+   /* Don't continue if the VM has an error */
+   if(vm->state != BUZZVM_STATE_READY)
+      return vm->state;
+   /* Push the function name (return with error if not found) */
+   buzzvm_pushs(vm, buzzdarray_string_find(vm, &fname));
+   /* Get associated symbol */
+   buzzvm_gload(vm);
+   /* Make sure it's a closure */
+   buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
+   /* Move closure before arguments */
+   if(argc > 0) {
+      buzzdarray_insert(vm->stack,
+                        buzzdarray_size(vm->stack) - argc - 1,
+                        buzzvm_stack_at(vm, 1));
+      buzzvm_pop(vm);
+   }
+   /* Call the closure */
+   return buzzdebug_closure_call(vm, argc, dbg);
+}
+
+/****************************************/
+/****************************************/
+
+void buzzdebug_stack_dump(buzzvm_t vm,
+                          uint32_t idx,
+                          FILE* stream) {
+   int64_t i;
+   buzzdarray_t s = buzzdarray_get(vm->stacks, vm->stacks->size - idx, buzzdarray_t);
+   char* instr = NULL;
+   if(!buzz_instruction_deasm(vm->bcode, vm->pc, &instr)) instr = "deasm error";
+   fprintf(stream, "============================================================\n");
+   fprintf(stream, "state: %s\terror: %d\n", buzzvm_state_desc[vm->state], vm->error);
+   fprintf(stream, "code size: %u\tpc: %d\n", vm->bcode_size, vm->pc);
+   fprintf(stream, "stacks: %lld\tcur: %u\n", buzzdarray_size(vm->stacks), idx);
+   fprintf(stream, "next instr: %s\n", instr);
+   for(i = buzzdarray_size(s)-1; i >= 0; --i) {
+      fprintf(stream, "\t%lld\t", i);
+      buzzobj_t o = buzzdarray_get(s, i, buzzobj_t);
+      switch(o->o.type) {
+         case BUZZTYPE_NIL:
+            fprintf(stream, "[nil]\n");
+            break;
+         case BUZZTYPE_INT:
+            fprintf(stream, "[int] %d\n", o->i.value);
+            break;
+         case BUZZTYPE_FLOAT:
+            fprintf(stream, "[float] %f\n", o->f.value);
+            break;
+         case BUZZTYPE_TABLE:
+            fprintf(stream, "[table] %d elements\n", buzzdict_size(o->t.value));
+            break;
+         case BUZZTYPE_CLOSURE:
+            if(o->c.value.isnative)
+               fprintf(stream, "[n-closure] %d\n", o->c.value.ref);
+            else
+               fprintf(stream, "[c-closure] %d\n", o->c.value.ref);
+            break;
+         case BUZZTYPE_STRING:
+            fprintf(stream, "[string] %d:'%s'\n", o->s.value.sid, o->s.value.str);
+            break;
+         default:
+            fprintf(stream, "[TODO] type = %d\n", o->o.type);
+      }
+   }
+   fprintf(stream, "============================================================\n\n");
 }
 
 /****************************************/

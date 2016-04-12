@@ -2,6 +2,7 @@
 # Compile libbuzzargos
 #
 set(ARGOS_BUZZ_SOURCES
+  ../buzzasm.h ../buzzasm.c
   ../buzzdebug.h ../buzzdebug.c
   buzz_controller.h buzz_controller.cpp
   buzz_controller_footbot.h buzz_controller_footbot.cpp

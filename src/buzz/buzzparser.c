@@ -288,15 +288,15 @@ void chunk_print(uint32_t pos, void* data, void* params) {
 /****************************************/
 /****************************************/
 
-#define fetchtok()                                              \
-   buzzlex_destroytok(&par->tok);                               \
-   par->tok = buzzlex_nexttok(par->lex);                        \
-   if(!par->tok) {                                              \
-      fprintf(stderr,                                           \
-              "%s: Syntax error: expected token, found EOF\n",  \
-              buzzlex_getfile(par->lex)->fname);                                 \
-      return PARSE_ERROR;                                       \
-   }                                                            \
+#define fetchtok()                                                      \
+   buzzlex_destroytok(&par->tok);                                       \
+   par->tok = buzzlex_nexttok(par->lex);                                \
+   if(!par->tok) {                                                      \
+      fprintf(stderr,                                                   \
+              "%s: Syntax error: expected token, found EOF\n",          \
+              buzzlex_getfile(par->lex)->fname);                        \
+      return PARSE_ERROR;                                               \
+   }                                                                    \
 
 int match(buzzparser_t par,
           buzztok_type_e type) {

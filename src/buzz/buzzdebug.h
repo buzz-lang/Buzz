@@ -1,15 +1,19 @@
 #ifndef BUZZDEBUG_H
 #define BUZZDEBUG_H
 
-#include <buzz/buzzdict.h>
+#include <buzz/buzzvm.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
    struct buzzdebug_entry_s {
+      /* Script line */
       uint64_t line;
+      /* Script column */
       uint64_t col;
+      /* Script file name */
       char* fname;
    };
    typedef struct buzzdebug_entry_s* buzzdebug_entry_t;
@@ -18,8 +22,11 @@ extern "C" {
     * Definition of the buzz debug data structure.
     */
    struct buzzdebug_s {
+      /* Offset -> script information */
       buzzdict_t off2script;
+      /* Script -> offset information */
       buzzdict_t script2off;
+      /* Breakpoint list */
       buzzdarray_t breakpoints;
    };
    typedef struct buzzdebug_s* buzzdebug_t;
@@ -87,10 +94,77 @@ extern "C" {
    /*
     * Sets a breakpoint at the given offset.
     * @param dbg The debug data structure.
-    * @param idx The index of the wanted breakpoint.
+    * @param idx The wanted breakpoint offset.
     */
    extern void buzzdebug_breakpoint_set_offset(buzzdebug_t dbg,
                                                int32_t off);
+
+   /*
+    * Returns 1 if a breakpoint exists at the given offset.
+    * @param dbg The debug data structure.
+    * @param idx The index of the wanted breakpoint.
+    * @return 1 if a breakpoint exists at the given offset.
+    */
+   extern int buzzdebug_breakpoint_exists(buzzdebug_t dbg,
+                                          int32_t off);
+
+   /*
+    * Executes a script up to completion, stopping for beakpoints.
+    * @param vm The VM data.
+    * @param dbg The debug data structure.
+    * @return The updated VM state.
+    */
+   extern buzzvm_state buzzdebug_continue(buzzvm_t vm,
+                                          buzzdebug_t dbg);
+
+   /*
+    * Calls a Buzz closure, stopping for beakpoints.
+    * It expects the stack to be as follows:
+    * #1   arg1
+    * #2   arg2
+    * ...
+    * #N   argN
+    * #N+1 closure
+    * This function pops all arguments.
+    * @param vm The VM data.
+    * @param argc The number of arguments.
+    * @param dbg The debug data structure.
+    * @return 0 if everything OK, a non-zero value in case of error
+    */
+   extern buzzvm_state buzzdebug_closure_call(buzzvm_t vm,
+                                              uint32_t argc,
+                                              buzzdebug_t dbg);
+
+   /*
+    * Calls a function defined in Buzz, stopping for beakpoints.
+    * It expects the stack to be as follows:
+    * #1 arg1
+    * #2 arg2
+    * ...
+    * #N argN
+    * This function pops all arguments.
+    * @param vm The VM data.
+    * @param fname The function name.
+    * @param argc The number of arguments.
+    * @param dbg The debug data structure.
+    * @return 0 if everything OK, a non-zero value in case of error
+    */
+   extern buzzvm_state buzzdebug_function_call(buzzvm_t vm,
+                                               const char* fname,
+                                               uint32_t argc,
+                                               buzzdebug_t dbg);
+
+   /**
+    * Dumps the current state of a stack.
+    * The index goes from 1 to (vm->stacks->size).
+    * The currently active stack is at index 1.
+    * @param vm The VM data.
+    * @param idx The index of the stack to dump.
+    * @param stream The output stream.
+    */
+   extern void buzzdebug_stack_dump(buzzvm_t vm,
+                                    uint32_t idx,
+                                    FILE* stream);
 
 #ifdef __cplusplus
 }

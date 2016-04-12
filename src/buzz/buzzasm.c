@@ -423,3 +423,34 @@ int buzz_deasm(const uint8_t* buf,
 
 /****************************************/
 /****************************************/
+
+int buzz_instruction_deasm(const uint8_t* bcode,
+                           uint32_t off,
+                           char** buf) {
+   /* Fetch instruction */
+   uint8_t op = bcode[off];
+   /* Check that it's in the allowed range */
+   if(op >= sizeof(buzzvm_instr_desc) / sizeof(char*)) return 0;
+   /* Does the opcode have an argument? */
+   if(op == BUZZVM_INSTR_PUSHF) {
+      /* Float argument */
+      asprintf(buf, "%s %f",
+               buzzvm_instr_desc[op],
+               *(float*)(bcode+off+1));
+   }
+   else if(op > BUZZVM_INSTR_PUSHF) {
+      /* Integer argument */
+      asprintf(buf, "%s %d",
+               buzzvm_instr_desc[op],
+               *(int32_t*)(bcode+off+1));
+   }
+   else {
+      /* No argument */
+      asprintf(buf, "%s", buzzvm_instr_desc[op]);
+   }
+   /* All OK */
+   return 1;
+}
+
+/****************************************/
+/****************************************/

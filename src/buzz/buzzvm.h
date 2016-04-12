@@ -22,9 +22,10 @@ extern "C" {
       BUZZVM_STATE_NOCODE = 0, // No code loaded
       BUZZVM_STATE_READY,      // Ready to execute next instruction
       BUZZVM_STATE_DONE,       // Program finished
-      BUZZVM_STATE_ERROR       // Error occurred
+      BUZZVM_STATE_ERROR,      // Error occurred
+      BUZZVM_STATE_STOPPED     // Stopped due to a breakpoint
    } buzzvm_state;
-   static const char *buzzvm_state_desc[] = { "no code", "ready", "done", "error" };
+   static const char *buzzvm_state_desc[] = { "no code", "ready", "done", "error", "stopped" };
 
    /*
     * VM error codes
