@@ -251,6 +251,13 @@ int buzzdebug_breakpoint_exists(buzzdebug_t dbg,
 
 buzzvm_state buzzdebug_continue(buzzvm_t vm,
                                 buzzdebug_t dbg) {
+   /* Make sure the VM is either ready or stopped */
+   if(vm->state != BUZZVM_STATE_READY) {
+      if(vm->state == BUZZVM_STATE_STOPPED)
+         vm->state = BUZZVM_STATE_READY;
+      else return vm->state;
+   }
+   /* Go on until the end, an error, or a breakpoint */
    while(!buzzdebug_breakpoint_exists(dbg, vm->pc) &&
          buzzvm_step(vm) == BUZZVM_STATE_READY);
    if(buzzdebug_breakpoint_exists(dbg, vm->pc))
@@ -264,6 +271,12 @@ buzzvm_state buzzdebug_continue(buzzvm_t vm,
 buzzvm_state buzzdebug_closure_call(buzzvm_t vm,
                                     uint32_t argc,
                                     buzzdebug_t dbg) {
+   /* Make sure the VM is either ready or stopped */
+   if(vm->state != BUZZVM_STATE_READY) {
+      if(vm->state == BUZZVM_STATE_STOPPED)
+         vm->state = BUZZVM_STATE_READY;
+      else return vm->state;
+   }
    /* Push the argument count */
    buzzvm_pushi(vm, argc);
    /* Save the current stack depth */
@@ -294,12 +307,13 @@ buzzvm_state buzzdebug_function_call(buzzvm_t vm,
                                      const char* fname,
                                      uint32_t argc,
                                      buzzdebug_t dbg) {
-   /* Reset the VM state if it's DONE */
-   if(vm->state == BUZZVM_STATE_DONE)
-      vm->state = BUZZVM_STATE_READY;
-   /* Don't continue if the VM has an error */
-   if(vm->state != BUZZVM_STATE_READY)
-      return vm->state;
+   /* Make sure the VM is either ready or stopped */
+   if(vm->state != BUZZVM_STATE_READY) {
+      if(vm->state == BUZZVM_STATE_STOPPED ||
+         vm->state == BUZZVM_STATE_DONE)
+         vm->state = BUZZVM_STATE_READY;
+      else return vm->state;
+   }
    /* Push the function name (return with error if not found) */
    buzzvm_pushs(vm, buzzdarray_string_find(vm, &fname));
    /* Get associated symbol */
