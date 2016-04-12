@@ -137,8 +137,8 @@ int main(int argc, char** argv) {
    }
    else {
       if(trace) dump(vm);
-      if(buzzdebug_off2script_exists(dbg_buf, &vm->pc)) {
-         buzzdebug_entry_t dbg = buzzdebug_off2script_get(dbg_buf, &vm->pc);
+      buzzdebug_entry_t dbg = *buzzdebug_info_get_fromoffset(dbg_buf, &vm->pc);
+      if(dbg != NULL) {
          fprintf(stderr, "%s: execution terminated abnormally at %s:%llu:%llu : %s: %s\n\n",
                  bcfname,
                  dbg->fname,

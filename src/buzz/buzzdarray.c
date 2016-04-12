@@ -49,7 +49,7 @@ buzzdarray_t buzzdarray_clone(const buzzdarray_t da) {
 /****************************************/
 /****************************************/
 
-buzzdarray_t buzzdarray_frombuffer(void* buf,
+buzzdarray_t buzzdarray_frombuffer(const void* buf,
                                    uint32_t buf_size,
                                    uint32_t elem_size,
                                    buzzdarray_elem_funp elem_destroy) {

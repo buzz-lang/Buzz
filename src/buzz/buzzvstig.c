@@ -128,7 +128,7 @@ int buzzvm_vstig_create(buzzvm_t vm) {
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
    buzzvm_pop(vm);
    /* Look for virtual stigmergy */
-   buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
+   const buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
    if(vs)
       /* Found, destroy it */
       buzzdict_remove(vm->vstigs, &id);
@@ -184,10 +184,10 @@ int buzzvm_vstig_put(buzzvm_t vm) {
    buzzvm_lload(vm, 2);
    buzzobj_t v = buzzvm_stack_at(vm, 1);
    /* Look for virtual stigmergy */
-   buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
+   const buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
    if(vs) {
       /* Look for the element */
-      buzzvstig_elem_t* x = buzzvstig_fetch(*vs, &k);
+      const buzzvstig_elem_t* x = buzzvstig_fetch(*vs, &k);
       if(x) {
          /* Element found, update it */
          (*x)->data = v;
@@ -219,7 +219,7 @@ int buzzvm_vstig_size(buzzvm_t vm) {
    buzzvm_tget(vm);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
    /* Look for virtual stigmergy */
-   buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
+   const buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
    if(vs) {
       /* Virtual stigmergy found, return its size */
       buzzvm_pushi(vm, buzzdict_size((*vs)->data));
@@ -246,11 +246,11 @@ int buzzvm_vstig_get(buzzvm_t vm) {
    buzzvm_lload(vm, 1);
    buzzobj_t k = buzzvm_stack_at(vm, 1);
    /* Look for virtual stigmergy */
-   buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
+   const buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
    if(vs) {
       /* Virtual stigmergy found */
       /* Look for key and push result */
-      buzzvstig_elem_t* e = buzzvstig_fetch(*vs, &k);
+      const buzzvstig_elem_t* e = buzzvstig_fetch(*vs, &k);
       if(e) {
          /* Key found */
          buzzvm_push(vm, (*e)->data);
@@ -288,7 +288,7 @@ int buzzvm_vstig_setonconflict(struct buzzvm_s* vm) {
    buzzvm_tget(vm);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
    /* Look for virtual stigmergy */
-   buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
+   const buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
    if(vs) {
       /* Virtual stigmergy found */
       /* Get closure */
@@ -319,7 +319,7 @@ int buzzvm_vstig_setonconflictlost(struct buzzvm_s* vm) {
    buzzvm_tget(vm);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
    /* Look for virtual stigmergy */
-   buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
+   const buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
    if(vs) {
       /* Virtual stigmergy found */
       /* Get closure */

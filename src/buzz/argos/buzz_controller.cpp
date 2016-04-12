@@ -217,7 +217,7 @@ void CBuzzController::SetBytecode(const std::string& str_bc_fname,
 /****************************************/
 
 std::string CBuzzController::ErrorInfo() {
-   buzzdebug_entry_t tInfo = buzzdebug_off2script_get(m_tBuzzDbgInfo, &m_tBuzzVM->pc);
+   buzzdebug_entry_t tInfo = *buzzdebug_info_get_fromoffset(m_tBuzzDbgInfo, &m_tBuzzVM->pc);
    std::ostringstream ossErrMsg;
    if(tInfo) {
       ossErrMsg << tInfo->fname

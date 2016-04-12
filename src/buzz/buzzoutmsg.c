@@ -285,11 +285,11 @@ void buzzoutmsg_queue_append_vstig(buzzoutmsg_queue_t msgq,
                                    const buzzobj_t key,
                                    const buzzvstig_elem_t data) {
    /* Look for a duplicate message in the dictionary */
-   struct buzzoutmsg_vstig_s** e = NULL;
+   const struct buzzoutmsg_vstig_s** e = NULL;
    /* Virtual stigmergy to actually use */
    buzzdict_t vs = NULL;
    /* Look for the virtual stigmergy */
-   buzzdict_t* tvs = buzzdict_get(msgq->vstig, &id, buzzdict_t);
+   const buzzdict_t* tvs = buzzdict_get(msgq->vstig, &id, buzzdict_t);
    if(tvs) {
       /* Virtual stigmergy found, look for the key */
       vs = *tvs;

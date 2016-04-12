@@ -150,7 +150,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                break;
             }
             /* Make sure there's a listener to call */
-            buzzobj_t* l = buzzdict_get(vm->listeners, &vid, buzzobj_t);
+            const buzzobj_t* l = buzzdict_get(vm->listeners, &vid, buzzobj_t);
             if(!l) {
                fprintf(stderr, "[WARNING] [ROBOT %u] BROADCAST message with no listener for vid = %u\n", vm->robot, vid);
                break;
@@ -182,7 +182,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                break;
             }
             /* Look for virtual stigmergy */
-            buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
+            const buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
             if(!vs) break;
             /* Virtual stigmergy found */
             /* Deserialize key and value from msg */
@@ -195,7 +195,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
             }
             /* Deserialization successful */
             /* Fetch local vstig element */
-            buzzvstig_elem_t* l = buzzvstig_fetch(*vs, &k);
+            const buzzvstig_elem_t* l = buzzvstig_fetch(*vs, &k);
             if((!l)                             || /* Element not found */
                ((*l)->timestamp < v->timestamp)) { /* Local element is older */
                /* Local element must be updated */
@@ -249,7 +249,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                break;
             }
             /* Look for virtual stigmergy */
-            buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
+            const buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
             if(!vs) break;
             /* Virtual stigmergy found */
             /* Deserialize key and value from msg */
@@ -262,7 +262,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
             }
             /* Deserialization successful */
             /* Fetch local vstig element */
-            buzzvstig_elem_t* l = buzzvstig_fetch(*vs, &k);
+            const buzzvstig_elem_t* l = buzzvstig_fetch(*vs, &k);
             if((!l) ||                           /* Element not found */
                (*l)->timestamp < v->timestamp) { /* Local element is older */
                /* Store element */
@@ -1168,7 +1168,7 @@ buzzvm_state buzzvm_tget(buzzvm_t vm) {
    buzzobj_t t = buzzvm_stack_at(vm, 2);
    buzzvm_pop(vm);
    buzzvm_pop(vm);
-   buzzobj_t* v = buzzdict_get(t->t.value, &k, buzzobj_t);
+   const buzzobj_t* v = buzzdict_get(t->t.value, &k, buzzobj_t);
    if(v) buzzvm_push(vm, *v);
    else buzzvm_pushnil(vm);
    return BUZZVM_STATE_READY;
@@ -1182,7 +1182,7 @@ buzzvm_state buzzvm_gload(buzzvm_t vm) {
    buzzvm_type_assert(vm, 1, BUZZTYPE_STRING);
    buzzobj_t str = buzzvm_stack_at(vm, 1);
    buzzvm_pop(vm);
-   buzzobj_t* o = buzzdict_get(vm->gsyms, &(str->s.value), buzzobj_t);
+   const buzzobj_t* o = buzzdict_get(vm->gsyms, &(str->s.value), buzzobj_t);
    if(!o) { buzzvm_pushnil(vm); }
    else { buzzvm_push(vm, (*o)); }
    return BUZZVM_STATE_READY;

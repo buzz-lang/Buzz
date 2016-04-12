@@ -19,6 +19,7 @@ extern "C" {
     */
    struct buzzdebug_s {
       buzzdict_t off2script;
+      buzzdict_t script2off;
       buzzdarray_t breakpoints;
    };
    typedef struct buzzdebug_s* buzzdebug_t;
@@ -63,12 +64,26 @@ extern "C" {
     * @param col The script column number.
     * @param fname The file name.
     */
-   extern void buzzdebug_off2script_set(buzzdebug_t dbg,
-                                        uint32_t offset,
-                                        uint64_t line,
-                                        uint64_t col,
-                                        const char* fname);
+   extern void buzzdebug_info_set(buzzdebug_t dbg,
+                                  int32_t offset,
+                                  uint64_t line,
+                                  uint64_t col,
+                                  const char* fname);
 
+   /*
+    * Retrieves a pointer to the offset corresponding to the given script position.
+    * If nothing was found, NULL is returned.
+    * @param dbg The debug data structure.
+    * @param line The line in the script.
+    * @param col The column in the script.
+    * @param fname The file name in the script.
+    * @return A pointer to the value of the found offset, or NULL.
+    */
+   extern const int32_t* buzzdebug_info_get_fromscript(buzzdebug_t dbg,
+                                                       uint64_t line,
+                                                       uint64_t col,
+                                                       const char* fname);
+   
    /*
     * Sets a breakpoint at the given offset.
     * @param dbg The debug data structure.
@@ -83,30 +98,31 @@ extern "C" {
 
 /*
  * Returns the debug data corresponding to the given offset.
+ * This function returns NULL if the offset is not stored in the structure.
  * @param dbg The debug data structure.
  * @param off The bytecode offset.
  * @return The debug data corresponding to the given offset.
  */
-#define buzzdebug_off2script_get(dbg, off) (*buzzdict_get(dbg->off2script, off, buzzdebug_entry_t))
+#define buzzdebug_info_get_fromoffset(dbg, off) buzzdict_get(dbg->off2script, off, buzzdebug_entry_t)
 
 /*
  * Returns the number of elements in the data structure.
  * @param dbg The debug data structure.
  */
-#define buzzdebug_off2script_size(dbg) buzzdict_size(dbg->off2script)
+#define buzzdebug_info_count(dbg) buzzdict_size(dbg->off2script)
 
 /*
  * Returns 1 if the data structure is empty, 0 otherwise.
  * @param dbg The debug data structure.
  */
-#define buzzdebug_off2script_isempty(dbg) buzzdict_isempty(dbg->off2script)
+#define buzzdebug_info_isempty(dbg) buzzdict_isempty(dbg->off2script)
 
 /*
  * Returns 1 if debug data at the offset exists, 0 otherwise.
  * @param dbg The debug data structure.
  * @param off The bytecode offset.
  */
-#define buzzdebug_off2script_exists(dbg, off) buzzdict_exists(dbg->off2script, off)
+#define buzzdebug_info_exists_offset(dbg, off) buzzdict_exists(dbg->off2script, off)
 
 /*
  * Returns the offset of a breakpoint given its index.
@@ -132,6 +148,6 @@ extern "C" {
  * Returns the number of breakpoints currently set.
  * @param dbg The debug data structure.
  */
-#define buzzdebug_breakpoint_num(dbg) buzzdarray_size(dbg->breakpoints)
+#define buzzdebug_breakpoint_count(dbg) buzzdarray_size(dbg->breakpoints)
 
 #endif

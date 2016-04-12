@@ -97,7 +97,7 @@ extern "C" {
     */
    extern void buzzdict_set(buzzdict_t dt,
                             const void* key,
-                            void* data);
+                            const void* data);
 
    /*
     * Removes the element with the given key.
@@ -227,6 +227,6 @@ extern "C" {
  * @param type The element type.
  * @see buzzdict_rawget
  */
-#define buzzdict_get(dt, key, type) ((type*)buzzdict_rawget(dt, key))
+#define buzzdict_get(dt, key, type) ((const type*)buzzdict_rawget(dt, key))
 
 #endif

@@ -18,25 +18,70 @@ buzzdebug_entry_t buzzdebug_entry_new(uint64_t l,
    return x;
 }
 
-void buzzdebug_entry_destroyf(const void* key, void* data, void* params) {
+void buzzdebug_entry_destroy(buzzdebug_entry_t* e) {
+   free((*e)->fname);
+   free(*e);
+   *e = NULL;
+}
+
+void buzzdebug_off2script_destroyf(const void* key, void* data, void* params) {
    free((void*)key);
-   buzzdebug_entry_t x = *(buzzdebug_entry_t*)data;
-   free(x->fname);
-   free(x);
+   buzzdebug_entry_destroy((buzzdebug_entry_t*)data);
    free(data);
+}
+
+void buzzdebug_script2off_destroyf(const void* key, void* data, void* params) {
+   buzzdebug_entry_destroy((buzzdebug_entry_t*)key);
+   free((void*)key);
+   free(data);
+}
+
+uint32_t buzzdebug_entryhash(const void* key) {
+   buzzdebug_entry_t x = *(const buzzdebug_entry_t*)key;
+   char* str;
+   uint32_t h;
+   asprintf(&str, "%s:%llu:%llu", x->fname, x->line, x->col);
+   h = buzzdict_strkeyhash(&str);
+   free(str);
+   return h;
+}
+
+int buzzdebug_entrycmp(const void* a, const void* b) {
+   buzzdebug_entry_t x = *(const buzzdebug_entry_t*)a;
+   buzzdebug_entry_t y = *(const buzzdebug_entry_t*)b;
+   int cmp = strcmp(x->fname, y->fname);
+   if(cmp == 0) {
+      if(x->line < y->line) return -1;
+      if(x->line > y->line) return 1;
+      if(x->col < y->col) return -1;
+      if(x->col > y->col) return 1;
+      return 0;
+   }
+   else
+      return cmp;
 }
 
 /****************************************/
 /****************************************/
 
 buzzdebug_t buzzdebug_new() {
+   /* Make room for the debug information structure */
    buzzdebug_t x = (buzzdebug_t)malloc(sizeof(struct buzzdebug_s));
+   /* Make hash map for offset -> script data */
    x->off2script = buzzdict_new(100,
                                 sizeof(int32_t),
                                 sizeof(buzzdebug_entry_t),
                                 buzzdict_int32keyhash,
                                 buzzdict_int32keycmp,
-                                buzzdebug_entry_destroyf);
+                                buzzdebug_off2script_destroyf);
+   /* Make hash map for script -> offset data */
+   x->script2off = buzzdict_new(100,
+                                sizeof(buzzdebug_entry_t),
+                                sizeof(int32_t),
+                                buzzdebug_entryhash,
+                                buzzdebug_entrycmp,
+                                buzzdebug_script2off_destroyf);
+   /* Make list of breakpoints */
    x->breakpoints = buzzdarray_new(5, sizeof(int32_t), NULL);
    return x;
 }
@@ -47,6 +92,7 @@ buzzdebug_t buzzdebug_new() {
 void buzzdebug_destroy(buzzdebug_t* dbg) {
    buzzdarray_destroy(&(*dbg)->breakpoints);
    buzzdict_destroy(&(*dbg)->off2script);
+   buzzdict_destroy(&(*dbg)->script2off);
    free(*dbg);
    *dbg = NULL;
 }
@@ -77,7 +123,7 @@ int buzzdebug_fromfile(buzzdebug_t dbg,
          }
          if(fread(srcfname, 1, srcfnlen, fd) == srcfnlen) {
             srcfname[srcfnlen] = 0;
-            buzzdebug_off2script_set(dbg, offset, line, col, srcfname);
+            buzzdebug_info_set(dbg, offset, line, col, srcfname);
          }
       }
    }
@@ -131,13 +177,43 @@ int buzzdebug_tofile(const char* fname,
 /****************************************/
 /****************************************/
 
-void buzzdebug_off2script_set(buzzdebug_t dbg,
-                              uint32_t offset,
-                              uint64_t line,
-                              uint64_t col,
-                              const char* fname) {
+void buzzdebug_info_set(buzzdebug_t dbg,
+                        int32_t offset,
+                        uint64_t line,
+                        uint64_t col,
+                        const char* fname) {
+   /* Make new entry */
    buzzdebug_entry_t e = buzzdebug_entry_new(line, col, fname);
+   /* Add entry to offset -> script structure */
    buzzdict_set(dbg->off2script, &offset, &e);
+   /* Add entry to script -> offset structure only if
+    * 1. it does not exist, OR
+    * 2. it exists, but the stored offset is larger than the passed one
+    */
+   if(!buzzdict_exists(dbg->script2off, &e) ||
+      *buzzdict_get(dbg->script2off, &e, int32_t) > offset) {
+      /* Make new entry */
+      e = buzzdebug_entry_new(line, col, fname);
+      /* Add entry to script -> offset structure */
+      buzzdict_set(dbg->script2off, &e, &offset);
+   }
+}
+
+/****************************************/
+/****************************************/
+
+const int32_t* buzzdebug_info_get_fromscript(buzzdebug_t dbg,
+                                             uint64_t line,
+                                             uint64_t col,
+                                             const char* fname) {
+   /* Make entry */
+   buzzdebug_entry_t e = buzzdebug_entry_new(line, col, fname);
+   /* Search for it in the structure */
+   const int32_t* found = buzzdict_get(dbg->script2off, &e, int32_t);
+   /* Cleanup */
+   buzzdebug_entry_destroy(&e);
+   /* Return result */
+   return found;
 }
 
 /****************************************/

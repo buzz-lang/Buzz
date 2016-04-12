@@ -118,7 +118,7 @@ void buzz_asm_labsub(const void* key, void* data, void* params) {
    int32_t subpos = *(const int32_t*)key;
    char* sublab = *(char**)data;
    /* Look for the sub label in the list of labels */
-   int32_t* labpos = buzzdict_get(state->labpos, &sublab, int32_t);
+   const int32_t* labpos = buzzdict_get(state->labpos, &sublab, int32_t);
    if(!labpos) {
       /* Label not found, error */
       fprintf(stderr, "ERROR: %s: unknown label \"%s\"\n", state->fname, sublab);
@@ -223,7 +223,7 @@ int buzz_asm(const char* fname,
             char* srcfname = strsep(&debuginfo, ",\n");
             uint64_t l = strtol(line, NULL, 10);
             uint64_t c = strtol(col, NULL, 10);
-            buzzdebug_off2script_set(*dbg, *size, l, c,srcfname);
+            buzzdebug_info_set(*dbg, *size, l, c,srcfname);
             fprintf(stderr, "[DEBUG] Added debug information O%u:L%llu:C%llu:F%s\n", *size, l, c, srcfname);
          }
          /* Remove trailing space from label info */
@@ -259,7 +259,7 @@ int buzz_asm(const char* fname,
          char* srcfname = strsep(&debuginfo, ",\n");
          uint64_t l = strtol(line, NULL, 10);
          uint64_t c = strtol(col, NULL, 10);
-         buzzdebug_off2script_set(*dbg, *size, l, c,srcfname);
+         buzzdebug_info_set(*dbg, *size, l, c,srcfname);
          fprintf(stderr, "[DEBUG] Added debug information O%u:L%llu:C%llu:F%s\n", *size, l, c, srcfname);
       }
       /* Interpret the instruction */
@@ -339,11 +339,11 @@ int buzz_asm(const char* fname,
       return 2;                                                         \
    }                                                                    \
    fprintf(fd, " " FMT, (*(T*)(buf+i+1)));                              \
-   if(buzzdebug_off2script_exists(dbg, &i)) {                           \
+   if(buzzdebug_info_exists_offset(dbg, &i)) {                          \
       fprintf(fd, "\t|%llu,%llu,%s",                                    \
-              buzzdebug_off2script_get(dbg, &i)->line,                  \
-              buzzdebug_off2script_get(dbg, &i)->col,                   \
-              buzzdebug_off2script_get(dbg, &i)->fname);                \
+              (*buzzdebug_info_get_fromoffset(dbg, &i))->line,          \
+              (*buzzdebug_info_get_fromoffset(dbg, &i))->col,           \
+              (*buzzdebug_info_get_fromoffset(dbg, &i))->fname);        \
    }                                                                    \
    i += sizeof(T);
 
@@ -406,11 +406,11 @@ int buzz_deasm(const uint8_t* buf,
          write_arg(int32_t, "%d");
       }
       else {
-         if(buzzdebug_off2script_exists(dbg, &i)) {
+         if(buzzdebug_info_exists_offset(dbg, &i)) {
             fprintf(fd, "\t|%llu,%llu,%s",
-                    buzzdebug_off2script_get(dbg, &i)->line,
-                    buzzdebug_off2script_get(dbg, &i)->col,
-                    buzzdebug_off2script_get(dbg, &i)->fname);
+                    (*buzzdebug_info_get_fromoffset(dbg, &i))->line,
+                    (*buzzdebug_info_get_fromoffset(dbg, &i))->col,
+                    (*buzzdebug_info_get_fromoffset(dbg, &i))->fname);
          }
       }
       /* Newline */

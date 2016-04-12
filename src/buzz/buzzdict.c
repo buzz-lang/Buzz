@@ -57,7 +57,7 @@ void buzzdict_destroy(buzzdict_t* dt) {
       if((*dt)->buckets[i] != NULL) {
          /* Destroy elements in the bucket */
          for(j = 0; j < buzzdarray_size((*dt)->buckets[i]); ++j) {
-            struct buzzdict_entry_s* e = &buzzdarray_get((*dt)->buckets[i], j, struct buzzdict_entry_s);
+            const struct buzzdict_entry_s* e = &buzzdarray_get((*dt)->buckets[i], j, struct buzzdict_entry_s);
             (*dt)->dstryf(e->key, e->data, *dt);
          }
          /* Destroy bucket */
@@ -81,7 +81,7 @@ void* buzzdict_rawget(buzzdict_t dt,
    if(!dt->buckets[h]) return NULL;
    /* Bucket not empty - is the entry present? */
    for(i = 0; i < buzzdarray_size(dt->buckets[h]); ++i) {
-      struct buzzdict_entry_s* e = &buzzdarray_get(dt->buckets[h], i, struct buzzdict_entry_s);
+      const struct buzzdict_entry_s* e = &buzzdarray_get(dt->buckets[h], i, struct buzzdict_entry_s);
       if(dt->keycmpf(key, e->key) == 0)
          return e->data;
    }
@@ -94,7 +94,7 @@ void* buzzdict_rawget(buzzdict_t dt,
 
 void buzzdict_set(buzzdict_t dt,
                   const void* key,
-                  void* data) {
+                  const void* data) {
    /* Hash the key */
    uint32_t h = dt->hashf(key) % dt->num_buckets;
    /* Is the bucket empty? */
@@ -111,7 +111,7 @@ void buzzdict_set(buzzdict_t dt,
       /* Bucket not empty - is the entry present? */
       uint32_t i;
       for(i = 0; i < buzzdarray_size(dt->buckets[h]); ++i) {
-         struct buzzdict_entry_s* e = &buzzdarray_get(dt->buckets[h], i, struct buzzdict_entry_s);
+         const struct buzzdict_entry_s* e = &buzzdarray_get(dt->buckets[h], i, struct buzzdict_entry_s);
          if(dt->keycmpf(key, e->key) == 0) {
             /* Yes, destroy the entry */
             dt->dstryf(e->key, e->data, dt);
@@ -139,7 +139,7 @@ int buzzdict_remove(buzzdict_t dt,
    if(!dt->buckets[h]) return 0;
    /* Bucket not empty - is the entry present? */
    for(i = 0; i < buzzdarray_size(dt->buckets[h]); ++i) {
-      struct buzzdict_entry_s* e = &buzzdarray_get(dt->buckets[h], i, struct buzzdict_entry_s);
+      const struct buzzdict_entry_s* e = &buzzdarray_get(dt->buckets[h], i, struct buzzdict_entry_s);
       if(dt->keycmpf(key, e->key) == 0) {
          /* Entry found - remove it */
          dt->dstryf(e->key, e->data, dt);
@@ -170,7 +170,7 @@ void buzzdict_foreach(buzzdict_t dt,
       if(dt->buckets[i] != NULL) {
          /* Go through elements in the bucket */
          for(j = 0; j < buzzdarray_size(dt->buckets[i]); ++j) {
-            struct buzzdict_entry_s* e = &buzzdarray_get(dt->buckets[i], j, struct buzzdict_entry_s);
+            const struct buzzdict_entry_s* e = &buzzdarray_get(dt->buckets[i], j, struct buzzdict_entry_s);
             fun(e->key, e->data, params);
          }
       }

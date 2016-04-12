@@ -53,7 +53,7 @@ void string_print(uint32_t pos, void* data, void* params) {
 }
 
 uint32_t string_add(buzzdict_t strings, const char* str) {
-   uint32_t* pos = buzzdict_get(strings, &str, uint32_t);
+   const uint32_t* pos = buzzdict_get(strings, &str, uint32_t);
    if(!pos) {
       char* dup = strdup(str);
       uint32_t pos = buzzdict_size(strings);
@@ -78,9 +78,9 @@ struct sym_s {
    int global;
 };
 
-struct sym_s* sym_lookup(const char* sym,
-                         buzzdarray_t symstack) {
-   struct sym_s* symdata = NULL;
+const struct sym_s* sym_lookup(const char* sym,
+                               buzzdarray_t symstack) {
+   const struct sym_s* symdata = NULL;
    /* Go through the symbol tables, from the top to the bottom */
    int64_t i;
    for(i = buzzdarray_size(symstack)-1; i >= 0; --i) {
@@ -190,7 +190,7 @@ struct chunk_s {
    /* The code for this chunk */
    char* code;
    /* not-NULL if a symbol must be registered (function), NULL if not (lambda) */
-   struct sym_s* sym;
+   const struct sym_s* sym;
    /* The code size */
    size_t csize;
    /* The buffer capacity */
@@ -198,7 +198,7 @@ struct chunk_s {
 };
 typedef struct chunk_s* chunk_t;
 
-chunk_t chunk_new(uint32_t label, struct sym_s* sym) {
+chunk_t chunk_new(uint32_t label, const struct sym_s* sym) {
    chunk_t c = (chunk_t)malloc(sizeof(struct chunk_s));
    c->label = label;
    c->csize = 0;
@@ -507,7 +507,7 @@ int parse_var(buzzparser_t par) {
    /* Match an id */
    tokmatch(BUZZTOK_ID);
    /* Look it up in the symbol table */
-   struct sym_s* s = sym_lookup(par->tok->value, par->symstack);
+   const struct sym_s* s = sym_lookup(par->tok->value, par->symstack);
    if(s) {
       fprintf(stderr,
               "%s:%llu:%llu: Duplicated symbol '%s'\n",
@@ -559,7 +559,7 @@ int parse_fun(buzzparser_t par) {
    /* Make a new symbol table */
    symt_push();
    /* Add "self" symbol */
-   struct sym_s* sym = sym_lookup("self", par->symstack);
+   const struct sym_s* sym = sym_lookup("self", par->symstack);
    if(!sym || sym->global) { sym_add(par, "self", SCOPE_LOCAL); }
    /* Parse arguments */
    if(!parse_idlist(par)) return PARSE_ERROR;
@@ -779,7 +779,7 @@ int parse_expression(buzzparser_t par) {
          /* Consume the id */
          fetchtok();
          if(par->tok->type == BUZZTOK_ID) {
-            uint32_t* sid = buzzdict_get(par->strings, &par->tok->value, uint32_t);
+            const uint32_t* sid = buzzdict_get(par->strings, &par->tok->value, uint32_t);
             if(!sid) { chunk_append("\tpushs %u", string_add(par->strings, par->tok->value)); }
             else { chunk_append("\tpushs %u", *sid); }
          }
@@ -817,7 +817,7 @@ int parse_expression(buzzparser_t par) {
             tokmatch(BUZZTOK_DOT);
             fetchtok();
             if(par->tok->type == BUZZTOK_ID) {
-               uint32_t* sid = buzzdict_get(par->strings, &par->tok->value, uint32_t);
+               const uint32_t* sid = buzzdict_get(par->strings, &par->tok->value, uint32_t);
                if(!sid) { chunk_append("\tpushs %u", string_add(par->strings, par->tok->value)); }
                else { chunk_append("\tpushs %u", *sid); }
             }
@@ -1077,7 +1077,7 @@ int parse_idlist(buzzparser_t par) {
     * reuse the parameters and local variables of
     * the parent
     */
-   struct sym_s* sym = sym_lookup(par->tok->value, par->symstack);
+   const struct sym_s* sym = sym_lookup(par->tok->value, par->symstack);
    if(!sym || sym->global) {
       sym_add(par, par->tok->value, SCOPE_LOCAL);
    }
@@ -1086,7 +1086,7 @@ int parse_idlist(buzzparser_t par) {
    while(par->tok->type == BUZZTOK_LISTSEP) {
       fetchtok();
       tokmatch(BUZZTOK_ID);
-      struct sym_s* sym = sym_lookup(par->tok->value, par->symstack);
+      const struct sym_s* sym = sym_lookup(par->tok->value, par->symstack);
       if(!sym || sym->global) {
          sym_add(par, par->tok->value, SCOPE_LOCAL);
       }
@@ -1133,7 +1133,7 @@ int parse_idref(buzzparser_t par,
    /* Start with an id */
    tokmatch(BUZZTOK_ID);
    /* Look it up in the symbol table */
-   struct sym_s* s = sym_lookup(par->tok->value, par->symstack);
+   const struct sym_s* s = sym_lookup(par->tok->value, par->symstack);
    if(!s) {
       /* Symbol not found, add it */
       DEBUG("Adding unknown idref %s\n", par->tok->value);
@@ -1170,7 +1170,7 @@ int parse_idref(buzzparser_t par,
          idrefinfo->info = TYPE_TABLE;
          fetchtok();
          tokmatch(BUZZTOK_ID);
-         uint32_t* sid = buzzdict_get(par->strings, &par->tok->value, uint32_t);
+         const uint32_t* sid = buzzdict_get(par->strings, &par->tok->value, uint32_t);
          if(!sid) { chunk_append("\tpushs %u", string_add(par->strings, par->tok->value)); }
          else { chunk_append("\tpushs %u", *sid); }
          fetchtok();
@@ -1234,7 +1234,7 @@ int parse_lambda(buzzparser_t par) {
       /* Add new symtable */
       symt_push();
       /* Add "self" symbol */
-      struct sym_s* sym = sym_lookup("self", par->symstack);
+      const struct sym_s* sym = sym_lookup("self", par->symstack);
       if(!sym || sym->global) { sym_add(par, "self", SCOPE_LOCAL); }
    }
    else {

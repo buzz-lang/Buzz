@@ -57,7 +57,7 @@ void buzzswarm_members_join(buzzswarm_members_t m,
                             uint16_t robot,
                             uint16_t swarm) {
    /* Is an entry for the passed robot already present? */
-   buzzswarm_elem_t* e = buzzdict_get(m, &robot, buzzswarm_elem_t);
+   const buzzswarm_elem_t* e = buzzdict_get(m, &robot, buzzswarm_elem_t);
    if(e) {
       /* Yes, update it */
       (*e)->age = 0;
@@ -85,7 +85,7 @@ void buzzswarm_members_leave(buzzswarm_members_t m,
                              uint16_t robot,
                              uint16_t swarm) {
    /* Is an entry for the passed robot present? */
-   buzzswarm_elem_t* e = buzzdict_get(m, &robot, buzzswarm_elem_t);
+   const buzzswarm_elem_t* e = buzzdict_get(m, &robot, buzzswarm_elem_t);
    if(e) {
       /* Yes, update it */
       (*e)->age = 0;
@@ -111,7 +111,7 @@ void buzzswarm_members_refresh(buzzswarm_members_t m,
                                uint16_t robot,
                                buzzdarray_t swarms) {
    /* Is an entry for the passed robot already present? */
-   buzzswarm_elem_t* e = buzzdict_get(m, &robot, buzzswarm_elem_t);
+   const buzzswarm_elem_t* e = buzzdict_get(m, &robot, buzzswarm_elem_t);
    if(e) {
       /* Yes, update it */
       (*e)->age = 0;
@@ -136,7 +136,7 @@ int buzzswarm_members_isrobotin(buzzswarm_members_t m,
                                 uint16_t swarm) {
    /* Is an entry for the passed robot present?
     * If not, return false */
-   buzzswarm_elem_t* e = buzzdict_get(m, &robot, buzzswarm_elem_t);
+   const buzzswarm_elem_t* e = buzzdict_get(m, &robot, buzzswarm_elem_t);
    if(!e) return 0;
    /* If we get here, an entry is present
     * Does it contain the passed swarm id? */
@@ -268,7 +268,7 @@ int buzzvm_swarm_others(buzzvm_t vm) {
    buzzvm_tget(vm);
    uint16_t id1 = buzzvm_stack_at(vm, 1)->i.value;
    /* Get the swarm entry */
-   uint8_t* x = buzzdict_get(vm->swarms, &id1, uint8_t);
+   const uint8_t* x = buzzdict_get(vm->swarms, &id1, uint8_t);
    if(!x) {
       vm->state = BUZZVM_STATE_ERROR;
       vm->error = BUZZVM_ERROR_SWARM;
@@ -358,7 +358,7 @@ int buzzvm_swarm_in(buzzvm_t vm) {
    buzzvm_tget(vm);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
    /* Get the swarm entry */
-   uint8_t* x = buzzdict_get(vm->swarms, &id, uint8_t);
+   const uint8_t* x = buzzdict_get(vm->swarms, &id, uint8_t);
    if(!x) {
       vm->state = BUZZVM_STATE_ERROR;
       vm->error = BUZZVM_ERROR_SWARM;
@@ -414,7 +414,7 @@ int buzzvm_swarm_exec(buzzvm_t vm) {
    buzzvm_tget(vm);
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
    /* Get the swarm entry */
-   uint8_t* x = buzzdict_get(vm->swarms, &id, uint8_t);
+   const uint8_t* x = buzzdict_get(vm->swarms, &id, uint8_t);
    if(!x) {
       vm->state = BUZZVM_STATE_ERROR;
       vm->error = BUZZVM_ERROR_SWARM;

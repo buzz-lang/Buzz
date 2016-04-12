@@ -67,7 +67,7 @@ extern "C" {
     * @param elem_size The size of an element.
     * @param elem_destroy The function to destroy an element. Can be NULL.
     */
-   extern buzzdarray_t buzzdarray_frombuffer(void* buf,
+   extern buzzdarray_t buzzdarray_frombuffer(const void* buf,
                                              uint32_t buf_size,
                                              uint32_t elem_size,
                                              buzzdarray_elem_funp elem_destroy);
@@ -176,7 +176,7 @@ extern "C" {
  * @param type The type of the element to return.
  * @return The element at the given position.
  */
-#define buzzdarray_get(da, pos, type) (*((type*)((da)->data) + (pos)))
+#define buzzdarray_get(da, pos, type) (*((const type*)((da)->data) + (pos)))
 
 /*
  * Returns the size of the dynamic array.
