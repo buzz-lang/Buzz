@@ -2,12 +2,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <ctype.h>
-#include <sys/types.h>
-#include <sys/uio.h>
 #include <inttypes.h>
+#include <limits.h>
 
 /****************************************/
 /****************************************/
@@ -23,18 +20,48 @@ char *buzztok_desc[] = {
 /****************************************/
 
 buzzlex_file_t buzzlex_file_new(const char* fname) {
-   /* Get real path */
-   char* fpath = realpath(fname, NULL);
-   if(!fpath) {
-      perror(fpath);
-      return NULL;
-   }
-   /* Open the file */
+   /* Find the file, possibly using the include path */
+   char fpath[PATH_MAX];
+   strcpy(fpath, fname);
    FILE* fd = fopen(fpath, "rb");
    if(!fd) {
-      perror(fpath);
-      return NULL;
+      /* Get the include path from the environment, if present */
+      if(!getenv("BUZZ_INCLUDE_PATH")) {
+         perror(fname);
+         return NULL;
+      }
+      /* Fetch the directories in the include path */
+      char* incpath = strdup(getenv("BUZZ_INCLUDE_PATH"));
+      char* curpath = incpath;
+      char* dir = strsep(&curpath, ":");
+      /* Go through them and try to open the file */
+      while(dir && !fd) {
+         /* Make sure it's not an empty field */
+         if(dir[0] != '\0') {
+            /* fpath = dir */
+            strcpy(fpath, dir);
+            /* Add / at the end if missing */
+            if(fpath[strlen(fpath)-1] != '/') strcat(fpath, "/");
+            /* fpath += fname */
+            strcat(fpath, fname);
+            /* Try to open the file */
+            fd = fopen(fpath, "rb");
+         }
+         /* Get next dir */
+         dir = strsep(&curpath, ":");
+      }
+      /* Did we find the file? */
+      if(!dir && !fd) {
+         /* Nope */
+         fprintf(stderr, "%s: can't open file\n", fname);
+         free(incpath);
+         return NULL;
+      }
+      /* File found and open; free incpath, now useless */
+      free(incpath);
    }
+   /* Get absolute path; this internally creates a new string in the heap */
+   char* afpath = realpath(fpath, NULL);
    /* Create memory structure */
    buzzlex_file_t x = (buzzlex_file_t)malloc(sizeof(struct buzzlex_file_s));
    /* Get the file size */
@@ -49,7 +76,7 @@ buzzlex_file_t buzzlex_file_new(const char* fname) {
       fclose(fd);
       free(x->buf);
       free(x);
-      perror(fpath);
+      perror(fname);
       return NULL;
    }
    x->buf[x->buf_size] = '\n';
@@ -57,7 +84,7 @@ buzzlex_file_t buzzlex_file_new(const char* fname) {
    /* Done reading, close file */
    fclose(fd);
    /* Store the file name */
-   x->fname = fpath;
+   x->fname = afpath;
    /* Initialize line and column counters */
    x->cur_line = 1;
    x->cur_col = 0;
@@ -259,6 +286,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
          /* Create new file structure */
          buzzlex_file_t f = buzzlex_file_new(fname);
          free(fname);
+         if(!f) return NULL;
          /* Make sure the file hasn't been already included */
          if(buzzdarray_find(lex, buzzlex_file_cmp, &f) < buzzdarray_size(lex)) {
             buzzlex_file_destroy(0, &f, NULL);
