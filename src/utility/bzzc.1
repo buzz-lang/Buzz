@@ -10,11 +10,9 @@ bzzc \- the Buzz compiler
 .SH DESCRIPTION
 .P
 .B bzzc
-compiles the given script
+compiles the given Buzz script
 .I script.bzz
-and produces three files:
-.IR script.basm ,
-the Buzz assembly file,
+and produces two files:
 .IR script.bo ,
 the compiled bytecode ready to be executed by the Buzz Virtual Machine, and
 .IR script.bdbg ,
@@ -28,20 +26,14 @@ The file
 .I script.bdbg
 is located on the machine used by the developer to debug/monitor the
 robots.
-.P
-The file
-.I script.basm
-does not serve any specific purpose, apart from providing more
-information to the developer in case of error.
 .SH OPTIONS
 .TP
 \fB\-I \fIpath1:path2:...:pathN\fR
-Add the given path list to
-.BR BUZZ_INCLUDE_PATH .
+Add the given paths to the list of paths searched for include files.
 .SH ENVIRONMENT
 .TP
 .B BUZZ_INCLUDE_PATH
-A colon-separated list of paths where include files are located.
+A colon-separated list of paths where include files are searched for.
 .SH SEE ALSO
 .BR bzzparse (1)
 .BR bzzasm (1)

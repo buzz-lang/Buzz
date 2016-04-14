@@ -10,18 +10,21 @@ set -e
 #
 command -v bzzparse >/dev/null 2>&1 || { echo >&2 "$0: error: can't find bzzparse"; exit 1; }
 command -v bzzasm >/dev/null 2>&1 || { echo >&2 "$0: error: can't find bzzasm"; exit 1; }
+command -v rev >/dev/null 2>&1 || { echo >&2 "$0: error: can't find rev"; exit 1; }
+command -v cut >/dev/null 2>&1 || { echo >&2 "$0: error: can't find cut"; exit 1; }
 
 #
 # Check command line
 #
 if [ $# -eq 1 ]; then
     # No include path given
-    BZZ=$1
+    BZZ="$1"
 elif [ $# -eq 3 -a "$1" = "-I" ]; then
     # Include path given
-    BZZ=$3
+    BZZ="$3"
     export BUZZ_INCLUDE_PATH=$BUZZ_INCLUDE_PATH:$2
 else
+    # Wrong parameters
     echo -e "Usage:\n\t$0 [-I path1:path2:...:pathN] script.bzz\n"
     echo "Type 'man bzzc' for more information."
     exit 1
@@ -30,11 +33,11 @@ fi
 #
 # File names
 #
-BASM=$(echo $BZZ | rev | cut -d. -f 2- | rev).basm
-BO=$(echo $BZZ | rev | cut -d. -f 2- | rev).bo
-BDBG=$(echo $BZZ | rev | cut -d. -f 2- | rev).bdbg
+BASM="$(echo $BZZ | rev | cut -d. -f 2- | rev).basm"
+BO="$(echo $BZZ | rev | cut -d. -f 2- | rev).bo"
+BDBG="$(echo $BZZ | rev | cut -d. -f 2- | rev).bdbg"
 
 #
 # Compilation
 #
-bzzparse $BZZ $BASM && bzzasm $BASM $BO $BDBG
+bzzparse "$BZZ" "$BASM" && bzzasm "$BASM" "$BO" "$BDBG" && rm -f "$BASM"
