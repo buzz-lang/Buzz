@@ -10,9 +10,5 @@ int main(int argc, char* argv[]) {
    if(!p) return 1;
    int retval = buzzparser_parse(p);
    buzzparser_destroy(&p);
-   if(retval)
-      fprintf(stdout, "Compilation successful\n");
-   else
-      fprintf(stderr, "Compilation failed\n");
    return !retval;
 }

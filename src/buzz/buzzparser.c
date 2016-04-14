@@ -139,15 +139,6 @@ void sym_clone(const void* key, void* data, void* params) {
    buzzdict_set(((buzzparser_t)params)->syms, &newkey, &newsym);
 }
 
-void sym_print(const void* key,
-               void* data,
-               void* params) {
-   char* k = *(char**)key;
-   struct sym_s* d = (struct sym_s*)data;
-   fprintf(stderr, "[DEBUG]  Symbol '%s' pos=%" PRIu64 " type=%d global=%d\n",
-           k, d->pos, d->type, d->global);
-}
-
 void sym_destroy(const void* key,
                 void* data,
                 void* params) {
@@ -317,14 +308,7 @@ int match(buzzparser_t par,
               buzztok_desc[par->tok->type]);
       return PARSE_ERROR;
    }
-   else {
-      DEBUG("%s:%" PRIu64 ":%" PRIu64 ": Matched %s\n",
-            buzzlex_getfile(par->lex)->fname,
-            par->tok->line,
-            par->tok->col,
-            buzztok_desc[type]);
-      return PARSE_OK;
-   }
+   else return PARSE_OK;
 }
 
 #define tokmatch(tok) if(!match(par, tok)) return PARSE_ERROR;
@@ -373,11 +357,7 @@ int parse_lambda(buzzparser_t par);
 int parse_script(buzzparser_t par) {
    /* Fetch the first token */
    par->tok = buzzlex_nexttok(par->lex);
-   if(!par->tok) {
-      DEBUG("%s: Empty file\n",
-            buzzlex_getfile(par->lex)->fname);
-      return PARSE_ERROR;
-   }
+   if(!par->tok) return PARSE_ERROR;
    /* Add a symbol table */
    symt_push();
    /* Add the first chunk for the global scope */
@@ -395,7 +375,6 @@ int parse_script(buzzparser_t par) {
 /****************************************/
 
 int parse_statlist(buzzparser_t par) {
-   DEBUG("Parsing statement list start\n");
    if(!parse_stat(par)) return PARSE_ERROR;
    while(par->tok && par->tok->type != BUZZTOK_BLOCKCLOSE) {
       while(par->tok && par->tok->type == BUZZTOK_STATEND) {
@@ -404,16 +383,12 @@ int parse_statlist(buzzparser_t par) {
       }
       if(par->tok && !parse_stat(par)) return PARSE_ERROR;
    }
-   DEBUG("Statement list end\n");
    return PARSE_OK;
 }
 
 int parse_stat(buzzparser_t par) {
-   DEBUG("Parsing statement\n");
-   if(par->tok->type == BUZZTOK_STATEND || par->tok->type == BUZZTOK_BLOCKCLOSE) {
-      DEBUG("Statement end\n");
+   if(par->tok->type == BUZZTOK_STATEND || par->tok->type == BUZZTOK_BLOCKCLOSE)
       return PARSE_OK;
-   }
    if(par->tok->type == BUZZTOK_VAR)
       return parse_var(par);
    if(par->tok->type == BUZZTOK_FUN)
@@ -446,16 +421,13 @@ void buzzparser_symtodel(const void* key, void* data, void* params) {
 }
 
 void buzzparser_symdel(uint32_t pos, void* data, void* params) {
-   DEBUG("Deleted symbol '%s'\n", *(char**)data);
    buzzdict_remove((buzzdict_t)params, (char**)data);
 }
 
 int parse_block(buzzparser_t par) {
-   DEBUG("Parsing block start\n");
    tokmatch(BUZZTOK_BLOCKOPEN);
    fetchtok();
    if(par->tok->type == BUZZTOK_BLOCKCLOSE) {
-      DEBUG("Block end\n");
       fetchtok();
       return PARSE_OK;
    }
@@ -473,7 +445,6 @@ int parse_block(buzzparser_t par) {
          buzzdict_foreach(par->syms, buzzparser_symtodel, &symdeldata);
          buzzdarray_foreach(symdeldata.dellist, buzzparser_symdel, par->syms);
          buzzdarray_destroy(&(symdeldata.dellist));
-         DEBUG("Block end\n");
          return PARSE_OK;
       }
       else {
@@ -501,7 +472,6 @@ int parse_blockstat(buzzparser_t par) {
 /****************************************/
 
 int parse_var(buzzparser_t par) {
-   DEBUG("Parsing variable definition\n");
    /* Match the 'var' token */
    tokmatch(BUZZTOK_VAR);
    fetchtok();
@@ -524,7 +494,6 @@ int parse_var(buzzparser_t par) {
    fetchtok();
    if(par->tok->type == BUZZTOK_ASSIGN) {
       /* lvalue is OK */
-      DEBUG("Parsing assignment\n");
       /* Is lvalue a global symbol? If so, push its string id */
       if(s->global) chunk_append("\tpushs %" PRId64, s->pos);
       /* Consume the = */
@@ -539,14 +508,12 @@ int parse_var(buzzparser_t par) {
          /* Local variable */
          chunk_append("\tlstore %" PRId64, s->pos);
       }
-      DEBUG("Assignment statement end\n");
       return PARSE_OK;
    }
    return PARSE_OK;
 }
 
 int parse_fun(buzzparser_t par) {
-   DEBUG("Parsing function definition\n");
    tokmatch(BUZZTOK_FUN);
    fetchtok();
    tokmatch(BUZZTOK_ID);
@@ -577,7 +544,6 @@ int parse_fun(buzzparser_t par) {
 }
 
 int parse_if(buzzparser_t par) {
-   DEBUG("Parsing if start\n");
    /* Save labels for else branch and for if end */
    uint32_t lab1 = par->labels;
    uint32_t lab2 = par->labels + 1;
@@ -598,7 +564,6 @@ int parse_if(buzzparser_t par) {
    /* Eat away the newlines, if any */
    while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
    if(par->tok->type == BUZZTOK_ELSE) {
-      DEBUG("Else found\n");
       fetchtok();
       /* Make true branch jump to label 2 => if end */
       chunk_append("\tjump " LABELREF "%u", lab2);
@@ -612,7 +577,6 @@ int parse_if(buzzparser_t par) {
       /* Mark the if end as label 1 */
       chunk_append(LABELREF "%u", lab1);
    }
-   DEBUG("If end\n");
    return PARSE_OK;
 }
 
@@ -620,7 +584,6 @@ int parse_if(buzzparser_t par) {
 /****************************************/
 
 int parse_for(buzzparser_t par) {
-   DEBUG("Parsing for\n");
    tokmatch(BUZZTOK_FOR);
    fetchtok();
    tokmatch(BUZZTOK_PAROPEN);
@@ -648,7 +611,6 @@ int parse_for(buzzparser_t par) {
 /****************************************/
 
 int parse_while(buzzparser_t par) {
-   DEBUG("Parsing while\n");
    /* Save labels for while start and end */
    uint32_t wstart = par->labels;
    uint32_t wend = par->labels + 1;
@@ -680,7 +642,6 @@ int parse_while(buzzparser_t par) {
 
 int parse_conditionlist(buzzparser_t par,
                         int* numargs) {
-   DEBUG("Parsing condition list start\n");
    while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
    *numargs = 0;
    if(par->tok->type == BUZZTOK_PARCLOSE) return PARSE_OK;
@@ -694,12 +655,10 @@ int parse_conditionlist(buzzparser_t par,
       ++(*numargs);
       while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
    }
-   DEBUG("Condition list end\n");
    return PARSE_OK;
 }
 
 int parse_condition(buzzparser_t par) {
-   DEBUG("Parsing condition start\n");
    if(!parse_comparison(par)) return PARSE_ERROR;
    while(par->tok->type == BUZZTOK_ANDOR) {
       char op[4];
@@ -708,30 +667,24 @@ int parse_condition(buzzparser_t par) {
       if(!parse_comparison(par)) return PARSE_ERROR;
       chunk_append("\t%s", op);
    }
-   DEBUG("Condition end\n");
    return PARSE_OK;
 }
 
 int parse_comparison(buzzparser_t par) {
    if(par->tok->type == BUZZTOK_PAROPEN) {
-      DEBUG("Parsing (condition) start\n");
       fetchtok();
       if(!parse_condition(par)) return PARSE_ERROR;
       tokmatch(BUZZTOK_PARCLOSE);
       fetchtok();
-      DEBUG("(condition) end\n");
       return PARSE_OK;
    }
    else if(par->tok->type == BUZZTOK_NOT) {
-      DEBUG("Parsing NOT condition start\n");
       fetchtok();
       if(!parse_comparison(par)) return PARSE_ERROR;
       chunk_append("\tnot");
-      DEBUG("NOT condition end\n");
       return PARSE_OK;
    }
    else {
-      DEBUG("Parsing comparison condition start\n");
       if(!parse_expression(par)) return PARSE_ERROR;
       if(par->tok->type == BUZZTOK_CMP) {
          char op[4];
@@ -745,7 +698,6 @@ int parse_comparison(buzzparser_t par) {
          if(!parse_expression(par)) return PARSE_ERROR;
          chunk_append("\t%s", op);
       }
-      DEBUG("Parsing comparison condition end\n");
       return PARSE_OK;
    }
 }
@@ -754,10 +706,8 @@ int parse_comparison(buzzparser_t par) {
 /****************************************/
 
 int parse_expression(buzzparser_t par) {
-   DEBUG("Parsing expression start\n");
    if(par->tok->type == BUZZTOK_BLOCKOPEN) {
       /* Table definition */
-      DEBUG("Parsing table definition\n");
       /* Consume the { */
       fetchtok();
       /* Make sure either id = expression or } follow */
@@ -774,7 +724,6 @@ int parse_expression(buzzparser_t par) {
       chunk_append("\tpusht");
       if(par->tok->type == BUZZTOK_DOT) {
          /* Assignment list is present */
-         DEBUG("Parsing assignment list\n");
          /* Duplicate table on top of stack */
          chunk_append("\tdup");
          /* Consume the id */
@@ -850,27 +799,22 @@ int parse_expression(buzzparser_t par) {
       }
       tokmatch(BUZZTOK_BLOCKCLOSE);
       fetchtok();
-      DEBUG("Expression end\n");
       return PARSE_OK;
    }
    if(!parse_product(par)) return PARSE_ERROR;
    while(par->tok->type == BUZZTOK_ADDSUB) {
-      DEBUG("Parsing +- expression\n");
       char op = par->tok->value[0];
       fetchtok();
       if(!parse_product(par)) return PARSE_ERROR;
       if     (op == '+') { chunk_append("\tadd"); }
       else if(op == '-') { chunk_append("\tsub"); }
    }
-   DEBUG("Expression end\n");
    return PARSE_OK;
 }
 
 int parse_product(buzzparser_t par) {
-   DEBUG("Parsing product start\n");
    if(!parse_modulo(par)) return PARSE_ERROR;
    while(par->tok->type == BUZZTOK_MULDIV) {
-      DEBUG("Parsing */ product\n");
       char op = par->tok->value[0];
       fetchtok();
       if(!parse_modulo(par)) return PARSE_ERROR;
@@ -881,56 +825,44 @@ int parse_product(buzzparser_t par) {
          chunk_append("\tdiv");
       }
    }
-   DEBUG("Product end\n");
    return PARSE_OK;
 }
 
 int parse_modulo(buzzparser_t par) {
-   DEBUG("Parsing modulo start\n");
    if(!parse_power(par)) return PARSE_ERROR;
    while(par->tok->type == BUZZTOK_MOD) {
-      DEBUG("Parsing modulo\n");
       fetchtok();
       if(!parse_power(par)) return PARSE_ERROR;
       chunk_append("\tmod");
    }
-   DEBUG("Modulo end\n");
    return PARSE_OK;
 }
 
 int parse_power(buzzparser_t par) {
-   DEBUG("Parsing power start\n");
    return parse_operand(par) && parse_powerrest(par);
 }
 
 int parse_powerrest(buzzparser_t par) {
-   DEBUG("Parsing power rest\n");
    if(par->tok->type == BUZZTOK_POW) {
-      DEBUG("Parsing power\n");
       fetchtok();
       if(!parse_power(par)) return PARSE_ERROR;
       chunk_append("\tpow");
    }
-   DEBUG("End power\n");
    return PARSE_OK;
 }
 
 int parse_operand(buzzparser_t par) {
-   DEBUG("Parsing operand\n");
    if(par->tok->type == BUZZTOK_FUN) {
-      DEBUG("Operand is lambda\n");
       chunk_append("\tpushl " LABELREF "%u", par->labels);
       if(!parse_lambda(par)) return PARSE_ERROR;
       return PARSE_OK;
    }
    else if(par->tok->type == BUZZTOK_NIL) {
-      DEBUG("Operand is token nil\n");
       chunk_append("\tpushnil");      
       fetchtok();
       return PARSE_OK;
    }
    else if(par->tok->type == BUZZTOK_CONST) {
-      DEBUG("Operand is numeric constant\n");
       if(strchr(par->tok->value, '.')) {
          /* Floating-point constant */
          chunk_append("\tpushf %s", par->tok->value);
@@ -943,26 +875,22 @@ int parse_operand(buzzparser_t par) {
       return PARSE_OK;
    }
    else if(par->tok->type == BUZZTOK_STRING) {
-      DEBUG("Operand is string\n");
       uint32_t pos = string_add(par->strings, par->tok->value);
       chunk_append("\tpushs %u", pos);
       fetchtok();
       return PARSE_OK;
    }
    else if(par->tok->type == BUZZTOK_PAROPEN) {
-      DEBUG("Operand is (expression)\n");
       fetchtok();
       if(!parse_expression(par)) return PARSE_ERROR;
       tokmatch(BUZZTOK_PARCLOSE);
       fetchtok();
-      DEBUG("(expression) end\n");
       return PARSE_OK;
    }
    else if(par->tok->type == BUZZTOK_ADDSUB) {
       char op = par->tok->value[0];
       fetchtok();
       if(par->tok->type == BUZZTOK_CONST) {
-         DEBUG("Operand is signed +- constant\n");
          if(strchr(par->tok->value, '.')) {
             /* Floating-point constant */
             chunk_append("\tpushf %c%s", op, par->tok->value);
@@ -975,14 +903,11 @@ int parse_operand(buzzparser_t par) {
          return PARSE_OK;
       }
       else {
-         DEBUG("Operand is signed +-\n");
          if(!parse_power(par)) return PARSE_ERROR;
          if(op == '-') chunk_append("\tunm");
-         DEBUG("Signed operand +- end\n");
          return PARSE_OK;
       }
    }
-   DEBUG("Operand is idref\n");
    struct idrefinfo_s  idrefinfo;
    return parse_idref(par, 0, &idrefinfo);
 }
@@ -991,7 +916,6 @@ int parse_operand(buzzparser_t par) {
 /****************************************/
 
 int parse_command(buzzparser_t par) {
-   DEBUG("Parsing command start\n");
    if(par->tok->type == BUZZTOK_RETURN) {
       /* Return statement */
       fetchtok();
@@ -1020,7 +944,6 @@ int parse_command(buzzparser_t par) {
             return PARSE_ERROR;
          }
          /* lvalue is OK */
-         DEBUG("Parsing assignment\n");
          /* Is lvalue a global symbol? If so, push its string id */
          if(idrefinfo.global) chunk_append("\tpushs %d", idrefinfo.info);
          /* Consume the = */
@@ -1042,14 +965,10 @@ int parse_command(buzzparser_t par) {
                chunk_append("\ttput");
             }
          }
-         DEBUG("Assignment statement end\n");
          return PARSE_OK;
       }
-      else if(idrefinfo.info == TYPE_CLOSURE) {
-         DEBUG("Function call\n");
-         DEBUG("Statement end\n");
+      else if(idrefinfo.info == TYPE_CLOSURE)
          return PARSE_OK;
-      }
       fprintf(stderr,
               "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: expected function call or assignment\n",
               buzzlex_getfile(par->lex)->fname,
@@ -1063,12 +982,9 @@ int parse_command(buzzparser_t par) {
 /****************************************/
 
 int parse_idlist(buzzparser_t par) {
-   DEBUG("Parsing idlist start\n");
    /* Empty list */
-   if(par->tok->type == BUZZTOK_PARCLOSE) {
-      DEBUG("Idlist end\n");
+   if(par->tok->type == BUZZTOK_PARCLOSE)
       return PARSE_OK;
-   }
    /* Match an id for the first argument */
    tokmatch(BUZZTOK_ID);
    /* Look for the argument symbol in the context
@@ -1093,29 +1009,23 @@ int parse_idlist(buzzparser_t par) {
       }
       fetchtok();
    }
-   DEBUG("Idlist end\n");
    return PARSE_OK;
 }
 
 int parse_idreflist(buzzparser_t par) {
-   DEBUG("Parsing idreflist start\n");
    while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
-   if(par->tok->type == BUZZTOK_PARCLOSE) {
-      DEBUG("idreflist end\n");
+   if(par->tok->type == BUZZTOK_PARCLOSE)
       return PARSE_OK;
-   }
    struct idrefinfo_s idrefinfo;
    if(!parse_idref(par, 0, &idrefinfo)) return PARSE_ERROR;
    while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
    while(par->tok->type == BUZZTOK_LISTSEP) {
-      DEBUG("Parsing next idreflist item\n");
       fetchtok();
       while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
       if(!parse_idref(par, 0, &idrefinfo)) return PARSE_ERROR;
       while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
    }
    if(par->tok && par->tok->type == BUZZTOK_PARCLOSE) {
-      DEBUG("Idreflist end\n");
       return PARSE_OK;
    }
    fprintf(stderr,
@@ -1130,23 +1040,14 @@ int parse_idreflist(buzzparser_t par) {
 int parse_idref(buzzparser_t par,
                 int lvalue,
                 struct idrefinfo_s* idrefinfo) {
-   DEBUG("Parsing idref start\n");
    /* Start with an id */
    tokmatch(BUZZTOK_ID);
    /* Look it up in the symbol table */
    const struct sym_s* s = sym_lookup(par->tok->value, par->symstack);
    if(!s) {
       /* Symbol not found, add it */
-      DEBUG("Adding unknown idref %s\n", par->tok->value);
       sym_add(par, par->tok->value, SCOPE_GLOBAL);
       s = sym_lookup(par->tok->value, par->symstack);
-   }
-   else {
-      /* Symbol found */
-      DEBUG("Found idref %s, pos = %" PRId64 ", global = %d\n",
-            par->tok->value,
-            s->pos,
-            s->global);
    }
    /* Save symbol info */
    idrefinfo->info = s->pos;
@@ -1167,7 +1068,6 @@ int parse_idref(buzzparser_t par,
       idrefinfo->global = 0;
       /* Go on parsing structure type */
       if(par->tok->type == BUZZTOK_DOT) {
-         DEBUG("Parsing idref.idref\n");
          idrefinfo->info = TYPE_TABLE;
          fetchtok();
          tokmatch(BUZZTOK_ID);
@@ -1177,7 +1077,6 @@ int parse_idref(buzzparser_t par,
          fetchtok();
       }
       else if(par->tok->type == BUZZTOK_IDXOPEN) {
-         DEBUG("Parsing idref[expression]\n");
          idrefinfo->info = TYPE_TABLE;
          fetchtok();
          if(!parse_expression(par)) return PARSE_ERROR;
@@ -1210,7 +1109,6 @@ int parse_idref(buzzparser_t par,
          chunk_append("\tcallc");
       }
    }
-   DEBUG("Idref end\n");
    return PARSE_OK;
 }
 
@@ -1218,7 +1116,6 @@ int parse_idref(buzzparser_t par,
 /****************************************/
 
 int parse_lambda(buzzparser_t par) {
-   DEBUG("Parsing lambda\n");
    tokmatch(BUZZTOK_FUN);
    fetchtok();
    /* Make a new chunk for this function and get the associated symbol */
@@ -1231,7 +1128,6 @@ int parse_lambda(buzzparser_t par) {
     * otherwise, clone the parent's
     */
    if(buzzdarray_size(par->symstack) == 1) {
-      DEBUG("Added dedicated symtable for lambda\n");
       /* Add new symtable */
       symt_push();
       /* Add "self" symbol */
@@ -1239,13 +1135,7 @@ int parse_lambda(buzzparser_t par) {
       if(!sym || sym->global) { sym_add(par, "self", SCOPE_LOCAL); }
    }
    else {
-      DEBUG("Lambda clones parent's symtable containing %u elements:\n",
-            buzzdict_size(par->syms));
-      buzzdict_foreach(par->syms, sym_print, NULL);
       symt_clone();
-      DEBUG("Clone contains %u elements:\n",
-            buzzdict_size(par->syms));
-      buzzdict_foreach(par->syms, sym_print, NULL);
    }
    /* Parse lambda arguments */
    if(!parse_idlist(par)) return PARSE_ERROR;
@@ -1258,7 +1148,6 @@ int parse_lambda(buzzparser_t par) {
    /* Get rid of symbol table and close chunk */
    symt_pop();
    chunk_pop();
-   DEBUG("Lambda done\n");
    return PARSE_OK;
 }
 

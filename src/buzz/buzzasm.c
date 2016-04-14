@@ -131,7 +131,6 @@ void buzz_asm_labsub(const void* key, void* data, void* params) {
       state->retval = 2;
    }
    else {
-      fprintf(stderr, "[DEBUG] Writing label %s (%d) at %d\n", sublab, *labpos, subpos);
       /* Put the label value at its bytecode position */
       memcpy(state->buf + subpos, labpos, sizeof(int32_t));
    }
@@ -191,7 +190,6 @@ int buzz_asm(const char* fname,
       if(*trimline == '\'') {
          ++trimline;
          trimline[strlen(trimline)-1] = 0;
-         fprintf(stderr, "[DEBUG] %s:%zu STRING %s\n", fname, lineno, trimline);
          size_t l = strlen(trimline) + 1;
          bcode_resize(l);
          strcpy((char*)(*buf + *size), trimline);
@@ -225,7 +223,6 @@ int buzz_asm(const char* fname,
             uint64_t l = strtol(line, NULL, 10);
             uint64_t c = strtol(col, NULL, 10);
             buzzdebug_info_set(*dbg, *size, l, c,srcfname);
-            fprintf(stderr, "[DEBUG] Added debug information O%u:L%" PRIu64 ":C%" PRIu64 ":F%s\n", *size, l, c, srcfname);
          }
          /* Remove trailing space from label info */
          endc = labelinfo + strlen(labelinfo) - 1;
@@ -234,24 +231,13 @@ int buzz_asm(const char* fname,
          /* Copy label information for storage */
          char* label = strdup(labelinfo);
          buzzdict_set(labpos, &label, size);
-         fprintf(stderr, "[DEBUG] %s:%zu LABEL '%s' at %u", fname, lineno, label, *size);
-         if(debuginfo)
-            fprintf(stderr, "\t|%s", debuginfo);
-         fprintf(stderr, "\n");
          continue;
       }
       /* Fetch the instruction */
-      fprintf(stderr, "[DEBUG] %s:%zu \t%s", fname, lineno, trimline);
       char* instrinfo = strsep(&trimline, "|\n");
       char* debuginfo = strsep(&trimline, "|\n");
       char* instr = strsep(&instrinfo, " \n\t");
       char* argstr = strsep(&instrinfo, " \n\t");
-      fprintf(stderr, "\t[%s]", instr);
-      if(argstr && *argstr)
-         fprintf(stderr, " [%s]", argstr);
-      if(debuginfo && *debuginfo)
-         fprintf(stderr, "\t|%s", debuginfo);
-      fprintf(stderr, "\n");
       /* Add debug information, if any */
       if(debuginfo && *debuginfo) {
          /* Parse line and column data */
@@ -261,7 +247,6 @@ int buzz_asm(const char* fname,
          uint64_t l = strtol(line, NULL, 10);
          uint64_t c = strtol(col, NULL, 10);
          buzzdebug_info_set(*dbg, *size, l, c,srcfname);
-         fprintf(stderr, "[DEBUG] Added debug information O%u:L%" PRIu64 ":C%" PRIu64 ":F%s\n", *size, l, c, srcfname);
       }
       /* Interpret the instruction */
       noarg_instr(BUZZVM_INSTR_NOP);
