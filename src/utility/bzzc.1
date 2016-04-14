@@ -1,0 +1,50 @@
+.\" Process this file with
+.\" groff -man -Tascii foo.1
+.\"
+.TH bzzc 1 "April 2016" Linux "User Commands"
+.SH NAME
+bzzc \- the Buzz compiler
+.SH SYNOPSIS
+.P
+.BI "bzzc [-I " path1:path2:...:pathN "] " script.bzz
+.SH DESCRIPTION
+.P
+.B bzzc
+compiles the given script
+.I script.bzz
+and produces three files:
+.IR script.basm ,
+the Buzz assembly file,
+.IR script.bo ,
+the compiled bytecode ready to be executed by the Buzz Virtual Machine, and
+.IR script.bdbg ,
+a file containing the debugging symbols.
+.P
+The file
+.I script.bo
+must be uploaded on the robot.
+.P
+The file
+.I script.bdbg
+is located on the machine used by the developer to debug/monitor the
+robots.
+.P
+The file
+.I script.basm
+does not serve any specific purpose, apart from providing more
+information to the developer in case of error.
+.SH OPTIONS
+.TP
+\fB\-I \fIpath1:path2:...:pathN\fR
+Add the given path list to
+.BR BUZZ_INCLUDE_PATH .
+.SH ENVIRONMENT
+.TP
+.B BUZZ_INCLUDE_PATH
+A colon-separated list of paths where include files are located.
+.SH SEE ALSO
+.BR bzzparse (1)
+.BR bzzasm (1)
+.BR bzzdeasm (1)
+.SH AUTHOR
+Carlo Pinciroli <ilpincy@gmail.com>
