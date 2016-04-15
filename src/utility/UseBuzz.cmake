@@ -1,3 +1,40 @@
+#
+# UseBuzz
+# -------
+#
+# Use Module for Buzz
+#
+# This file provides functions for Buzz. It is assumed that
+# FindBuzz.cmake has already been loaded. See FindBuzz.cmake for
+# information on how to load Buzz into your CMake project.
+#
+# ::
+#
+#  make_buzz(script.bzz
+#            [DEPENDENCIES dep1.bzz [dep2.bzz ...]])
+#
+# This command compiles script.bzz. If the script depends on other
+# files that should trigger re-compilation if modified, the option
+# DEPENDENCIES should be used.
+#
+# The compilation process looks for include files using the path lists
+# specified in these variables:
+#
+# 1. the environment variable BUZZ_INCLUDE_PATH
+# 2. the CMake variable BUZZ_INCLUDE_PATH
+#
+# The Buzz tools are assumed already detected through
+# FindBuzz.cmake. However, you can also manually set following the
+# CMake variables:
+#
+# - BUZZ_COMPILER: the full path to bzzc
+# - BUZZ_PARSER: the full path to bzzparse
+# - BUZZ_ASSEMBLER: the full path to bzzasm
+
+#=============================================================================
+# Copyright 2016 Carlo Pinciroli <carlo@pinciroli.net>
+#=============================================================================
+
 function(make_buzz _SCRIPT)
   # Make sure _SCRIPT ends with .bzz
   get_filename_component(_make_buzz_EXT "${_SCRIPT}" EXT)
