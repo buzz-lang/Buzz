@@ -26,7 +26,10 @@ buzzlex_file_t buzzlex_file_new(const char* fname) {
    FILE* fd = fopen(fpath, "rb");
    if(!fd) {
       /* Get the include path from the environment, if present */
-      if(!getenv("BUZZ_INCLUDE_PATH")) return NULL;
+      if(!getenv("BUZZ_INCLUDE_PATH")) {
+         perror(fname);
+         return NULL;
+      }
       /* Fetch the directories in the include path */
       char* incpath = strdup(getenv("BUZZ_INCLUDE_PATH"));
       char* curpath = incpath;
@@ -50,6 +53,7 @@ buzzlex_file_t buzzlex_file_new(const char* fname) {
       /* Did we find the file? */
       if(!dir && !fd) {
          /* Nope */
+         perror(fname);
          free(incpath);
          return NULL;
       }

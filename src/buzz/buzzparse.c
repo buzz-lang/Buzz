@@ -7,8 +7,15 @@ int main(int argc, char* argv[]) {
       return 0;
    }
    buzzparser_t p = buzzparser_new(argv[1], argv[2]);
-   if(!p) return 1;
+   if(!p) {
+      return 1;
+   }
    int retval = buzzparser_parse(p);
+   if(retval == 0) {
+      fprintf(stderr, "%s: error parsing %s\n",
+              argv[0],
+              argv[1]);
+   }
    buzzparser_destroy(&p);
-   return !retval;
+   return retval == 1 ? 0 : 1;
 }
