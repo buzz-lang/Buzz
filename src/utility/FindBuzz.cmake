@@ -1,3 +1,33 @@
+# .rst:
+# FindBuzz
+# --------
+#
+# Find Module for Buzz
+#
+# This modules finds if Buzz is installed and determines where the
+# tools, include files and libraries are.
+#
+# This module set the following result variables:
+#
+# ::
+#
+#   BUZZ_COMPILER    = The full path of bzzc
+#   BUZZ_PARSER      = The full path of bzzparse
+#   BUZZ_ASSEMBLER   = The full path of bzzasm
+#   BUZZ_LIBRARY     = The full path of the Buzz library
+#   BUZZ_INCLUDE_DIR = The full path to the Buzz include files
+#
+# Examples Usages:
+#
+# ::
+#
+#   find_package(Buzz)
+#   find_package(Buzz REQUIRED)
+
+#=============================================================================
+# Copyright 2016 Carlo Pinciroli <carlo@pinciroli.net>
+#=============================================================================
+
 #
 # Stardard Buzz tool paths
 #

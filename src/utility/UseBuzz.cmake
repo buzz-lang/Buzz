@@ -1,4 +1,4 @@
-#
+# .rst:
 # UseBuzz
 # -------
 #
@@ -17,23 +17,37 @@
 # files that should trigger re-compilation if modified, the option
 # DEPENDENCIES should be used.
 #
-# ::
-#
 # The compilation process looks for include files using the path lists
 # specified in these variables:
 #
 # 1. the environment variable BUZZ_INCLUDE_PATH
 # 2. the CMake variable BUZZ_INCLUDE_PATH
 #
-# ::
-#
 # The Buzz tools are assumed already detected through
 # FindBuzz.cmake. However, you can also manually set following the
 # CMake variables:
 #
-# - BUZZ_COMPILER: the full path to bzzc
-# - BUZZ_PARSER: the full path to bzzparse
-# - BUZZ_ASSEMBLER: the full path to bzzasm
+# ::
+#
+#   BUZZ_COMPILER: the full path to bzzc
+#   BUZZ_PARSER: the full path to bzzparse
+#   BUZZ_ASSEMBLER: the full path to bzzasm
+#
+# Examples Usages:
+#
+# ::
+#
+#   find_package(Buzz)
+#   if(BUZZ_FOUND)
+#     include(UseBuzz)
+#     make_buzz(script1.bzz)
+#     make_buzz(script2.bzz DEPENDENCIES dep1.bzz dep2.bzz)
+#   endif(BUZZ_FOUND)
+#
+#   find_package(Buzz REQUIRED)
+#   include(UseBuzz)
+#   make_buzz(script1.bzz)
+#   make_buzz(script2.bzz DEPENDENCIES dep1.bzz dep2.bzz)
 
 #=============================================================================
 # Copyright 2016 Carlo Pinciroli <carlo@pinciroli.net>
