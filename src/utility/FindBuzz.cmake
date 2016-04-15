@@ -22,7 +22,16 @@
 # ::
 #
 #   find_package(Buzz)
+#   if(BUZZ_FOUND)
+#     include_directories(${BUZZ_INCLUDE_DIR})
+#     ...
+#     target_link_libraries(... ${BUZZ_LIBRARY})
+#   endif(BUZZ_FOUND)
+#
 #   find_package(Buzz REQUIRED)
+#   include_directories(${BUZZ_INCLUDE_DIR})
+#   ...
+#   target_link_libraries(... ${BUZZ_LIBRARY})
 
 #=============================================================================
 # Copyright 2016 Carlo Pinciroli <carlo@pinciroli.net>
