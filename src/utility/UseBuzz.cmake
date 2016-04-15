@@ -17,11 +17,15 @@
 # files that should trigger re-compilation if modified, the option
 # DEPENDENCIES should be used.
 #
+# ::
+#
 # The compilation process looks for include files using the path lists
 # specified in these variables:
 #
 # 1. the environment variable BUZZ_INCLUDE_PATH
 # 2. the CMake variable BUZZ_INCLUDE_PATH
+#
+# ::
 #
 # The Buzz tools are assumed already detected through
 # FindBuzz.cmake. However, you can also manually set following the
@@ -35,7 +39,14 @@
 # Copyright 2016 Carlo Pinciroli <carlo@pinciroli.net>
 #=============================================================================
 
+#
+# make_buzz() function definition
+#
 function(make_buzz _SCRIPT)
+  # Make sure tool paths have been set
+  if("${BUZZ_COMPILER}" STREQUAL "" OR "${BUZZ_PARSER}" STREQUAL "" OR "${BUZZ_ASSEMBLER}" STREQUAL "")
+    message(FATAL_ERROR "make_buzz('${_SCRIPT}'): use Find_Package(Buzz) to look for Buzz tools before calling make_buzz().")
+  endif(${BUZZ_COMPILER} STREQUAL "" OR ${BUZZ_PARSER} STREQUAL "" OR ${BUZZ_ASSEMBLER} STREQUAL "")
   # Make sure _SCRIPT ends with .bzz
   get_filename_component(_make_buzz_EXT "${_SCRIPT}" EXT)
   if(NOT _make_buzz_EXT STREQUAL ".bzz")
