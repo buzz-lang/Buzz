@@ -10,12 +10,12 @@
 #
 # ::
 #
-#  make_buzz(script.bzz
-#            [DEPENDENCIES dep1.bzz [dep2.bzz ...]])
+#  buzz_make(script.bzz
+#            [INCLUDES dep1.bzz [dep2.bzz ...]])
 #
 # This command compiles script.bzz. If the script depends on other
 # files that should trigger re-compilation if modified, the option
-# DEPENDENCIES should be used.
+# INCLUDES should be used.
 #
 # The compilation process looks for include files using the path lists
 # specified in these variables:
@@ -40,61 +40,61 @@
 #   find_package(Buzz)
 #   if(BUZZ_FOUND)
 #     include(UseBuzz)
-#     make_buzz(script1.bzz)
-#     make_buzz(script2.bzz DEPENDENCIES dep1.bzz dep2.bzz)
+#     buzz_make(script1.bzz)
+#     buzz_make(script2.bzz INCLUDES inc1.bzz inc2.bzz)
 #   endif(BUZZ_FOUND)
 #
 #   find_package(Buzz REQUIRED)
 #   include(UseBuzz)
-#   make_buzz(script1.bzz)
-#   make_buzz(script2.bzz DEPENDENCIES dep1.bzz dep2.bzz)
+#   buzz_make(script1.bzz)
+#   buzz_make(script2.bzz INCLUDES inc1.bzz inc2.bzz)
 
 #=============================================================================
 # Copyright 2016 Carlo Pinciroli <carlo@pinciroli.net>
 #=============================================================================
 
 #
-# make_buzz() function definition
+# buzz_make() function definition
 #
-function(make_buzz _SCRIPT)
+function(buzz_make _SCRIPT)
   # Make sure tool paths have been set
   if("${BUZZ_COMPILER}" STREQUAL "" OR "${BUZZ_PARSER}" STREQUAL "" OR "${BUZZ_ASSEMBLER}" STREQUAL "")
-    message(FATAL_ERROR "make_buzz('${_SCRIPT}'): use Find_Package(Buzz) to look for Buzz tools before calling make_buzz().")
-  endif(${BUZZ_COMPILER} STREQUAL "" OR ${BUZZ_PARSER} STREQUAL "" OR ${BUZZ_ASSEMBLER} STREQUAL "")
+    message(FATAL_ERROR "buzz_make('${_SCRIPT}'): use Find_Package(Buzz) to look for Buzz tools before calling buzz_make().")
+  endif("${BUZZ_COMPILER}" STREQUAL "" OR "${BUZZ_PARSER}" STREQUAL "" OR "${BUZZ_ASSEMBLER}" STREQUAL "")
   # Make sure _SCRIPT ends with .bzz
-  get_filename_component(_make_buzz_EXT "${_SCRIPT}" EXT)
-  if(NOT _make_buzz_EXT STREQUAL ".bzz")
-    message(FATAL_ERROR "make_buzz('${_SCRIPT}'): script name must end with .bzz")
-  endif(NOT _make_buzz_EXT STREQUAL ".bzz")
+  get_filename_component(_buzz_make_EXT "${_SCRIPT}" EXT)
+  if(NOT _buzz_make_EXT STREQUAL ".bzz")
+    message(FATAL_ERROR "buzz_make('${_SCRIPT}'): script name must end with .bzz")
+  endif(NOT _buzz_make_EXT STREQUAL ".bzz")
   # Make _BYTECODE and _DEBUG name with .bo and .bdb instead of .bzz
-  get_filename_component(_make_buzz_DIR "${_SCRIPT}" DIRECTORY)
-  get_filename_component(_make_buzz_FNAME "${_SCRIPT}" NAME_WE)
-  string(CONCAT _make_buzz_BYTECODE "${_make_buzz_DIR}" "${_make_buzz_FNAME}" ".bo")
-  string(CONCAT _make_buzz_DEBUG "${_make_buzz_DIR}" "${_make_buzz_FNAME}" ".bdb")
+  get_filename_component(_buzz_make_DIR "${_SCRIPT}" DIRECTORY)
+  get_filename_component(_buzz_make_FNAME "${_SCRIPT}" NAME_WE)
+  string(CONCAT _buzz_make_BYTECODE "${_buzz_make_DIR}" "${_buzz_make_FNAME}" ".bo")
+  string(CONCAT _buzz_make_DEBUG "${_buzz_make_DIR}" "${_buzz_make_FNAME}" ".bdb")
   # Parse function arguments
-  cmake_parse_arguments(_make_buzz
+  cmake_parse_arguments(_buzz_make
     ""             # Options
     ""             # One-value parameters
-    "DEPENDENCIES" # Multi-value parameters
+    "INCLUDES" # Multi-value parameters
     ${ARGN})
   # Compose include path, putting : instead of ;
-  set(_make_buzz_BUZZ_INCLUDE_PATH)
+  set(_buzz_make_BUZZ_INCLUDE_PATH)
   if(NOT $ENV{BUZZ_INCLUDE_PATH} STREQUAL "")
-    set(_make_buzz_BUZZ_INCLUDE_PATH "$ENV{BUZZ_INCLUDE_PATH}")
+    set(_buzz_make_BUZZ_INCLUDE_PATH "$ENV{BUZZ_INCLUDE_PATH}")
   endif(NOT $ENV{BUZZ_INCLUDE_PATH} STREQUAL "")
   if(NOT ${BUZZ_INCLUDE_PATH} STREQUAL "")
-    set(_make_buzz_BUZZ_INCLUDE_PATH "${_make_buzz_BUZZ_INCLUDE_PATH}" "${BUZZ_INCLUDE_PATH}")
+    set(_buzz_make_BUZZ_INCLUDE_PATH "${_buzz_make_BUZZ_INCLUDE_PATH}" "${BUZZ_INCLUDE_PATH}")
   endif(NOT ${BUZZ_INCLUDE_PATH} STREQUAL "")
-  string(REPLACE ";" ":" _make_buzz_BUZZ_INCLUDE_PATH "${_make_buzz_BUZZ_INCLUDE_PATH}")
-  if(NOT _make_buzz_BUZZ_INCLUDE_PATH STREQUAL "")
-    set(_make_buzz_BUZZ_INCLUDE_PATH "-I" "${_make_buzz_BUZZ_INCLUDE_PATH}")
-  endif(NOT _make_buzz_BUZZ_INCLUDE_PATH STREQUAL "")
+  string(REPLACE ";" ":" _buzz_make_BUZZ_INCLUDE_PATH "${_buzz_make_BUZZ_INCLUDE_PATH}")
+  if(NOT _buzz_make_BUZZ_INCLUDE_PATH STREQUAL "")
+    set(_buzz_make_BUZZ_INCLUDE_PATH "-I" "${_buzz_make_BUZZ_INCLUDE_PATH}")
+  endif(NOT _buzz_make_BUZZ_INCLUDE_PATH STREQUAL "")
   # Define compilation command
   add_custom_command(
-    OUTPUT ${_make_buzz_BYTECODE} ${_make_buzz_DEBUG}
-    COMMAND "BZZPARSE=${BUZZ_PARSER}" "BZZASM=${BUZZ_ASSEMBLER}" "${BUZZ_COMPILER}" ${_make_buzz_BUZZ_INCLUDE_PATH} -b "${_make_buzz_BYTECODE}" -d "${_make_buzz_DEBUG}" "${CMAKE_CURRENT_SOURCE_DIR}/${_SCRIPT}"
-    DEPENDS ${_make_buzz_DEPENDENCIES}
+    OUTPUT "${_buzz_make_BYTECODE}" "${_buzz_make_DEBUG}"
+    COMMAND "BZZPARSE=${BUZZ_PARSER}" "BZZASM=${BUZZ_ASSEMBLER}" "${BUZZ_COMPILER}" ${_buzz_make_BUZZ_INCLUDE_PATH} -b "${_buzz_make_BYTECODE}" -d "${_buzz_make_DEBUG}" "${CMAKE_CURRENT_SOURCE_DIR}/${_SCRIPT}"
+    DEPENDS ${_buzz_make_INCLUDES}
     COMMENT "Building Buzz script ${_SCRIPT}")
   # Add target, so compilation is executed
-  add_custom_target(${_SCRIPT} ALL DEPENDS ${_make_buzz_BYTECODE} ${_make_buzz_DEBUG})
-endfunction(make_buzz)
+  add_custom_target("${_SCRIPT}" ALL DEPENDS "${_buzz_make_BYTECODE}" "${_buzz_make_DEBUG}")
+endfunction(buzz_make)
