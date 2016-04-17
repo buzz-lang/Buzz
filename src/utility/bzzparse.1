@@ -1,0 +1,30 @@
+.\" Process this file with
+.\" groff -man -Tascii foo.1
+.\"
+.TH bzzparse 1 "April 2016" Linux "User Commands"
+.SH NAME
+bzzparse \- the Buzz parser
+.SH SYNOPSIS
+\fBbzzparse \fIinfile.bzz outfile.basm
+.SH DESCRIPTION
+.P
+\fBbzzparse\fR parses the given Buzz script \fIscript.bzz\fR and
+produces an annotated Buzz assembly file. The file can be processed by
+\fBbzzasm\fR(1) to produce a bytecode file and a debugging information
+file.
+.P
+You do not usually need to call this command directly. A much more
+comfortable way to compile Buzz scripts is using \fBbzzc\fR(1).
+.SH ENVIRONMENT
+.TP
+.B BUZZ_INCLUDE_PATH
+A colon-separated list of paths in which include files are searched
+for during compilation
+.SH SEE ALSO
+.BR bzzc (1)
+.BR bzzasm (1)
+.BR bzzdeasm (1)
+.SH MORE INFORMATION
+http://the.swarming.buzz/wiki/doku.php?id=buzz_toolset
+.SH AUTHOR
+Carlo Pinciroli <ilpincy@gmail.com>

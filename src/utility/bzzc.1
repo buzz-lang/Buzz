@@ -5,38 +5,44 @@
 .SH NAME
 bzzc \- the Buzz compiler
 .SH SYNOPSIS
-.P
-.BI "bzzc [-I " path1:path2:...:pathN "] " script.bzz
+\fBbzzc\fR [ \fB-I \fIpath1:path2:...:pathN \fR]
+     [ \fB-b \fIscript.bo \fR]
+     [ \fB-d \fIscript.bdb \fR]
+     \fIscript.bzz
 .SH DESCRIPTION
 .P
-.B bzzc
-compiles the given Buzz script
-.I script.bzz
-and produces two files:
-.IR script.bo ,
-the compiled bytecode ready to be executed by the Buzz Virtual Machine, and
-.IR script.bdbg ,
-a file containing the debugging symbols.
-.P
-The file
-.I script.bo
-must be uploaded on the robot.
-.P
-The file
-.I script.bdbg
-is located on the machine used by the developer to debug/monitor the
-robots.
+\fBbzzc\fR compiles the given Buzz script \fIscript.bzz\fR and
+produces two files: \fIscript.bo\fR, the compiled bytecode ready to be
+executed by the Buzz Virtual Machine, and \fIscript.bdb\fR, a file
+containing debugging information.  The file \fIscript.bo\fR must be
+uploaded on the robot.  The file \fIscript.bdb\fR is located on the
+machine used by the developer to debug/monitor the robots.
 .SH OPTIONS
 .TP
-\fB\-I \fIpath1:path2:...:pathN\fR
-Add the given paths to the list of paths searched for include files.
+\fB\-I|--include \fIpath1:path2:...:pathN\fR
+Append the given paths to \fBBUZZ_INCLUDE_PATH\fR
+.TP
+\fB\-b|--bytecode \fIscript.bo
+Set explicitly the bytecode file name
+.TP
+\fB\-d|--debug \fIscript.bdb
+Set explicitly the debug file name
 .SH ENVIRONMENT
 .TP
 .B BUZZ_INCLUDE_PATH
-A colon-separated list of paths where include files are searched for.
+A colon-separated list of paths in which include files are searched
+for during compilation
+.TP
+.B BZZPARSE
+The full path to the \fBbzzparse\fR(1) command.
+.TP
+.B BZZASM
+The full path to the \fBbzzasm\fR(1) command.
 .SH SEE ALSO
 .BR bzzparse (1)
 .BR bzzasm (1)
 .BR bzzdeasm (1)
+.SH MORE INFORMATION
+http://the.swarming.buzz/wiki/doku.php?id=buzz_toolset
 .SH AUTHOR
 Carlo Pinciroli <ilpincy@gmail.com>

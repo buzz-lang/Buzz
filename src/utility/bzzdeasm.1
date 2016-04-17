@@ -1,0 +1,21 @@
+.\" Process this file with
+.\" groff -man -Tascii foo.1
+.\"
+.TH bzzdeasm 1 "April 2016" Linux "User Commands"
+.SH NAME
+bzzdeasm \- the Buzz deassembler
+.SH SYNOPSIS
+\fBbzzdeasm \fIinfile.bo infile.bdb outfile.basm
+.SH DESCRIPTION
+.P
+\fBbzzdeasm\fR decompiles the given Buzz assembly file \fIinfile.bo\fR
+and, using the debugging information contained in \fIinfile.bdb\fR,
+produces an annotated assembly file \fIoutfile.basm\fR.
+.SH SEE ALSO
+.BR bzzc (1)
+.BR bzzparse (1)
+.BR bzzasm (1)
+.SH MORE INFORMATION
+http://the.swarming.buzz/wiki/doku.php?id=buzz_toolset
+.SH AUTHOR
+Carlo Pinciroli <ilpincy@gmail.com>

@@ -1,0 +1,27 @@
+.\" Process this file with
+.\" groff -man -Tascii foo.1
+.\"
+.TH bzzasm 1 "April 2016" Linux "User Commands"
+.SH NAME
+bzzasm \- the Buzz assembler
+.SH SYNOPSIS
+\fBbzzasm \fIinfile.basm outfile.bo outfile.bdb
+.SH DESCRIPTION
+.P
+\fBbzzasm\fR compiles the given Buzz assembly file \fIscript.bzz\fR
+and produces two files: \fIoutfile.bo\fR, the compiled bytecode ready
+to be executed by the Buzz Virtual Machine, and \fIoutfile.bdb\fR, a
+file containing debugging information.  The file \fIoutfile.bo\fR must
+be uploaded on the robot.  The file \fIoutfile.bdb\fR is located on
+the machine used by the developer to debug/monitor the robots.
+.P
+You do not usually need to call this command directly. A much more
+comfortable way to compile Buzz scripts is using \fBbzzc\fR(1).
+.SH SEE ALSO
+.BR bzzc (1)
+.BR bzzparse (1)
+.BR bzzdeasm (1)
+.SH MORE INFORMATION
+http://the.swarming.buzz/wiki/doku.php?id=buzz_toolset
+.SH AUTHOR
+Carlo Pinciroli <ilpincy@gmail.com>
