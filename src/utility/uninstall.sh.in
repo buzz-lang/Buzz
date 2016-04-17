@@ -14,5 +14,12 @@ sudo rm -rf @CMAKE_INSTALL_PREFIX@/doc/buzz
 sudo rm -rf @CMAKE_INSTALL_PREFIX@/lib/libbuzz.*
 sudo rm -rf @CMAKE_INSTALL_PREFIX@/lib/pkgconfig/buzz.pc
 sudo rm -rf @CMAKE_INSTALL_PREFIX@/include/buzz
-sudo rm -rf @CMAKE_INSTALL_PREFIX@/bin/bzz*
+sudo rm -rf @CMAKE_INSTALL_PREFIX@/bin/bzzc
+sudo rm -rf @CMAKE_INSTALL_PREFIX@/bin/bzzparse
+sudo rm -rf @CMAKE_INSTALL_PREFIX@/bin/bzzasm
+sudo rm -rf @CMAKE_INSTALL_PREFIX@/bin/bzzdeasm
 sudo rm -rf @CMAKE_INSTALL_PREFIX@/share/buzz
+sudo rm -rf @CMAKE_INSTALL_PREFIX@/share/man/man1/bzzc.1.gz
+sudo rm -rf @CMAKE_INSTALL_PREFIX@/share/man/man1/bzzparse.1.gz
+sudo rm -rf @CMAKE_INSTALL_PREFIX@/share/man/man1/bzzasm.1.gz
+sudo rm -rf @CMAKE_INSTALL_PREFIX@/share/man/man1/bzzdeasm.1.gz
