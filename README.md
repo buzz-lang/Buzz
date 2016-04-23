@@ -31,9 +31,8 @@ Requirements
 You need the following packages:
 
 * A UNIX system (Linux or MacOSX; Microsoft Windows is not supported)
-* _g++_ >= 4.3 (on Linux)
-* _clang_ >= 3.1 (on MacOSX)
-* _cmake_ >= 2.8.3
+* _g++_ >= 4.3 (on Linux) or _clang_ >= 3.1 (on MacOSX)
+* _cmake_ >= 2.8.12
 
 Optionally, you can also install [ARGoS](http://www.argos-sim.info/).
 
