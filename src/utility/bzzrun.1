@@ -1,0 +1,42 @@
+.\" Process this file with
+.\" groff -man -Tascii foo.1
+.\"
+.TH bzzrun 1 "April 2016" Linux "User Commands"
+.SH NAME
+bzzrun \- a simple Buzz script interpreter
+.SH SYNOPSIS
+\fBbzzrun\fR [ \fB--trace \fR] \fIscript.bo\fR \fIscript.bdb\fR
+.SH DESCRIPTION
+.P
+\fBbzzrun\fR is a simple interpreter that executes the given Buzz
+bytecode file \fIscript.bo\fR. Its main purpose is to provide a
+starting point for projects that integrate Buzz as extension
+language.
+.P
+As such, the source code of \fBbzzrun\fR is more interesting than what
+the command actually does. \fBbzzrun\fR can also be used as a simple
+interpreter for standalone Buzz scripts that do not use any messaging
+(e.g., neighbors, groups, virtual stigmergy, etc.).
+.SH OPTIONS
+.TP
+\fB\--trace\fR
+Shows the state of the virtual machine after the execution of each
+bytecode instruction. The state of the virtual machine includes the
+current program counter, number of loaded stacks, and the variables in
+the top stack.
+.SH SEE ALSO
+.BR bzzc (1)
+.BR bzzparse (1)
+.BR bzzasm (1)
+.BR bzzdeasm (1)
+.SH MORE INFORMATION
+.P
+Online documentation on the Buzz toolset:
+.br
+http://the.swarming.buzz/wiki/doku.php?id=buzz_toolset
+.P
+Source code of \fBbzzrun\fR:
+.br
+https://github.com/MISTLab/Buzz/blob/master/src/buzz/buzzrun.c
+.SH AUTHOR
+Carlo Pinciroli <ilpincy@gmail.com>

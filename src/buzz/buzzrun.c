@@ -4,7 +4,7 @@
 #include <string.h>
 
 void usage(const char* path, int status) {
-   fprintf(stderr, "Usage:\n\t%s [--trace] <file.bo> <file.bdbg>\n\n", path);
+   fprintf(stderr, "Usage:\n\t%s [--trace] <file.bo> <file.bdb>\n\n", path);
    exit(status);
 }
 
@@ -47,8 +47,11 @@ int print(buzzvm_t vm) {
 }
 
 int main(int argc, char** argv) {
+   /* The bytecode filename */
    char* bcfname;
+   /* The debugging information file name */
    char* dbgfname;
+   /* Whether or not to show the assembly information */
    int trace = 0;
    /* Parse command line */
    if(argc < 3 || argc > 4) usage(argv[0], 0);
@@ -89,15 +92,20 @@ int main(int argc, char** argv) {
    buzzvm_pushs(vm, buzzvm_string_register(vm, "print"));
    buzzvm_pushcc(vm, buzzvm_function_register(vm, print));
    buzzvm_gstore(vm);
-   /* Run byte code and dump state */
+   /* Run byte code */
    do if(trace) buzzdebug_stack_dump(vm, 1, stdout);
    while(buzzvm_step(vm) == BUZZVM_STATE_READY);
+   /* Done running, check final state */
+   int retval;
    if(vm->state == BUZZVM_STATE_DONE) {
+      /* Execution terminated without errors */
       if(trace) buzzdebug_stack_dump(vm, 1, stdout);
       fprintf(stdout, "%s: execution terminated correctly\n\n",
               bcfname);
+      retval = 0;
    }
    else {
+      /* Execution terminated with errors */
       if(trace) buzzdebug_stack_dump(vm, 1, stdout);
       buzzdebug_entry_t dbg = *buzzdebug_info_get_fromoffset(dbg_buf, &vm->pc);
       if(dbg != NULL) {
@@ -116,10 +124,12 @@ int main(int argc, char** argv) {
                  buzzvm_error_desc[vm->error],
                  vm->errormsg);
       }
+      retval = 1;
    }
    /* Destroy VM */
    free(bcode_buf);
    buzzdebug_destroy(&dbg_buf);
    buzzvm_destroy(&vm);
-   return 0;
+   /* All done */
+   return retval;
 }

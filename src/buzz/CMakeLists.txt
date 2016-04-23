@@ -19,14 +19,14 @@ install(TARGETS buzz LIBRARY DESTINATION lib)
 install(DIRECTORY . DESTINATION include/buzz FILES_MATCHING PATTERN "*.h")
 
 #
-# Compile buzzasm
+# Compile bzzasm
 #
 add_executable(bzzasm buzzdebug.h buzzdebug.c buzzasm.h buzzasm.c buzzasm_main.c)
 target_link_libraries(bzzasm buzz)
 install(TARGETS bzzasm RUNTIME DESTINATION bin)
 
 #
-# Compile buzzdeasm
+# Compile bzzdeasm
 #
 add_executable(bzzdeasm buzzdebug.h buzzdebug.c buzzasm.h buzzasm.c buzzdeasm_main.c)
 target_link_libraries(bzzdeasm buzz)
@@ -38,6 +38,12 @@ install(TARGETS bzzdeasm RUNTIME DESTINATION bin)
 add_executable(bzzparse buzzlex.h buzzlex.c buzzparser.h buzzparser.c buzzparse.c)
 target_link_libraries(bzzparse buzz)
 install(TARGETS bzzparse RUNTIME DESTINATION bin)
+
+#
+# Compile bzzrun
+#
+add_executable(bzzrun buzzasm.h buzzasm.c buzzdebug.h buzzdebug.c buzzrun.c)
+target_link_libraries(bzzrun buzz)
 
 #
 # Compile ARGoS-related stuff
