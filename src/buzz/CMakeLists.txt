@@ -44,6 +44,7 @@ install(TARGETS bzzparse RUNTIME DESTINATION bin)
 #
 add_executable(bzzrun buzzasm.h buzzasm.c buzzdebug.h buzzdebug.c buzzrun.c)
 target_link_libraries(bzzrun buzz)
+install(TARGETS bzzrun RUNTIME DESTINATION bin)
 
 #
 # Compile ARGoS-related stuff
