@@ -1191,7 +1191,7 @@ buzzvm_state buzzvm_gload(buzzvm_t vm) {
    buzzvm_type_assert(vm, 1, BUZZTYPE_STRING);
    buzzobj_t str = buzzvm_stack_at(vm, 1);
    buzzvm_pop(vm);
-   const buzzobj_t* o = buzzdict_get(vm->gsyms, &(str->s.value), buzzobj_t);
+   const buzzobj_t* o = buzzdict_get(vm->gsyms, &(str->s.value.sid), buzzobj_t);
    if(!o) { buzzvm_pushnil(vm); }
    else { buzzvm_push(vm, (*o)); }
    return BUZZVM_STATE_READY;
@@ -1207,7 +1207,7 @@ buzzvm_state buzzvm_gstore(buzzvm_t vm) {
    buzzobj_t o = buzzvm_stack_at((vm), 1);
    buzzvm_pop(vm);
    buzzvm_pop(vm);
-   buzzdict_set((vm)->gsyms, &(str->s.value), &o);
+   buzzdict_set((vm)->gsyms, &(str->s.value.sid), &o);
    return BUZZVM_STATE_READY;
 }
 

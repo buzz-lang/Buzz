@@ -1,4 +1,6 @@
 #include "buzz_qt.h"
+#include "buzz_qt_main_window.h"
+#include <argos3/plugins/simulator/visualizations/qt-opengl/qtopengl_main_window.h>
 
 /****************************************/
 /****************************************/
@@ -8,6 +10,27 @@ CBuzzQT::CBuzzQT() {
    RegisterUserFunction<CBuzzQT,CSpiriEntity>(&CBuzzQT::Draw);
 }
  
+/****************************************/
+/****************************************/
+
+CBuzzQT::~CBuzzQT() {
+}
+ 
+/****************************************/
+/****************************************/
+
+void CBuzzQT::Init(TConfigurationNode& t_tree) {
+   m_pcEditor = new CBuzzQTMainWindow(&GetMainWindow());
+   m_pcEditor->show();
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzQT::Destroy() {
+   delete m_pcEditor;
+}
+
 /****************************************/
 /****************************************/
 
@@ -40,8 +63,8 @@ void CBuzzQT::Draw(CBuzzController& c_contr) {
    glColor3ub(cColor.GetRed(), cColor.GetGreen(), cColor.GetBlue());
    /* The position of the text is expressed wrt the reference point of
     * the robot */
-   GetOpenGLWidget().renderText(0.0, 0.0, 0.4,   // position
-                                strMsg.c_str()); // text
+   GetMainWindow().GetOpenGLWidget().renderText(0.0, 0.0, 0.4,   // position
+                                                strMsg.c_str()); // text
    /* Restore lighting */
    glEnable(GL_LIGHTING);
    /* Restore face culling */

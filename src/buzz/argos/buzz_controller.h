@@ -43,6 +43,8 @@ public:
       m_strDebugMsg = str_msg;
    }
 
+   std::string ErrorInfo();
+
 protected:
 
    virtual buzzvm_state RegisterFunctions();
@@ -128,10 +130,6 @@ protected:
    buzzvm_state TablePut(buzzobj_t t_table,
                          SInt32 n_idx,
                          const CColor& c_color);
-
-private:
-
-   std::string ErrorInfo();
 
 protected:
 
