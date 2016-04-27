@@ -25,7 +25,7 @@
       <sensors>
         <range_and_bearing implementation="medium" medium="rab" show_rays="true" noise_std_dev="0" />
       </sensors>
-      <params bytecode_file="testflocking.bo">
+      <params bytecode_file="testflocking.bo" debug_file="testflocking.bdb">
         <wheel_turning hard_turn_angle_threshold="90"
                        soft_turn_angle_threshold="70"
                        no_turn_angle_threshold="10"
@@ -33,18 +33,18 @@
       </params>
     </buzz_controller_footbot>
 
-    <buzz_controller_spiri id="bcs">
-      <actuators>
-        <quadrotor_position implementation="default" />
-        <range_and_bearing  implementation="default" />
-      </actuators>
-      <sensors>
-        <range_and_bearing implementation="medium" medium="rab" show_rays="false" />
-        <positioning       implementation="default" />
-      </sensors>
-      <params bytecode_file="testflocking.bo"
-              debug_file="testflocking.bdbg" />
-    </buzz_controller_spiri>
+    <!-- <buzz_controller_spiri id="bcs"> -->
+    <!--   <actuators> -->
+    <!--     <quadrotor_position implementation="default" /> -->
+    <!--     <range_and_bearing  implementation="default" /> -->
+    <!--   </actuators> -->
+    <!--   <sensors> -->
+    <!--     <range_and_bearing implementation="medium" medium="rab" show_rays="false" /> -->
+    <!--     <positioning       implementation="default" /> -->
+    <!--   </sensors> -->
+    <!--   <params bytecode_file="testflocking.bo" -->
+    <!--           debug_file="testflocking.bdbg" /> -->
+    <!-- </buzz_controller_spiri> -->
 
   </controllers>
 
@@ -66,25 +66,25 @@
     <!--   <body position="-2,0,0" orientation="0,0,0" /> -->
     <!-- </box> -->
 
-    <!-- <distribute> -->
-    <!--   <position method="uniform" min="-1,-1,0" max="1,1,0" /> -->
-    <!--   <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0" /> -->
-    <!--   <entity quantity="10" max_trials="100"> -->
-    <!--     <foot-bot id="fb" rab_data_size="30"> -->
-    <!--       <controller config="bcf" /> -->
-    <!--     </foot-bot> -->
-    <!--   </entity> -->
-    <!-- </distribute> -->
-
     <distribute>
-      <position method="uniform" min="-5,-5,0" max="5,5,0" />
+      <position method="uniform" min="-1,-1,0" max="1,1,0" />
       <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0" />
       <entity quantity="10" max_trials="100">
-        <spiri id="sp" rab_range="10" rab_data_size="100">
-          <controller config="bcs" />
-        </spiri>
+        <foot-bot id="fb" rab_data_size="30">
+          <controller config="bcf" />
+        </foot-bot>
       </entity>
     </distribute>
+
+    <!-- <distribute> -->
+    <!--   <position method="uniform" min="-5,-5,0" max="5,5,0" /> -->
+    <!--   <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0" /> -->
+    <!--   <entity quantity="10" max_trials="100"> -->
+    <!--     <spiri id="sp" rab_range="10" rab_data_size="100"> -->
+    <!--       <controller config="bcs" /> -->
+    <!--     </spiri> -->
+    <!--   </entity> -->
+    <!-- </distribute> -->
 
     <!--
         We distribute 5 boxes uniformly in position and rotation around Z.
@@ -117,7 +117,7 @@
   <!-- ******************* -->
   <physics_engines>
     <dynamics2d id="dyn2d" />
-    <pointmass3d id="pm3d" />
+    <!-- <pointmass3d id="pm3d" /> -->
   </physics_engines>
 
   <!-- ********* -->

@@ -58,10 +58,8 @@ function init() {
 
 # Executed every time step
 function step() {
-  if(not takeoff()) {
-    s1.exec(flock)
-    s2.exec(flock)
-  }
+  s1.exec(flock)    
+ 	s2.exec(flock)
 }
 
 # Execute at exit
