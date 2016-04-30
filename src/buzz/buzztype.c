@@ -428,8 +428,8 @@ int64_t buzzobj_deserialize(buzzobj_t* data,
          char* str;
          p = buzzmsg_deserialize_string(&str, buf, p);
          if(p < 0) return -1;
-         (*data)->s.value.sid = buzzvm_string_register(vm, str);
-         (*data)->s.value.str = buzzvm_string_get(vm, (*data)->s.value.sid);
+         (*data)->s.value.sid = buzzstrman_register(vm->strings, str);
+         (*data)->s.value.str = buzzstrman_get(vm->strings, (*data)->s.value.sid);
          free(str);
          return p;
       }

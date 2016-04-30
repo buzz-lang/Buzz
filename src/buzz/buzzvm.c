@@ -2,6 +2,7 @@
 #include "buzzvstig.h"
 #include "buzzswarm.h"
 #include "buzzmath.h"
+#include "buzzio.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -100,27 +101,6 @@ void buzzvm_lsyms_destroy(uint32_t pos,
 /****************************************/
 /****************************************/
 
-void buzzvm_string_add(buzzvm_t vm,
-                       const char* str) {
-   char* s = strdup(str);
-   buzzdarray_push(vm->strings, &s);
-}
-
-void buzzvm_string_destroy(uint32_t pos,
-                           void* data,
-                           void* params) {
-   free(*(char**)data);
-}
-
-int buzzvm_string_cmp(const void* a, const void* b) {
-   return strcmp(*(char**)a, *(char**)b);
-}
-
-#define buzzdarray_string_find(vm, str) buzzdarray_find(vm->strings, buzzvm_string_cmp, str)
-
-/****************************************/
-/****************************************/
-
 void buzzvm_vstig_destroy(const void* key, void* data, void* params) {
    free((void*)key);
    buzzvstig_destroy((buzzvstig_t*)data);
@@ -153,7 +133,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
             /* Deserialize the value id and make sure the string exists */
             uint16_t vid;
             pos = buzzmsg_deserialize_u16(&vid, msg, pos);
-            const char* vidstr = buzzvm_string_get(vm, vid);
+            const char* vidstr = buzzstrman_get(vm->strings, vid);
             if(!vidstr) {
                fprintf(stderr, "[WARNING] [ROBOT %u] BROADCAST message for unknown vid = %u\n", vm->robot, vid);
                break;
@@ -427,9 +407,7 @@ buzzvm_t buzzvm_new(uint16_t robot) {
                             buzzdict_int32keycmp,
                             NULL);
    /* Create string list */
-   vm->strings = buzzdarray_new(BUZZVM_STRINGS_INIT_CAPACITY,
-                                sizeof(char*),
-                                buzzvm_string_destroy);
+   vm->strings = buzzstrman_new();
    /* Create heap */
    vm->heap = buzzheap_new();
    /* Create function list */
@@ -475,7 +453,7 @@ buzzvm_t buzzvm_new(uint16_t robot) {
 
 void buzzvm_destroy(buzzvm_t* vm) {
    /* Get rid of the stack */
-   buzzdarray_destroy(&(*vm)->strings);
+   buzzstrman_destroy(&(*vm)->strings);
    /* Get rid of the global variable table */
    buzzdict_destroy(&(*vm)->gsyms);
    /* Get rid of the local variable tables */
@@ -516,7 +494,7 @@ int buzzvm_set_bcode(buzzvm_t vm,
    long int c = 0;
    for(; (c < count) && (i < bcode_size); ++c) {
       /* Store string */
-      buzzvm_string_add(vm, (char*)(bcode + i));
+      buzzvm_string_register(vm, (char*)(bcode + i));
       /* Advance to first character of next string */
       while(*(bcode + i) != 0) ++i;
       ++i;
@@ -599,6 +577,14 @@ int buzzvm_set_bcode(buzzvm_t vm,
     * Register math methods
     */
    buzzmath_register(vm);
+   /*
+    * Register io methods
+    */
+   buzzio_register(vm);
+   /*
+    * Protect strings up to now
+    */
+   buzzstrman_protect(vm->strings);
    return BUZZVM_STATE_READY;
 }
 
@@ -612,6 +598,7 @@ int buzzvm_set_bcode(buzzvm_t vm,
 #define get_arg(TYPE) assert_pc(vm->pc + sizeof(TYPE)); TYPE arg = *((TYPE*)(vm->bcode + vm->pc)); vm->pc += sizeof(TYPE);
 
 buzzvm_state buzzvm_step(buzzvm_t vm) {
+   buzzvm_dump(vm);
    /* Can't execute if not ready */
    if(vm->state != BUZZVM_STATE_READY) return vm->state;
    /* Execute GC */
@@ -897,7 +884,7 @@ buzzvm_state buzzvm_function_call(buzzvm_t vm,
    if(vm->state != BUZZVM_STATE_READY)
       return vm->state;
    /* Push the function name (return with error if not found) */
-   buzzvm_pushs(vm, buzzdarray_string_find(vm, &fname));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, fname));
    /* Get associated symbol */
    buzzvm_gload(vm);
    /* Make sure it's a closure */
@@ -911,27 +898,6 @@ buzzvm_state buzzvm_function_call(buzzvm_t vm,
    }
    /* Call the closure */
    return buzzvm_closure_call(vm, argc);
-}
-
-/****************************************/
-/****************************************/
-
-uint16_t buzzvm_string_register(buzzvm_t vm,
-                                const char* str) {
-   /* Look for function name in the string list, add if missing */
-   uint32_t sid = buzzdarray_string_find(vm, &str);
-   if(sid == buzzdarray_size(vm->strings))
-      buzzvm_string_add(vm, str);
-   return sid;
-}
-
-/****************************************/
-/****************************************/
-
-const char* buzzvm_string_get(buzzvm_t vm,
-                              uint16_t sid) {
-   if(sid >= buzzdarray_size(vm->strings)) return NULL;
-   return buzzdarray_get(vm->strings, sid, char*);
 }
 
 /****************************************/
@@ -1045,7 +1011,7 @@ buzzvm_state buzzvm_push(buzzvm_t vm, buzzobj_t v) {
 /****************************************/
 /****************************************/
 
-buzzvm_state buzzvm_pushuserdata(buzzvm_t vm, void* v) {
+buzzvm_state buzzvm_pushu(buzzvm_t vm, void* v) {
    buzzobj_t o = buzzheap_newobj(vm->heap, BUZZTYPE_USERDATA);
    o->u.value = v;
    buzzvm_push(vm, o);
@@ -1098,14 +1064,14 @@ buzzvm_state buzzvm_pushf(buzzvm_t vm, float v) {
 /****************************************/
 
 buzzvm_state buzzvm_pushs(buzzvm_t vm, uint16_t strid) {
-   if((strid) >= buzzdarray_size(vm->strings)) {
+   if((strid) >= buzzstrman_count(vm->strings)) {
       vm->state = BUZZVM_STATE_ERROR;
       vm->error = BUZZVM_ERROR_STRING;
       return vm->state;
    }
    buzzobj_t o = buzzheap_newobj(vm->heap, BUZZTYPE_STRING);
    o->s.value.sid = (strid);
-   o->s.value.str = buzzdarray_get(vm->strings, (strid), char*);
+   o->s.value.str = buzzstrman_get(vm->strings, strid);
    buzzvm_push(vm, o);
    return BUZZVM_STATE_READY;
 }

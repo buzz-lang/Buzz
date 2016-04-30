@@ -243,7 +243,7 @@ std::string CBuzzController::ErrorInfo() {
 buzzvm_state CBuzzController::RegisterFunctions() {
    /* Pointer to this controller */
    buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "controller"));
-   buzzvm_pushuserdata(m_tBuzzVM, this);
+   buzzvm_pushu(m_tBuzzVM, this);
    buzzvm_gstore(m_tBuzzVM);
    /* BuzzLOG */
    buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "log"));

@@ -97,8 +97,9 @@ function(buzz_make _SCRIPT)
   add_custom_command(
     OUTPUT "${_buzz_make_BYTECODE}" "${_buzz_make_DEBUG}"
     COMMAND "BZZPARSE=${BUZZ_PARSER}" "BZZASM=${BUZZ_ASSEMBLER}" "${BUZZ_COMPILER}" ${_buzz_make_BUZZ_INCLUDE_PATH} -b "${_buzz_make_BYTECODE}" -d "${_buzz_make_DEBUG}" "${CMAKE_CURRENT_SOURCE_DIR}/${_SCRIPT}"
+    MAIN_DEPENDENCY "${CMAKE_CURRENT_SOURCE_DIR}/${_SCRIPT}"
     DEPENDS ${_buzz_make_INCLUDES}
     COMMENT "Compiling Buzz script ${_SCRIPT}")
   # Add target, so compilation is executed
-  add_custom_target("${_SCRIPT}" ALL DEPENDS "${_buzz_make_BYTECODE}" "${_buzz_make_DEBUG}")
+  add_custom_target("${_SCRIPT}" ALL DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${_SCRIPT}" "${_buzz_make_BYTECODE}" "${_buzz_make_DEBUG}")
 endfunction(buzz_make)

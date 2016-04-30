@@ -1,0 +1,23 @@
+print("this", " ", "is", " ", "a", " ", "test")
+
+f = io.fopen("../../src/testing/testflocking.bzz", "r")
+
+if(f == nil) {
+  print(io.error_message, "(", io.errno, ")")
+}
+else {
+  print(io.error_message, "(", io.errno, ")")
+  f.foreach(function(line) {
+      print(f.name, ": ", line)
+    })
+}
+f.close()
+
+# g = io.fopen("blurb", "w")
+# if(g == nil) {
+#   print(io.error_message, "(", io.errno, ")")
+# }
+# else {
+#   g.write("Ma", "Porca", "Puttana", "Maiala")
+#   g.write("E", "Davvero", "Pero")
+# }

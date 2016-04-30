@@ -14,6 +14,9 @@ target_link_libraries(testbuzzmsg buzz)
 add_executable(testbuzzlex ../buzz/buzzlex.h ../buzz/buzzlex.c testbuzzlex.c)
 target_link_libraries(testbuzzlex buzz)
 
+add_executable(testbuzzstrman testbuzzstrman.c)
+target_link_libraries(testbuzzstrman buzz)
+
 #
 # Test scripts
 #
@@ -31,6 +34,7 @@ buzz_make(testclosure.bzz)
 buzz_make(testflocking.bzz)
 buzz_make(testgradient.bzz)
 buzz_make(testinclude1.bzz INCLUDES testinclude2.bzz)
+buzz_make(testio.bzz)
 buzz_make(testmath.bzz)
 buzz_make(testneighbors.bzz)
 buzz_make(testparsing.bzz)

@@ -109,19 +109,17 @@ int main(int argc, char** argv) {
       if(trace) buzzdebug_stack_dump(vm, 1, stdout);
       buzzdebug_entry_t dbg = *buzzdebug_info_get_fromoffset(dbg_buf, &vm->pc);
       if(dbg != NULL) {
-         fprintf(stderr, "%s: execution terminated abnormally at %s:%" PRIu64 ":%" PRIu64 " : %s: %s\n\n",
+         fprintf(stderr, "%s: execution terminated abnormally at %s:%" PRIu64 ":%" PRIu64 " : %s\n\n",
                  bcfname,
                  dbg->fname,
                  dbg->line,
                  dbg->col,
-                 buzzvm_error_desc[vm->error],
                  vm->errormsg);
       }
       else {
-         fprintf(stderr, "%s: execution terminated abnormally at bytecode offset %d: %s: %s\n\n",
+         fprintf(stderr, "%s: execution terminated abnormally at bytecode offset %d: %s\n\n",
                  bcfname,
                  vm->pc,
-                 buzzvm_error_desc[vm->error],
                  vm->errormsg);
       }
       retval = 1;

@@ -2,6 +2,7 @@
 #define BUZZVM_H
 
 #include <buzz/buzzheap.h>
+#include <buzz/buzzstrman.h>
 #include <buzz/buzzinmsg.h>
 #include <buzz/buzzoutmsg.h>
 #include <buzz/buzzvstig.h>
@@ -150,7 +151,7 @@ extern "C" {
       /* Global symbols */
       buzzdict_t gsyms;
       /* Strings */
-      buzzdarray_t strings;
+      buzzstrman_t strings;
       /* Heap content */
       buzzheap_t heap;
       /* Registered functions */
@@ -274,25 +275,6 @@ extern "C" {
                                             uint32_t argc);
 
    /*
-    * Registers a new string in the VM.
-    * @param vm The VM data.
-    * @param str The string to register.
-    * @return The id of the string.
-    */
-   extern uint16_t buzzvm_string_register(buzzvm_t vm,
-                                          const char* str);
-
-   /*
-    * Returns the string corresponding to the given id.
-    * Returns NULL if the string is not found.
-    * @param vm The VM data.
-    * @param sid The string id.
-    * @return The string data, or NULL if not found.
-    */
-   extern const char* buzzvm_string_get(buzzvm_t vm,
-                                        uint16_t sid);
-   
-   /*
     * Registers a function in the VM.
     * @param vm The VM data.
     * @param funp The function pointer to register.
@@ -349,7 +331,7 @@ extern "C" {
     * @param v The C pointer to the user data.
     * @return The VM state.
     */
-   extern buzzvm_state buzzvm_pushuserdata(buzzvm_t vm, void* v);
+   extern buzzvm_state buzzvm_pushu(buzzvm_t vm, void* v);
 
    /*
     * Pushes nil on the stack.
@@ -963,5 +945,19 @@ extern "C" {
  * @param vm The VM data.
  */
 #define buzzvm_pusht(vm) { buzzobj_t o = buzzheap_newobj((vm)->heap, BUZZTYPE_TABLE); buzzvm_push(vm, o); }
+
+/*
+ * Registers a string in the virtual machine.
+ * @param vm The VM data.
+ * @param str The string to register.
+ */
+#define buzzvm_string_register(vm, str) buzzstrman_register(vm->strings, str)
+
+/*
+ * Registers a string in the virtual machine.
+ * @param vm The VM data.
+ * @param sid The id of the string.
+ */
+#define buzzvm_string_get(vm, sid) buzzstrman_get(vm->strings, sid)
 
 #endif
