@@ -598,7 +598,7 @@ int buzzvm_set_bcode(buzzvm_t vm,
 #define get_arg(TYPE) assert_pc(vm->pc + sizeof(TYPE)); TYPE arg = *((TYPE*)(vm->bcode + vm->pc)); vm->pc += sizeof(TYPE);
 
 buzzvm_state buzzvm_step(buzzvm_t vm) {
-   buzzvm_dump(vm);
+   /* buzzvm_dump(vm); */
    /* Can't execute if not ready */
    if(vm->state != BUZZVM_STATE_READY) return vm->state;
    /* Execute GC */
@@ -1064,7 +1064,7 @@ buzzvm_state buzzvm_pushf(buzzvm_t vm, float v) {
 /****************************************/
 
 buzzvm_state buzzvm_pushs(buzzvm_t vm, uint16_t strid) {
-   if((strid) >= buzzstrman_count(vm->strings)) {
+   if(!buzzstrman_get(vm->strings, strid)) {
       vm->state = BUZZVM_STATE_ERROR;
       vm->error = BUZZVM_ERROR_STRING;
       return vm->state;

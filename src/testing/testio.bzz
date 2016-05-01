@@ -13,11 +13,11 @@ else {
 }
 f.close()
 
-# g = io.fopen("blurb", "w")
-# if(g == nil) {
-#   print(io.error_message, "(", io.errno, ")")
-# }
-# else {
-#   g.write("Ma", "Porca", "Puttana", "Maiala")
-#   g.write("E", "Davvero", "Pero")
-# }
+g = io.fopen("blurb", "w")
+if(g == nil) {
+  print(io.error_message, "(", io.errno, ")")
+}
+else {
+  g.write("Ma", "Porca", "Puttana", "Maiala")
+  g.write("E", "Davvero", "Pero")
+}

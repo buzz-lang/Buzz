@@ -10,7 +10,8 @@ extern "C" {
    struct buzzstrman_s {
       buzzdict_t str2id;  /* string -> id data */
       buzzdict_t id2str;  /* id -> string data */
-      uint32_t protect;   /* maximum index of protected strings */
+      uint16_t protect;   /* maximum index of protected strings */
+      uint16_t maxsid;    /* maximum string id ever assigned */
       void* gcdata;       /* pointer to data for garbage collection */
    };
    typedef struct buzzstrman_s* buzzstrman_t;
@@ -42,7 +43,7 @@ extern "C" {
     * @param str The string.
     * @return The id associated to the given string.
     */
-   extern uint32_t buzzstrman_register(buzzstrman_t sm,
+   extern uint16_t buzzstrman_register(buzzstrman_t sm,
                                        const char* str);
 
    /*
@@ -52,7 +53,7 @@ extern "C" {
     * @return The string, or NULL if nothing is found.
     */
    extern const char* buzzstrman_get(buzzstrman_t sm,
-                                     uint32_t sid);
+                                     uint16_t sid);
 
    /*
     * Clears the marks for garbage collection.
@@ -66,7 +67,7 @@ extern "C" {
     * @param sid The id associated to the string.
     */
    extern void buzzstrman_gc_mark(buzzstrman_t sm,
-                                  uint32_t sid);
+                                  uint16_t sid);
    
    /*
     * Performs garbage collection on the unmarked strings.
@@ -79,7 +80,5 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-
-#define buzzstrman_count(sm) (buzzdict_size(sm->id2str))
 
 #endif

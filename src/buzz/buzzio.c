@@ -161,23 +161,26 @@ int buzzio_fforeach(buzzvm_t vm) {
    buzzobj_t c = buzzvm_stack_at(vm, 1);
    buzzvm_pop(vm);
    /* Go through the file lines */
-   size_t len;
-   char* line = fgetln(f, &len);
    int vmstate = vm->state;
-   while(line && vmstate == BUZZVM_STATE_READY) {
-      /* Add \0 at line end */
-      line[len-1] = 0;
+   size_t cap; /* line buffer capacity */
+   char* line = NULL;
+   ssize_t len = getline(&line, &cap, f);
+   while(len >= 0 &&
+         vmstate == BUZZVM_STATE_READY) {
+      /* Remove newline */
+      line[len-1] = '\0';
       /* Push arguments */
       buzzvm_push(vm, c);
       buzzvm_pushs(vm, buzzvm_string_register(vm, line));
       /* Call closure */
       vmstate = buzzvm_closure_call(vm, 1);
       /* Next line */
-      line = fgetln(f, &len);
+      len = getline(&line, &cap, f);
    }
    /* Register error information */
    buzzio_update_error(vm);
    /* All done */
+   free(line);
    return buzzvm_ret0(vm);
 }
 

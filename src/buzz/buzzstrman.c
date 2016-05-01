@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <stdio.h>
-
 /****************************************/
 /****************************************/
 
@@ -18,14 +16,14 @@
  * structure that does not care about holes in the id set.
  */
 struct buzzidtree_s {
-   uint32_t sid;
+   uint16_t sid;
    struct buzzidtree_s* left;
    struct buzzidtree_s* right;
 };
 typedef struct buzzidtree_s* buzzidtree_t;
 
 /* Creates a new tree node */
-buzzidtree_t buzzidtree_new(uint32_t sid) {
+buzzidtree_t buzzidtree_new(uint16_t sid) {
    buzzidtree_t x = (buzzidtree_t)malloc(sizeof(struct buzzidtree_s));
    x->sid = sid;
    x->left = NULL;
@@ -43,7 +41,7 @@ void buzzidtree_destroy(buzzidtree_t t) {
 
 /* Inserts a new node in the tree */
 static buzzidtree_t buzzidtree_insert(buzzidtree_t t,
-                                      uint32_t sid) {
+                                      uint16_t sid) {
    /* Insert element here */
    if(!t) return buzzidtree_new(sid);
    /* Insert element on the left */
@@ -64,7 +62,7 @@ static buzzidtree_t buzzidtree_find_min(buzzidtree_t t) {
 
 /* Removes a node with the given id from the tree */
 static buzzidtree_t buzzidtree_remove(buzzidtree_t t,
-                                      uint32_t sid) {
+                                      uint16_t sid) {
    /* If the tree is empty, nothing to do */
    if(!t) return NULL;
    /* If the id is smaller than the current id, remove on the left */
@@ -103,7 +101,7 @@ static buzzidtree_t buzzidtree_remove(buzzidtree_t t,
 }
 
 /* Function pointer for buzzidtree_foreach() */
-typedef void (*buzzidtree_funp)(uint32_t sid, void* params);
+typedef void (*buzzidtree_funp)(uint16_t sid, void* params);
 
 /* Visits every node in the tree and executes the given function */
 static void buzzidtree_foreach(buzzidtree_t t,
@@ -122,17 +120,18 @@ buzzstrman_t buzzstrman_new() {
    buzzstrman_t x = (buzzstrman_t)malloc(sizeof(struct buzzstrman_s));
    x->str2id = buzzdict_new(10,
                             sizeof(char*),
-                            sizeof(uint32_t),
+                            sizeof(uint16_t),
                             buzzdict_strkeyhash,
                             buzzdict_strkeycmp,
                             NULL);
    x->id2str = buzzdict_new(10,
-                            sizeof(uint32_t),
+                            sizeof(uint16_t),
                             sizeof(char*),
-                            buzzdict_int32keyhash,
-                            buzzdict_int32keycmp,
+                            buzzdict_int16keyhash,
+                            buzzdict_int16keycmp,
                             NULL);
    x->protect = 0;
+   x->maxsid = 0;
    x->gcdata = NULL;
    return x;
 }
@@ -165,14 +164,15 @@ void buzzstrman_protect(buzzstrman_t sm) {
 /****************************************/
 /****************************************/
 
-uint32_t buzzstrman_register(buzzstrman_t sm,
+uint16_t buzzstrman_register(buzzstrman_t sm,
                              const char* str) {
    /* Look for the id */
-   const uint32_t* id = buzzdict_get(sm->str2id, &str, uint32_t);
+   const uint16_t* id = buzzdict_get(sm->str2id, &str, uint16_t);
    /* Found? */
    if(id) return *id;
    /* Not found, add a new string */
-   uint32_t id2 = buzzdict_size(sm->str2id);
+   uint16_t id2 = sm->maxsid;
+   ++sm->maxsid;
    char* str2 = strdup(str);
    buzzdict_set(sm->str2id, &str2, &id2);
    buzzdict_set(sm->id2str, &id2, &str2);
@@ -183,7 +183,7 @@ uint32_t buzzstrman_register(buzzstrman_t sm,
 /****************************************/
 
 const char* buzzstrman_get(buzzstrman_t sm,
-                           uint32_t sid) {
+                           uint16_t sid) {
    const char** x = buzzdict_get(sm->id2str, &sid, char*);
    if(x) return (*x);
    return NULL;
@@ -196,11 +196,11 @@ void buzzstrman_gc_unmark(const void* key,
                           void* data,
                           void* param) {
    /* Make sure we're not adding protected strings to the tree */
-   if(*(uint32_t*)data >= ((buzzstrman_t)param)->protect) {
+   if(*(uint16_t*)data >= ((buzzstrman_t)param)->protect) {
       /* Add string */
       ((buzzstrman_t)param)->gcdata =
          buzzidtree_insert(((buzzstrman_t)param)->gcdata,
-                           *(uint32_t*)data);
+                           *(uint16_t*)data);
    }
 }
 
@@ -213,7 +213,7 @@ void buzzstrman_gc_clear(buzzstrman_t sm) {
 /****************************************/
 
 void buzzstrman_gc_mark(buzzstrman_t sm,
-                        uint32_t sid) {
+                        uint16_t sid) {
    /* Nothing to do if sid < protected */
    if(sid < sm->protect) return;
    /* Remove string from the tree */
@@ -223,19 +223,17 @@ void buzzstrman_gc_mark(buzzstrman_t sm,
 /****************************************/
 /****************************************/
 
-void buzzstrman_gc_dispose(uint32_t sid,
+void buzzstrman_gc_dispose(uint16_t sid,
                            void* param) {
    /* Get string corresponding to given sid */
    const char* str = *buzzdict_get(((buzzstrman_t)param)->id2str, &sid, char*);
-   printf("[DEBUG] Disposing of '%s'\n", str);
    /* Get rid of both the sid and the string */
-   free((char*)str);
    buzzdict_remove(((buzzstrman_t)param)->str2id, &str);
    buzzdict_remove(((buzzstrman_t)param)->id2str, &sid);
+   free((char*)str);
 }
 
 void buzzstrman_gc_prune(buzzstrman_t sm) {
-   printf("[DEBUG] buzzstrman_gc_prune()\n");
    /* Remove all the strings in the tree */
    buzzidtree_foreach((buzzidtree_t)sm->gcdata, buzzstrman_gc_dispose, sm);
    /* Get rid of the tree */
