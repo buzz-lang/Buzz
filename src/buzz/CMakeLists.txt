@@ -15,6 +15,7 @@ add_library(buzz SHARED
   buzzstrman.h buzzstrman.c
   buzzmath.h buzzmath.c
   buzzio.h buzzio.c
+  buzzstring.h buzzstring.c
   buzzvm.h buzzvm.c)
 target_link_libraries(buzz m)
 install(TARGETS buzz LIBRARY DESTINATION lib)

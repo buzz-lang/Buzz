@@ -3,6 +3,7 @@
 #include "buzzswarm.h"
 #include "buzzmath.h"
 #include "buzzio.h"
+#include "buzzstring.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -582,6 +583,10 @@ int buzzvm_set_bcode(buzzvm_t vm,
     */
    buzzio_register(vm);
    /*
+    * Register string methods
+    */
+   buzzstring_register(vm);
+   /*
     * Protect strings up to now
     */
    buzzstrman_protect(vm->strings);
@@ -1067,6 +1072,7 @@ buzzvm_state buzzvm_pushs(buzzvm_t vm, uint16_t strid) {
    if(!buzzstrman_get(vm->strings, strid)) {
       vm->state = BUZZVM_STATE_ERROR;
       vm->error = BUZZVM_ERROR_STRING;
+      asprintf(&vm->errormsg, "id read = %" PRIu16, strid);
       return vm->state;
    }
    buzzobj_t o = buzzheap_newobj(vm->heap, BUZZTYPE_STRING);
