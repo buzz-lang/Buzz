@@ -544,7 +544,7 @@ extern "C" {
  * @param vm The VM data.
  * @param num The number of expected local variables.
  */
-#define buzzvm_lnum_assert(vm, num) if(buzzvm_lnum(vm) != num) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_LNUM; asprintf(&(vm)->errormsg, "%s: expected %d, got %" PRId64, buzzvm_error_desc[(vm)->error], num, buzzvm_lnum(vm)); return (vm)->state; }
+#define buzzvm_lnum_assert(vm, num) if(buzzvm_lnum(vm) != num) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_LNUM; asprintf(&(vm)->errormsg, "%s: expected %d parameters, got %" PRId64, buzzvm_error_desc[(vm)->error], num, buzzvm_lnum(vm)); return (vm)->state; }
 
 /*
  * Pushes the local variable located at the given stack index.
