@@ -1077,7 +1077,7 @@ buzzvm_state buzzvm_pushs(buzzvm_t vm, uint16_t strid) {
    if(!buzzstrman_get(vm->strings, strid)) {
       vm->state = BUZZVM_STATE_ERROR;
       vm->error = BUZZVM_ERROR_STRING;
-      asprintf(&vm->errormsg, "id read = %" PRIu16, strid);
+      asprintf(&vm->errormsg, "%s: id read = %" PRIu16, buzzvm_error_desc[vm->error], strid);
       return vm->state;
    }
    buzzobj_t o = buzzheap_newobj(vm->heap, BUZZTYPE_STRING);
