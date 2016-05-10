@@ -5,7 +5,7 @@
 
 static int BuzzTakeOff(buzzvm_t vm) {
    /* Get pointer to the controller */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
    buzzvm_gload(vm);
    /* Call function */
    int cont = reinterpret_cast<CBuzzControllerSpiri*>(buzzvm_stack_at(vm, 1)->u.value)->TakeOff();
@@ -15,7 +15,7 @@ static int BuzzTakeOff(buzzvm_t vm) {
 
 static int BuzzLand(buzzvm_t vm) {
    /* Get pointer to the controller */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
    buzzvm_gload(vm);
    /* Call function */
    int cont = reinterpret_cast<CBuzzControllerSpiri*>(buzzvm_stack_at(vm, 1)->u.value)->Land();
@@ -32,7 +32,7 @@ static int BuzzGoTo(buzzvm_t vm) {
                  buzzvm_stack_at(vm, 1)->f.value,
                  0.0f);
    /* Get pointer to the controller */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
    buzzvm_gload(vm);
    /* Call function */
    reinterpret_cast<CBuzzControllerSpiri*>(buzzvm_stack_at(vm, 1)->u.value)->SetDirection(cDir);
@@ -45,7 +45,7 @@ static int BuzzRotate(buzzvm_t vm) {
    /* Create a new angle with that */
    CRadians cYaw(buzzvm_stack_at(vm, 1)->f.value);
    /* Get pointer to the controller */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
    buzzvm_gload(vm);
    /* Call function */
    reinterpret_cast<CBuzzControllerSpiri*>(buzzvm_stack_at(vm, 1)->u.value)->SetYaw(cYaw);
@@ -54,7 +54,7 @@ static int BuzzRotate(buzzvm_t vm) {
 
 static int BuzzCameraEnable(buzzvm_t vm) {
    /* Get pointer to the controller */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
    buzzvm_gload(vm);
    /* Call function */
    reinterpret_cast<CBuzzControllerSpiri*>(buzzvm_stack_at(vm, 1)->u.value)->CameraEnable();
@@ -63,7 +63,7 @@ static int BuzzCameraEnable(buzzvm_t vm) {
 
 static int BuzzCameraDisable(buzzvm_t vm) {
    /* Get pointer to the controller */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
    buzzvm_gload(vm);
    /* Call function */
    reinterpret_cast<CBuzzControllerSpiri*>(buzzvm_stack_at(vm, 1)->u.value)->CameraDisable();
@@ -116,7 +116,7 @@ void CBuzzControllerSpiri::UpdateSensors() {
    }
    /* Camera */
    if(m_pcCamera) {
-      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "blobs"));
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "blobs", 1));
       buzzvm_pusht(m_tBuzzVM);
       buzzobj_t tBlobs = buzzvm_stack_at(m_tBuzzVM, 1);
       buzzvm_gstore(m_tBuzzVM);
@@ -197,37 +197,37 @@ buzzvm_state CBuzzControllerSpiri::RegisterFunctions() {
       return m_tBuzzVM->state;
    /* BuzzTakeOff */
    if(m_pcPropellers && m_pcPosition) {
-      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "takeoff"));
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "takeoff", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzTakeOff));
       buzzvm_gstore(m_tBuzzVM);
    }
    /* BuzzLand */
    if(m_pcPropellers && m_pcPosition) {
-      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "land"));
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "land", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzLand));
       buzzvm_gstore(m_tBuzzVM);
    }
    /* BuzzGoTo */
    if(m_pcPropellers) {
-      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "goto"));
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "goto", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGoTo));
       buzzvm_gstore(m_tBuzzVM);
    }
    /* BuzzRotate */
    if(m_pcPropellers) {
-      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "rotate"));
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "rotate", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzRotate));
       buzzvm_gstore(m_tBuzzVM);
    }
    /* BuzzCameraEnable */
    if(m_pcCamera) {
-      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "camera_enable"));
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "camera_enable", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzCameraEnable));
       buzzvm_gstore(m_tBuzzVM);
    }
    /* BuzzCameraDisable */
    if(m_pcCamera) {
-      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "camera_disable"));
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "camera_disable", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzCameraDisable));
       buzzvm_gstore(m_tBuzzVM);
    }

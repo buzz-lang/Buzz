@@ -950,14 +950,15 @@ extern "C" {
  * Registers a string in the virtual machine.
  * @param vm The VM data.
  * @param str The string to register.
+ * @param protect Whether the string is protected (!= 0) or not (== 0).
  */
-#define buzzvm_string_register(vm, str) buzzstrman_register(vm->strings, str)
+#define buzzvm_string_register(vm, str, protect) buzzstrman_register((vm)->strings, str, protect)
 
 /*
  * Registers a string in the virtual machine.
  * @param vm The VM data.
  * @param sid The id of the string.
  */
-#define buzzvm_string_get(vm, sid) buzzstrman_get(vm->strings, sid)
+#define buzzvm_string_get(vm, sid) buzzstrman_get((vm)->strings, sid)
 
 #endif

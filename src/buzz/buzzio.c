@@ -8,16 +8,16 @@
 
 #define function_register(TABLE, FNAME, FPOINTER)                       \
    buzzvm_push(vm, (TABLE));                                            \
-   buzzvm_pushs(vm, buzzvm_string_register(vm, (FNAME)));               \
+   buzzvm_pushs(vm, buzzvm_string_register(vm, (FNAME), 1));            \
    buzzvm_pushcc(vm, buzzvm_function_register(vm, (FPOINTER)));         \
    buzzvm_tput(vm);
 
-#define filehandle_get(VAR)                                 \
-   buzzvm_lload(vm, 0);                                     \
-   buzzvm_type_assert(vm, 1, BUZZTYPE_TABLE);               \
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "handle"));  \
-   buzzvm_tget(vm);                                         \
-   FILE* VAR = buzzvm_stack_at(vm, 1)->u.value;             \
+#define filehandle_get(VAR)                                   \
+   buzzvm_lload(vm, 0);                                       \
+   buzzvm_type_assert(vm, 1, BUZZTYPE_TABLE);                 \
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "handle", 1)); \
+   buzzvm_tget(vm);                                           \
+   FILE* VAR = buzzvm_stack_at(vm, 1)->u.value;               \
    buzzvm_pop(vm);
 
 /****************************************/
@@ -25,19 +25,19 @@
 
 static void buzzio_update_error(buzzvm_t vm) {
    /* Get table */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "io"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "io", 1));
    buzzvm_gload(vm);
    buzzobj_t t = buzzvm_stack_at(vm, 1);
    /* Update error id */
    buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "errno"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "errno", 1));
    buzzvm_pushi(vm, errno);
    buzzvm_tput(vm);
    /* Update error message */
    buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "error_message"));
-   if(errno) buzzvm_pushs(vm, buzzvm_string_register(vm, strerror(errno)));
-   else buzzvm_pushs(vm, buzzvm_string_register(vm, "No error"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "error_message", 1));
+   if(errno) buzzvm_pushs(vm, buzzvm_string_register(vm, strerror(errno), 0));
+   else buzzvm_pushs(vm, buzzvm_string_register(vm, "No error", 0));
    buzzvm_tput(vm);
 }
 
@@ -50,7 +50,7 @@ int buzzio_register(buzzvm_t vm) {
    /* Register methods */
    function_register(t, "fopen", buzzio_fopen);
    /* Register "io" table */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "io"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "io", 1));
    buzzvm_push(vm, t);
    buzzvm_gstore(vm);
    /* Register error information */
@@ -88,13 +88,13 @@ int buzzio_fopen(buzzvm_t vm) {
       buzzobj_t t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
       /* Add file handle */
       buzzvm_push(vm, t);
-      buzzvm_pushs(vm, buzzvm_string_register(vm, "handle"));
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "handle", 1));
       buzzvm_pushu(vm, f);
       buzzvm_tput(vm);
       /* Add file name */
       buzzvm_push(vm, t);
-      buzzvm_pushs(vm, buzzvm_string_register(vm, "name"));
-      buzzvm_pushs(vm, buzzvm_string_register(vm, fname));
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "name", 1));
+      buzzvm_pushs(vm, buzzvm_string_register(vm, fname, 0));
       buzzvm_tput(vm);
       /* Add methods */
       function_register(t, "close", buzzio_fclose);
@@ -171,7 +171,7 @@ int buzzio_fforeach(buzzvm_t vm) {
       line[len-1] = '\0';
       /* Push arguments */
       buzzvm_push(vm, c);
-      buzzvm_pushs(vm, buzzvm_string_register(vm, line));
+      buzzvm_pushs(vm, buzzvm_string_register(vm, line, 0));
       /* Call closure */
       vmstate = buzzvm_closure_call(vm, 1);
       /* Next line */

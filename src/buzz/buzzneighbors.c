@@ -17,7 +17,7 @@ struct neighbor_filter_s {
 
 #define function_register(TABLE, FNAME, FPOINTER)               \
    buzzvm_push(vm, (TABLE));                                    \
-   buzzvm_pushs(vm, buzzvm_string_register(vm, (FNAME)));       \
+   buzzvm_pushs(vm, buzzvm_string_register(vm, (FNAME), 1));    \
    buzzvm_pushcc(vm, buzzvm_function_register(vm, (FPOINTER))); \
    buzzvm_tput(vm);
 
@@ -49,7 +49,7 @@ int buzzneighbors_reset(buzzvm_t vm) {
    function_register(t, "listen",    buzzneighbors_listen);
    function_register(t, "ignore",    buzzneighbors_ignore);
    /* Register table as global symbol */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "neighbors"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "neighbors", 1));
    buzzvm_push(vm, t);
    buzzvm_gstore(vm);
    return vm->state;
@@ -65,18 +65,18 @@ int buzzneighbors_add(buzzvm_t vm,
                       float elevation) {
    if(vm->state != BUZZVM_STATE_READY) return vm->state;
    /* Get "neighbors" table */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "neighbors"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "neighbors", 1));
    buzzvm_gload(vm);
    buzzvm_type_assert(vm, 1, BUZZTYPE_TABLE);
    buzzobj_t nbr = buzzvm_stack_at(vm, 1);
    /* Get "data" field */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "data", 1));
    buzzvm_tget(vm);
    if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_NIL) {
       /* Empty data, create a new table */
       buzzvm_pop(vm);
       buzzvm_push(vm, nbr);
-      buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "data", 1));
       buzzvm_pusht(vm);
       buzzobj_t data = buzzvm_stack_at(vm, 1);
       buzzvm_tput(vm);
@@ -89,17 +89,17 @@ int buzzneighbors_add(buzzvm_t vm,
    buzzobj_t entry = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
    /* Insert distance */
    buzzvm_push(vm, entry);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "distance"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "distance", 1));
    buzzvm_pushf(vm, distance);
    buzzvm_tput(vm);
    /* Insert azimuth */
    buzzvm_push(vm, entry);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "azimuth"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "azimuth", 1));
    buzzvm_pushf(vm, azimuth);
    buzzvm_tput(vm);
    /* Insert elevation */
    buzzvm_push(vm, entry);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "elevation"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "elevation", 1));
    buzzvm_pushf(vm, elevation);
    buzzvm_tput(vm);
    /* Save entry into data table */
@@ -201,7 +201,7 @@ int buzzneighbors_kin(buzzvm_t vm) {
    buzzvm_lload(vm, 0);
    buzzvm_type_assert(vm, 1, BUZZTYPE_TABLE);
    /* Get the data table */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "data", 1));
    buzzvm_tget(vm);
    buzzobj_t data = buzzvm_stack_at(vm, 1);
    /* Create a new table as return value */
@@ -217,7 +217,7 @@ int buzzneighbors_kin(buzzvm_t vm) {
       buzzdict_foreach(data->t.value, neighbor_filter_kin, &fdata);
       /* Add kindata as the "data" field in t */
       buzzvm_push(vm, t);
-      buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "data", 1));
       buzzvm_push(vm, kindata);
       buzzvm_tput(vm);
    }
@@ -269,7 +269,7 @@ int buzzneighbors_nonkin(buzzvm_t vm) {
       /* Get the self table */
       buzzvm_lload(vm, 0);
       /* Get the data table */
-      buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "data", 1));
       buzzvm_tget(vm);
       buzzobj_t data = buzzvm_stack_at(vm, 1);
       /* If data is available, filter it */
@@ -281,7 +281,7 @@ int buzzneighbors_nonkin(buzzvm_t vm) {
          buzzdict_foreach(data->t.value, neighbor_filter_nonkin, &fdata);
          /* Add nonkindata as the "data" field in t */
          buzzvm_push(vm, t);
-         buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+         buzzvm_pushs(vm, buzzvm_string_register(vm, "data", 1));
          buzzvm_push(vm, nonkindata);
          buzzvm_tput(vm);
       }
@@ -299,7 +299,7 @@ int buzzneighbors_get(struct buzzvm_s* vm) {
    /* Get self table */
    buzzvm_lload(vm, 0);
    /* Get data field */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "data", 1));
    buzzvm_tget(vm);
    if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_NIL) {
       /* No data */
@@ -340,7 +340,7 @@ int buzzneighbors_foreach(struct buzzvm_s* vm) {
    /* Get self table */
    buzzvm_lload(vm, 0);
    /* Get data field */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "data", 1));
    buzzvm_tget(vm);
    buzzobj_t data = buzzvm_stack_at(vm, 1);
    if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_TABLE) {
@@ -391,7 +391,7 @@ int buzzneighbors_map(buzzvm_t vm) {
    buzzvm_lload(vm, 0);
    buzzvm_type_assert(vm, 1, BUZZTYPE_TABLE);
    /* Get the data table */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "data", 1));
    buzzvm_tget(vm);
    buzzobj_t data = buzzvm_stack_at(vm, 1);
    /* Create a new table as return value and put it on the stack */
@@ -409,7 +409,7 @@ int buzzneighbors_map(buzzvm_t vm) {
       buzzobj_t mapdata = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
       /* Add mapdata as the "data" field in t */
       buzzvm_push(vm, t);
-      buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "data", 1));
       buzzvm_push(vm, mapdata);
       buzzvm_tput(vm);
       /* Go through the neighbors in data */
@@ -454,7 +454,7 @@ int buzzneighbors_reduce(struct buzzvm_s* vm) {
    /* Get self table */
    buzzvm_lload(vm, 0);
    /* Get data field */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "data", 1));
    buzzvm_tget(vm);
    buzzobj_t data = buzzvm_stack_at(vm, 1);
    /* Get accumulator */
@@ -515,7 +515,7 @@ int buzzneighbors_filter(struct buzzvm_s* vm) {
    buzzvm_lload(vm, 0);
    buzzvm_type_assert(vm, 1, BUZZTYPE_TABLE);
    /* Get the data table */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "data", 1));
    buzzvm_tget(vm);
    buzzobj_t data = buzzvm_stack_at(vm, 1);
    /* Create a new table as return value and put it on the stack */
@@ -533,7 +533,7 @@ int buzzneighbors_filter(struct buzzvm_s* vm) {
       buzzobj_t mapdata = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
       /* Add mapdata as the "data" field in t */
       buzzvm_push(vm, t);
-      buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+      buzzvm_pushs(vm, buzzvm_string_register(vm, "data", 1));
       buzzvm_push(vm, mapdata);
       buzzvm_tput(vm);
       /* Go through the neighbors in data */
@@ -557,7 +557,7 @@ int buzzneighbors_count(struct buzzvm_s* vm) {
    /* Get self table */
    buzzvm_lload(vm, 0);
    /* Get data field */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "data"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "data", 1));
    buzzvm_tget(vm);
    int32_t count = 0;
    if(buzzvm_stack_at(vm, 1)->o.type != BUZZTYPE_NIL) {

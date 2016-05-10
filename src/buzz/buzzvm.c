@@ -493,9 +493,18 @@ int buzzvm_set_bcode(buzzvm_t vm,
    /* Go through the strings and store them */
    uint32_t i = sizeof(uint16_t);
    long int c = 0;
+   int protect = 1;
    for(; (c < count) && (i < bcode_size); ++c) {
+      /* Check whether it's protected */
+      if(*(char*)(bcode + i) == '"') protect = 1;
+      else if(*(char*)(bcode + i) == '\'') protect = 0;
+      else {
+         fprintf(stderr, "string section of bytecode file is corrupted at offset %" PRIu32 "\n", i);
+         return 1;
+      }
+      ++i;
       /* Store string */
-      buzzvm_string_register(vm, (char*)(bcode + i));
+      buzzvm_string_register(vm, (char*)(bcode + i), protect);
       /* Advance to first character of next string */
       while(*(bcode + i) != 0) ++i;
       ++i;
@@ -518,56 +527,56 @@ int buzzvm_set_bcode(buzzvm_t vm,
    /*
     * Register global symbols
     */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "id", 1));
    buzzvm_pushi(vm, vm->robot);
    buzzvm_gstore(vm);
    /*
     * Register stigmergy methods
     */
    /* Add 'stigmergy' table */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "stigmergy"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "stigmergy", 1));
    buzzvm_pusht(vm);
    buzzobj_t t = buzzvm_stack_at(vm, 1);
    buzzvm_gstore(vm);
    /* Add 'create' function */
    buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "create"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "create", 1));
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_create));
    buzzvm_tput(vm);
    /*
     * Register swarm methods
     */
    /* Add 'swarm' table */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm", 1));
    buzzvm_pusht(vm);
    t = buzzvm_stack_at(vm, 1);
    buzzvm_gstore(vm);
    /* Add the 'create' method */
    buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "create"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "create", 1));
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_create));
    buzzvm_tput(vm);
    /* Add the 'id' method */
    buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "id"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "id", 1));
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_id));
    buzzvm_tput(vm);
    /*
     * Register size() function
     */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "size"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "size", 1));
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzobj_size));
    buzzvm_gstore(vm);
    /*
     * Register foreach() function
     */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "foreach"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "foreach", 1));
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzobj_foreach));
    buzzvm_gstore(vm);
    /*
     * Register reduce() function
     */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "reduce"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "reduce", 1));
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzobj_reduce));
    buzzvm_gstore(vm);
    /*
@@ -586,10 +595,6 @@ int buzzvm_set_bcode(buzzvm_t vm,
     * Register string methods
     */
    buzzstring_register(vm);
-   /*
-    * Protect strings up to now
-    */
-   buzzstrman_protect(vm->strings);
    return BUZZVM_STATE_READY;
 }
 
@@ -889,7 +894,7 @@ buzzvm_state buzzvm_function_call(buzzvm_t vm,
    if(vm->state != BUZZVM_STATE_READY)
       return vm->state;
    /* Push the function name (return with error if not found) */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, fname));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, fname, 0));
    /* Get associated symbol */
    buzzvm_gload(vm);
    /* Make sure it's a closure */

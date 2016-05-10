@@ -74,7 +74,7 @@ For detail, see `comment-dwim'."
 (setq buzz-keywords-regexp (regexp-opt buzz-keywords 'words))
 (setq buzz-keywords nil)
 ;; Builtins
-(setq buzz-builtins '("swarm" "stigmergy" "neighbors" "self" "id" "math"))
+(setq buzz-builtins '("swarm" "stigmergy" "neighbors" "self" "id" "math" "io" "string"))
 (setq buzz-builtins-regexp (regexp-opt buzz-builtins 'words))
 (setq buzz-builtins nil)
 ;; Functions

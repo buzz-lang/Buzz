@@ -187,8 +187,7 @@ int buzz_asm(const char* fname,
       /* Skip empty lines and comment lines */
       if(*trimline == 0 || *trimline == '#') continue;
       /* Is the line a string? */
-      if(*trimline == '\'') {
-         ++trimline;
+      if(*trimline == '\'' || *trimline == '\"') {
          trimline[strlen(trimline)-1] = 0;
          size_t l = strlen(trimline) + 1;
          bcode_resize(l);

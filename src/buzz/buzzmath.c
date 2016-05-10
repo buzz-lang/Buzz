@@ -8,13 +8,13 @@
 
 #define function_register(TABLE, FNAME, FPOINTER)                       \
    buzzvm_push(vm, (TABLE));                                            \
-   buzzvm_pushs(vm, buzzvm_string_register(vm, (FNAME)));               \
+   buzzvm_pushs(vm, buzzvm_string_register(vm, (FNAME), 1));            \
    buzzvm_pushcc(vm, buzzvm_function_register(vm, (FPOINTER)));         \
    buzzvm_tput(vm);
 
 #define constant_register(TABLE, FNAME, VALUE)                          \
    buzzvm_push(vm, (TABLE));                                            \
-   buzzvm_pushs(vm, buzzvm_string_register(vm, (FNAME)));               \
+   buzzvm_pushs(vm, buzzvm_string_register(vm, (FNAME), 1));            \
    buzzvm_pushf(vm, (VALUE));                                           \
    buzzvm_tput(vm);
 
@@ -38,7 +38,7 @@ int buzzmath_register(buzzvm_t vm) {
    /* Register constants */
    constant_register(t, "pi",    3.14159265358979323846);
    /* Register "math" table */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "math"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "math", 1));
    buzzvm_push(vm, t);
    buzzvm_gstore(vm);
    return vm->state;

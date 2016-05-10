@@ -1,6 +1,38 @@
 #include "buzzstrman.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <inttypes.h>
+
+/****************************************/
+/****************************************/
+
+/*
+ * String container for the id2str dictionary.
+ * The string container stores both a pointer to the string data and
+ * the 'protect' flag.
+ */
+struct buzzid2strdata_s {
+   char* str;
+   int protect;
+};
+typedef struct buzzid2strdata_s* buzzid2strdata_t;
+
+static buzzid2strdata_t buzzid2strdata_new(char* str,
+                                           int protect) {
+   buzzid2strdata_t x = (buzzid2strdata_t)malloc(sizeof(struct buzzid2strdata_s));
+   x->str = str;
+   x->protect = protect;
+   return x;
+}
+
+static void buzzid2strdata_destroy(const void* key,
+                                   void* data,
+                                   void* params) {
+   free((void*)key);
+   free(*(buzzid2strdata_t*)data);
+   free(data);
+}
 
 /****************************************/
 /****************************************/
@@ -126,11 +158,10 @@ buzzstrman_t buzzstrman_new() {
                             NULL);
    x->id2str = buzzdict_new(10,
                             sizeof(uint16_t),
-                            sizeof(char*),
+                            sizeof(buzzid2strdata_t),
                             buzzdict_int16keyhash,
                             buzzdict_int16keycmp,
-                            NULL);
-   x->protect = 0;
+                            buzzid2strdata_destroy);
    x->maxsid = 0;
    x->gcdata = NULL;
    return x;
@@ -140,12 +171,12 @@ buzzstrman_t buzzstrman_new() {
 /****************************************/
 
 void buzzstrman_str_destroy(const void* key, void* data, void* params) {
-   free(*(char**)data);
+   free(*(char**)key);
 }
 
 void buzzstrman_destroy(buzzstrman_t* sm) {
    /* Dispose of the strings */
-   buzzdict_foreach((*sm)->id2str, buzzstrman_str_destroy, NULL);
+   buzzdict_foreach((*sm)->str2id, buzzstrman_str_destroy, NULL);
    /* Dispose of the structures */
    buzzdict_destroy(&((*sm)->str2id));
    buzzdict_destroy(&((*sm)->id2str));
@@ -157,25 +188,31 @@ void buzzstrman_destroy(buzzstrman_t* sm) {
 /****************************************/
 /****************************************/
 
-void buzzstrman_protect(buzzstrman_t sm) {
-   sm->protect = buzzdict_size(sm->str2id);
-}
-
-/****************************************/
-/****************************************/
-
 uint16_t buzzstrman_register(buzzstrman_t sm,
-                             const char* str) {
+                             const char* str,
+                             int protect) {
    /* Look for the id */
    const uint16_t* id = buzzdict_get(sm->str2id, &str, uint16_t);
    /* Found? */
-   if(id) return *id;
+   if(id) {
+      /* Yes; is the passed 'protect' flag set? */
+      if(protect) {
+         /* Set the flag for the record too */
+         buzzid2strdata_t sd = *buzzdict_get(sm->id2str, id, buzzid2strdata_t);
+         sd->protect = 1;
+      }
+      /* Return the found id */
+      buzzstrman_print(sm);
+      return *id;
+   }
    /* Not found, add a new string */
    uint16_t id2 = sm->maxsid;
    ++sm->maxsid;
    char* str2 = strdup(str);
+   buzzid2strdata_t sd = buzzid2strdata_new(str2, protect);
    buzzdict_set(sm->str2id, &str2, &id2);
-   buzzdict_set(sm->id2str, &id2, &str2);
+   buzzdict_set(sm->id2str, &id2, &sd);
+   buzzstrman_print(sm);
    return id2;
 }
 
@@ -184,8 +221,8 @@ uint16_t buzzstrman_register(buzzstrman_t sm,
 
 const char* buzzstrman_get(buzzstrman_t sm,
                            uint16_t sid) {
-   const char** x = buzzdict_get(sm->id2str, &sid, char*);
-   if(x) return (*x);
+   const buzzid2strdata_t* x = buzzdict_get(sm->id2str, &sid, buzzid2strdata_t);
+   if(x) return (*x)->str;
    return NULL;
 }
 
@@ -196,7 +233,12 @@ void buzzstrman_gc_unmark(const void* key,
                           void* data,
                           void* param) {
    /* Make sure we're not adding protected strings to the tree */
-   if(*(uint16_t*)data >= ((buzzstrman_t)param)->protect) {
+   const buzzid2strdata_t* sd = buzzdict_get(((buzzstrman_t)param)->id2str,
+                                             (uint16_t*)data,
+                                             buzzid2strdata_t);
+   if(sd) {
+      /* Nothing to do if string is protected */
+      if((*sd)->protect) return;
       /* Add string */
       ((buzzstrman_t)param)->gcdata =
          buzzidtree_insert(((buzzstrman_t)param)->gcdata,
@@ -214,10 +256,14 @@ void buzzstrman_gc_clear(buzzstrman_t sm) {
 
 void buzzstrman_gc_mark(buzzstrman_t sm,
                         uint16_t sid) {
-   /* Nothing to do if sid < protected */
-   if(sid < sm->protect) return;
-   /* Remove string from the tree */
-   sm->gcdata = buzzidtree_remove((buzzidtree_t)sm->gcdata, sid);
+   /* Get string corresponding to given sid */
+   const buzzid2strdata_t* sd = buzzdict_get(sm->id2str, &sid, buzzid2strdata_t);
+   if(sd) {
+      /* Nothing to do if string is protected */
+      if((*sd)->protect) return;
+      /* Remove string from the tree */
+      sm->gcdata = buzzidtree_remove((buzzidtree_t)sm->gcdata, sid);
+   }
 }
 
 /****************************************/
@@ -226,11 +272,11 @@ void buzzstrman_gc_mark(buzzstrman_t sm,
 void buzzstrman_gc_dispose(uint16_t sid,
                            void* param) {
    /* Get string corresponding to given sid */
-   const char* str = *buzzdict_get(((buzzstrman_t)param)->id2str, &sid, char*);
+   buzzid2strdata_t sd = *buzzdict_get(((buzzstrman_t)param)->id2str, &sid, buzzid2strdata_t);
    /* Get rid of both the sid and the string */
-   buzzdict_remove(((buzzstrman_t)param)->str2id, &str);
+   buzzdict_remove(((buzzstrman_t)param)->str2id, &(sd->str));
    buzzdict_remove(((buzzstrman_t)param)->id2str, &sid);
-   free((char*)str);
+   free(sd->str);
 }
 
 void buzzstrman_gc_prune(buzzstrman_t sm) {
@@ -239,6 +285,34 @@ void buzzstrman_gc_prune(buzzstrman_t sm) {
    /* Get rid of the tree */
    buzzidtree_destroy(sm->gcdata);
    sm->gcdata = NULL;
+}
+
+/****************************************/
+/****************************************/
+
+void buzzstrman_print_id2str(const void* key,
+                             void* data,
+                             void* param) {
+   buzzid2strdata_t sd = *(buzzid2strdata_t*)data;
+   char c = ' ';
+   if(sd->protect) c = '*';
+   printf("\t[%c]", c);
+   printf("%" PRIu32 " -> ", *(uint32_t*)key);
+   printf("'%s'\n", sd->str);
+}
+
+void buzzstrman_print_str2id(const void* key,
+                             void* data,
+                             void* param) {
+   printf("\t'%s' -> %" PRIu32 "\n", *(char**)key, *(uint32_t*)data);
+}
+
+void buzzstrman_print(buzzstrman_t sm) {
+   printf("ID -> STRING (%" PRIu32 " elements)\n", buzzdict_size(sm->id2str));
+   buzzdict_foreach(sm->id2str, buzzstrman_print_id2str, sm);
+   printf("STRING -> ID (%" PRIu32 " elements)\n", buzzdict_size(sm->str2id));
+   buzzdict_foreach(sm->str2id, buzzstrman_print_str2id, sm);
+   printf("\n\n");
 }
 
 /****************************************/

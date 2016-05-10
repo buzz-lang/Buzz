@@ -32,7 +32,7 @@ static int BuzzGoTo(buzzvm_t vm) {
    CVector2 cDir(buzzvm_stack_at(vm, 2)->f.value,
                  buzzvm_stack_at(vm, 1)->f.value);
    /* Get pointer to the controller */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
    buzzvm_gload(vm);
    /* Call function */
    reinterpret_cast<CBuzzControllerFootBot*>(buzzvm_stack_at(vm, 1)->u.value)->SetWheelSpeedsFromVector(cDir);
@@ -52,7 +52,7 @@ int BuzzSetLEDs(buzzvm_t vm) {
                  buzzvm_stack_at(vm, 2)->i.value,
                  buzzvm_stack_at(vm, 1)->i.value);
    /* Get pointer to the controller */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
    buzzvm_gload(vm);
    /* Call function */
    reinterpret_cast<CBuzzControllerFootBot*>(buzzvm_stack_at(vm, 1)->u.value)->SetLEDs(cColor);
@@ -114,7 +114,7 @@ void CBuzzControllerFootBot::UpdateSensors() {
     */
    if(m_pcProximity != NULL) {
       /* Create empty proximity table */
-      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "proximity"));
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "proximity", 1));
       buzzvm_pusht(m_tBuzzVM);
       buzzobj_t tProxTable = buzzvm_stack_at(m_tBuzzVM, 1);
       buzzvm_gstore(m_tBuzzVM);
@@ -219,13 +219,13 @@ buzzvm_state CBuzzControllerFootBot::RegisterFunctions() {
    CBuzzController::RegisterFunctions();
    if(m_pcWheels) {
       /* BuzzGoTo */
-      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "goto"));
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "goto", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGoTo));
       buzzvm_gstore(m_tBuzzVM);
    }
    if(m_pcLEDs) {
       /* BuzzSetLEDs */
-      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "setleds"));
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "setleds", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzSetLEDs));
       buzzvm_gstore(m_tBuzzVM);
    }

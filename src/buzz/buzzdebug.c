@@ -314,7 +314,7 @@ buzzvm_state buzzdebug_function_call(buzzvm_t vm,
       else return vm->state;
    }
    /* Push the function name (return with error if not found) */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, fname));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, fname, 0));
    /* Get associated symbol */
    buzzvm_gload(vm);
    /* Make sure it's a closure */

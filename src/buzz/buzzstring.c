@@ -7,7 +7,7 @@
 
 #define function_register(TABLE, FNAME, FPOINTER)                       \
    buzzvm_push(vm, (TABLE));                                            \
-   buzzvm_pushs(vm, buzzvm_string_register(vm, (FNAME)));               \
+   buzzvm_pushs(vm, buzzvm_string_register(vm, (FNAME), 1));            \
    buzzvm_pushcc(vm, buzzvm_function_register(vm, (FPOINTER)));         \
    buzzvm_tput(vm);
 
@@ -21,7 +21,7 @@ int buzzstring_register(buzzvm_t vm) {
    function_register(t, "length", buzzstring_length);
    function_register(t, "sub", buzzstring_sub);
    /* Register "string" table */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "string"));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "string", 1));
    buzzvm_push(vm, t);
    buzzvm_gstore(vm);
    /* All done */
@@ -88,7 +88,7 @@ int buzzstring_sub(buzzvm_t vm) {
    /* Make new string for the substring */
    char* s2 = (char*)malloc(m - n);
    strncpy(s2, s, m - n);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, s2));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, s2, 0));
    free(s2);
    /* All done */
    return buzzvm_ret1(vm);

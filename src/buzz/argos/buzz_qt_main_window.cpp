@@ -773,32 +773,35 @@ void CBuzzQTMainWindow::UpdateRecentFiles() {
 void CBuzzQTMainWindow::SetMessage(int n_row,
                                    const QString& str_robot_id,
                                    const QString& str_message) {
-   QStringList listFields = str_message.split(":",
-                                              QString::KeepEmptyParts,
-                                              Qt::CaseInsensitive);
+   /* Fill in the robot id */
    m_pcBuzzMessageTable->setItem(
       n_row, 0,
       new QTableWidgetItem(str_robot_id));
-   if(listFields.size() == 3) {
+   /* Split the error message in its parts */
+   QStringList listFields = str_message.split(
+      ":",
+      QString::KeepEmptyParts,
+      Qt::CaseInsensitive);
+   /* Set position and error message (byte offset or file/line/col */
+   if(str_message.startsWith("At bytecode offset", Qt::CaseInsensitive)) {
+      /* Position */
       m_pcBuzzMessageTable->setItem(
          n_row, 1,
          new QTableWidgetItem(listFields[1]));
+      /* Error message */
       m_pcBuzzMessageTable->setItem(
          n_row, 2,
-         new QTableWidgetItem(listFields[2]));
-   }
-   else if(listFields.size() == 4) {
-      m_pcBuzzMessageTable->setItem(
-         n_row, 1,
-         new QTableWidgetItem(listFields[2]));
-      m_pcBuzzMessageTable->setItem(
-         n_row, 2,
-         new QTableWidgetItem(listFields[3]));
+         new QTableWidgetItem(listFields[2] + listFields[3]));
    }
    else {
+      /* Position */
+      m_pcBuzzMessageTable->setItem(
+         n_row, 1,
+         new QTableWidgetItem(listFields[1] + listFields[2] + listFields[3]));
+      /* Error message */
       m_pcBuzzMessageTable->setItem(
          n_row, 2,
-         new QTableWidgetItem(str_message));
+         new QTableWidgetItem(listFields[4] + listFields[5]));
    }
    m_pcBuzzMsgDock->show();
 }

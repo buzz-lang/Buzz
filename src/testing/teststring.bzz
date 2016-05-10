@@ -67,3 +67,11 @@ string.split = function(s, d) {
   # Return token list
   return t;
 }
+
+x = "le osterie di fuori porta"
+print(string.length(x))
+i = 0
+while(i < string.length(x)) {
+  print(string.sub(x, i))
+  i = i + 1
+}

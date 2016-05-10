@@ -26,42 +26,84 @@ static int SCOPE_AUTO     =  2;
 /****************************************/
 /****************************************/
 
-struct string_s {
+/*
+ * During parsing, strings are stored in a dictionary in which the key
+ * is the string value, and the data contains two fields: the position
+ * of the string (its index), and whether the string is protected.
+ * Symbols are protected strings; other string constants are not.
+ */
+struct strdict_data_s {
+   uint32_t pos;
+   int protect;   
+};
+typedef struct strdict_data_s* strdict_data_t;
+
+strdict_data_t strdict_data_new(uint32_t pos, int protect) {
+   strdict_data_t x = (strdict_data_t)malloc(sizeof(struct strdict_data_s));
+   x->pos = pos;
+   x->protect = protect;
+   return x;
+}
+
+void strdict_data_destroy(const void* key, void* data, void* params) {
+   free((void*)key);
+   free(*(strdict_data_t*)data);
+   free(data);
+}
+
+/*
+ * At the end of parsing, the strings are output in the bytecode
+ * file. The writing occurs in order, where the order is dictated by
+ * the increasing string pos field. 
+ * To achieve this, the contents of the string dictionary are copied
+ * to an array, which is later sorted.
+ */
+struct strarray_data_s {
    char* str;
    uint32_t pos;
+   int protect;
 };
 
 void string_copy(const void* key, void* data, void* params) {
-   struct string_s* x = (struct string_s*)malloc(sizeof(struct string_s));
+   struct strarray_data_s* x = (struct strarray_data_s*)malloc(sizeof(struct strarray_data_s));
    x->str = *(char**)key;
-   x->pos = *(uint32_t*)data;
+   x->pos = (*(strdict_data_t*)data)->pos;
+   x->protect = (*(strdict_data_t*)data)->protect;
    buzzdarray_t arr = (buzzdarray_t)params;
    buzzdarray_push(arr, &x);
 }
 
 int string_cmp(const void* a, const void* b) {
-   if((*(struct string_s**)a)->pos < (*(struct string_s**)b)->pos) return -1;
-   if((*(struct string_s**)a)->pos > (*(struct string_s**)b)->pos) return  1;
+   if((*(struct strarray_data_s**)a)->pos < (*(struct strarray_data_s**)b)->pos) return -1;
+   if((*(struct strarray_data_s**)a)->pos > (*(struct strarray_data_s**)b)->pos) return  1;
    return 0;
 }
 
 void string_destroy(uint32_t pos, void* data, void* params) {
-   free((*(struct string_s**)data)->str);
+   free((*(struct strarray_data_s**)data)->str);
 }
 
 void string_print(uint32_t pos, void* data, void* params) {
-   fprintf((FILE*)params, "'%s\n", (*(struct string_s**)data)->str);
+   char c = '\'';
+   if((*(struct strarray_data_s**)data)->protect) c = '"';
+   fprintf((FILE*)params, "%c%s\n", c, (*(struct strarray_data_s**)data)->str);
 }
 
-uint32_t string_add(buzzdict_t strings, const char* str) {
-   const uint32_t* pos = buzzdict_get(strings, &str, uint32_t);
-   if(!pos) {
+uint32_t string_add(buzzdict_t strings, const char* str, int protect) {
+   const strdict_data_t* sd = buzzdict_get(strings, &str, strdict_data_t);
+   if(!sd) {
+      /* String not found */
       char* dup = strdup(str);
-      uint32_t pos = buzzdict_size(strings);
-      buzzdict_set(strings, &dup, &pos);
-      return pos;
+      strdict_data_t x = strdict_data_new(buzzdict_size(strings),
+                                          protect);
+      buzzdict_set(strings, &dup, &x);
+      return x->pos;
    }
-   else return *pos;
+   else {
+      /* String found */
+      if(protect) (*sd)->protect = 1;
+      return (*sd)->pos;
+   }
 }
 
 /****************************************/
@@ -109,7 +151,7 @@ void sym_add(buzzparser_t par, const char* sym, int scope) {
    /* Calculate position attribute */
    uint32_t pos;
    /* For a global symbol, the position corresponds to the string id */
-   if(global) pos = string_add(par->strings, sym);
+   if(global) pos = string_add(par->strings, sym, 1);
    /* For a local symbol, the position is that in the activation record */
    else       pos = buzzdict_size(par->syms);
    /* Create symbol and save it */
@@ -729,9 +771,7 @@ int parse_expression(buzzparser_t par) {
          /* Consume the id */
          fetchtok();
          if(par->tok->type == BUZZTOK_ID) {
-            const uint32_t* sid = buzzdict_get(par->strings, &par->tok->value, uint32_t);
-            if(!sid) { chunk_append("\tpushs %u", string_add(par->strings, par->tok->value)); }
-            else { chunk_append("\tpushs %u", *sid); }
+            chunk_append("\tpushs %u", string_add(par->strings, par->tok->value, 1));
          }
          else if(par->tok->type == BUZZTOK_CONST) {
             if(strchr(par->tok->value, '.')) {
@@ -767,9 +807,7 @@ int parse_expression(buzzparser_t par) {
             tokmatch(BUZZTOK_DOT);
             fetchtok();
             if(par->tok->type == BUZZTOK_ID) {
-               const uint32_t* sid = buzzdict_get(par->strings, &par->tok->value, uint32_t);
-               if(!sid) { chunk_append("\tpushs %u", string_add(par->strings, par->tok->value)); }
-               else { chunk_append("\tpushs %u", *sid); }
+               chunk_append("\tpushs %u", string_add(par->strings, par->tok->value, 1));
             }
             else if(par->tok->type == BUZZTOK_CONST) {
                if(strchr(par->tok->value, '.')) {
@@ -875,8 +913,7 @@ int parse_operand(buzzparser_t par) {
       return PARSE_OK;
    }
    else if(par->tok->type == BUZZTOK_STRING) {
-      uint32_t pos = string_add(par->strings, par->tok->value);
-      chunk_append("\tpushs %u", pos);
+      chunk_append("\tpushs %u", string_add(par->strings, par->tok->value, 0));
       fetchtok();
       return PARSE_OK;
    }
@@ -1071,9 +1108,7 @@ int parse_idref(buzzparser_t par,
          idrefinfo->info = TYPE_TABLE;
          fetchtok();
          tokmatch(BUZZTOK_ID);
-         const uint32_t* sid = buzzdict_get(par->strings, &par->tok->value, uint32_t);
-         if(!sid) { chunk_append("\tpushs %u", string_add(par->strings, par->tok->value)); }
-         else { chunk_append("\tpushs %u", *sid); }
+         chunk_append("\tpushs %u", string_add(par->strings, par->tok->value, 1));
          fetchtok();
       }
       else if(par->tok->type == BUZZTOK_IDXOPEN) {
@@ -1184,10 +1219,10 @@ buzzparser_t buzzparser_new(const char* fscript,
    /* Initialize string list */
    par->strings = buzzdict_new(100,
                                sizeof(char*),
-                               sizeof(uint32_t),
+                               sizeof(strdict_data_t),
                                buzzdict_strkeyhash,
                                buzzdict_strkeycmp,
-                               NULL);
+                               strdict_data_destroy);
    /* Return parser state */
    return par;
 }
