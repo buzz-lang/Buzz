@@ -202,7 +202,6 @@ uint16_t buzzstrman_register(buzzstrman_t sm,
          sd->protect = 1;
       }
       /* Return the found id */
-      buzzstrman_print(sm);
       return *id;
    }
    /* Not found, add a new string */
@@ -212,7 +211,6 @@ uint16_t buzzstrman_register(buzzstrman_t sm,
    buzzid2strdata_t sd = buzzid2strdata_new(str2, protect);
    buzzdict_set(sm->str2id, &str2, &id2);
    buzzdict_set(sm->id2str, &id2, &sd);
-   buzzstrman_print(sm);
    return id2;
 }
 
@@ -274,9 +272,10 @@ void buzzstrman_gc_dispose(uint16_t sid,
    /* Get string corresponding to given sid */
    buzzid2strdata_t sd = *buzzdict_get(((buzzstrman_t)param)->id2str, &sid, buzzid2strdata_t);
    /* Get rid of both the sid and the string */
-   buzzdict_remove(((buzzstrman_t)param)->str2id, &(sd->str));
+   char* str = sd->str;
+   buzzdict_remove(((buzzstrman_t)param)->str2id, &str);
    buzzdict_remove(((buzzstrman_t)param)->id2str, &sid);
-   free(sd->str);
+   free(str);
 }
 
 void buzzstrman_gc_prune(buzzstrman_t sm) {
@@ -296,15 +295,13 @@ void buzzstrman_print_id2str(const void* key,
    buzzid2strdata_t sd = *(buzzid2strdata_t*)data;
    char c = ' ';
    if(sd->protect) c = '*';
-   printf("\t[%c]", c);
-   printf("%" PRIu32 " -> ", *(uint32_t*)key);
-   printf("'%s'\n", sd->str);
+   printf("\t[%c] %" PRIu16 " -> '%s'\n", c, *(uint16_t*)key, sd->str);
 }
 
 void buzzstrman_print_str2id(const void* key,
                              void* data,
                              void* param) {
-   printf("\t'%s' -> %" PRIu32 "\n", *(char**)key, *(uint32_t*)data);
+   printf("\t'%s' -> %" PRIu16 "\n", *(char**)key, *(uint16_t*)data);
 }
 
 void buzzstrman_print(buzzstrman_t sm) {
