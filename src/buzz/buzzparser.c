@@ -913,7 +913,7 @@ int parse_operand(buzzparser_t par) {
       return PARSE_OK;
    }
    else if(par->tok->type == BUZZTOK_STRING) {
-      chunk_append("\tpushs %u", string_add(par->strings, par->tok->value, 0));
+      chunk_append("\tpushs %u", string_add(par->strings, par->tok->value, 1));
       fetchtok();
       return PARSE_OK;
    }
