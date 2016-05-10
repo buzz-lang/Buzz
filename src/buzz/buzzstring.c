@@ -1,6 +1,7 @@
 #include "buzzstring.h"
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 /****************************************/
 /****************************************/
@@ -86,10 +87,92 @@ int buzzstring_sub(buzzvm_t vm) {
          m = ls;
    }
    /* Make new string for the substring */
-   char* s2 = (char*)malloc(m - n);
-   strncpy(s2, s, m - n);
+   char* s2 = (char*)malloc(m - n + 1);
+   strncpy(s2, s + n, m - n);
+   s2[m - n] = 0;
    buzzvm_pushs(vm, buzzvm_string_register(vm, s2, 0));
    free(s2);
+   /* All done */
+   return buzzvm_ret1(vm);
+}
+
+/****************************************/
+/****************************************/
+
+int buzzstring_tostring(buzzvm_t vm) {
+   /* Make sure one parameter has been passed */
+   buzzvm_lnum_assert(vm, 1);
+   /* Get the object */
+   buzzvm_lload(vm, 1);
+   buzzobj_t o = buzzvm_stack_at(vm, 1);
+   /* Make sure it's an int or a float */
+   if(o->o.type != BUZZTYPE_INT &&
+      o->o.type != BUZZTYPE_FLOAT) {
+      /* Can't convert */
+      buzzvm_pushnil(vm);
+   }
+   /* Perform conversion */
+   char* str;
+   if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_INT)
+      asprintf(&str, "%" PRId32, o->i.value);
+   else
+      asprintf(&str, "%f", o->f.value);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, str, 0));
+   free(str);
+   /* All done */
+   return buzzvm_ret1(vm);
+}
+
+/****************************************/
+/****************************************/
+
+int buzzstring_toint(buzzvm_t vm) {
+   /* Make sure one parameter has been passed */
+   buzzvm_lnum_assert(vm, 1);
+   /* Get the string */
+   buzzvm_lload(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_STRING);
+   const char* s = buzzvm_stack_at(vm, 1)->s.value.str;
+   /* Convert the string to int */
+   char* endptr;
+   int32_t i = strtod(s, &endptr);
+   /* Was the conversion successful? */
+   if((errno != 0 && i == 0) || /* An error occurred */
+      (endptr == s)) {         /* No digit found */
+      /* Yes, an error occurred */
+      buzzvm_pushnil(vm);
+   }
+   else {
+      /* All OK, return converted value */
+      buzzvm_pushi(vm, i);
+   }
+   /* All done */
+   return buzzvm_ret1(vm);
+}
+
+/****************************************/
+/****************************************/
+
+int buzzstring_tofloat(buzzvm_t vm) {
+   /* Make sure one parameter has been passed */
+   buzzvm_lnum_assert(vm, 1);
+   /* Get the string */
+   buzzvm_lload(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_STRING);
+   const char* s = buzzvm_stack_at(vm, 1)->s.value.str;
+   /* Convert the string to int */
+   char* endptr;
+   float f = strtof(s, &endptr);
+   /* Was the conversion successful? */
+   if((errno != 0 && f == 0) || /* An error occurred */
+      (endptr == s)) {          /* No digit found */
+      /* Yes, an error occurred */
+      buzzvm_pushnil(vm);
+   }
+   else {
+      /* All OK, return converted value */
+      buzzvm_pushf(vm, f);
+   }
    /* All done */
    return buzzvm_ret1(vm);
 }

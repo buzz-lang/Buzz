@@ -6,11 +6,11 @@ string.charat = function(s, n) {
 # Returns the index of the first occurrence of the given string m
 # within another string s. If none is found, this function returns
 # nil.
-string.indexof = function(s, m) {
+string.indexoffirst = function(s, m) {
   var ls = string.length(s)
   var lm = string.length(m)
   var i = 0
-  while(i < ls-lm) {
+  while(i < ls-lm+1) {
     if(string.sub(s, i, i+lm) == m) return i
     i = i + 1
   }
@@ -20,10 +20,10 @@ string.indexof = function(s, m) {
 # Returns the index of the last occurrence of the given string m
 # within another string s. If none is found, this function returns
 # nil.
-string.indexof = function(s, m) {
+string.indexoflast = function(s, m) {
   var ls = string.length(s)
   var lm = string.length(m)
-  var i = ls - lm
+  var i = ls - lm + 1
   while(i >= 0) {
     if(string.sub(s, i, i+lm) == m) return i
     i = i - 1
@@ -45,7 +45,7 @@ string.split = function(s, d) {
     # Try every delimiter
     var j = 0   # index to move along d
     var f = nil # whether the delimiter was found or not
-    while(j < d and (not f)) {
+    while(j < ld and (not f)) {
       if(string.charat(s, i2) == string.charat(d, j)) {
         # Delimiter found
         f = 1
@@ -58,20 +58,51 @@ string.split = function(s, d) {
         i1 = i2 + 1
       }
       else {
+        # Next delimiter
         j = j + 1
       }
     }
-    # Next character
+    # Next string character
     i2 = i2 + 1
+  }
+  # Is it worth adding a new token?
+  if(i2 > i1) {
+    t[c] = string.sub(s, i1, i2)
   }
   # Return token list
   return t;
 }
 
-x = "le osterie di fuori porta"
-print(string.length(x))
+x = "le osterie, di fuori porta"
 i = 0
 while(i < string.length(x)) {
-  print(string.sub(x, i))
+  var y = string.sub(x, i)
+  print("'", y, "' ", string.length(y), " characters")
   i = i + 1
 }
+
+print(string.charat(x, 0))
+print(string.charat(x, 5))
+print(string.charat(x, 10))
+print(string.charat(x, 15))
+print(string.charat(x, 20))
+print(string.charat(x, 25))
+
+print(string.indexoffirst(x, "porta"))
+print(string.indexoffirst(x, "pizza"))
+
+print(string.indexoflast(x, "osterie"))
+print(string.indexoflast(x, "pizza"))
+
+z = string.split(x, " ,")
+print(size(z), " tokens found")
+foreach(z, function(k, v) {
+    print("<", k, ",", v, ">")
+  })
+
+x = "   ,,,   , ,"
+z = string.split(x, " ,")
+print(size(z), " tokens found")
+foreach(z, function(k, v) {
+    print("<", k, ",", v, ">")
+  })

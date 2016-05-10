@@ -493,18 +493,9 @@ int buzzvm_set_bcode(buzzvm_t vm,
    /* Go through the strings and store them */
    uint32_t i = sizeof(uint16_t);
    long int c = 0;
-   int protect = 1;
    for(; (c < count) && (i < bcode_size); ++c) {
-      /* Check whether it's protected */
-      if(*(char*)(bcode + i) == '"') protect = 1;
-      else if(*(char*)(bcode + i) == '\'') protect = 0;
-      else {
-         fprintf(stderr, "string section of bytecode file is corrupted at offset %" PRIu32 "\n", i);
-         return 1;
-      }
-      ++i;
       /* Store string */
-      buzzvm_string_register(vm, (char*)(bcode + i), protect);
+      buzzvm_string_register(vm, (char*)(bcode + i), 1);
       /* Advance to first character of next string */
       while(*(bcode + i) != 0) ++i;
       ++i;

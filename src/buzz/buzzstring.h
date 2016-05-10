@@ -33,6 +33,31 @@ extern "C" {
     */
    extern int buzzstring_sub(buzzvm_t vm);
 
+   /**
+    * Transforms an object into a string.
+    * It only works with int and floats. With other objects, nil is
+    * returned.
+    * @param vm The Buzz VM data.
+    * @return The new state of the VM.
+    */
+   extern int buzzstring_tostring(buzzvm_t vm);
+
+   /**
+    * Transforms a string into int.
+    * If the conversion fails, nil is returned.
+    * @param vm The Buzz VM data.
+    * @return The new state of the VM.
+    */
+   extern int buzzstring_toint(buzzvm_t vm);
+
+   /**
+    * Transforms a string into float.
+    * If the conversion fails, nil is returned.
+    * @param vm The Buzz VM data.
+    * @return The new state of the VM.
+    */
+   extern int buzzstring_tofloat(buzzvm_t vm);
+
 #ifdef __cplusplus
 }
 #endif
