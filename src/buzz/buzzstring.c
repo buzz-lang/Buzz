@@ -6,10 +6,10 @@
 /****************************************/
 /****************************************/
 
-#define function_register(TABLE, FNAME, FPOINTER)                       \
-   buzzvm_push(vm, (TABLE));                                            \
-   buzzvm_pushs(vm, buzzvm_string_register(vm, (FNAME), 1));            \
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, (FPOINTER)));         \
+#define function_register(TABLE, FNAME)                                   \
+   buzzvm_push(vm, TABLE);                                                \
+   buzzvm_pushs(vm, buzzvm_string_register(vm, #FNAME, 1));               \
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzstring_ ## FNAME)); \
    buzzvm_tput(vm);
 
 /****************************************/
@@ -19,8 +19,12 @@ int buzzstring_register(buzzvm_t vm) {
    /* Make "string" table */
    buzzobj_t t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
    /* Register methods */
-   function_register(t, "length", buzzstring_length);
-   function_register(t, "sub", buzzstring_sub);
+   function_register(t, length);
+   function_register(t, sub);
+   function_register(t, concat);
+   function_register(t, tostring);
+   function_register(t, toint);
+   function_register(t, tofloat);
    /* Register "string" table */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "string", 1));
    buzzvm_push(vm, t);
@@ -92,6 +96,42 @@ int buzzstring_sub(buzzvm_t vm) {
    s2[m - n] = 0;
    buzzvm_pushs(vm, buzzvm_string_register(vm, s2, 0));
    free(s2);
+   /* All done */
+   return buzzvm_ret1(vm);
+}
+
+/****************************************/
+/****************************************/
+
+int buzzstring_concat(buzzvm_t vm) {
+   /* Make sure at least two parameters have been passed */
+   if(buzzvm_lnum(vm) < 2) {
+      vm->state = BUZZVM_STATE_ERROR;
+      vm->error = BUZZVM_ERROR_LNUM;
+      asprintf(&vm->errormsg, "%s: expected at least 2 parameters, got %" PRId64, buzzvm_error_desc[vm->error], buzzvm_lnum(vm));
+      return (vm)->state;
+   }
+   /* Go through the parameters, make sure they are the right type, and calculate total length */
+   uint32_t len = 0;
+   for(uint32_t i = 1; i <= buzzvm_lnum(vm); ++i) {
+      buzzvm_lload(vm, i);
+      buzzvm_type_assert(vm, 1, BUZZTYPE_STRING);
+      len += strlen(buzzvm_stack_at(vm, 1)->s.value.str);
+   }
+   /* Make a buffer to store the concatenated string */
+   char* str = (char*)malloc(len+1);
+   char* strp = str;
+   const char* arg;
+   /* Go through the strings and copy them into the buffer */
+   for(uint32_t i = buzzvm_lnum(vm); i > 0; --i) {
+      arg = buzzvm_stack_at(vm, i)->s.value.str;
+      strcpy(strp, arg);
+      strp += strlen(arg);
+   }
+   str[len] = 0;
+   /* Make a new string */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, str, 0));
+   free(str);
    /* All done */
    return buzzvm_ret1(vm);
 }

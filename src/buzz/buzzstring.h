@@ -23,7 +23,7 @@ extern "C" {
 
    /**
     * Returns a substring of the given string.
-    * Three signatures are possible:
+    * Two signatures are possible:
     * - string.sub(s, n):
     *   Returns the substring starting at n (0 is the first character).
     * - string.sub(s, n, m):
@@ -32,6 +32,13 @@ extern "C" {
     * @return The new state of the VM.
     */
    extern int buzzstring_sub(buzzvm_t vm);
+
+   /**
+    * Returns a new string which is the concatenation of the given strings.
+    * @param vm The Buzz VM data.
+    * @return The new state of the VM.
+    */
+   extern int buzzstring_concat(buzzvm_t vm);
 
    /**
     * Transforms an object into a string.
