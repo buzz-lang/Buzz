@@ -106,3 +106,5 @@ print(size(z), " tokens found")
 foreach(z, function(k, v) {
     print("<", k, ",", v, ">")
   })
+
+print("'", string.concat("ciao", " ", "peppe", "!"), "'")
