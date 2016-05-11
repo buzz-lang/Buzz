@@ -6,10 +6,10 @@
 /****************************************/
 /****************************************/
 
-#define function_register(TABLE, FNAME, FPOINTER)                       \
-   buzzvm_push(vm, (TABLE));                                            \
-   buzzvm_pushs(vm, buzzvm_string_register(vm, (FNAME), 1));            \
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, (FPOINTER)));         \
+#define function_register(TABLE, FNAME)                                 \
+   buzzvm_push(vm, TABLE);                                              \
+   buzzvm_pushs(vm, buzzvm_string_register(vm, #FNAME, 1));             \
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzmath_ ## FNAME)); \
    buzzvm_tput(vm);
 
 #define constant_register(TABLE, FNAME, VALUE)                          \
@@ -22,21 +22,21 @@ int buzzmath_register(buzzvm_t vm) {
    /* Make "math" table */
    buzzobj_t t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
    /* Register methods */
-   function_register(t, "abs",   buzzmath_abs);
-   function_register(t, "log",   buzzmath_log);
-   function_register(t, "log2",  buzzmath_log2);
-   function_register(t, "log10", buzzmath_log10);
-   function_register(t, "sqrt",  buzzmath_sqrt);
-   function_register(t, "sin",   buzzmath_sin);
-   function_register(t, "cos",   buzzmath_cos);
-   function_register(t, "tan",   buzzmath_tan);
-   function_register(t, "asin",  buzzmath_asin);
-   function_register(t, "acos",  buzzmath_acos);
-   function_register(t, "atan",  buzzmath_atan);
-   function_register(t, "min",   buzzmath_min);
-   function_register(t, "max",   buzzmath_max);
+   function_register(t, abs);
+   function_register(t, log);
+   function_register(t, log2);
+   function_register(t, log10);
+   function_register(t, sqrt);
+   function_register(t, sin);
+   function_register(t, cos);
+   function_register(t, tan);
+   function_register(t, asin);
+   function_register(t, acos);
+   function_register(t, atan);
+   function_register(t, min);
+   function_register(t, max);
    /* Register constants */
-   constant_register(t, "pi",    3.14159265358979323846);
+   constant_register(t, "pi", 3.14159265358979323846);
    /* Register "math" table */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "math", 1));
    buzzvm_push(vm, t);

@@ -6,10 +6,10 @@
 /****************************************/
 /****************************************/
 
-#define function_register(TABLE, FNAME, FPOINTER)                       \
-   buzzvm_push(vm, (TABLE));                                            \
-   buzzvm_pushs(vm, buzzvm_string_register(vm, (FNAME), 1));            \
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, (FPOINTER)));         \
+#define function_register(TABLE, FNAME)                                 \
+   buzzvm_push(vm, TABLE);                                              \
+   buzzvm_pushs(vm, buzzvm_string_register(vm, #FNAME, 1));             \
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzio_ ## FNAME));   \
    buzzvm_tput(vm);
 
 #define filehandle_get(VAR)                                   \
@@ -48,7 +48,7 @@ int buzzio_register(buzzvm_t vm) {
    /* Make "io" table */
    buzzobj_t t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
    /* Register methods */
-   function_register(t, "fopen", buzzio_fopen);
+   function_register(t, fopen);
    /* Register "io" table */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "io", 1));
    buzzvm_push(vm, t);
@@ -97,10 +97,10 @@ int buzzio_fopen(buzzvm_t vm) {
       buzzvm_pushs(vm, buzzvm_string_register(vm, fname, 0));
       buzzvm_tput(vm);
       /* Add methods */
-      function_register(t, "close", buzzio_fclose);
-      function_register(t, "size", buzzio_fsize);
-      function_register(t, "foreach", buzzio_fforeach);
-      function_register(t, "write", buzzio_fwrite);
+      function_register(t, fclose);
+      function_register(t, fsize);
+      function_register(t, fforeach);
+      function_register(t, fwrite);
       /* Push the table on the stack */
       buzzvm_push(vm, t);
    }
