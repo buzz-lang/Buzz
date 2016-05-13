@@ -1,0 +1,20 @@
+include "vec2.bzz"
+
+function printvec2(msg, v) {
+  print(msg, "<", v.x, ",", v.y, ">")
+}
+
+v1 = math.vec2.new(1, 2)
+printvec2("v1 = ", v1)
+
+v2 = math.vec2.newp(3, math.pi)
+printvec2("v2 = ", v2)
+
+v3 = math.vec2.add(v1, v2)
+printvec2("v3 = ", v3)
+
+v4 = math.vec2.sub(v1, v2)
+printvec2("v4 = ", v4)
+
+v5 = math.vec2.dot(v1, v2)
+print("v5 = ", v5)
