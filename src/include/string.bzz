@@ -1,0 +1,92 @@
+#
+# Returns the string character at the given position.
+# PARAM s: The string
+# PARAM n: The position of the wanted character
+# RETURN The character at the wanted position, or nil
+#
+string.charat = function(s, n) {
+  return string.sub(s, n, n+1)
+}
+
+#
+# Returns the index of the first occurrence of the given string m
+# within another string s. If none is found, this function returns
+# nil.
+# PARAM s: The string
+# PARAM m: The string to match
+# RETURN: The position of the first match, or nil
+#
+string.indexoffirst = function(s, m) {
+  var ls = string.length(s)
+  var lm = string.length(m)
+  var i = 0
+  while(i < ls-lm+1) {
+    if(string.sub(s, i, i+lm) == m) return i
+    i = i + 1
+  }
+  return nil
+}
+
+#
+# Returns the index of the last occurrence of the given string m
+# within another string s. If none is found, this function returns
+# nil.
+# PARAM s: The string
+# PARAM m: The string to match
+# RETURN: The position of the last match, or nil
+#
+string.indexoflast = function(s, m) {
+  var ls = string.length(s)
+  var lm = string.length(m)
+  var i = ls - lm + 1
+  while(i >= 0) {
+    if(string.sub(s, i, i+lm) == m) return i
+    i = i - 1
+  }
+  return nil
+}
+
+# Splits a string s using the delimiters in d. The string list is
+# returned in a table indexed by value (starting at 0).
+# PARAM s: The string
+# PARAM d: A string containing the delimiters
+# RETURN: A table containing the tokens
+string.split = function(s, d) {
+  var i1 = 0  # index to move along s (token start)
+  var i2 = 0  # index to move along s (token end)
+  var c = 0   # token count
+  var t = {}  # token list
+  var ls = string.length(s)
+  var ld = string.length(d)
+  # Go through string s
+  while(i2 < ls) {
+    # Try every delimiter
+    var j = 0   # index to move along d
+    var f = nil # whether the delimiter was found or not
+    while(j < ld and (not f)) {
+      if(string.charat(s, i2) == string.charat(d, j)) {
+        # Delimiter found
+        f = 1
+        # Is it worth adding a new token?
+        if(i2 > i1) {
+          t[c] = string.sub(s, i1, i2)
+          c = c + 1
+        }
+        # Start new token
+        i1 = i2 + 1
+      }
+      else {
+        # Next delimiter
+        j = j + 1
+      }
+    }
+    # Next string character
+    i2 = i2 + 1
+  }
+  # Is it worth adding a new token?
+  if(i2 > i1) {
+    t[c] = string.sub(s, i1, i2)
+  }
+  # Return token list
+  return t;
+}

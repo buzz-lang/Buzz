@@ -1,0 +1,107 @@
+#
+# Create a new namespace for vector2 functions
+#
+math.vec2 = {}
+
+#
+# Creates a new vector2.
+# PARAM x: The x coordinate.
+# PARAM y: The y coordinate.
+# RETURN: A new vector2.
+#
+math.vec2.new = function(x, y) {
+  return { .x = x, .y = y }
+}
+
+#
+# Creates a new vector2 from polar coordinates.
+# PARAM l: The length of the vector2.
+# PARAM a: The angle of the vector2.
+# RETURN: A new vector2.
+#
+math.vec2.newp = function(l, a) {
+  return {
+    .x = l * math.cos(a),
+    .y = l * math.sin(a)
+  }
+}
+
+#
+# Calculates the length of the given vector2.
+# PARAM v: The vector2.
+# RETURN: The length of the vector.
+#
+math.vec2.length = function(v) {
+  return math.sqrt(v.x * v.x + v.y * v.y)
+}
+
+#
+# Calculates the angle of the given vector2.
+# PARAM v: The vector2.
+# RETURN: The angle of the vector.
+#
+math.vec2.angle = function(v) {
+  return math.atan2(v.y, v.x)
+}
+
+#
+# Returns the normalized form of a vector2.
+# PARAM v: The vector2.
+# RETURN: The normalized form.
+#
+math.vec2.norm = function(v) {
+  var l = math.length(v)
+  return {
+    .x = v.x / l,
+    .y = v.y / l
+  }
+}
+
+#
+# Calculates v1 + v2.
+# PARAM v1: A vector2.
+# PARAM v2: A vector2.
+# RETURN: v1 + v2
+#
+math.vec2.add = function(v1, v2) {
+  return {
+    .x = v1.x + v2.x,
+    .y = v1.y + v2.y
+  }
+}
+
+#
+# Calculates v1 - v2.
+# PARAM v1: A vector2.
+# PARAM v2: A vector2.
+# RETURN: v1 + v2
+#
+math.vec2.sub = function(v1, v2) {
+  return {
+    .x = v1.x - v2.x,
+    .y = v1.y - v2.y
+  }
+}
+
+#
+# Scales a vector by a numeric constant.
+# PARAM v: A vector2.
+# PARAM s: A number (float or int).
+# RETURN: s * v
+#
+math.vec2.scale = function(v, s) {
+  return {
+    .x = v.x * s,
+    .y = v.y * s
+  }
+}
+
+#
+# Calculates v1 . v2 (the dot product)
+# PARAM v1: A vector2.
+# PARAM v2: A vector2.
+# RETURN: v1 . v2
+#
+math.vec2.dot = function(v1, v2) {
+  return v1.x * v2.x + v1.y * v2.y
+}

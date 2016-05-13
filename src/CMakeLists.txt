@@ -48,6 +48,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/BuzzPackaging.cmake)
 add_subdirectory(buzz)
 add_subdirectory(testing)
 add_subdirectory(utility)
+add_subdirectory(include)
 
 #
 # Install headers
