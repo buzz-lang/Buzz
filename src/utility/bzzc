@@ -4,7 +4,7 @@
 # Help function
 #
 function help() {
-    echo -e "Usage:\n\t$0 [-I path1:path2:...:pathN] [-b bytecode.bo] [-d debug.bdb] infile.bzz\n"
+    echo -e "Usage:\n\t$0 [-I path1:path2:...:pathN] [-b bytecode.bo] [-d debug.bdb] [-a asm.basm] infile.bzz\n"
     echo "Type 'man bzzc' for more information."
 }
 
@@ -59,6 +59,16 @@ do
             fi
             shift 2
         ;;
+        -a|--asm)
+            if [[ -n $2 ]]; then
+                BASM=$2
+            else
+                echo "$0: error: $1 expects a file name"
+                echo "Type 'bzzc -h' or 'man bzzc' for more information."
+                exit 1
+            fi
+            shift 2
+        ;;
         -h|--help)
             help
             shift
@@ -85,7 +95,11 @@ fi
 #
 # Set file names
 #
-BASM=$(mktemp bzz.XXXXXX)
+KEEPBASM=y
+if [[ -z $BASM ]]; then
+    KEEPBASM=n
+    BASM=$(mktemp bzz.XXXXXX)
+fi
 if [[ -z $BO ]]; then
     BO="$(echo $BZZ | rev | cut -d. -f 2- | rev).bo"
 fi
@@ -98,5 +112,7 @@ fi
 #
 $BZZPARSE "$BZZ" "$BASM" && $BZZASM "$BASM" "$BO" "$BDB"
 RETVAL=$?
-rm -f "$BASM"
+if [[ "${KEEPBASM}" = "n" ]]; then
+    rm -f "$BASM"
+fi
 exit $RETVAL
