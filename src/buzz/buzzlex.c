@@ -27,7 +27,6 @@ buzzlex_file_t buzzlex_file_new(const char* fname) {
    if(!fd) {
       /* Get the include path from the environment, if present */
       if(!getenv("BUZZ_INCLUDE_PATH")) {
-         perror(fname);
          return NULL;
       }
       /* Fetch the directories in the include path */
@@ -50,15 +49,12 @@ buzzlex_file_t buzzlex_file_new(const char* fname) {
          /* Get next dir */
          dir = strsep(&curpath, ":");
       }
+      free(incpath);
       /* Did we find the file? */
       if(!dir && !fd) {
          /* Nope */
-         perror(fname);
-         free(incpath);
          return NULL;
       }
-      /* File found and open; free incpath, now useless */
-      free(incpath);
    }
    /* Get absolute path; this internally creates a new string in the heap */
    char* afpath = realpath(fpath, NULL);
@@ -87,6 +83,7 @@ buzzlex_file_t buzzlex_file_new(const char* fname) {
    /* Initialize line and column counters */
    x->cur_line = 1;
    x->cur_col = 0;
+   x->cur_c = 0;
    return x;
 }
 
@@ -284,7 +281,6 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
          nextchar();
          /* Create new file structure */
          buzzlex_file_t f = buzzlex_file_new(fname);
-         free(fname);
          if(!f) {
             fprintf(stderr,
                     "%s:%" PRIu64 ":%" PRIu64 ": Can't read '%s'\n",
@@ -292,8 +288,10 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
                     lexf->cur_line,
                     lexf->cur_col,
                     fname);
+            free(fname);
             return NULL;
          }
+         free(fname);
          /* Make sure the file hasn't been already included */
          if(buzzdarray_find(lex, buzzlex_file_cmp, &f) < buzzdarray_size(lex)) {
             buzzlex_file_destroy(0, &f, NULL);

@@ -721,14 +721,17 @@ int parse_expression(buzzparser_t par) {
       /* Table definition */
       /* Consume the { */
       fetchtok();
+      /* Eat away the newlines, if any */
+      while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
       /* Make sure either id = expression or } follow */
       if(par->tok->type != BUZZTOK_DOT &&
          par->tok->type != BUZZTOK_BLOCKCLOSE) {
          fprintf(stderr,
-                 "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: expected .id = expression or }\n",
+                 "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: expected .id = expression or }, found %s\n",
                  buzzlex_getfile(par->lex)->fname,
                  par->tok->line,
-                 par->tok->col);
+                 par->tok->col,
+                 buzztok_desc[par->tok->type]);
          return PARSE_ERROR;
       }
       /* Push empty table */
@@ -766,12 +769,16 @@ int parse_expression(buzzparser_t par) {
          if(!parse_expression(par)) return PARSE_ERROR;
          /* Store expression in the table */
          chunk_append("\ttput");
+         /* Eat away the newlines, if any */
+         while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
          /* Is there a , following? */
          while(par->tok->type == BUZZTOK_LISTSEP) {
             /* Duplicate table on top of stack */
             chunk_append("\tdup");
             /* Consume the , */
             fetchtok();
+            /* Eat away the newlines, if any */
+            while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
             /* Make sure .id is present */
             tokmatch(BUZZTOK_DOT);
             fetchtok();
@@ -802,6 +809,8 @@ int parse_expression(buzzparser_t par) {
             if(!parse_expression(par)) return PARSE_ERROR;
             /* Store expression in the table */
             chunk_append("\ttput");
+            /* Eat away the newlines, if any */
+            while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
          }
       }
       tokmatch(BUZZTOK_BLOCKCLOSE);
