@@ -22,7 +22,8 @@ extern "C" {
     * - "r" for reading
     * - "a" for appending
     * In Buzz, this function returns a table that contains the state
-    * of the file and methods such as close(), size(), foreach(), etc.
+    * of the file and methods such as fclose(), fsize(), fforeach(),
+    * etc.
     * @param vm The Buzz VM data.
     * @return The new state of the VM.
     */
