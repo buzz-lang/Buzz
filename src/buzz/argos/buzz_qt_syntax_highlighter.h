@@ -20,7 +20,11 @@ public:
 
 protected:
 
-   void highlightBlock(const QString& str_text);
+   virtual void highlightBlock(const QString& str_text);
+
+   bool StringStart(const QString& str_text,
+                    int* pn_start_idx,
+                    QChar* pc_delim);
 
 private:
       
@@ -31,13 +35,12 @@ private:
    };
    QVector<SHighlightingRule> m_vecHighlightingRules;
 
-   QRegExp m_cCommentStartExpression;
-   QRegExp m_cCommentEndExpression;
-
    QTextCharFormat m_cKeywordFormat;
-   QTextCharFormat m_cSingleLineCommentFormat;
-   QTextCharFormat m_cQuotationFormat;
+   QTextCharFormat m_cIdFormat;
+   QTextCharFormat m_cCommentFormat;
+   QTextCharFormat m_cStringFormat;
    QTextCharFormat m_cFunctionFormat;
+   QTextCharFormat m_cTableFormat;
 };
 
 #endif
