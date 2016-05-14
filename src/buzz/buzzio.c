@@ -54,6 +54,7 @@ int buzzio_register(buzzvm_t vm) {
    buzzvm_push(vm, t);
    buzzvm_gstore(vm);
    /* Register error information */
+   errno = 0;
    buzzio_update_error(vm);
    /* All done */
    return vm->state;
