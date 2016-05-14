@@ -294,21 +294,13 @@ void chunk_print(uint32_t pos, void* data, void* params) {
 #define fetchtok()                                                      \
    buzzlex_destroytok(&par->tok);                                       \
    par->tok = buzzlex_nexttok(par->lex);                                \
-   if(!par->tok) {                                                      \
-      fprintf(stderr,                                                   \
-              "%s: Syntax error: expected token, found EOF\n",          \
-              buzzlex_getfile(par->lex)->fname);                        \
-      return PARSE_ERROR;                                               \
-   }                                                                    \
+   if(!par->tok)                                                        \
+      return PARSE_ERROR;
 
 int match(buzzparser_t par,
           buzztok_type_e type) {
-   if(!par->tok) {
-      fprintf(stderr,
-              "%s: Syntax error: expected token, found EOFn",
-              buzzlex_getfile(par->lex)->fname);
+   if(!par->tok)
       return PARSE_ERROR;
-   }
    if(par->tok->type != type) {
       fprintf(stderr,
               "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: expected %s, found %s\n",
