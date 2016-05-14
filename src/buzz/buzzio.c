@@ -13,7 +13,7 @@
    buzzvm_tput(vm);
 
 #define filehandle_get(VAR)                                   \
-   buzzvm_lload(vm, 0);                                       \
+   buzzvm_lload(vm, 1);                                       \
    buzzvm_type_assert(vm, 1, BUZZTYPE_TABLE);                 \
    buzzvm_pushs(vm, buzzvm_string_register(vm, "handle", 1)); \
    buzzvm_tget(vm);                                           \
@@ -49,6 +49,10 @@ int buzzio_register(buzzvm_t vm) {
    buzzobj_t t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
    /* Register methods */
    function_register(t, fopen);
+   function_register(t, fclose);
+   function_register(t, fsize);
+   function_register(t, fforeach);
+   function_register(t, fwrite);
    /* Register "io" table */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "io", 1));
    buzzvm_push(vm, t);
@@ -97,11 +101,6 @@ int buzzio_fopen(buzzvm_t vm) {
       buzzvm_pushs(vm, buzzvm_string_register(vm, "name", 1));
       buzzvm_pushs(vm, buzzvm_string_register(vm, fname, 0));
       buzzvm_tput(vm);
-      /* Add methods */
-      function_register(t, fclose);
-      function_register(t, fsize);
-      function_register(t, fforeach);
-      function_register(t, fwrite);
       /* Push the table on the stack */
       buzzvm_push(vm, t);
    }
@@ -113,8 +112,8 @@ int buzzio_fopen(buzzvm_t vm) {
 /****************************************/
 
 int buzzio_fclose(buzzvm_t vm) {
-   /* Make sure there are no parameters */
-   buzzvm_lnum_assert(vm, 0);
+   /* Make sure there is one parameter */
+   buzzvm_lnum_assert(vm, 1);
    /* Get file handle */
    filehandle_get(f);
    /* Close the file */
@@ -129,8 +128,8 @@ int buzzio_fclose(buzzvm_t vm) {
 /****************************************/
 
 int buzzio_fsize(buzzvm_t vm) {
-   /* Make sure there are no parameters */
-   buzzvm_lnum_assert(vm, 0);
+   /* Make sure there are is one parameter */
+   buzzvm_lnum_assert(vm, 1);
    /* Get file handle */
    filehandle_get(f);
    /* Remember the current position */
@@ -152,12 +151,12 @@ int buzzio_fsize(buzzvm_t vm) {
 /****************************************/
 
 int buzzio_fforeach(buzzvm_t vm) {
-   /* Make sure there is a parameter */
-   buzzvm_lnum_assert(vm, 1);
+   /* Make sure there are two parameters */
+   buzzvm_lnum_assert(vm, 2);
    /* Get file handle */
    filehandle_get(f);
    /* Get closure */
-   buzzvm_lload(vm, 1);
+   buzzvm_lload(vm, 2);
    buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
    buzzobj_t c = buzzvm_stack_at(vm, 1);
    buzzvm_pop(vm);
@@ -189,12 +188,19 @@ int buzzio_fforeach(buzzvm_t vm) {
 /****************************************/
 
 int buzzio_fwrite(buzzvm_t vm) {
+   /* Make sure there are at least two parameters */
+   if(buzzvm_lnum(vm) < 2) {
+      vm->state = BUZZVM_STATE_ERROR;
+      vm->error = BUZZVM_ERROR_LNUM;
+      asprintf(&vm->errormsg, "%s: expected at least 2 parameters, got %" PRId64, buzzvm_error_desc[vm->error], buzzvm_lnum(vm));
+      return (vm)->state;
+   }
    /* Used to store the return value of fprintf */
    int err = 0;
    /* Get file handle */
    filehandle_get(f);
    /* Go through the arguments */
-   for(int i = 1; err >= 0 && i < buzzdarray_size(vm->lsyms->syms); ++i) {
+   for(int i = 2; err >= 0 && i < buzzvm_lnum(vm); ++i) {
       /* Get argument */
       buzzvm_lload(vm, i);
       buzzobj_t o = buzzvm_stack_at(vm, 1);
