@@ -12,14 +12,12 @@ CBuzzQTSyntaxHighlighter::CBuzzQTSyntaxHighlighter(QTextDocument* pc_text) :
    QStringList cKeywordPatterns;
    cKeywordPatterns << "\\bvar\\b" << "\\bnil\\b" << "\\bif\\b" << "\\belse\\b" << "\\bfunction\\b"
                     << "\\breturn\\b" << "\\bfor\\b" << "\\bwhile\\b" << "\\band\\b" << "\\bor\\b"
-                    << "\\bnot\\b" << "\\bsize\\b" << "\\bforeach\\b" << "\\binclude\\b" << "\\bend\\b";
+                    << "\\bnot\\b" << "\\bsize\\b" << "\\bforeach\\b" << "\\binclude\\b";
    foreach (const QString& cPattern, cKeywordPatterns) {
       sRule.Pattern = QRegExp(cPattern);
       sRule.Format = m_cKeywordFormat;
       m_vecHighlightingRules.append(sRule);
    }
-   /* Generic Id formatting */
-   m_cIdFormat.setFontWeight(QFont::Bold);
    /* Function formatting */
    m_cFunctionFormat.setForeground(Qt::darkRed);
    m_cFunctionFormat.setFontWeight(QFont::Bold);
@@ -29,25 +27,15 @@ CBuzzQTSyntaxHighlighter::CBuzzQTSyntaxHighlighter(QTextDocument* pc_text) :
    /* Single line comment formatting */
    m_cCommentFormat.setForeground(Qt::darkGray);
    m_cCommentFormat.setFontItalic(true);
+   m_cCommentFormat.setFontWeight(QFont::Normal);
    /* String formatting */
-   m_cStringFormat.setForeground(Qt::darkGray);
+   m_cStringFormat.setForeground(Qt::darkCyan);
 }
 
 /****************************************/
 /****************************************/
 
 void CBuzzQTSyntaxHighlighter::highlightBlock(const QString& str_text) {
-   /*
-    * Generic id formatting
-    */
-   QRegExp cIdExpr("\\b[A-Za-z_][A-Za-z0-9_]*\\b");
-   int nIdStart = cIdExpr.indexIn(str_text);
-   int nIdLength;
-   while(nIdStart >= 0) {
-      nIdLength = cIdExpr.matchedLength();
-      setFormat(nIdStart, nIdLength, m_cIdFormat);
-      nIdStart = cIdExpr.indexIn(str_text, nIdStart + nIdLength);
-   }
    /*
     * Apply normal rules
     */

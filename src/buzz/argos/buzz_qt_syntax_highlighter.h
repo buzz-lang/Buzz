@@ -36,7 +36,6 @@ private:
    QVector<SHighlightingRule> m_vecHighlightingRules;
 
    QTextCharFormat m_cKeywordFormat;
-   QTextCharFormat m_cIdFormat;
    QTextCharFormat m_cCommentFormat;
    QTextCharFormat m_cStringFormat;
    QTextCharFormat m_cFunctionFormat;

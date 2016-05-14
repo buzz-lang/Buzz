@@ -14,6 +14,7 @@ CBuzzQTEditor::CBuzzQTEditor(QWidget* pc_parent) :
    cFont.setFamily("Monospace");
    cFont.setStyleHint(QFont::Monospace);
    cFont.setFixedPitch(true);
+   cFont.setWeight(QFont::Bold);
    setFont(cFont);
    /* Set tab width to 3 */
    QFontMetrics cFontMetrics(cFont);
