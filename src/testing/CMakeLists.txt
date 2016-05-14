@@ -25,7 +25,7 @@ target_link_libraries(testbuzzstrman buzz)
 set(BUZZ_COMPILER ${CMAKE_SOURCE_DIR}/utility/bzzc)
 set(BUZZ_PARSER ${CMAKE_BINARY_DIR}/buzz/bzzparse)
 set(BUZZ_ASSEMBLER ${CMAKE_BINARY_DIR}/buzz/bzzasm)
-set(BUZZ_INCLUDE_PATH
+set(BUZZ_BZZ_INCLUDE_DIR
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/include)
 # Initialize Buzz CMake stuff

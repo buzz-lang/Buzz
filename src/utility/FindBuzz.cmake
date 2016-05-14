@@ -11,11 +11,12 @@
 #
 # ::
 #
-#   BUZZ_COMPILER    = The full path of bzzc
-#   BUZZ_PARSER      = The full path of bzzparse
-#   BUZZ_ASSEMBLER   = The full path of bzzasm
-#   BUZZ_LIBRARY     = The full path of the Buzz library
-#   BUZZ_INCLUDE_DIR = The full path to the Buzz include files
+#   BUZZ_COMPILER        = The full path of bzzc
+#   BUZZ_PARSER          = The full path of bzzparse
+#   BUZZ_ASSEMBLER       = The full path of bzzasm
+#   BUZZ_LIBRARY         = The full path of the Buzz library
+#   BUZZ_C_INCLUDE_DIR   = The full path to the .h include files
+#   BUZZ_BZZ_INCLUDE_DIR = The full path to the .bzz include files
 #
 # Examples Usages:
 #
@@ -23,13 +24,13 @@
 #
 #   find_package(Buzz)
 #   if(BUZZ_FOUND)
-#     include_directories(${BUZZ_INCLUDE_DIR})
+#     include_directories(${BUZZ_C_INCLUDE_DIR})
 #     ...
 #     target_link_libraries(... ${BUZZ_LIBRARY})
 #   endif(BUZZ_FOUND)
 #
 #   find_package(Buzz REQUIRED)
-#   include_directories(${BUZZ_INCLUDE_DIR})
+#   include_directories(${BUZZ_C_INCLUDE_DIR})
 #   ...
 #   target_link_libraries(... ${BUZZ_LIBRARY})
 
@@ -56,13 +57,22 @@ set(_BUZZ_LIBRARY_PATHS
   /opt/local/lib)
 
 #
-# Standard Buzz include paths
+# Standard Buzz C include paths
 #
-set(_BUZZ_INCLUDE_PATHS
+set(_BUZZ_C_INCLUDE_PATHS
   /usr/include
   /usr/local/include
   /opt/include
   /opt/local/include)
+
+#
+# Standard Buzz BZZ include paths
+#
+set(_BUZZ_BZZ_INCLUDE_PATHS
+  /usr/share/buzz/include
+  /usr/local/share/buzz/include
+  /opt/share/buzz/include
+  /opt/local/share/buzz/include)
 
 #
 # Look for bzzc
@@ -97,17 +107,25 @@ find_library(BUZZ_LIBRARY
   DOC "Location of the Buzz library")
 
 #
-# Look for Buzz include files
+# Look for Buzz C include files
 #
-find_path(BUZZ_INCLUDE_DIR
+find_path(BUZZ_C_INCLUDE_DIR
   NAMES buzz/buzzvm.h
-  PATHS ${_BUZZ_INCLUDE_PATHS}
-  DOC "Location of the Buzz include files")
+  PATHS ${_BUZZ_C_INCLUDE_PATHS}
+  DOC "Location of the Buzz C include files")
+
+#
+# Look for Buzz BZZ include files
+#
+find_path(BUZZ_BZZ_INCLUDE_DIR
+  NAMES vec2.bzz
+  PATHS ${_BUZZ_BZZ_INCLUDE_PATHS}
+  DOC "Location of the Buzz BZZ include files")
 
 # Handle the QUIETLY and REQUIRED arguments and set BUZZ_FOUND to TRUE
 # if all listed variables are TRUE
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(BUZZ
-  REQUIRED_VARS BUZZ_COMPILER BUZZ_PARSER BUZZ_ASSEMBLER BUZZ_LIBRARY BUZZ_INCLUDE_DIR)
+  REQUIRED_VARS BUZZ_COMPILER BUZZ_PARSER BUZZ_ASSEMBLER BUZZ_LIBRARY BUZZ_C_INCLUDE_DIR BUZZ_BZZ_INCLUDE_DIR)
 
-mark_as_advanced(BUZZ_COMPILER BUZZ_PARSER BUZZ_ASSEMBLER BUZZ_LIBRARY BUZZ_INCLUDE_DIR)
+mark_as_advanced(BUZZ_COMPILER BUZZ_PARSER BUZZ_ASSEMBLER BUZZ_LIBRARY BUZZ_C_INCLUDE_DIR BUZZ_BZZ_INCLUDE_DIR)
