@@ -636,20 +636,17 @@ void CBuzzQTMainWindow::CheckBuzzStatus(int n_step) {
 void CBuzzQTMainWindow::HandleMsgTableSelection() {
    QList<QTableWidgetItem*> listSel = m_pcBuzzMessageTable->selectedItems();
    if(! listSel.empty()) {
-      int nLine = listSel[1]->data(Qt::DisplayRole).toInt();
+      /* Get error position field */
+      QString pos = listSel[1]->data(Qt::DisplayRole).toString();
+      QStringList posFields = pos.split(":");
+      /* Get line and column */
+      int nLine = posFields[1].toInt();
+      int nCol = posFields[2].toInt();
+      /* Move to the position */
       QTextCursor cCursor = m_pcCodeEditor->textCursor();
-      int nCurLine = cCursor.blockNumber();
-      if(nCurLine < nLine) {
-         cCursor.movePosition(QTextCursor::NextBlock,
-                              QTextCursor::MoveAnchor,
-                              nLine - nCurLine - 1);
-      }
-      else if(nCurLine > nLine) {
-         cCursor.movePosition(QTextCursor::PreviousBlock,
-                              QTextCursor::MoveAnchor,
-                              nCurLine - nLine + 1);
-      }
-      cCursor.movePosition(QTextCursor::StartOfBlock);
+      cCursor.setPosition(0, QTextCursor::MoveAnchor);
+      cCursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, nLine-1);
+      cCursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, nCol);
       m_pcCodeEditor->setTextCursor(cCursor);
       m_pcCodeEditor->setFocus();
    }
@@ -777,6 +774,14 @@ void CBuzzQTMainWindow::SetMessage(int n_row,
    m_pcBuzzMessageTable->setItem(
       n_row, 0,
       new QTableWidgetItem(str_robot_id));
+   /* Was compilation successful? */
+   if(str_message == "Compilation successful.") {
+      m_pcBuzzMessageTable->setItem(
+         n_row, 2,
+         new QTableWidgetItem(str_message));
+      m_pcBuzzMsgDock->show();
+      return;
+   }
    /* Split the error message in its parts */
    QStringList listFields = str_message.split(
       ":",
@@ -787,21 +792,27 @@ void CBuzzQTMainWindow::SetMessage(int n_row,
       /* Position */
       m_pcBuzzMessageTable->setItem(
          n_row, 1,
-         new QTableWidgetItem(listFields[1]));
+         new QTableWidgetItem(listFields[0]));
       /* Error message */
+      QString strErr = listFields[1].trimmed();
+      for(int i = 2; i < listFields.size(); ++i)
+         strErr += ": " + listFields[i].trimmed();
       m_pcBuzzMessageTable->setItem(
          n_row, 2,
-         new QTableWidgetItem(listFields[2] + listFields[3]));
+         new QTableWidgetItem(strErr));
    }
    else {
       /* Position */
       m_pcBuzzMessageTable->setItem(
          n_row, 1,
-         new QTableWidgetItem(listFields[1] + listFields[2] + listFields[3]));
+         new QTableWidgetItem(listFields[0] + ":" + listFields[1] + ":" + listFields[2]));
       /* Error message */
+      QString strErr = listFields[3].trimmed();
+      for(int i = 4; i < listFields.size(); ++i)
+         strErr += ": " + listFields[i].trimmed();
       m_pcBuzzMessageTable->setItem(
          n_row, 2,
-         new QTableWidgetItem(listFields[4] + listFields[5]));
+         new QTableWidgetItem(strErr));
    }
    m_pcBuzzMsgDock->show();
 }
