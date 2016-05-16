@@ -158,8 +158,6 @@ int buzzio_fforeach(buzzvm_t vm) {
    /* Get closure */
    buzzvm_lload(vm, 2);
    buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
-   buzzobj_t c = buzzvm_stack_at(vm, 1);
-   buzzvm_pop(vm);
    /* Go through the file lines */
    int vmstate = vm->state;
    size_t cap; /* line buffer capacity */
@@ -169,8 +167,9 @@ int buzzio_fforeach(buzzvm_t vm) {
          vmstate == BUZZVM_STATE_READY) {
       /* Remove newline */
       line[len-1] = '\0';
-      /* Push arguments */
-      buzzvm_push(vm, c);
+      /* Put closure on the stack (will be wiped by buzzvm_closure_call) */
+      buzzvm_dup(vm);
+      /* Push string argument */
       buzzvm_pushs(vm, buzzvm_string_register(vm, line, 0));
       /* Call closure */
       vmstate = buzzvm_closure_call(vm, 1);
