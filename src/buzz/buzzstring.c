@@ -178,7 +178,7 @@ int buzzstring_toint(buzzvm_t vm) {
    int32_t i = strtod(s, &endptr);
    /* Was the conversion successful? */
    if((errno != 0 && i == 0) || /* An error occurred */
-      (endptr == s)) {         /* No digit found */
+      (endptr == s)) {          /* No digit found */
       /* Yes, an error occurred */
       buzzvm_pushnil(vm);
    }
