@@ -494,24 +494,28 @@ int parse_var(buzzparser_t par) {
    /* Add a symbol for this variable */
    sym_add(par, par->tok->value, SCOPE_AUTO);
    s = sym_lookup(par->tok->value, par->symstack);
+   /* Is lvalue a global symbol? If so, push its string id */
+   if(s->global) chunk_append("\tpushs %" PRId64, s->pos);
+   /* Is the variable initialized? */
    fetchtok();
    if(par->tok->type == BUZZTOK_ASSIGN) {
-      /* lvalue is OK */
-      /* Is lvalue a global symbol? If so, push its string id */
-      if(s->global) chunk_append("\tpushs %" PRId64, s->pos);
+      /* Initialization on the spot */
       /* Consume the = */
       fetchtok();
       /* Parse the expression */
       if(!parse_expression(par)) return PARSE_ERROR;
-      if(s->global) {
-         /* The lvalue is a global symbol, just add gstore */
-         chunk_append("\tgstore");
-      }
-      else {
-         /* Local variable */
-         chunk_append("\tlstore %" PRId64, s->pos);
-      }
-      return PARSE_OK;
+   }
+   else {
+      /* No initialization, push nil as placeholder */
+      chunk_append("\tpushnil");
+   }
+   if(s->global) {
+      /* The lvalue is a global symbol */
+      chunk_append("\tgstore");
+   }
+   else {
+      /* The lvalue is a local variable */
+      chunk_append("\tlstore %" PRId64, s->pos);
    }
    return PARSE_OK;
 }
