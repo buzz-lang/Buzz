@@ -23,11 +23,12 @@ int main(int argc, char* argv[]) {
       tok = buzzlex_nexttok(lex);
       if(!tok) done = 1;
       else {
-         fprintf(stdout, "TOKEN %2" PRIu64 " %2" PRIu64 " %-20s %s\n",
+         fprintf(stdout, "TOKEN %s %2" PRIu64 " %2" PRIu64 " %-20s %s\n",
+                 tok->fname,
                  tok->line,
                  tok->col,
                  buzztok_desc[tok->type],
-                 (tok->value ? tok->value : ""));
+                 (tok->value ? tok->value : "/NULL/"));
          buzzlex_destroytok(&tok);
       }
    }
