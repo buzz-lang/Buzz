@@ -126,6 +126,49 @@ static int buzzlex_isnumber(char c) {
 /****************************************/
 /****************************************/
 
+static char* buzzlex_newstring(const char* s,
+                               size_t len) {
+   /* Buffer for new string */
+   char* ns = (char*)malloc(len);
+   /* Pointer for current current */
+   char* pns = ns;
+   /* Go through original string */
+   for(size_t i = 0; i < len; ++i) {
+      /* Escape sequence? */
+      if(*s != '\\') {
+         /* No, normal character - just copy it */
+         *pns = *s;
+      }
+      else {
+         /* Escape sequence starts */
+         /* Get next character */
+         ++s;
+         switch(*s) {
+            case 'n': /* Newline */
+               *pns = '\n';
+               break;
+            case 't': /* Tab */
+               *pns = '\t';
+               break;
+            case '\\': /* Backslash */
+               *pns = '\\';
+               break;
+            default: /* Copy the character to itself */
+               *pns = *s;
+         }
+      }
+      /* Next character */
+      ++pns;
+      ++s;
+   }
+   /* Mark string end */
+   *pns = 0;
+   return ns;
+}
+
+/****************************************/
+/****************************************/
+
 static buzztok_t buzzlex_newtok(buzztok_type_e type,
                                 char* value,
                                 uint64_t line,
@@ -166,7 +209,7 @@ buzzlex_t buzzlex_new(const char* fname) {
       return buzzlex_newtok(TOKTYPE,             \
                             NULL,                \
                             lexf->cur_line,      \
-                            lexf->cur_col,       \
+                            tokstart,            \
                             lexf->fname);        \
    }
 
@@ -185,7 +228,7 @@ buzzlex_t buzzlex_new(const char* fname) {
       return buzzlex_newtok(TOKTYPE,             \
                             val,                 \
                             lexf->cur_line,      \
-                            lexf->cur_col,       \
+                            tokstart,            \
                             lexf->fname);
 
 buzztok_t buzzlex_nexttok(buzzlex_t lex) {
@@ -308,6 +351,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
    }
    while(1);
    /* If we get here it's because we read potential token character */
+   uint64_t tokstart = lexf->cur_col - 1;
    char c = lexf->buf[lexf->cur_c];
    nextchar();
    /* Consider the 1-char non-alphanumeric cases first */
@@ -316,7 +360,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
          buzztok_t tok = buzzlex_newtok(BUZZTOK_STATEND,
                                         NULL,
                                         lexf->cur_line,
-                                        lexf->cur_col,
+                                        tokstart,
                                         lexf->fname);
          ++lexf->cur_line;
          lexf->cur_col = 0;
@@ -341,7 +385,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       return buzzlex_newtok(BUZZTOK_CONST,
                             val,
                             lexf->cur_line,
-                            lexf->cur_col,
+                            tokstart,
                             lexf->fname);
    }
    else if(isalpha(c)) {
@@ -363,7 +407,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       return buzzlex_newtok(BUZZTOK_ID,
                             val,
                             lexf->cur_line,
-                            lexf->cur_col,
+                            tokstart,
                             lexf->fname);
    }
    else if(c == '=') {
@@ -375,7 +419,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
          return buzzlex_newtok(BUZZTOK_CMP,
                                strdup("=="),
                                lexf->cur_line,
-                               lexf->cur_col,
+                               tokstart,
                                lexf->fname);
       }
       else {
@@ -383,7 +427,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
          return buzzlex_newtok(BUZZTOK_ASSIGN,
                                NULL,
                                lexf->cur_line,
-                               lexf->cur_col,
+                               tokstart,
                                lexf->fname);
       }
    }
@@ -396,7 +440,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
          return buzzlex_newtok(BUZZTOK_CMP,
                                strdup("!="),
                                lexf->cur_line,
-                               lexf->cur_col,
+                               tokstart,
                                lexf->fname);
       }
       else {
@@ -405,7 +449,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
                  "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: expected '=' after '!'\n",
                  lexf->fname,
                  lexf->cur_line,
-                 lexf->cur_col);
+                 tokstart);
          return NULL;
       }
    }
@@ -423,7 +467,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       return buzzlex_newtok(BUZZTOK_CMP,
                             val,
                             lexf->cur_line,
-                            lexf->cur_col,
+                            tokstart,
                             lexf->fname);
    }
    else if(buzzlex_isarith(c)) {
@@ -436,28 +480,28 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
             return buzzlex_newtok(BUZZTOK_ADDSUB,
                                   val,
                                   lexf->cur_line,
-                                  lexf->cur_col,
+                                  tokstart,
                                   lexf->fname);
          }
          case '*': case '/': {
             return buzzlex_newtok(BUZZTOK_MULDIV,
                                   val,
                                   lexf->cur_line,
-                                  lexf->cur_col,
+                                  tokstart,
                                   lexf->fname);
          }
          case '%': {
             return buzzlex_newtok(BUZZTOK_MOD,
                                   val,
                                   lexf->cur_line,
-                                  lexf->cur_col,
+                                  tokstart,
                                   lexf->fname);
          }
          case '^': {
             return buzzlex_newtok(BUZZTOK_POW,
                                   val,
                                   lexf->cur_line,
-                                  lexf->cur_col,
+                                  tokstart,
                                   lexf->fname);
          }
          default:
@@ -467,15 +511,25 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
    else if(buzzlex_isquote(c)) {
       /* String - eat any character until you find the next matching quote */
       size_t start = lexf->cur_c;
-      while(lexf->cur_c < lexf->buf_size &&
-            lexf->buf[lexf->cur_c] != c) {
+      char last1 = 0, last2 = 0;
+      while(lexf->cur_c < lexf->buf_size &&    /* Not end of stream */
+            ((lexf->buf[lexf->cur_c] != c) ||  /* Matching quote not found */
+             (lexf->buf[lexf->cur_c] == c &&   /* Matching quote found, but preceded by \ and not \\ */
+              last1 == '\\' && last2 != '\\'))) {
+         /* Remember the last two characters read */
+         last2 = last1;
+         last1 = lexf->buf[lexf->cur_c];
+         /* Keep parsing the string */
          if(lexf->buf[lexf->cur_c] != '\n') {
             nextchar();
          }
          else {
-            ++lexf->cur_line;
-            lexf->cur_col = 0;
-            ++lexf->cur_c;
+            fprintf(stderr,
+                    "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: string closing quote not found\n",
+                    lexf->fname,
+                    lexf->cur_line,
+                    tokstart);
+            return NULL;
          }
       }
       /* End of stream? Syntax error */
@@ -484,18 +538,17 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
                  "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: string closing quote not found\n",
                  lexf->fname,
                  lexf->cur_line,
-                 lexf->cur_col);
+                 tokstart);
          return NULL;
       }
-      /* Valid string */
-      char* val = (char*)malloc(lexf->cur_c - start + 1);
-      strncpy(val, lexf->buf + start, lexf->cur_c - start);
-      val[lexf->cur_c - start] = '\0';
+      /* We have a valid string */
+      char* val = buzzlex_newstring(lexf->buf + start,
+                                    lexf->cur_c - start);
       nextchar();
       return buzzlex_newtok(BUZZTOK_STRING,
                             val,
                             lexf->cur_line,
-                            lexf->cur_col,
+                            tokstart,
                             lexf->fname);
    }
    else {
@@ -504,7 +557,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
               "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: unknown character '%c' (octal: %o; hex: %x)\n",
               lexf->fname,
               lexf->cur_line,
-              lexf->cur_col,
+              tokstart,
               c, c, c);
       return NULL;
    }
