@@ -957,7 +957,7 @@ buzzvm_state buzzvm_call(buzzvm_t vm, int isswrm) {
    /* Get rid of the function arguments */
    for(i = argn+1; i > 0; --i)
       buzzdarray_pop(vm->stack);
-   /* Push return value */
+   /* Push return address */
    buzzvm_pushi((vm), vm->pc);
    /* Make a new stack for the function */
    vm->stack = buzzdarray_new(1, sizeof(buzzobj_t), NULL);
