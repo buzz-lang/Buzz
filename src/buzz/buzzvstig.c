@@ -13,8 +13,8 @@
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvstig_ ## FNAME)); \
    buzzvm_tput(vm);
 
-#define id_get(POS)                                       \
-   buzzvm_lload(vm, POS);                                 \
+#define id_get()                                          \
+   buzzvm_lload(vm, 0);                                   \
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id", 1)); \
    buzzvm_tget(vm);                                       \
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
@@ -192,7 +192,7 @@ int buzzvstig_create(buzzvm_t vm) {
 int buzzvstig_put(buzzvm_t vm) {
    buzzvm_lnum_assert(vm, 2);
    /* Get vstig id */
-   id_get(0);
+   id_get();
    /* Get key */
    buzzvm_lload(vm, 1);
    buzzobj_t k = buzzvm_stack_at(vm, 1);
@@ -230,7 +230,7 @@ int buzzvstig_put(buzzvm_t vm) {
 int buzzvstig_size(buzzvm_t vm) {
    buzzvm_lnum_assert(vm, 0);
    /* Get vstig id */
-   id_get(0);
+   id_get();
    /* Look for virtual stigmergy */
    const buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
    if(vs) {
@@ -251,7 +251,7 @@ int buzzvstig_size(buzzvm_t vm) {
 int buzzvstig_get(buzzvm_t vm) {
    buzzvm_lnum_assert(vm, 1);
    /* Get vstig id */
-   id_get(0);
+   id_get();
    /* Get key */
    buzzvm_lload(vm, 1);
    buzzobj_t k = buzzvm_stack_at(vm, 1);
@@ -293,7 +293,7 @@ int buzzvstig_get(buzzvm_t vm) {
 int buzzvstig_onconflict(struct buzzvm_s* vm) {
    buzzvm_lnum_assert(vm, 1);
    /* Get vstig id */
-   id_get(0);
+   id_get();
    /* Look for virtual stigmergy */
    const buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
    if(vs) {
@@ -321,7 +321,7 @@ int buzzvstig_onconflict(struct buzzvm_s* vm) {
 int buzzvstig_onconflictlost(struct buzzvm_s* vm) {
    buzzvm_lnum_assert(vm, 1);
    /* Get vstig id */
-   id_get(0);
+   id_get();
    /* Look for virtual stigmergy */
    const buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
    if(vs) {
