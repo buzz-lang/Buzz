@@ -528,21 +528,7 @@ int buzzvm_set_bcode(buzzvm_t vm,
    /*
     * Register swarm methods
     */
-   /* Add 'swarm' table */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm", 1));
-   buzzvm_pusht(vm);
-   buzzobj_t t = buzzvm_stack_at(vm, 1);
-   buzzvm_gstore(vm);
-   /* Add the 'create' method */
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "create", 1));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_create));
-   buzzvm_tput(vm);
-   /* Add the 'id' method */
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "id", 1));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_swarm_id));
-   buzzvm_tput(vm);
+   buzzswarm_register(vm);
    /*
     * Register size() function
     */
