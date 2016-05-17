@@ -515,54 +515,25 @@ int buzzvm_set_bcode(buzzvm_t vm,
    while(vm->bcode[vm->pc] != BUZZVM_INSTR_NOP)
       if(buzzvm_step(vm) != BUZZVM_STATE_READY) return vm->state;
    buzzvm_step(vm);
-   /*
-    * Register global symbols
-    */
+   /* Initialize empty neighbors */
+   buzzneighbors_reset(vm);
+   /* Register robot id */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id", 1));
    buzzvm_pushi(vm, vm->robot);
    buzzvm_gstore(vm);
-   /*
-    * Register stigmergy methods
-    */
+   /* Register basic functions */
+   buzzobj_register(vm);
+   /* Register stigmergy methods */
    buzzvstig_register(vm);
-   /*
-    * Register swarm methods
-    */
+   /* Register swarm methods */
    buzzswarm_register(vm);
-   /*
-    * Register size() function
-    */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "size", 1));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzobj_size));
-   buzzvm_gstore(vm);
-   /*
-    * Register foreach() function
-    */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "foreach", 1));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzobj_foreach));
-   buzzvm_gstore(vm);
-   /*
-    * Register reduce() function
-    */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "reduce", 1));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzobj_reduce));
-   buzzvm_gstore(vm);
-   /*
-    * Initialize empty neighbors
-    */
-   buzzneighbors_reset(vm);
-   /*
-    * Register math methods
-    */
+   /* Register math methods */
    buzzmath_register(vm);
-   /*
-    * Register io methods
-    */
+   /* Register io methods */
    buzzio_register(vm);
-   /*
-    * Register string methods
-    */
+   /* Register string methods */
    buzzstring_register(vm);
+   /* All done */
    return BUZZVM_STATE_READY;
 }
 

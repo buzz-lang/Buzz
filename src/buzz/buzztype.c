@@ -456,3 +456,18 @@ int64_t buzzobj_deserialize(buzzobj_t* data,
 
 /****************************************/
 /****************************************/
+
+#define function_register(FNAME)                                        \
+   buzzvm_pushs(vm, buzzvm_string_register(vm, #FNAME, 1));             \
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzobj_ ## FNAME));  \
+   buzzvm_gstore(vm);
+
+int buzzobj_register(struct buzzvm_s* vm) {
+   function_register(size);
+   function_register(foreach);
+   function_register(reduce);
+   return vm->state;
+}
+
+/****************************************/
+/****************************************/

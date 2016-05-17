@@ -227,6 +227,13 @@ extern "C" {
                                       buzzdarray_t buf,
                                       uint32_t pos,
                                       struct buzzvm_s* vm);
+
+   /*
+    * Registers basic object methods into the virtual machine.
+    * @param vm The Buzz VM data.
+    * @return The new state of the VM.
+    */
+   extern int buzzobj_register(struct buzzvm_s* vm);
    
 #ifdef __cplusplus
 }
