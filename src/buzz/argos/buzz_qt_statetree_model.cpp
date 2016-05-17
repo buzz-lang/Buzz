@@ -181,7 +181,7 @@ void ProcessBuzzObjectsInTable(const void* pt_key,
             cData << tData->f.value;
             break;
          case BUZZTYPE_STRING:
-            cData << tData->s.value.str;
+            cData << QString("\"%1\"").arg(tData->s.value.str);
             break;
          case BUZZTYPE_USERDATA:
             cData << "[userdata]";
@@ -237,7 +237,7 @@ void ProcessBuzzObjects(const void* pt_key,
             cData << tData->f.value;
             break;
          case BUZZTYPE_STRING:
-            cData << tData->s.value.str;
+            cData << QString("\"%1\"").arg(tData->s.value.str);
             break;
          case BUZZTYPE_USERDATA:
             cData << "[userdata]";
