@@ -7,6 +7,44 @@
 /****************************************/
 /****************************************/
 
+#define function_register(FNAME)                                        \
+   buzzvm_dup(vm);                                                      \
+   buzzvm_pushs(vm, buzzvm_string_register(vm, #FNAME, 1));             \
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvstig_ ## FNAME)); \
+   buzzvm_tput(vm);
+
+#define id_get(POS)                                       \
+   buzzvm_lload(vm, POS);                                 \
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "id", 1)); \
+   buzzvm_tget(vm);                                       \
+   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
+
+#define add_field(FIELD, VAL, METHOD)                       \
+   buzzvm_dup(vm);                                          \
+   buzzvm_pushs(vm, buzzvm_string_register(vm, #FIELD, 1)); \
+   buzzvm_ ## METHOD(vm, VAL->FIELD);                       \
+   buzzvm_tput(vm);
+
+/****************************************/
+/****************************************/
+
+int buzzvstig_register(struct buzzvm_s* vm) {
+   /* Push 'stigmergy' table */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "stigmergy", 1));
+   buzzvm_pusht(vm);
+   /* Add 'create' function */
+   buzzvm_dup(vm);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "create", 1));
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvstig_create));
+   buzzvm_tput(vm);
+   /* Register the 'stigmergy' table */
+   buzzvm_gstore(vm);
+   return vm->state;
+}
+
+/****************************************/
+/****************************************/
+
 uint32_t buzzvstig_key_hash(const void* key) {
    return buzzobj_hash(*(buzzobj_t*)key);
 }
@@ -81,13 +119,9 @@ void buzzvstig_destroy(buzzvstig_t* vs) {
 void buzzvstig_elem_serialize(buzzmsg_payload_t buf,
                               const buzzobj_t key,
                               const buzzvstig_elem_t data) {
-   /* Serialize the key */
-   buzzobj_serialize(buf, key);
-   /* Serialize the data */
-   buzzobj_serialize(buf, data->data);
-   /* Serialize the timestamp */
+   buzzobj_serialize    (buf, key);
+   buzzobj_serialize    (buf, data->data);
    buzzmsg_serialize_u16(buf, data->timestamp);
-   /* Serialize the robot */
    buzzmsg_serialize_u16(buf, data->robot);
 }
 
@@ -120,7 +154,7 @@ int64_t buzzvstig_elem_deserialize(buzzobj_t* key,
 /****************************************/
 /****************************************/
 
-int buzzvm_vstig_create(buzzvm_t vm) {
+int buzzvstig_create(buzzvm_t vm) {
    buzzvm_lnum_assert(vm, 1);
    /* Get vstig id */
    buzzvm_lload(vm, 1);
@@ -129,54 +163,36 @@ int buzzvm_vstig_create(buzzvm_t vm) {
    buzzvm_pop(vm);
    /* Look for virtual stigmergy */
    const buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
-   if(vs)
+   if(vs) {
       /* Found, destroy it */
       buzzdict_remove(vm->vstigs, &id);
+   }
    /* Create a new virtual stigmergy */
    buzzvstig_t nvs = buzzvstig_new();
    buzzdict_set(vm->vstigs, &id, &nvs);
-   /* Create a table and add data and methods */
-   buzzobj_t t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "size", 1));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_size));
-   buzzvm_tput(vm);
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "put", 1));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_put));
-   buzzvm_tput(vm);
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "get", 1));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_get));
-   buzzvm_tput(vm);
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "onconflict", 1));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_setonconflict));
-   buzzvm_tput(vm);
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "onconflictlost", 1));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_setonconflictlost));
-   buzzvm_tput(vm);
-   buzzvm_push(vm, t);
+   /* Create a table */
+   buzzvm_pusht(vm);
+   /* Add data and methods */
+   buzzvm_dup(vm);
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id", 1));
    buzzvm_pushi(vm, id);
    buzzvm_tput(vm);
-   /* Push the table on the stack */
-   buzzvm_push(vm, t);
-   /* Return */
+   function_register(size);
+   function_register(put);
+   function_register(get);
+   function_register(onconflict);
+   function_register(onconflictlost);
+   /* Return the table */
    return buzzvm_ret1(vm);
 }
 
 /****************************************/
 /****************************************/
 
-int buzzvm_vstig_put(buzzvm_t vm) {
+int buzzvstig_put(buzzvm_t vm) {
    buzzvm_lnum_assert(vm, 2);
    /* Get vstig id */
-   buzzvm_lload(vm, 0);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "id", 1));
-   buzzvm_tget(vm);
-   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
+   id_get(0);
    /* Get key */
    buzzvm_lload(vm, 1);
    buzzobj_t k = buzzvm_stack_at(vm, 1);
@@ -211,13 +227,10 @@ int buzzvm_vstig_put(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
-int buzzvm_vstig_size(buzzvm_t vm) {
+int buzzvstig_size(buzzvm_t vm) {
    buzzvm_lnum_assert(vm, 0);
    /* Get vstig id */
-   buzzvm_lload(vm, 0);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "id", 1));
-   buzzvm_tget(vm);
-   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
+   id_get(0);
    /* Look for virtual stigmergy */
    const buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
    if(vs) {
@@ -235,13 +248,10 @@ int buzzvm_vstig_size(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
-int buzzvm_vstig_get(buzzvm_t vm) {
+int buzzvstig_get(buzzvm_t vm) {
    buzzvm_lnum_assert(vm, 1);
    /* Get vstig id */
-   buzzvm_lload(vm, 0);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "id", 1));
-   buzzvm_tget(vm);
-   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
+   id_get(0);
    /* Get key */
    buzzvm_lload(vm, 1);
    buzzobj_t k = buzzvm_stack_at(vm, 1);
@@ -280,13 +290,10 @@ int buzzvm_vstig_get(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
-int buzzvm_vstig_setonconflict(struct buzzvm_s* vm) {
+int buzzvstig_onconflict(struct buzzvm_s* vm) {
    buzzvm_lnum_assert(vm, 1);
    /* Get vstig id */
-   buzzvm_lload(vm, 0);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "id", 1));
-   buzzvm_tget(vm);
-   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
+   id_get(0);
    /* Look for virtual stigmergy */
    const buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
    if(vs) {
@@ -311,13 +318,10 @@ int buzzvm_vstig_setonconflict(struct buzzvm_s* vm) {
 /****************************************/
 /****************************************/
 
-int buzzvm_vstig_setonconflictlost(struct buzzvm_s* vm) {
+int buzzvstig_onconflictlost(struct buzzvm_s* vm) {
    buzzvm_lnum_assert(vm, 1);
    /* Get vstig id */
-   buzzvm_lload(vm, 0);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "id", 1));
-   buzzvm_tget(vm);
-   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
+   id_get(0);
    /* Look for virtual stigmergy */
    const buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
    if(vs) {
@@ -342,11 +346,11 @@ int buzzvm_vstig_setonconflictlost(struct buzzvm_s* vm) {
 /****************************************/
 /****************************************/
 
-buzzvstig_elem_t buzzvm_vstig_onconflict(buzzvm_t vm,
-                                         buzzvstig_t vs,
-                                         buzzobj_t k,
-                                         buzzvstig_elem_t lv,
-                                         buzzvstig_elem_t rv) {
+buzzvstig_elem_t buzzvstig_onconflict_call(buzzvm_t vm,
+                                           buzzvstig_t vs,
+                                           buzzobj_t k,
+                                           buzzvstig_elem_t lv,
+                                           buzzvstig_elem_t rv) {
    /* Was a conflict manager defined? */
    if(vs->onconflict) {
       /* Push closure */
@@ -355,35 +359,15 @@ buzzvstig_elem_t buzzvm_vstig_onconflict(buzzvm_t vm,
       buzzvm_push(vm, k);
       /* Make table for local value */
       buzzvm_pusht(vm);
-      buzzobj_t loc = buzzvm_stack_at(vm, 1);
-      buzzvm_pushs(vm, buzzvm_string_register(vm, "robot", 1));
-      buzzvm_pushi(vm, lv->robot);
-      buzzvm_tput(vm);
-      buzzvm_push(vm, loc);
-      buzzvm_pushs(vm, buzzvm_string_register(vm, "data", 1));
-      buzzvm_push(vm, lv->data);
-      buzzvm_tput(vm);
-      buzzvm_push(vm, loc);
-      buzzvm_pushs(vm, buzzvm_string_register(vm, "timestamp", 1));
-      buzzvm_pushi(vm, lv->timestamp);
-      buzzvm_tput(vm);
+      add_field(robot, lv, pushi);
+      add_field(data, lv, push);
+      add_field(timestamp, lv, pushi);
       /* Make table for remote value */
       buzzvm_pusht(vm);
-      buzzobj_t rem = buzzvm_stack_at(vm, 1);
-      buzzvm_pushs(vm, buzzvm_string_register(vm, "robot", 1));
-      buzzvm_pushi(vm, rv->robot);
-      buzzvm_tput(vm);
-      buzzvm_push(vm, rem);
-      buzzvm_pushs(vm, buzzvm_string_register(vm, "data", 1));
-      buzzvm_push(vm, rv->data);
-      buzzvm_tput(vm);
-      buzzvm_push(vm, rem);
-      buzzvm_pushs(vm, buzzvm_string_register(vm, "timestamp", 1));
-      buzzvm_pushi(vm, rv->timestamp);
-      buzzvm_tput(vm);
-      /* Call closure with 3 arguments */
-      buzzvm_push(vm, loc);
-      buzzvm_push(vm, rem);
+      add_field(robot, rv, pushi);
+      add_field(data, rv, push);
+      add_field(timestamp, rv, pushi);
+      /* Call closure (key, lv, rv on the stack) */
       buzzvm_closure_call(vm, 3);
       /* Make new entry with return value */
       /* Make sure it's a table */
@@ -418,10 +402,10 @@ buzzvstig_elem_t buzzvm_vstig_onconflict(buzzvm_t vm,
 /****************************************/
 /****************************************/
 
-void buzzvm_vstig_onconflictlost(buzzvm_t vm,
-                                 buzzvstig_t vs,
-                                 buzzobj_t k,
-                                 buzzvstig_elem_t lv) {
+void buzzvstig_onconflictlost_call(buzzvm_t vm,
+                                   buzzvstig_t vs,
+                                   buzzobj_t k,
+                                   buzzvstig_elem_t lv) {
    /* Was a conflict manager defined? */
    if(vs->onconflictlost) {
       /* Push closure */
@@ -430,20 +414,10 @@ void buzzvm_vstig_onconflictlost(buzzvm_t vm,
       buzzvm_push(vm, k);
       /* Make table for local value */
       buzzvm_pusht(vm);
-      buzzobj_t loc = buzzvm_stack_at(vm, 1);
-      buzzvm_pushs(vm, buzzvm_string_register(vm, "robot", 1));
-      buzzvm_pushi(vm, lv->robot);
-      buzzvm_tput(vm);
-      buzzvm_push(vm, loc);
-      buzzvm_pushs(vm, buzzvm_string_register(vm, "data", 1));
-      buzzvm_push(vm, lv->data);
-      buzzvm_tput(vm);
-      buzzvm_push(vm, loc);
-      buzzvm_pushs(vm, buzzvm_string_register(vm, "timestamp", 1));
-      buzzvm_pushi(vm, lv->timestamp);
-      buzzvm_tput(vm);
-      /* Call closure with 2 arguments */
-      buzzvm_push(vm, loc);
+      add_field(robot, lv, pushi);
+      add_field(data, lv, push);
+      add_field(timestamp, lv, pushi);
+      /* Call closure (key and table are on the stack) */
       buzzvm_closure_call(vm, 2);
    }
 }

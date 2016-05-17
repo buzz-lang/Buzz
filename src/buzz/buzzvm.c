@@ -198,7 +198,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                /* Conflict! */
                /* Call conflict manager */
                buzzvstig_elem_t c =
-                  buzzvm_vstig_onconflict(vm, *vs, k, *l, v);
+                  buzzvstig_onconflict_call(vm, *vs, k, *l, v);
                if(!c) {
                   fprintf(stderr, "[WARNING] [ROBOT %u] Error resolving PUT conflict\n", vm->robot);
                   break;
@@ -214,7 +214,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                   /* Store winning value */
                   buzzvstig_store(*vs, &k, &c);
                   /* Call conflict lost manager */
-                  buzzvm_vstig_onconflictlost(vm, *vs, k, ol);
+                  buzzvstig_onconflictlost_call(vm, *vs, k, ol);
                }
                else {
                   /* This robot did not lose the conflict */
@@ -270,7 +270,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                /* Conflict! */
                /* Call conflict manager */
                buzzvstig_elem_t c =
-                  buzzvm_vstig_onconflict(vm, *vs, k, *l, v);
+                  buzzvstig_onconflict_call(vm, *vs, k, *l, v);
                free(v);
                if(!c) {
                   fprintf(stderr, "[WARNING] [ROBOT %u] Error resolving PUT conflict\n", vm->robot);
@@ -285,7 +285,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                   /* Store winning value */
                   buzzvstig_store(*vs, &k, &c);
                   /* Call conflict lost manager */
-                  buzzvm_vstig_onconflictlost(vm, *vs, k, ol);
+                  buzzvstig_onconflictlost_call(vm, *vs, k, ol);
                }
                else {
                   /* This robot did not lose the conflict */
@@ -524,23 +524,14 @@ int buzzvm_set_bcode(buzzvm_t vm,
    /*
     * Register stigmergy methods
     */
-   /* Add 'stigmergy' table */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "stigmergy", 1));
-   buzzvm_pusht(vm);
-   buzzobj_t t = buzzvm_stack_at(vm, 1);
-   buzzvm_gstore(vm);
-   /* Add 'create' function */
-   buzzvm_push(vm, t);
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "create", 1));
-   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzvm_vstig_create));
-   buzzvm_tput(vm);
+   buzzvstig_register(vm);
    /*
     * Register swarm methods
     */
    /* Add 'swarm' table */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "swarm", 1));
    buzzvm_pusht(vm);
-   t = buzzvm_stack_at(vm, 1);
+   buzzobj_t t = buzzvm_stack_at(vm, 1);
    buzzvm_gstore(vm);
    /* Add the 'create' method */
    buzzvm_push(vm, t);

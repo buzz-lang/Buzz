@@ -37,6 +37,14 @@ extern "C" {
    struct buzzvm_s;
 
    /*
+    * Registers the virtual stigmergy methods in the vm.
+    * @param vm The state of the 
+    * @param vm The Buzz VM state.
+    * @return The updated VM state.
+    */
+   extern int buzzvstig_register(struct buzzvm_s* vm);
+
+   /*
     * Creates a new virtual stigmergy entry.
     * @param data The data associated to the entry.
     * @param timestamp The timestamp (Lamport clock).
@@ -64,7 +72,7 @@ extern "C" {
     * Destroys a virtual stigmergy structure.
     * @param vs The virtual stigmergy structure.
     */
-   void buzzvstig_destroy(buzzvstig_t* vs);
+   extern void buzzvstig_destroy(buzzvstig_t* vs);
 
    /*
     * Serializes an element in the virtual stigmergy.
@@ -100,62 +108,62 @@ extern "C" {
     * @param vm The Buzz VM state.
     * @return The updated VM state.
     */
-   int buzzvm_vstig_create(struct buzzvm_s* vm);
+   extern int buzzvstig_create(struct buzzvm_s* vm);
 
    /*
     * Buzz C closure to get the number of elements in a virtual stigmergy structure.
     * @param vm The Buzz VM state.
     * @return The updated VM state.
     */
-   int buzzvm_vstig_size(struct buzzvm_s* vm);
+   extern int buzzvstig_size(struct buzzvm_s* vm);
 
    /*
     * Buzz C closure to put an element in a stigmergy object.
     * @param vm The Buzz VM state.
     * @return The updated VM state.
     */
-   int buzzvm_vstig_put(struct buzzvm_s* vm);
+   extern int buzzvstig_put(struct buzzvm_s* vm);
 
    /*
     * Buzz C closure to get an element from a stigmergy object.
     * @param vm The Buzz VM state.
     * @return The updated VM state.
     */
-   int buzzvm_vstig_get(struct buzzvm_s* vm);
+   extern int buzzvstig_get(struct buzzvm_s* vm);
 
    /*
     * Buzz C closure to set the function to call on write conflict.
     * @param vm The Buzz VM state.
     * @return The updated VM state.
     */
-   int buzzvm_vstig_setonconflict(struct buzzvm_s* vm);
+   extern int buzzvstig_onconflict(struct buzzvm_s* vm);
 
    /*
     * Buzz C closure to set the function to call on loss of conflict.
     * @param vm The Buzz VM state.
     * @return The updated VM state.
     */
-   int buzzvm_vstig_setonconflictlost(struct buzzvm_s* vm);
+   extern int buzzvstig_onconflictlost(struct buzzvm_s* vm);
 
    /*
     * Calls the write conflict manager.
     * @param vm The Buzz VM state.
     * @return The updated VM state.
     */
-   buzzvstig_elem_t buzzvm_vstig_onconflict(struct buzzvm_s* vm,
-                                            buzzvstig_t vs,
-                                            buzzobj_t k,
-                                            buzzvstig_elem_t lv,
-                                            buzzvstig_elem_t rv);
+   extern buzzvstig_elem_t buzzvstig_onconflict_call(struct buzzvm_s* vm,
+                                                     buzzvstig_t vs,
+                                                     buzzobj_t k,
+                                                     buzzvstig_elem_t lv,
+                                                     buzzvstig_elem_t rv);
 
    /*
     * Calls the lost conflict manager.
     * @param vm The Buzz VM state.
     */
-   void buzzvm_vstig_onconflictlost(struct buzzvm_s* vm,
-                                    buzzvstig_t vs,
-                                    buzzobj_t k,
-                                    buzzvstig_elem_t lv);
+   extern void buzzvstig_onconflictlost_call(struct buzzvm_s* vm,
+                                             buzzvstig_t vs,
+                                             buzzobj_t k,
+                                             buzzvstig_elem_t lv);
 
 #ifdef __cplusplus
 }
