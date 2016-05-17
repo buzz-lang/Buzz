@@ -2,22 +2,22 @@ print("this", " ", "is", " ", "a", " ", "test")
 
 f = io.fopen("../../src/testing/testflocking.bzz", "r")
 
-if(f == nil) {
+if(not f) {
   print(io.error_message, "(", io.errno, ")")
 }
 else {
   print(io.error_message, "(", io.errno, ")")
-  f.foreach(function(line) {
+  io.fforeach(f, function(line) {
       print(f.name, ": ", line)
     })
 }
-f.close()
+io.fclose(f)
 
 g = io.fopen("blurb", "w")
-if(g == nil) {
+if(not g) {
   print(io.error_message, "(", io.errno, ")")
 }
 else {
-  g.write("Ma", "Porca", "Puttana", "Maiala")
-  g.write("E", "Davvero", "Pero")
+  io.fwrite(g, "Ma", "Porca", "Puttana", "Maiala")
+  io.fwrite(g, "E", "Davvero", "Pero")
 }

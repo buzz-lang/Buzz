@@ -1,7 +1,7 @@
 include "testinclude2.bzz"
 
 function f() {
-  log("f()")
+  print("f()")
 }
 
 f()
