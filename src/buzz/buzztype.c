@@ -8,7 +8,7 @@
 
 #define BUZZTYPE_TABLE_BUCKETS 10
 
-const char *buzztype_desc[] = {"nil", "integer", "float", "string", "table", "closure", "userdata" };
+const char *buzztype_desc[] = { "nil", "integer", "float", "string", "table", "closure", "userdata" };
 
 /****************************************/
 /****************************************/
@@ -398,7 +398,7 @@ void buzzobj_serialize(buzzdarray_t buf,
          break;
       }
       default:
-         fprintf(stderr, "[TODO] %s %u\n", __FILE__, __LINE__);
+         fprintf(stderr, "[TODO] %s %d\n", __FILE__, __LINE__);
    }
 }
 
@@ -449,7 +449,7 @@ int64_t buzzobj_deserialize(buzzobj_t* data,
          return p;
       }
       default:
-         fprintf(stderr, "TODO: %s %u\n", __FILE__, __LINE__);
+         fprintf(stderr, "TODO: %s %d\n", __FILE__, __LINE__);
          return -1;
    }
 }
