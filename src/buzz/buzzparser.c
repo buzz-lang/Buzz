@@ -54,6 +54,7 @@ int string_cmp(const void* a, const void* b) {
 
 void string_destroy(uint32_t pos, void* data, void* params) {
    free((*(struct strarray_data_s**)data)->str);
+   free(*(struct strarray_data_s**)data);
 }
 
 uint32_t string_add(buzzdict_t strings, const char* str) {
@@ -154,6 +155,8 @@ void sym_destroy(const void* key,
                 void* data,
                 void* params) {
    free(*(char**)key);
+   free((void*)key);
+   free(data);
 }
 
 #define SYMT_BUCKETS 100
