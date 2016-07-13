@@ -230,7 +230,8 @@ uint32_t buzzdarray_part(buzzdarray_t da,
    /* Use last element as pivot */
    int64_t pt = lo, k;
    for(k = lo; k < hi; ++k) {
-      if(cmp(buzzdarray_rawget(da, k), buzzdarray_rawget(da, hi)) < 0) {
+      if(cmp(buzzdarray_rawget(da, k), buzzdarray_rawget(da, hi)) < 0 &&
+         k != pt) {
          SWAP(buzzdarray_rawget(da, k), buzzdarray_rawget(da, pt));
          ++pt;
       }
