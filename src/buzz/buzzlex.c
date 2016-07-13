@@ -129,7 +129,7 @@ static int buzzlex_isnumber(char c) {
 static char* buzzlex_newstring(const char* s,
                                size_t len) {
    /* Buffer for new string */
-   char* ns = (char*)malloc(len);
+   char* ns = (char*)malloc(len+1);
    /* Pointer for current current */
    char* pns = ns;
    /* Go through original string */
