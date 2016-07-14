@@ -638,17 +638,19 @@ void CBuzzQTMainWindow::HandleMsgTableSelection() {
    if(! listSel.empty()) {
       /* Get error position field */
       QString pos = listSel[1]->data(Qt::DisplayRole).toString();
-      QStringList posFields = pos.split(":");
-      /* Get line and column */
-      int nLine = posFields[1].toInt();
-      int nCol = posFields[2].toInt();
-      /* Move to the position */
-      QTextCursor cCursor = m_pcCodeEditor->textCursor();
-      cCursor.setPosition(0, QTextCursor::MoveAnchor);
-      cCursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, nLine-1);
-      cCursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, nCol);
-      m_pcCodeEditor->setTextCursor(cCursor);
-      m_pcCodeEditor->setFocus();
+      if(! pos.startsWith("At bytecode offset")) {
+         QStringList posFields = pos.split(":");
+         /* Get line and column */
+         int nLine = posFields[1].toInt();
+         int nCol = posFields[2].toInt();
+         /* Move to the position */
+         QTextCursor cCursor = m_pcCodeEditor->textCursor();
+         cCursor.setPosition(0, QTextCursor::MoveAnchor);
+         cCursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, nLine-1);
+         cCursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, nCol);
+         m_pcCodeEditor->setTextCursor(cCursor);
+         m_pcCodeEditor->setFocus();
+      }
    }
 }
 
