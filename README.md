@@ -54,3 +54,6 @@ Execute these commands:
 
     $ cd buzz/build
     $ sudo make install
+
+On Linux, run this command too:
+    $ sudo ldconfig
