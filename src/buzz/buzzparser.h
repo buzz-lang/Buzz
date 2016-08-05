@@ -1,6 +1,7 @@
 #ifndef BUZZPARSER_H
 #define BUZZPARSER_H
 
+#define _GNU_SOURCE
 #include <buzz/buzzlex.h>
 #include <buzz/buzzdarray.h>
 #include <buzz/buzzdict.h>
