@@ -158,8 +158,32 @@ void buzzoutmsg_queue_append_broadcast(buzzoutmsg_queue_t msgq,
 /****************************************/
 /****************************************/
 
+struct dict_to_array_s {
+   size_t count; /* Current element count */
+   size_t size;  /* Current data buffer size */
+   uint16_t* data; /* Data buffer */
+};
+
+void dict_to_array(const void* key, void* data, void* params) {
+   /* (*key)   is a uint16_t, the swarm id
+    * (*data)  is a uint8_t, the membership (1 -> in, 0 -> out)
+    * (params) is a (struct dict_to_array_s*)
+    */
+   struct dict_to_array_s* p = (struct dict_to_array_s*)params;
+   if(*(uint8_t*)data) {
+      /* Grow buffer if necessary */
+      if(p->count >= p->size) {
+         p->size *= 2;
+         p->data = realloc(p->data, p->size);
+      }
+      /* Append swarm id */
+      p->data[p->count] = *(uint16_t*)key;
+      ++p->count;
+   }
+}
+
 void buzzoutmsg_queue_append_swarm_list(buzzoutmsg_queue_t msgq,
-                                        const buzzdarray_t ids) {
+                                        const buzzdict_t ids) {
    /* Invariants:
     * - Only one list message can be queued at any time;
     * - If a list message is already queued, join/leave messages are not
@@ -168,12 +192,20 @@ void buzzoutmsg_queue_append_swarm_list(buzzoutmsg_queue_t msgq,
    buzzdarray_clear(msgq->queues[BUZZMSG_SWARM_LIST], 1);
    buzzdarray_clear(msgq->queues[BUZZMSG_SWARM_JOIN], 1);
    buzzdarray_clear(msgq->queues[BUZZMSG_SWARM_LEAVE], 1);
+   /* Make an array of current swarm id dictionary */
+   struct dict_to_array_s da = {
+      .count = 0,
+      .size = 1,
+      .data = (uint16_t*)malloc(sizeof(uint16_t))
+   };
+   buzzdict_foreach(ids, dict_to_array, &da);
    /* Make a new LIST message */
    buzzoutmsg_t m = (buzzoutmsg_t)malloc(sizeof(union buzzoutmsg_u));
    m->sw.type = BUZZMSG_SWARM_LIST;
-   m->sw.size = buzzdarray_size(ids);
+   m->sw.size = da.count;
    m->sw.ids = (uint16_t*)malloc(m->sw.size * sizeof(uint16_t));
-   memcpy(m->sw.ids, ids->data, m->sw.size * sizeof(uint16_t));
+   memcpy(m->sw.ids, da.data, m->sw.size * sizeof(uint16_t));
+   free(da.data);
    /* Queue the new LIST message */
    buzzdarray_push(msgq->queues[BUZZMSG_SWARM_LIST], &m);
 }

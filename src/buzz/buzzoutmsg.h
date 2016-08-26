@@ -58,7 +58,7 @@ extern "C" {
     * @param ids A list of swarm ids in which the robot is a member.
     */
    extern void buzzoutmsg_queue_append_swarm_list(buzzoutmsg_queue_t msgq,
-                                                  const buzzdarray_t ids);
+                                                  const buzzdict_t ids);
    
    /*
     * Appends a new swarm join/leave message.

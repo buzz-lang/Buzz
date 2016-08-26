@@ -1,9 +1,8 @@
 #ifndef BUZZDEBUG_H
 #define BUZZDEBUG_H
 
-#define _GNU_SOURCE
-#include <buzz/buzzvm.h>
 #include <stdio.h>
+#include <buzz/buzzvm.h>
 
 #ifdef __cplusplus
 extern "C" {
