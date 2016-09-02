@@ -45,6 +45,7 @@ public:
 
    virtual void UpdateSensors();
 
+   void SetWheels(Real f_left_speed, Real f_right_speed);
    void SetWheelSpeedsFromVector(const CVector2& c_heading);
    void SetLEDs(const CColor& c_color);
 
