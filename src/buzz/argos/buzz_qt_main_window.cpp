@@ -152,7 +152,7 @@ bool CBuzzQTMainWindow::SaveAs() {
       QFileDialog::getSaveFileName(this,
                                    tr("Save File"),
                                    "",
-                                   "Buzz Files (*.buzz)");
+                                   "Buzz Files (*.bzz)");
    if (strNewFileName.isEmpty())
       return false;
    return SaveFile(strNewFileName);
