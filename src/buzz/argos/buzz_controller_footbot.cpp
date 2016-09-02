@@ -4,6 +4,18 @@
 /****************************************/
 /****************************************/
 
+CBuzzControllerFootBot::SWheelTurningParams::SWheelTurningParams() :
+   TurningMechanism(NO_TURN),
+   HardTurnOnAngleThreshold(ToRadians(CDegrees(90.0))),
+   SoftTurnOnAngleThreshold(ToRadians(CDegrees(70.0))),
+   NoTurnAngleThreshold(ToRadians(CDegrees(10.0))),
+   MaxSpeed(10.0)
+{
+}
+
+/****************************************/
+/****************************************/
+
 void CBuzzControllerFootBot::SWheelTurningParams::Init(TConfigurationNode& t_node) {
    try {
       TurningMechanism = NO_TURN;

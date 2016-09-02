@@ -32,6 +32,7 @@ public:
       /* Maximum wheel speed */
       Real MaxSpeed;
 
+      SWheelTurningParams();
       void Init(TConfigurationNode& t_tree);
    };
 
