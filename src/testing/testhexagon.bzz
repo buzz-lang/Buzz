@@ -25,7 +25,7 @@ function hexagon() {
   # Calculate accumulator
   var accum = neighbors.map(lj_vector).reduce(lj_sum, math.vec2.new(0.0, 0.0))
   if(neighbors.count() > 0)
-    math.vec2.scale(accum, neighbors.count())
+    math.vec2.scale(accum, 1.0 / neighbors.count())
   # Move according to vector
   goto(accum.x, accum.y)
 }
