@@ -4,14 +4,13 @@
 
 \begin{document}
 
-\begin{tikzpicture}
+\begin{tikzpicture}[process/.style={rectangle,draw=blue!80,fill=blue!20,minimum size=1.4cm,text width=2cm,align=center,font=\tt}]
 
   \begin{scope}[start chain=toolset,
     node distance=1cm,
     every node/.style={draw,on chain,minimum size=1.4cm,text width=2cm,align=center,font=\tt},
     every join/.style={-Stealth},
-    output/.style={tape,draw=red!80,fill=red!20},
-    process/.style={rectangle,draw=blue!80,fill=blue!20}]
+    output/.style={tape,draw=red!80,fill=red!20}]
     \node(script)   [join,output] {Buzz\\script};
     \node(parser)   [join,process]{bzzparse};
     \node(asm)      [join,output] {annotated\\assembly};
@@ -34,7 +33,9 @@
   \begin{scope}[on background layer]
     % bzzcompile rectangle
     \filldraw[draw=green!80,fill=green!20] (1.5cm,-1.1cm) rectangle (11.5cm,1.1cm);
-    \node[below=7.5mm of asm,font=\tt]{bzzc};
+    \node(bzzc)[below=7.5mm of asm,process]{bzzc};
+    \draw[dashed] (1.5cm,-1.1cm) -- (bzzc.west);
+    \draw[dashed] (11.5cm,-1.1cm) -- (bzzc.east);
   \end{scope}
 \end{tikzpicture}
 
