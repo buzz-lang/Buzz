@@ -17,6 +17,8 @@ extern "C" {
 
    extern int buzzmath_log10(buzzvm_t vm);
 
+   extern int buzzmath_exp(buzzvm_t vm);
+
    extern int buzzmath_sqrt(buzzvm_t vm);
 
    extern int buzzmath_sin(buzzvm_t vm);
@@ -34,6 +36,14 @@ extern "C" {
    extern int buzzmath_min(buzzvm_t vm);
 
    extern int buzzmath_max(buzzvm_t vm);
+
+   extern int buzzmath_rng_setseed(buzzvm_t vm);
+
+   extern int buzzmath_rng_uniform(buzzvm_t vm);
+
+   extern int buzzmath_rng_gaussian(buzzvm_t vm);
+
+   extern int buzzmath_rng_exponential(buzzvm_t vm);
 
 #ifdef __cplusplus
 }

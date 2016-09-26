@@ -180,6 +180,10 @@ extern "C" {
       char* errormsg;
       /* Robot id */
       uint16_t robot;
+      /* Random number generator state */
+      int32_t* rngstate;
+      /* Random number generator index */
+      uint32_t rngidx;
    };
    typedef struct buzzvm_s* buzzvm_t;
 

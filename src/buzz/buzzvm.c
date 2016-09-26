@@ -463,6 +463,9 @@ buzzvm_t buzzvm_new(uint16_t robot) {
                                 NULL);
    /* Take care of the robot id */
    vm->robot = robot;
+   /* Initialize empty random number generator (buzzvm_math takes care of creating it) */
+   vm->rngstate = NULL;
+   vm->rngidx = 0;
    /* Return new vm */
    return vm;
 }
