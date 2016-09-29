@@ -8,12 +8,12 @@
 /****************************************/
 
 /* RNG period parameters */
-static const int32_t N = 624;
-static const int32_t M = 397;
-static const uint32_t MATRIX_A = 0x9908b0dfUL;   /* constant vector a */
-static const uint32_t UPPER_MASK = 0x80000000UL; /* most significant w-r bits */
-static const uint32_t LOWER_MASK = 0x7fffffffUL; /* least significant r bits */
-static const uint32_t INT_MAX = 0xFFFFFFFFUL;
+#define N          624
+#define M          397
+#define MATRIX_A   0x9908b0dfUL /* constant vector a */
+#define UPPER_MASK 0x80000000UL /* most significant w-r bits */
+#define LOWER_MASK 0x7fffffffUL /* least significant r bits */
+#define INT_MAX    0xFFFFFFFFUL
 
 /****************************************/
 /****************************************/
