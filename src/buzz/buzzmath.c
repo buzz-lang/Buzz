@@ -59,16 +59,14 @@ uint32_t mt_uniform32(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
-#define buzzmath_error(obj) {                   \
-      vm->state = BUZZVM_STATE_ERROR;           \
-      vm->error = BUZZVM_ERROR_TYPE;            \
-      asprintf(&vm->errormsg,                   \
-               "%s: expected %s or %s, got %s", \
-               buzzvm_error_desc[vm->error],    \
-               buzztype_desc[BUZZTYPE_FLOAT],   \
-               buzztype_desc[BUZZTYPE_INT],     \
-               buzztype_desc[obj->o.type]);     \
-      return vm->state;                         \
+#define buzzmath_error(obj) {                         \
+      buzzvm_seterror(vm,                             \
+                      BUZZVM_ERROR_TYPE,              \
+                      "expected %s or %s, got %s",    \
+                      buzztype_desc[BUZZTYPE_FLOAT],  \
+                      buzztype_desc[BUZZTYPE_INT],    \
+                      buzztype_desc[obj->o.type]);    \
+      return vm->state;                               \
    }
 
 
@@ -327,14 +325,12 @@ int buzzmath_atan(buzzvm_t vm) {
    if(o->o.type == BUZZTYPE_FLOAT)    y = o->f.value;
    else if(o->o.type == BUZZTYPE_INT) y = o->i.value;
    else {
-      vm->state = BUZZVM_STATE_ERROR;
-      vm->error = BUZZVM_ERROR_TYPE;
-      asprintf(&vm->errormsg,
-               "%s: expected %s or %s for argument 1, got %s",
-               buzzvm_error_desc[vm->error],
-               buzztype_desc[BUZZTYPE_FLOAT],
-               buzztype_desc[BUZZTYPE_INT],
-               buzztype_desc[o->o.type]);
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_TYPE,
+                      "expected %s or %s for argument 1, got %s",
+                      buzztype_desc[BUZZTYPE_FLOAT],
+                      buzztype_desc[BUZZTYPE_INT],
+                      buzztype_desc[o->o.type]);
       return vm->state;
    }
    /* Get second argument */
@@ -344,14 +340,12 @@ int buzzmath_atan(buzzvm_t vm) {
    if(o->o.type == BUZZTYPE_FLOAT)    x = o->f.value;
    else if(o->o.type == BUZZTYPE_INT) x = o->i.value;
    else {
-      vm->state = BUZZVM_STATE_ERROR;
-      vm->error = BUZZVM_ERROR_TYPE;
-      asprintf(&vm->errormsg,
-               "%s: expected %s or %s for argument 2, got %s",
-               buzzvm_error_desc[vm->error],
-               buzztype_desc[BUZZTYPE_FLOAT],
-               buzztype_desc[BUZZTYPE_INT],
-               buzztype_desc[o->o.type]);
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_TYPE,
+                      "expected %s or %s for argument 2, got %s",
+                      buzztype_desc[BUZZTYPE_FLOAT],
+                      buzztype_desc[BUZZTYPE_INT],
+                      buzztype_desc[o->o.type]);
       return vm->state;
    }
    /* Push result */
@@ -498,26 +492,22 @@ int buzzmath_rng_uniform(buzzvm_t vm) {
       }
       else {
          /* Error */
-         vm->state = BUZZVM_STATE_ERROR;
-         vm->error = BUZZVM_ERROR_TYPE;
-         asprintf(&(vm)->errormsg,
-                  "%s: expected %s or %s for arguments, got %s for argument 1 and %s for argument 2)",
-                  buzzvm_error_desc[vm->error],
-                  buzztype_desc[BUZZTYPE_FLOAT],
-                  buzztype_desc[BUZZTYPE_INT],
-                  buzztype_desc[min->o.type],
-                  buzztype_desc[max->o.type]);
+         buzzvm_seterror(vm,
+                         BUZZVM_ERROR_TYPE,
+                         "expected %s or %s for arguments, got %s for argument 1 and %s for argument 2)",
+                         buzztype_desc[BUZZTYPE_FLOAT],
+                         buzztype_desc[BUZZTYPE_INT],
+                         buzztype_desc[min->o.type],
+                         buzztype_desc[max->o.type]);
          return vm->state;
       }
    }
    else {
       /* Error */
-      vm->state = BUZZVM_STATE_ERROR;
-      vm->error = BUZZVM_ERROR_LNUM;
-      asprintf(&vm->errormsg,
-               "%s: expected 0, 1, or 2 parameters, got %" PRId64,
-               buzzvm_error_desc[vm->error],
-               buzzvm_lnum(vm));
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_LNUM,
+                      "expected 0, 1, or 2 parameters, got %" PRId64,
+                      buzzvm_lnum(vm));
       return vm->state;
    }
    /* All OK, return random number */
@@ -543,14 +533,12 @@ int buzzmath_rng_gaussian(buzzvm_t vm) {
       if(o->o.type == BUZZTYPE_FLOAT)    stddev = o->f.value;
       else if(o->o.type == BUZZTYPE_INT) stddev = o->i.value;
       else {
-         vm->state = BUZZVM_STATE_ERROR;
-         vm->error = BUZZVM_ERROR_TYPE;
-         asprintf(&vm->errormsg,
-                  "%s: expected %s or %s for argument 1, got %s",
-                  buzzvm_error_desc[vm->error],
-                  buzztype_desc[BUZZTYPE_FLOAT],
-                  buzztype_desc[BUZZTYPE_INT],
-                  buzztype_desc[o->o.type]);
+         buzzvm_seterror(vm,
+                         BUZZVM_ERROR_TYPE,
+                         "expected %s or %s for argument 1, got %s",
+                         buzztype_desc[BUZZTYPE_FLOAT],
+                         buzztype_desc[BUZZTYPE_INT],
+                         buzztype_desc[o->o.type]);
          return vm->state;
       }
       if(buzzvm_lnum(vm) == 2) {
@@ -560,25 +548,21 @@ int buzzmath_rng_gaussian(buzzvm_t vm) {
          if(o->o.type == BUZZTYPE_FLOAT)    mean = o->f.value;
          else if(o->o.type == BUZZTYPE_INT) mean = o->i.value;
          else {
-            vm->state = BUZZVM_STATE_ERROR;
-            vm->error = BUZZVM_ERROR_TYPE;
-            asprintf(&vm->errormsg,
-                     "%s: expected %s or %s for argument 2, got %s",
-                     buzzvm_error_desc[vm->error],
-                     buzztype_desc[BUZZTYPE_FLOAT],
-                     buzztype_desc[BUZZTYPE_INT],
-                     buzztype_desc[o->o.type]);
+            buzzvm_seterror(vm,
+                            BUZZVM_ERROR_TYPE,
+                            "expected %s or %s for argument 2, got %s",
+                            buzztype_desc[BUZZTYPE_FLOAT],
+                            buzztype_desc[BUZZTYPE_INT],
+                            buzztype_desc[o->o.type]);
             return vm->state;
          }
       }
       else {
          /* Error */
-         vm->state = BUZZVM_STATE_ERROR;
-         vm->error = BUZZVM_ERROR_LNUM;
-         asprintf(&vm->errormsg,
-                  "%s: expected 0, 1, or 2 parameters, got %" PRId64,
-                  buzzvm_error_desc[vm->error],
-                  buzzvm_lnum(vm));
+         buzzvm_seterror(vm,
+                         BUZZVM_ERROR_LNUM,
+                         "expected 0, 1, or 2 parameters, got %" PRId64,
+                         buzzvm_lnum(vm));
          return vm->state;
       }
    }

@@ -347,9 +347,14 @@ int buzzswarm_others(buzzvm_t vm) {
    /* Get the swarm entry */
    const uint8_t* x = buzzdict_get(vm->swarms, &id1, uint8_t);
    if(!x) {
-      vm->state = BUZZVM_STATE_ERROR;
-      vm->error = BUZZVM_ERROR_SWARM;
-      return BUZZVM_STATE_ERROR;
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_SWARM,
+                      NULL);
+      return vm->state;
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_SWARM,
+                      NULL);
+      return vm->state;
    }
    /* Get the id of the new swarm to create */
    buzzvm_lload(vm, 1);
@@ -387,9 +392,10 @@ int buzzswarm_join(buzzvm_t vm) {
       return buzzvm_ret0(vm);
    }
    else {
-      vm->state = BUZZVM_STATE_ERROR;
-      vm->error = BUZZVM_ERROR_SWARM;
-      return BUZZVM_STATE_ERROR;
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_SWARM,
+                      NULL);
+      return vm->state;
    }
 }
 
@@ -412,9 +418,10 @@ int buzzswarm_leave(buzzvm_t vm) {
       return buzzvm_ret0(vm);
    }
    else {
-      vm->state = BUZZVM_STATE_ERROR;
-      vm->error = BUZZVM_ERROR_SWARM;
-      return BUZZVM_STATE_ERROR;
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_SWARM,
+                      NULL);
+      return vm->state;
    }
 }
 
@@ -428,9 +435,10 @@ int buzzswarm_in(buzzvm_t vm) {
    /* Get the swarm entry */
    const uint8_t* x = buzzdict_get(vm->swarms, &id, uint8_t);
    if(!x) {
-      vm->state = BUZZVM_STATE_ERROR;
-      vm->error = BUZZVM_ERROR_SWARM;
-      return BUZZVM_STATE_ERROR;
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_SWARM,
+                      NULL);
+      return vm->state;
    }
    /* Push the return value */
    buzzvm_pushi(vm, *x);
@@ -462,9 +470,10 @@ int buzzswarm_select(buzzvm_t vm) {
       return buzzvm_ret0(vm);
    }
    else {
-      vm->state = BUZZVM_STATE_ERROR;
-      vm->error = BUZZVM_ERROR_SWARM;
-      return BUZZVM_STATE_ERROR;
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_SWARM,
+                      NULL);
+      return vm->state;
    }
 }
 
@@ -478,9 +487,10 @@ int buzzswarm_exec(buzzvm_t vm) {
    /* Get the swarm entry */
    const uint8_t* x = buzzdict_get(vm->swarms, &id, uint8_t);
    if(!x) {
-      vm->state = BUZZVM_STATE_ERROR;
-      vm->error = BUZZVM_ERROR_SWARM;
-      return BUZZVM_STATE_ERROR;
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_SWARM,
+                      NULL);
+      return vm->state;
    }
    /* Check whether the robot is in the swarm */
    if(*x) {

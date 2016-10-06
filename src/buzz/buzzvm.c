@@ -7,13 +7,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 /****************************************/
 /****************************************/
 
 const char *buzzvm_state_desc[] = { "no code", "ready", "done", "error", "stopped" };
 
-const char *buzzvm_error_desc[] = { "none", "unknown instruction", "empty stack", "wrong number of local variables", "pc out of range", "function id out of range", "type mismatch", "unknown string id", "unknown swarm id" };
+const char *buzzvm_error_desc[] = { "none", "unknown instruction", "stack error", "wrong number of local variables", "pc out of range", "function id out of range", "type mismatch", "unknown string id", "unknown swarm id" };
 
 const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "dup", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "gload", "gstore", "pusht", "tput", "tget", "callc", "calls", "pushf", "pushi", "pushs", "pushcn", "pushcc", "pushl", "lload", "lstore", "jump", "jumpz", "jumpnz"};
 
@@ -505,6 +506,41 @@ void buzzvm_destroy(buzzvm_t* vm) {
 /****************************************/
 /****************************************/
 
+void buzzvm_seterror(buzzvm_t vm,
+                     buzzvm_error errcode,
+                     const char* errmsg,
+                     ...) {
+   /* Set error state */
+   vm->state = BUZZVM_STATE_ERROR;
+   vm->error = errcode;
+   /* Get rid of old error message */
+   if(vm->errormsg) free(vm->errormsg);
+   /* Was a custom message passed? */
+   if(errmsg) {
+      /* Yes, use it */
+      /* Compose user-defined error message */
+      char* msg;
+      va_list al;
+      va_start(al, errmsg);
+      vasprintf(&msg, errmsg, al);
+      va_end(al);
+      /* Concatenate error description and user defined message */
+      asprintf(&vm->errormsg,
+               "%s: %s",
+               buzzvm_error_desc[vm->error],
+               msg);
+      /* Get rid of user-defined error message */
+      free(msg);
+   }
+   else {
+      /* No, use the default error description */
+      vm->errormsg = strdup(buzzvm_error_desc[vm->error]);
+   }
+}
+
+/****************************************/
+/****************************************/
+
 int buzzvm_set_bcode(buzzvm_t vm,
                      const uint8_t* bcode,
                      uint32_t bcode_size) {
@@ -561,7 +597,7 @@ int buzzvm_set_bcode(buzzvm_t vm,
 /****************************************/
 /****************************************/
 
-#define assert_pc(IDX) if((IDX) < 0 || (IDX) >= vm->bcode_size) { vm->state = BUZZVM_STATE_ERROR; vm->error = BUZZVM_ERROR_PC; return vm->state; }
+#define assert_pc(IDX) if((IDX) < 0 || (IDX) >= vm->bcode_size) { buzzvm_seterror(vm, BUZZVM_ERROR_PC, NULL); return vm->state; }
 
 #define inc_pc() ++vm->pc; assert_pc(vm->pc);
 
@@ -809,8 +845,7 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          break;
       }
       default:
-         vm->state = BUZZVM_STATE_ERROR;
-         vm->error = BUZZVM_ERROR_INSTR;
+         buzzvm_seterror(vm, BUZZVM_ERROR_INSTR, NULL);
          break;
    }
    return vm->state;
@@ -907,8 +942,7 @@ buzzvm_state buzzvm_call(buzzvm_t vm, int isswrm) {
    /* Make sure that that data about C closures is correct */
    if((!c->c.value.isnative) &&
       ((c->c.value.ref) >= buzzdarray_size(vm->flist))) {
-      vm->state = BUZZVM_STATE_ERROR;
-      vm->error = BUZZVM_ERROR_FLIST;
+      buzzvm_seterror(vm, BUZZVM_ERROR_FLIST, NULL);
       return vm->state;
    }
    /* Create a new local symbol list copying the parent's */
@@ -944,8 +978,7 @@ buzzvm_state buzzvm_call(buzzvm_t vm, int isswrm) {
 
 buzzvm_state buzzvm_pop(buzzvm_t vm) {
    if(buzzdarray_isempty(vm->stack)) {
-      vm->state = BUZZVM_STATE_ERROR;
-      vm->error = BUZZVM_ERROR_STACK;
+      buzzvm_seterror(vm, BUZZVM_ERROR_STACK, "empty stack");
       return vm->state;
    }
    else {
@@ -959,8 +992,7 @@ buzzvm_state buzzvm_pop(buzzvm_t vm) {
 
 buzzvm_state buzzvm_dup(buzzvm_t vm) {
    if(buzzdarray_isempty(vm->stack)) {
-      vm->state = BUZZVM_STATE_ERROR;
-      vm->error = BUZZVM_ERROR_STACK;
+      buzzvm_seterror(vm, BUZZVM_ERROR_STACK, "empty stack");
       return vm->state;
    }
    else {
@@ -1035,9 +1067,10 @@ buzzvm_state buzzvm_pushf(buzzvm_t vm, float v) {
 
 buzzvm_state buzzvm_pushs(buzzvm_t vm, uint16_t strid) {
    if(!buzzstrman_get(vm->strings, strid)) {
-      vm->state = BUZZVM_STATE_ERROR;
-      vm->error = BUZZVM_ERROR_STRING;
-      asprintf(&vm->errormsg, "%s: id read = %" PRIu16, buzzvm_error_desc[vm->error], strid);
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_STRING,
+                      "id read = %" PRIu16,
+                      strid);
       return vm->state;
    }
    buzzobj_t o = buzzheap_newobj(vm->heap, BUZZTYPE_STRING);

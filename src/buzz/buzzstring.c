@@ -56,9 +56,10 @@ int buzzstring_sub(buzzvm_t vm) {
    /* Make sure two or three parameters have been passed */
    if(buzzvm_lnum(vm) != 2 &&
       buzzvm_lnum(vm) != 3) {
-      vm->state = BUZZVM_STATE_ERROR;
-      vm->error = BUZZVM_ERROR_LNUM;
-      asprintf(&vm->errormsg, "%s: expected 2 or 3 parameters, got %" PRId64, buzzvm_error_desc[vm->error], buzzvm_lnum(vm));
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_LNUM,
+                      "expected 2 or 3 parameters, got %" PRId64,
+                      buzzvm_lnum(vm));
       return (vm)->state;
    }
    /* Get the string and its length */
@@ -106,9 +107,10 @@ int buzzstring_sub(buzzvm_t vm) {
 int buzzstring_concat(buzzvm_t vm) {
    /* Make sure at least two parameters have been passed */
    if(buzzvm_lnum(vm) < 2) {
-      vm->state = BUZZVM_STATE_ERROR;
-      vm->error = BUZZVM_ERROR_LNUM;
-      asprintf(&vm->errormsg, "%s: expected at least 2 parameters, got %" PRId64, buzzvm_error_desc[vm->error], buzzvm_lnum(vm));
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_LNUM,
+                      "expected at least 2 parameters, got %" PRId64,
+                      buzzvm_lnum(vm));
       return (vm)->state;
    }
    /* Go through the parameters, make sure they are the right type, and calculate total length */

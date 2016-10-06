@@ -372,12 +372,22 @@ struct neighbor_map_each_s {
 void neighbor_map_each(const void* key, void* data, void* params) {
    buzzobj_t rid = *(buzzobj_t*)key;
    struct neighbor_map_each_s* d = (struct neighbor_map_each_s*)params;
+   /* Save current stack size */
+   uint32_t ss = buzzvm_stack_top(d->vm);
    /* Push closure and params (key, value) */
    buzzvm_push(d->vm, d->closure);
    buzzvm_push(d->vm, rid);
    buzzvm_push(d->vm, *(buzzobj_t*)data);
    /* Call closure */
    d->vm->state = buzzvm_closure_call(d->vm, 2);
+   /* Make sure a value was returned */
+   if(buzzvm_stack_top(d->vm) <= ss) {
+      /* Error */
+      buzzvm_seterror(d->vm,
+                      BUZZVM_ERROR_STACK,
+                      "neighbors.map(function) expects the function to return a value");
+      return;
+   }
    /* Add entry to the return table */
    buzzobj_t retval = buzzvm_stack_at(d->vm, 1);
    buzzdict_set(d->result, &rid, &retval);
@@ -440,6 +450,8 @@ void neighbor_reduce(const void* key, void* data, void* params) {
    /* Save and pop accumulator from the stack */
    buzzobj_t accum = buzzvm_stack_at(d->vm, 1);
    buzzvm_pop(d->vm);
+   /* Save current stack size */
+   uint32_t ss = buzzvm_stack_top(d->vm);
    /* Push closure and params (key, value, accumulator) */
    buzzvm_push(d->vm, d->closure);
    buzzvm_push(d->vm, *(buzzobj_t*)key);
@@ -447,6 +459,14 @@ void neighbor_reduce(const void* key, void* data, void* params) {
    buzzvm_push(d->vm, accum);
    /* Call closure - the accumulator is left on the stack */
    d->vm->state = buzzvm_closure_call(d->vm, 3);
+   /* Make sure a value was returned */
+   if(buzzvm_stack_top(d->vm) <= ss) {
+      /* Error */
+      buzzvm_seterror(d->vm,
+                      BUZZVM_ERROR_STACK,
+                      "neighbors.reduce(function) expects the function to return a value");
+      return;
+   }
 }
 
 int buzzneighbors_reduce(struct buzzvm_s* vm) {
@@ -493,12 +513,22 @@ struct neighbor_filter_each_s {
 void neighbor_filter_each(const void* key, void* data, void* params) {
    buzzobj_t rid = *(buzzobj_t*)key;
    struct neighbor_filter_each_s* d = (struct neighbor_filter_each_s*)params;
+   /* Save current stack size */
+   uint32_t ss = buzzvm_stack_top(d->vm);
    /* Push closure and params (key, value) */
    buzzvm_push(d->vm, d->closure);
    buzzvm_push(d->vm, rid);
    buzzvm_push(d->vm, *(buzzobj_t*)data);
    /* Call closure */
    d->vm->state = buzzvm_closure_call(d->vm, 2);
+   /* Make sure a value was returned */
+   if(buzzvm_stack_top(d->vm) <= ss) {
+      /* Error */
+      buzzvm_seterror(d->vm,
+                      BUZZVM_ERROR_STACK,
+                      "neighbors.filter(function) expects the function to return a value");
+      return;
+   }
    /* Check return value */
    buzzobj_t retval = buzzvm_stack_at(d->vm, 1);
    if(retval->o.type != BUZZTYPE_NIL &&

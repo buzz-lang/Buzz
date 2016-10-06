@@ -1,6 +1,6 @@
 print("this", " ", "is", " ", "a", " ", "test")
 
-f = io.fopen("../../src/testing/testflocking.bzz", "r")
+f = io.fopen("../../src/testing/testhexagon.bzz", "r")
 
 if(not f) {
   print(io.error_message, "(", io.errno, ")")

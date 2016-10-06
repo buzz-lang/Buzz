@@ -35,7 +35,7 @@ extern "C" {
    typedef enum {
       BUZZVM_ERROR_NONE = 0, // No error
       BUZZVM_ERROR_INSTR,    // Unknown instruction 
-      BUZZVM_ERROR_STACK,    // Empty stack
+      BUZZVM_ERROR_STACK,    // Stack error
       BUZZVM_ERROR_LNUM,     // Wrong number of local variables
       BUZZVM_ERROR_PC,       // Program counter out of range
       BUZZVM_ERROR_FLIST,    // Function call id out of range
@@ -214,6 +214,22 @@ extern "C" {
     * @param vm The VM data.
     */
    extern void buzzvm_destroy(buzzvm_t* vm);
+
+   /*
+    * Sets the error state of the VM.
+    * If errmsg is NULL, the field vm->errormsg is set to the default
+    * error description. If errmsg is not null, it can be formatted as
+    * any string supported by printf() and further parameters can be
+    * passed.
+    * @param vm The VM data.
+    * @param errcode The code of the error.
+    * @param errmsg The message associated to the error.
+    * @see buzzvm_error
+    */
+   extern void buzzvm_seterror(buzzvm_t vm,
+                               buzzvm_error errcode,
+                               const char* errmsg,
+                               ...);
 
    /*
     * Sets the bytecode in the VM.
@@ -484,7 +500,14 @@ extern "C" {
  * @param vm The VM data.
  * @param idx The stack index, where 0 is the stack top and >0 goes down the stack.
  */
-#define buzzvm_stack_assert(vm, idx) if(buzzvm_stack_top(vm) - (idx) < 0) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_STACK; asprintf(&(vm)->errormsg, "%s", buzzvm_error_desc[(vm)->error]); return (vm)->state; }
+#define buzzvm_stack_assert(vm, idx)                                    \
+   if(buzzvm_stack_top(vm) - (idx) < 0) {                               \
+      buzzvm_seterror((vm),                                             \
+                      BUZZVM_ERROR_STACK,                               \
+                      "stack idx %u out of bounds",                     \
+                      (idx));                                           \
+      return (vm)->state;                                               \
+   }
 
 /*
  * Checks whether the type at the given stack position is correct.
@@ -495,7 +518,16 @@ extern "C" {
  * @param idx The stack index, where 0 is the stack top and >0 goes down the stack.
  * @param tpe The type to check
  */
-#define buzzvm_type_assert(vm, idx, tpe) if(buzzvm_stack_at(vm, idx)->o.type != tpe) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_TYPE; asprintf(&(vm)->errormsg, "%s: expected %s, got %s", buzzvm_error_desc[(vm)->error], buzztype_desc[tpe], buzztype_desc[buzzvm_stack_at(vm, idx)->o.type]); return (vm)->state; }
+#define buzzvm_type_assert(vm, idx, tpe)                                \
+   if(buzzvm_stack_at((vm), idx)->o.type != tpe) {                      \
+      buzzvm_seterror((vm),                                             \
+                      BUZZVM_ERROR_TYPE,                                \
+                      "expected %s, got %s",                            \
+                      buzztype_desc[tpe],                               \
+                      buzztype_desc[buzzvm_stack_at((vm), idx)->o.type] \
+         );                                                             \
+      return (vm)->state;                                               \
+   }
 
 /*
  * Returns the size of the stack.

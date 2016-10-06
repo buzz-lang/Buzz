@@ -189,17 +189,18 @@ int buzzio_fforeach(buzzvm_t vm) {
 int buzzio_fwrite(buzzvm_t vm) {
    /* Make sure there are at least two parameters */
    if(buzzvm_lnum(vm) < 2) {
-      vm->state = BUZZVM_STATE_ERROR;
-      vm->error = BUZZVM_ERROR_LNUM;
-      asprintf(&vm->errormsg, "%s: expected at least 2 parameters, got %" PRId64, buzzvm_error_desc[vm->error], buzzvm_lnum(vm));
-      return (vm)->state;
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_LNUM,
+                      "expected at least 2 parameters, got %" PRId64,
+                      buzzvm_lnum(vm));
+      return vm->state;
    }
    /* Used to store the return value of fprintf */
    int err = 0;
    /* Get file handle */
    filehandle_get(f);
    /* Go through the arguments */
-   for(int i = 2; err >= 0 && i < buzzvm_lnum(vm); ++i) {
+   for(int i = 2; err >= 0 && i <= buzzvm_lnum(vm); ++i) {
       /* Get argument */
       buzzvm_lload(vm, i);
       buzzobj_t o = buzzvm_stack_at(vm, 1);
