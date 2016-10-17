@@ -208,6 +208,24 @@ int buzzmath_log10(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+int buzzmath_exp(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
+   /* Get argument */
+   float arg;
+   buzzvm_lload(vm, 1);
+   buzzobj_t o = buzzvm_stack_at(vm, 1);
+   if(o->o.type == BUZZTYPE_FLOAT)    arg = o->f.value;
+   else if(o->o.type == BUZZTYPE_INT) arg = o->i.value;
+   else buzzmath_error(o);
+   /* Push result */
+   buzzvm_pushf(vm, expf(arg));
+   /* Return result */
+   return buzzvm_ret1(vm);
+}
+
+/****************************************/
+/****************************************/
+
 int buzzmath_sqrt(buzzvm_t vm) {
    buzzvm_lnum_assert(vm, 1);
    /* Get argument */
@@ -350,24 +368,6 @@ int buzzmath_atan(buzzvm_t vm) {
    }
    /* Push result */
    buzzvm_pushf(vm, atan2f(y, x));
-   /* Return result */
-   return buzzvm_ret1(vm);
-}
-
-/****************************************/
-/****************************************/
-
-int buzzmath_exp(buzzvm_t vm) {
-   buzzvm_lnum_assert(vm, 1);
-   /* Get argument */
-   float arg;
-   buzzvm_lload(vm, 1);
-   buzzobj_t o = buzzvm_stack_at(vm, 1);
-   if(o->o.type == BUZZTYPE_FLOAT)    arg = o->f.value;
-   else if(o->o.type == BUZZTYPE_INT) arg = o->i.value;
-   else buzzmath_error(o);
-   /* Push result */
-   buzzvm_pushf(vm, expf(arg));
    /* Return result */
    return buzzvm_ret1(vm);
 }
