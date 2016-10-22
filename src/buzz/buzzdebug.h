@@ -1,7 +1,9 @@
 #ifndef BUZZDEBUG_H
 #define BUZZDEBUG_H
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #include <buzz/buzzvm.h>
 #include <stdio.h>
 
