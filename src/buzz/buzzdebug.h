@@ -4,8 +4,9 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
-#include <buzz/buzzvm.h>
+
 #include <stdio.h>
+#include <buzz/buzzvm.h>
 
 #ifdef __cplusplus
 extern "C" {

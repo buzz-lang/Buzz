@@ -166,29 +166,85 @@ int buzzswarm_members_isrobotin(buzzswarm_members_t m,
 /****************************************/
 /****************************************/
 
+struct buzzswarm_members_print_s {
+   FILE* stream;
+   uint16_t robot;
+};
+typedef struct buzzswarm_members_print_s* buzzswarm_members_print_t;
+
 void print_swarm_elem(const void* key, void* data, void* params) {
-   uint32_t i;
    buzzswarm_elem_t e = *(buzzswarm_elem_t*)data;
-   fprintf(stdout, "ROBOT %u -> R%u:", *(uint16_t*)params, *(uint16_t*)key);
-   for(i = 0; i < buzzdarray_size(e->swarms); ++i) {
-      fprintf(stdout,
-              " %u",
-              buzzdarray_get(e->swarms, i, uint16_t));
+   buzzswarm_members_print_t p = (buzzswarm_members_print_t)params;
+   fprintf(stdout, "   %u:%u:", p->robot, *(uint16_t*)key);
+   if(!buzzdarray_isempty(e->swarms)) {
+      fprintf(p->stream,
+              "%u",
+              buzzdarray_get(e->swarms, 0, uint16_t));
+      for(uint32_t i = 1; i < buzzdarray_size(e->swarms); ++i) {
+         fprintf(p->stream,
+                 " %u",
+                 buzzdarray_get(e->swarms, i, uint16_t));
+      }
    }
    fprintf(stdout, "\n");
 }
 
-void buzzswarm_members_print(buzzswarm_members_t m, uint16_t id) {
-   fprintf(stdout, "ROBOT %u -> Swarm member table size: %u\n", id, buzzdict_size(m));
-   buzzdict_foreach(m, print_swarm_elem, &id);
+void buzzswarm_members_print(FILE* stream,
+                             buzzswarm_members_t m,
+                             uint16_t robot) {
+   fprintf(stream,
+           "ROBOT %u: swarm member table size: %u\n",
+           robot,
+           buzzdict_size(m));
+   struct buzzswarm_members_print_s x = {
+      .stream = stream,
+      .robot = robot
+   };
+   buzzdict_foreach(m, print_swarm_elem, &x);
 }
 
 /****************************************/
 /****************************************/
 
+/* Maximum age (in steps) for swarm membership to be remembered */
+static int MEMBERSHIP_AGE_MAX = 50;
+
+/* Information on element to delete */
+struct buzzswarm_members_todelete_s {
+   uint16_t key;
+   struct buzzswarm_members_todelete_s* next;
+};
+typedef struct buzzswarm_members_todelete_s* buzzswarm_members_todelete_t;
+
+/* Function that checks whether an element must be deleted */
+void check_swarm_elem(const void* key, void* data, void* params) {
+   buzzswarm_elem_t elem = *(buzzswarm_elem_t*)data;
+   buzzswarm_members_todelete_t* todel = (buzzswarm_members_todelete_t*)params;
+   /* Increase the element's age */
+   ++elem->age;
+   /* Mark the element to delete if it exceeds the maximum age */
+   if(elem->age > MEMBERSHIP_AGE_MAX) {
+      buzzswarm_members_todelete_t x =
+         (buzzswarm_members_todelete_t)malloc(
+            sizeof(struct buzzswarm_members_todelete_s));
+      x->key = *(uint16_t*)key;
+      x->next = *todel;
+      *todel = x;
+   }
+}
+
 void buzzswarm_members_update(buzzswarm_members_t m) {
-   /* Erase an element if it exceeds the age */
-   // TODO
+   /* Go through elements and make a list of the elements to erase */
+   buzzswarm_members_todelete_t todel = NULL;
+   buzzdict_foreach(m, check_swarm_elem, &todel);
+   /* Erase elements */
+   buzzswarm_members_todelete_t next;
+   while(todel) {
+      next = todel->next;
+      buzzdict_remove(m, &todel->key);
+      free(todel);
+      todel = next;
+   }
 }
 
 /****************************************/

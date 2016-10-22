@@ -9,8 +9,8 @@ execute_process(
 #
 # General compilation flags
 #
-set(CMAKE_C_FLAGS   "-Wall -std=c99")
-set(CMAKE_CXX_FLAGS "-Wall")
+set(CMAKE_C_FLAGS   "-Wall -std=c99 -D_GNU_SOURCE")
+set(CMAKE_CXX_FLAGS "-Wall -D_GNU_SOURCE")
 if(NOT APPLE)
   set(BUZZ_FLAGS_DEBUG "-g -ggdb3")
   add_definitions(-D_GNU_SOURCE)

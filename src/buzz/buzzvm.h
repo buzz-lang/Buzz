@@ -162,6 +162,8 @@ extern "C" {
       buzzdarray_t swarmstack;
       /* Swarm members */
       buzzswarm_members_t swarmmembers;
+      /* Counter for swarm membership broadcasting */
+      uint16_t swarmbroadcast;
       /* Input message FIFO */
       buzzinmsg_queue_t inmsgs;
       /* Output message FIFO */
@@ -178,6 +180,10 @@ extern "C" {
       char* errormsg;
       /* Robot id */
       uint16_t robot;
+      /* Random number generator state */
+      int32_t* rngstate;
+      /* Random number generator index */
+      uint32_t rngidx;
    };
    typedef struct buzzvm_s* buzzvm_t;
 
@@ -226,6 +232,12 @@ extern "C" {
     * @param vm The VM data.
     */
    extern void buzzvm_process_inmsgs(buzzvm_t vm);
+
+   /*
+    * Processes the output message queue.
+    * @param vm The VM data.
+    */
+   extern void buzzvm_process_outmsgs(buzzvm_t vm);
 
    /*
     * Executes the next step in the bytecode, if possible.

@@ -17,6 +17,8 @@ const char *buzzvm_error_desc[] = { "none", "unknown instruction", "empty stack"
 
 const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "dup", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "gload", "gstore", "pusht", "tput", "tget", "callc", "calls", "pushf", "pushi", "pushs", "pushcn", "pushcc", "pushl", "lload", "lstore", "jump", "jumpz", "jumpnz"};
 
+static uint16_t SWARM_BROADCAST_PERIOD = 10;
+
 /****************************************/
 /****************************************/
 
@@ -372,6 +374,21 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
       /* Get rid of the message */
       buzzmsg_payload_destroy(&msg);
    }
+   /* Update swarm membership */
+   buzzswarm_members_update(vm->swarmmembers);
+}
+
+/****************************************/
+/****************************************/
+
+void buzzvm_process_outmsgs(buzzvm_t vm) {
+   /* Must broadcast? swarm list message */
+   --vm->swarmbroadcast;
+   if(vm->swarmbroadcast == 0) {
+      vm->swarmbroadcast = SWARM_BROADCAST_PERIOD;
+      buzzoutmsg_queue_append_swarm_list(vm->outmsgs,
+                                         vm->swarms);
+   }
 }
 
 /****************************************/
@@ -426,6 +443,7 @@ buzzvm_t buzzvm_new(uint16_t robot) {
                                    NULL);
    /* Create swarm member structure */
    vm->swarmmembers = buzzswarm_members_new();
+   vm->swarmbroadcast = SWARM_BROADCAST_PERIOD;
    /* Create message queues */
    vm->inmsgs = buzzinmsg_queue_new(20);
    vm->outmsgs = buzzoutmsg_queue_new(robot);
@@ -445,6 +463,9 @@ buzzvm_t buzzvm_new(uint16_t robot) {
                                 NULL);
    /* Take care of the robot id */
    vm->robot = robot;
+   /* Initialize empty random number generator (buzzvm_math takes care of creating it) */
+   vm->rngstate = NULL;
+   vm->rngidx = 0;
    /* Return new vm */
    return vm;
 }

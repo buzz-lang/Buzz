@@ -2,6 +2,7 @@
 #define BUZZSWARM_H
 
 #include <buzz/buzzdict.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,10 +81,13 @@ extern "C" {
 
    /*
     * Prints the current state of the swarm membership structure.
+    * @param stream The stream to use.
     * @param m The swarm membership structure.
+    * @param robot The robot id.
     */
-   extern void buzzswarm_members_print(buzzswarm_members_t m,
-                                       uint16_t id);
+   extern void buzzswarm_members_print(FILE* stream,
+                                       buzzswarm_members_t m,
+                                       uint16_t robot);
 
    /*
     * Registers the swarm data into the virtual machine.

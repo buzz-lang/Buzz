@@ -4,6 +4,18 @@
 /****************************************/
 /****************************************/
 
+CBuzzControllerFootBot::SWheelTurningParams::SWheelTurningParams() :
+   TurningMechanism(NO_TURN),
+   HardTurnOnAngleThreshold(ToRadians(CDegrees(90.0))),
+   SoftTurnOnAngleThreshold(ToRadians(CDegrees(70.0))),
+   NoTurnAngleThreshold(ToRadians(CDegrees(10.0))),
+   MaxSpeed(10.0)
+{
+}
+
+/****************************************/
+/****************************************/
+
 void CBuzzControllerFootBot::SWheelTurningParams::Init(TConfigurationNode& t_node) {
    try {
       TurningMechanism = NO_TURN;
@@ -42,11 +54,37 @@ static int BuzzGoTo(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+int BuzzSetWheels(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 2);
+   /* Push speeds */
+   buzzvm_lload(vm, 1); /* Left speed */
+   buzzvm_lload(vm, 2); /* Right speed */
+   buzzvm_type_assert(vm, 2, BUZZTYPE_FLOAT);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_FLOAT);
+   /* Get pointer to the controller */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
+   buzzvm_gload(vm);
+   /* Call function */
+   reinterpret_cast<CBuzzControllerFootBot*>(
+      buzzvm_stack_at(vm, 1)->u.value)->
+      SetWheels(buzzvm_stack_at(vm, 3)->f.value, /* Left speed */
+                buzzvm_stack_at(vm, 2)->f.value  /* Right speed */
+         );
+   return buzzvm_ret0(vm);
+}
+
+/****************************************/
+/****************************************/
+
 int BuzzSetLEDs(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 3);
    /* Push the color components */
    buzzvm_lload(vm, 1);
    buzzvm_lload(vm, 2);
    buzzvm_lload(vm, 3);
+   buzzvm_type_assert(vm, 3, BUZZTYPE_INT);
+   buzzvm_type_assert(vm, 2, BUZZTYPE_INT);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
    /* Create a new color with that */
    CColor cColor(buzzvm_stack_at(vm, 3)->i.value,
                  buzzvm_stack_at(vm, 2)->i.value,
@@ -207,6 +245,16 @@ void CBuzzControllerFootBot::SetWheelSpeedsFromVector(const CVector2& c_heading)
 /****************************************/
 /****************************************/
 
+void CBuzzControllerFootBot::SetWheels(Real f_left_speed,
+                                       Real f_right_speed) {
+   DEBUG("SetWheels(%f, %f)\n", f_left_speed, f_right_speed);
+   m_pcWheels->SetLinearVelocity(f_left_speed,
+                                 f_right_speed);
+}
+
+/****************************************/
+/****************************************/
+
 void CBuzzControllerFootBot::SetLEDs(const CColor& c_color) {
    m_pcLEDs->SetAllColors(c_color);
 }
@@ -218,6 +266,10 @@ buzzvm_state CBuzzControllerFootBot::RegisterFunctions() {
    /* Register base functions */
    CBuzzController::RegisterFunctions();
    if(m_pcWheels) {
+      /* BuzzSetWheels */
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "set_wheels", 1));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzSetWheels));
+      buzzvm_gstore(m_tBuzzVM);
       /* BuzzGoTo */
       buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "goto", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGoTo));

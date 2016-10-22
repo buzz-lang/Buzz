@@ -130,6 +130,11 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
       m_unRobotId = FromString<UInt16>(GetId().substr(2));
       SetBytecode(strBCFName, strDbgFName);
       UpdateSensors();
+      /* Set initial robot message (id and then all zeros) */
+      CByteArray cData;
+      cData << m_tBuzzVM->robot;
+      while(cData.Size() < m_pcRABA->GetSize()) cData << static_cast<UInt8>(0);
+      m_pcRABA->SetData(cData);
    }
    catch(CARGoSException& ex) {
       THROW_ARGOSEXCEPTION_NESTED("Error initializing the Buzz controller", ex);
@@ -297,6 +302,7 @@ void CBuzzController::ProcessInMsgs() {
 /****************************************/
 
 void CBuzzController::ProcessOutMsgs() {
+   buzzvm_process_outmsgs(m_tBuzzVM);
    /* Send robot id */
    CByteArray cData;
    cData << m_tBuzzVM->robot;

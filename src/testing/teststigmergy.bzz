@@ -11,12 +11,12 @@ var t
 function init() {
   robots = 3
   s = stigmergy.create(1)
-  s.setonconflict(function(k, l, r){
+  s.onconflict(function(k, l, r){
       log("fb ", id, ": conflict on vstig[", k, "]: r", l.robot, " / r", r.robot)
       if(l.robot > r.robot) { return l }
       else                  { return r }
     })
-  s.setonconflictlost(function(k, l){
+  s.onconflictlost(function(k, l){
       log("fb ", id, ": lost conflict on vstig[", k, "]")
     })
   t = 0
