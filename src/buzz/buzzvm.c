@@ -383,9 +383,11 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
 /****************************************/
 
 void buzzvm_process_outmsgs(buzzvm_t vm) {
-   /* Must broadcast? swarm list message */
-   --vm->swarmbroadcast;
-   if(vm->swarmbroadcast == 0) {
+   /* Must broadcast swarm list message? */
+   if(vm->swarmbroadcast > 0)
+      --vm->swarmbroadcast;
+   if(vm->swarmbroadcast == 0 &&
+      !buzzdict_isempty(vm->swarms)) {
       vm->swarmbroadcast = SWARM_BROADCAST_PERIOD;
       buzzoutmsg_queue_append_swarm_list(vm->outmsgs,
                                          vm->swarms);
