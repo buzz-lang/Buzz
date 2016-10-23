@@ -16,6 +16,10 @@ void buzzdarray_elem_destroy(uint32_t pos, void* data, void* params) {}
 buzzdarray_t buzzdarray_new(uint32_t cap,
                             uint32_t elem_size,
                             buzzdarray_elem_funp elem_destroy) {
+   if(cap == 0) {
+      fprintf(stderr, "[FATAL] Can't initialize a dynamic array with zero capacity.");
+      abort();
+   }
    /* Create the dynamic array. calloc() zeroes everything. */
    buzzdarray_t da = (buzzdarray_t)calloc(1, sizeof(struct buzzdarray_s));
    /* Set info */
@@ -90,6 +94,10 @@ void* buzzdarray_makeslot(buzzdarray_t da,
    uint32_t i = pos < buzzdarray_size(da) ? pos : buzzdarray_size(da);
    /* Increase the capacity if necessary */
    if(buzzdarray_size(da)+1 >= da->capacity) {
+      if(da->capacity == 0) {
+         fprintf(stderr, "[BUG] Array capacity is zero.\n");
+         abort();
+      }
       do { da->capacity *= 2; } while(buzzdarray_size(da)+1 >= da->capacity);
       void* nd = realloc(da->data, da->capacity * da->elem_size);
       if(!nd) {
