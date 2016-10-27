@@ -1,3 +1,5 @@
+include "string.bzz"
+
 ########################################
 #
 # MISCELLANEOUS CONSTANTS
@@ -5,7 +7,7 @@
 ########################################
 
 TARGETDIST_VSTIG = 2
-ROBOTS           = 10
+ROBOTS           = 100 # this must match the number of robots in the swarm
 DISTANCE_MAX     = 60000.
 
 ########################################
@@ -30,7 +32,7 @@ function calc_lj(dist, target, epsilon) {
 }
 
 #
-# Neighbor data to kin LJ interaction
+
 #
 function to_lj_kin(rid, data) {
   var lj
@@ -98,6 +100,7 @@ function barrier_set(threshold, transf) {
     barrier_wait(threshold, transf);
   }
   barrier = stigmergy.create(BARRIER_VSTIG)
+  statestr = "barrier"
 }
 
 #
@@ -105,7 +108,6 @@ function barrier_set(threshold, transf) {
 #
 function barrier_ready() {
   barrier.put(id, 1)
-  debug("ready (", barrier.size() ,")")
 }
 
 #
@@ -113,8 +115,8 @@ function barrier_ready() {
 #
 function barrier_wait(threshold, transf) {
   barrier.get(id)
+  extradbg = barrier.size()
   if(barrier.size() >= threshold) {
-    debug("done waiting")
     barrier = nil
     transf()
   }
@@ -174,6 +176,7 @@ function state_takeoff() {
 #
 function transition_to_search_for_target() {
   statef = state_search_for_target
+  statestr = "search_for_target"
   yaw_start = orientation.yaw % (2. * math.pi)
   camera_enable()
   mytargetdata = {}
@@ -222,6 +225,7 @@ function state_search_for_target() {
 #
 function transition_to_pick_target() {
   statef = state_pick_target
+  statestr = "pick_target"
   targetdist = stigmergy.create(TARGETDIST_VSTIG)
   if(mytargetdata.dist < DISTANCE_MAX) {
     # I saw the target
@@ -244,21 +248,16 @@ function state_pick_target() {
   params.dist    = mytargetdata.dist
   params.color   = mytargetdata.color
   params.closest = mytargetdata.closest
-  params.done    = 1
   params = neighbors.reduce(
     function(rid, rdata, accum) {
       var d = targetdist.get(rid)
       if(d != nil) {
-        if(d.dist < DISTANCE_MAX) {
-          if(accum.dist > rdata.distance + d.dist) {
-            accum.dist    = rdata.distance + d.dist
-            accum.closest = rid
-            accum.color   = d.color
-          }
+        if(accum.dist > rdata.distance + d.dist) {
+          accum.dist    = rdata.distance + d.dist
+          accum.closest = rid
+          accum.color   = d.color
         }
-        else accum.done = nil
       }
-      else accum.done = nil
       return accum
     },
     params
@@ -266,26 +265,25 @@ function state_pick_target() {
   # Advertise your choice
   mytargetdata.closest = params.closest
   mytargetdata.color   = params.color
-  mytargetdata.dist = params.dist
+  mytargetdata.dist    = params.dist
   targetdist.put(id, mytargetdata)
-  # Are we done?
-  if(params.done) {
-    # Yes, move to the next state
+  if(params.dist < DISTANCE_MAX) {
+    # Move to the next state
     barrier_set(ROBOTS, transition_to_divide)
     barrier_ready()
   }
-  else
-    # No, check if we have info on the closest robot
+  else {
+    # Check if we have info on the closest robot
     if(mytargetdata.closest) {
       # Yes, rotate towards it
-      var n
-      n = neighbors.get(mytargetdata.closest)
+      var n = neighbors.get(mytargetdata.closest)
       if(n.azimuth > math.pi / 36.0) {
         rotate(math.pi / 360.0)
       }
       else if(n.azimuth < -math.pi / 36.0)
         rotate(-math.pi / 360.0)
     }
+  }
 }
 
 #
@@ -293,6 +291,7 @@ function state_pick_target() {
 #
 function transition_to_divide() {
   statef = state_divide
+  statestr = "divide"
   sred = swarm.create(TARGET_RED)
   sred.select(mytargetdata.color == TARGET_RED)
   sblue = swarm.create(TARGET_BLUE)
@@ -312,6 +311,7 @@ function state_divide() {
 #
 function transition_to_goto_target() {
   statef = state_goto_target
+  statestr = "goto_target"
 }
 
 #
@@ -332,13 +332,16 @@ function state_goto_target() {
 function init() {
   # Set initial state
   statef = state_takeoff
+  statestr = "takeoff"
 }
 
 #
 # Executed at each time step
 #
 function step() {
+  extradbg = ""
   statef()
+  debug(statestr, ": ", extradbg)
 }
 
 #

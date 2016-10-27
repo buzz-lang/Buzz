@@ -6,7 +6,7 @@
   <!-- ************************* -->
   <framework>
     <system threads="0" />
-    <experiment length="60"
+    <experiment length="40"
                 ticks_per_second="10"
                 random_seed="123" />
   </framework>
@@ -22,12 +22,12 @@
         <range_and_bearing  implementation="default" />
       </actuators>
       <sensors>
-        <range_and_bearing               implementation="medium" medium="rab" show_rays="false" />
+        <range_and_bearing               implementation="medium" medium="rab" show_rays="true" />
         <colored_blob_perspective_camera implementation="default" medium="leds" show_rays="true" />
         <positioning                     implementation="default" />
       </sensors>
-      <params bytecode_file="test_takeoff_divide_flock.bo"
-              debug_file="test_takeoff_divide_flock.bdbg" />
+      <params bytecode_file="../../build/testing/test_takeoff_divide_flock.bo"
+              debug_file="../../build/testing/test_takeoff_divide_flock.bdb" />
     </buzz_controller_spiri>
 
   </controllers>
@@ -54,13 +54,16 @@
 
     <box id="wall_e" size="40, .1, 2" movable="false">
       <body position="0, -20, 0" orientation="0, 0, 0" />
+      <leds medium="leds">
+        <led offset="0, .1, 2.1" anchor="origin" color="blue" />
+      </leds>
     </box>
 
     <distribute>
       <position method="uniform" min="-18,-18,0" max="18,18,0" />
       <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0" />
       <entity quantity="100" max_trials="100">
-        <spiri id="sp" rab_range="10" rab_data_size="100" camera_range="5">
+        <spiri id="sp" rab_range="10" rab_data_size="500" camera_range="5">
           <controller config="bcs" />
         </spiri>
       </entity>
@@ -90,7 +93,8 @@
   <visualization>
     <qt-opengl>
       <camera>
-        <placement idx="0" position="0,0,30" look_at="0,0,29" lens_focal_length="20" />
+        <placement idx="1" position="0,0,30" look_at="0,0,29" lens_focal_length="20" />
+        <placement idx="0" position="-1.89972,-12.3033,6.77703" look_at="-1.55234,-12.789,5.97494" up="0.466566,-0.652437,0.597195" lens_focal_length="20" />
       </camera>
       <!-- <frame_grabbing directory="frames" -->
       <!--                 base_name="frame_" -->
