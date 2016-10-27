@@ -27,7 +27,7 @@ uint32_t buzzobj_table_hash(const void* key) {
       }
       default:
          fprintf(stderr, "[TODO] %s:%d\n", __FILE__, __LINE__);
-         exit(1);
+         abort();
    }
 }
 
@@ -111,7 +111,7 @@ buzzobj_t buzzobj_clone(const buzzobj_t o) {
       }
       default:
          fprintf(stderr, "[BUG] %s:%d: Clone for Buzz object type %d\n", __FILE__, __LINE__, o->o.type);
-         exit(1);
+         abort();
    }
 }
 
@@ -158,7 +158,7 @@ uint32_t buzzobj_hash(const buzzobj_t o) {
       case BUZZTYPE_CLOSURE:
       default:
          fprintf(stderr, "[BUG] %s:%d: Hash for Buzz object type %d\n", __FILE__, __LINE__, o->o.type);
-         exit(1);
+         abort();
    }
 }
 
@@ -183,7 +183,7 @@ int buzzobj_eq(const buzzobj_t a,
       case BUZZTYPE_USERDATA: return ((uintptr_t)(a->u.value) == (uintptr_t)(b->u.value));
       default:
          fprintf(stderr, "[BUG] %s:%d: Equality test between wrong Buzz objects types %d and %d\n", __FILE__, __LINE__, a->o.type, b->o.type);
-         exit(1);
+         abort();
    }
 }
 
@@ -263,7 +263,7 @@ int buzzobj_cmp(const buzzobj_t a,
    }
    // TODO better error management
    fprintf(stderr, "[TODO] %s:%d: Error for comparison between Buzz objects of types %d and %d\n", __FILE__, __LINE__, a->o.type, b->o.type);
-   exit(1);
+   abort();
 }
 
 /****************************************/

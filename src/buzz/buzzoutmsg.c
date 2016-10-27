@@ -87,8 +87,8 @@ void buzzoutmsg_vstig_destroy(const void* key, void* data, void* params) {
 }
 
 int buzzoutmsg_vstig_cmp(const void* a, const void* b) {
-   if((uintptr_t)a < (uintptr_t)b) return -1;
-   if((uintptr_t)a < (uintptr_t)b) return  1;
+   if((uintptr_t)(*(buzzoutmsg_t*)a) < (uintptr_t)(*(buzzoutmsg_t*)b)) return -1;
+   if((uintptr_t)(*(buzzoutmsg_t*)a) > (uintptr_t)(*(buzzoutmsg_t*)b)) return  1;
    return 0;
 }
 
@@ -337,15 +337,14 @@ void buzzoutmsg_queue_append_vstig(buzzoutmsg_queue_t msgq,
                         NULL);
       buzzdict_set(msgq->vstig, &id, &vs);
    }
-   /* Do we have a duplicate? */
+   /* Do we have a more recent duplicate? */
+   int etype = -1, eidx = -1; /* No message to remove from the queue */
    if(e) {
       /* Yes; if the duplicate is newer than the passed message, nothing to do */
       if((*e)->data->timestamp >= data->timestamp) return;
-      /* The duplicate is older */
-      /* Remove the entry from the queue */
-      buzzdarray_remove(
-         msgq->queues[(*e)->type],
-         buzzdarray_find(msgq->queues[(*e)->type], buzzoutmsg_vstig_cmp, NULL));
+      /* The duplicate is older, store data to remove it later */
+      etype = (*e)->type;
+      eidx = buzzdarray_find(msgq->queues[etype], buzzoutmsg_vstig_cmp, e);
    }
    /* Create a new message */
    buzzoutmsg_t m = (buzzoutmsg_t)malloc(sizeof(union buzzoutmsg_u));
@@ -353,8 +352,12 @@ void buzzoutmsg_queue_append_vstig(buzzoutmsg_queue_t msgq,
    m->vs.id = id;
    m->vs.key = buzzobj_clone(key);
    m->vs.data = buzzvstig_elem_clone(data);
-   /* Update the dictionary */
+   /* Update the dictionary - this also invalidates e */
    buzzdict_set(vs, &m->vs.key, &m);
+   if(etype > -1) {
+      /* Remove the entry from the queue */
+      buzzdarray_remove(msgq->queues[etype], eidx);
+   }
    /* Add a new message to the queue */
    buzzdarray_push(msgq->queues[type], &m);
 }
