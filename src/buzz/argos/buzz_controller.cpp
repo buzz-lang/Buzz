@@ -302,6 +302,7 @@ void CBuzzController::ProcessInMsgs() {
 /****************************************/
 
 void CBuzzController::ProcessOutMsgs() {
+   /* Process outgoing messages */
    buzzvm_process_outmsgs(m_tBuzzVM);
    /* Send robot id */
    CByteArray cData;
