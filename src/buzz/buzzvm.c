@@ -319,6 +319,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARM_LIST message received\n", vm->robot);
                break;
             }
+            if(nsids < 1) break;
             /* Deserialize swarm ids */
             buzzdarray_t sids = buzzdarray_new(nsids, sizeof(uint16_t), NULL);
             uint16_t i;
