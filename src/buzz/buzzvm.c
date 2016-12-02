@@ -134,33 +134,25 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
             /* Deserialize the robot id */
             uint16_t rid;
             int64_t pos = buzzmsg_deserialize_u16(&rid, msg, 1);
-            /* Deserialize the value id and make sure the string exists */
-            uint16_t vid;
-            pos = buzzmsg_deserialize_u16(&vid, msg, pos);
-            const char* vidstr = buzzstrman_get(vm->strings, vid);
-            if(!vidstr) {
-               fprintf(stderr, "[WARNING] [ROBOT %u] BROADCAST message for unknown vid = %u\n", vm->robot, vid);
-               break;
-            }
+            /* Deserialize the topic */
+            buzzobj_t topic;
+            pos = buzzobj_deserialize(&topic, msg, pos, vm);
             /* Make sure there's a listener to call */
-            const buzzobj_t* l = buzzdict_get(vm->listeners, &vid, buzzobj_t);
+            const buzzobj_t* l = buzzdict_get(vm->listeners, &topic->s.value.sid, buzzobj_t);
             if(!l) {
-               fprintf(stderr, "[WARNING] [ROBOT %u] BROADCAST message with no listener for vid = %u\n", vm->robot, vid);
+               /* No listener, ignore message */
+               buzzobj_destroy(&topic);
                break;
             }
             /* Deserialize value */
             buzzobj_t value;
             pos = buzzobj_deserialize(&value, msg, pos, vm);
-            /* Make an object for the value id */
-            buzzobj_t vido = buzzheap_newobj(vm->heap, BUZZTYPE_STRING);
-            vido->s.value.sid = vid;
-            vido->s.value.str = vidstr;
             /* Make an object for the robot id */
             buzzobj_t rido = buzzheap_newobj(vm->heap, BUZZTYPE_INT);
             rido->i.value = rid;
             /* Call listener */
             buzzvm_push(vm, *l);
-            buzzvm_push(vm, vido);
+            buzzvm_push(vm, topic);
             buzzvm_push(vm, value);
             buzzvm_push(vm, rido);
             buzzvm_closure_call(vm, 3);
@@ -194,7 +186,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                /* Local element must be updated */
                /* Store element */
                buzzvstig_store(*vs, &k, &v);
-               buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, v);
+               buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_PUT, id, k, v);
             }
             else if(((*l)->timestamp == v->timestamp) && /* Same timestamp */
                     ((*l)->robot != v->robot)) {         /* Different robot */
@@ -224,7 +216,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                   /* Just propagate the PUT message */
                   buzzvstig_store(*vs, &k, &c);
                }
-               buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, c);
+               buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_PUT, id, k, c);
             }
             else {
                /* Remote element is older, ignore it */
@@ -260,12 +252,12 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                (*l)->timestamp < v->timestamp) { /* Local element is older */
                /* Store element */
                buzzvstig_store(*vs, &k, &v);
-               buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, v);
+               buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_PUT, id, k, v);
             }
             else if((*l)->timestamp > v->timestamp) {
                /* Local element is newer */
                /* Append a PUT message to the out message queue */
-               buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, *l);
+               buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_PUT, id, k, *l);
                free(v);
             }
             else if(((*l)->timestamp == v->timestamp) && /* Same timestamp */
@@ -295,7 +287,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                   /* Just propagate the PUT message */
                   buzzvstig_store(*vs, &k, &c);
                }
-               buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, c);
+               buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_PUT, id, k, c);
             }
             else {
                /* Remote element is same as local, ignore it */
@@ -390,7 +382,7 @@ void buzzvm_process_outmsgs(buzzvm_t vm) {
    if(vm->swarmbroadcast == 0 &&
       !buzzdict_isempty(vm->swarms)) {
       vm->swarmbroadcast = SWARM_BROADCAST_PERIOD;
-      buzzoutmsg_queue_append_swarm_list(vm->outmsgs,
+      buzzoutmsg_queue_append_swarm_list(vm,
                                          vm->swarms);
    }
 }

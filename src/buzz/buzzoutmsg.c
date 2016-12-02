@@ -1,4 +1,4 @@
-#include "buzzoutmsg.h"
+#include "buzzvm.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,7 +14,7 @@
  */
 struct buzzoutmsg_broadcast_s {
    int type;
-   uint16_t id;
+   buzzobj_t topic;
    buzzobj_t value;
 };
 
@@ -63,6 +63,7 @@ void buzzoutmsg_destroy(uint32_t pos, void* data, void* params) {
    buzzoutmsg_t m = *(buzzoutmsg_t*)data;
    switch(m->type) {
       case BUZZMSG_BROADCAST:
+         buzzobj_destroy(&m->bc.topic);
          buzzobj_destroy(&m->bc.value);
          break;
       case BUZZMSG_SWARM_JOIN:
@@ -130,29 +131,29 @@ void buzzoutmsg_queue_destroy(buzzoutmsg_queue_t* msgq) {
 /****************************************/
 /****************************************/
 
-uint32_t buzzoutmsg_queue_size(buzzoutmsg_queue_t msgq) {
+uint32_t buzzoutmsg_queue_size(buzzvm_t vm) {
    return
-      buzzdarray_size(msgq->queues[BUZZMSG_BROADCAST]) +
-      buzzdarray_size(msgq->queues[BUZZMSG_SWARM_LIST]) +
-      buzzdarray_size(msgq->queues[BUZZMSG_SWARM_JOIN]) +
-      buzzdarray_size(msgq->queues[BUZZMSG_SWARM_LEAVE]) +
-      buzzdarray_size(msgq->queues[BUZZMSG_VSTIG_PUT]) +
-      buzzdarray_size(msgq->queues[BUZZMSG_VSTIG_QUERY]);
+      buzzdarray_size(vm->outmsgs->queues[BUZZMSG_BROADCAST]) +
+      buzzdarray_size(vm->outmsgs->queues[BUZZMSG_SWARM_LIST]) +
+      buzzdarray_size(vm->outmsgs->queues[BUZZMSG_SWARM_JOIN]) +
+      buzzdarray_size(vm->outmsgs->queues[BUZZMSG_SWARM_LEAVE]) +
+      buzzdarray_size(vm->outmsgs->queues[BUZZMSG_VSTIG_PUT]) +
+      buzzdarray_size(vm->outmsgs->queues[BUZZMSG_VSTIG_QUERY]);
 }
 
 /****************************************/
 /****************************************/
 
-void buzzoutmsg_queue_append_broadcast(buzzoutmsg_queue_t msgq,
-                                       uint16_t id,
+void buzzoutmsg_queue_append_broadcast(buzzvm_t vm,
+                                       buzzobj_t topic,
                                        buzzobj_t value) {
    /* Make a new BROADCAST message */
    buzzoutmsg_t m = (buzzoutmsg_t)malloc(sizeof(union buzzoutmsg_u));
    m->bc.type = BUZZMSG_BROADCAST;
-   m->bc.id = id;
+   m->bc.topic = buzzobj_clone(topic);
    m->bc.value = buzzobj_clone(value);
    /* Queue it */
-   buzzdarray_push(msgq->queues[BUZZMSG_BROADCAST], &m);   
+   buzzdarray_push(vm->outmsgs->queues[BUZZMSG_BROADCAST], &m);   
 }
 
 /****************************************/
@@ -182,16 +183,16 @@ void dict_to_array(const void* key, void* data, void* params) {
    }
 }
 
-void buzzoutmsg_queue_append_swarm_list(buzzoutmsg_queue_t msgq,
+void buzzoutmsg_queue_append_swarm_list(buzzvm_t vm,
                                         const buzzdict_t ids) {
    /* Invariants:
     * - Only one list message can be queued at any time;
     * - If a list message is already queued, join/leave messages are not
     */
    /* Delete every existing SWARM related message */
-   buzzdarray_clear(msgq->queues[BUZZMSG_SWARM_LIST], 1);
-   buzzdarray_clear(msgq->queues[BUZZMSG_SWARM_JOIN], 1);
-   buzzdarray_clear(msgq->queues[BUZZMSG_SWARM_LEAVE], 1);
+   buzzdarray_clear(vm->outmsgs->queues[BUZZMSG_SWARM_LIST], 1);
+   buzzdarray_clear(vm->outmsgs->queues[BUZZMSG_SWARM_JOIN], 1);
+   buzzdarray_clear(vm->outmsgs->queues[BUZZMSG_SWARM_LEAVE], 1);
    /* Make an array of current swarm id dictionary */
    struct dict_to_array_s da = {
       .count = 0,
@@ -207,7 +208,7 @@ void buzzoutmsg_queue_append_swarm_list(buzzoutmsg_queue_t msgq,
    memcpy(m->sw.ids, da.data, m->sw.size * sizeof(uint16_t));
    free(da.data);
    /* Queue the new LIST message */
-   buzzdarray_push(msgq->queues[BUZZMSG_SWARM_LIST], &m);
+   buzzdarray_push(vm->outmsgs->queues[BUZZMSG_SWARM_LIST], &m);
 }
 
 /****************************************/
@@ -256,7 +257,7 @@ static void remove_from_swarm_queue(buzzdarray_t q, uint16_t id) {
    if(i < buzzdarray_size(q)) buzzdarray_remove(q, i);
 }
 
-void buzzoutmsg_queue_append_swarm_joinleave(buzzoutmsg_queue_t msgq,
+void buzzoutmsg_queue_append_swarm_joinleave(buzzvm_t vm,
                                              int type,
                                              uint16_t id) {
    /* Invariants:
@@ -264,9 +265,9 @@ void buzzoutmsg_queue_append_swarm_joinleave(buzzoutmsg_queue_t msgq,
     * - If a list message is already queued, join/leave messages are not
     */
    /* Is there a LIST message? */
-   if(!buzzdarray_isempty(msgq->queues[BUZZMSG_SWARM_LIST])) {
+   if(!buzzdarray_isempty(vm->outmsgs->queues[BUZZMSG_SWARM_LIST])) {
       /* Yes, get a handle to the message */
-      buzzoutmsg_t l = buzzdarray_get(msgq->queues[BUZZMSG_SWARM_LIST], 0, buzzoutmsg_t);
+      buzzoutmsg_t l = buzzdarray_get(vm->outmsgs->queues[BUZZMSG_SWARM_LIST], 0, buzzoutmsg_t);
       /* Go through the ids in the list and look for the passed id */
       uint16_t i = 0;
       while(i < l->sw.size && l->sw.ids[i] != id) ++i;
@@ -295,15 +296,15 @@ void buzzoutmsg_queue_append_swarm_joinleave(buzzoutmsg_queue_t msgq,
       /* No LIST message present - send an individual message */
       if(type == BUZZMSG_SWARM_JOIN) {
          /* Look for a duplicate in the JOIN queue - if not add one  */
-         append_to_swarm_queue(msgq->queues[BUZZMSG_SWARM_JOIN], id, BUZZMSG_SWARM_JOIN);
+         append_to_swarm_queue(vm->outmsgs->queues[BUZZMSG_SWARM_JOIN], id, BUZZMSG_SWARM_JOIN);
          /* Look for an entry in the LEAVE queue and remove it  */
-         remove_from_swarm_queue(msgq->queues[BUZZMSG_SWARM_LEAVE], id);
+         remove_from_swarm_queue(vm->outmsgs->queues[BUZZMSG_SWARM_LEAVE], id);
       }
       else if(type == BUZZMSG_SWARM_LEAVE) {
          /* Look for an entry in the JOIN queue and remove it */
-         remove_from_swarm_queue(msgq->queues[BUZZMSG_SWARM_JOIN], id);
+         remove_from_swarm_queue(vm->outmsgs->queues[BUZZMSG_SWARM_JOIN], id);
          /* Look for a duplicate in the LEAVE queue - if not add one  */
-         append_to_swarm_queue(msgq->queues[BUZZMSG_SWARM_LEAVE], id, BUZZMSG_SWARM_LEAVE);
+         append_to_swarm_queue(vm->outmsgs->queues[BUZZMSG_SWARM_LEAVE], id, BUZZMSG_SWARM_LEAVE);
       }
    }
 }
@@ -311,7 +312,7 @@ void buzzoutmsg_queue_append_swarm_joinleave(buzzoutmsg_queue_t msgq,
 /****************************************/
 /****************************************/
 
-void buzzoutmsg_queue_append_vstig(buzzoutmsg_queue_t msgq,
+void buzzoutmsg_queue_append_vstig(buzzvm_t vm,
                                    int type,
                                    uint16_t id,
                                    const buzzobj_t key,
@@ -321,7 +322,7 @@ void buzzoutmsg_queue_append_vstig(buzzoutmsg_queue_t msgq,
    /* Virtual stigmergy to actually use */
    buzzdict_t vs = NULL;
    /* Look for the virtual stigmergy */
-   const buzzdict_t* tvs = buzzdict_get(msgq->vstig, &id, buzzdict_t);
+   const buzzdict_t* tvs = buzzdict_get(vm->outmsgs->vstig, &id, buzzdict_t);
    if(tvs) {
       /* Virtual stigmergy found, look for the key */
       vs = *tvs;
@@ -335,7 +336,7 @@ void buzzoutmsg_queue_append_vstig(buzzoutmsg_queue_t msgq,
                         buzzoutmsg_obj_hash,
                         buzzoutmsg_obj_cmp,
                         NULL);
-      buzzdict_set(msgq->vstig, &id, &vs);
+      buzzdict_set(vm->outmsgs->vstig, &id, &vs);
    }
    /* Do we have a more recent duplicate? */
    int etype = -1, eidx = -1; /* No message to remove from the queue */
@@ -344,7 +345,7 @@ void buzzoutmsg_queue_append_vstig(buzzoutmsg_queue_t msgq,
       if((*e)->data->timestamp >= data->timestamp) return;
       /* The duplicate is older, store data to remove it later */
       etype = (*e)->type;
-      eidx = buzzdarray_find(msgq->queues[etype], buzzoutmsg_vstig_cmp, e);
+      eidx = buzzdarray_find(vm->outmsgs->queues[etype], buzzoutmsg_vstig_cmp, e);
    }
    /* Create a new message */
    buzzoutmsg_t m = (buzzoutmsg_t)malloc(sizeof(union buzzoutmsg_u));
@@ -356,38 +357,38 @@ void buzzoutmsg_queue_append_vstig(buzzoutmsg_queue_t msgq,
    buzzdict_set(vs, &m->vs.key, &m);
    if(etype > -1) {
       /* Remove the entry from the queue */
-      buzzdarray_remove(msgq->queues[etype], eidx);
+      buzzdarray_remove(vm->outmsgs->queues[etype], eidx);
    }
    /* Add a new message to the queue */
-   buzzdarray_push(msgq->queues[type], &m);
+   buzzdarray_push(vm->outmsgs->queues[type], &m);
 }
 
 /****************************************/
 /****************************************/
 
-buzzmsg_payload_t buzzoutmsg_queue_first(buzzoutmsg_queue_t msgq) {
-   if(!buzzdarray_isempty(msgq->queues[BUZZMSG_BROADCAST])) {
+buzzmsg_payload_t buzzoutmsg_queue_first(buzzvm_t vm) {
+   if(!buzzdarray_isempty(vm->outmsgs->queues[BUZZMSG_BROADCAST])) {
       /* Take the first message in the queue */
-      buzzoutmsg_t f = buzzdarray_get(msgq->queues[BUZZMSG_BROADCAST],
+      buzzoutmsg_t f = buzzdarray_get(vm->outmsgs->queues[BUZZMSG_BROADCAST],
                                       0, buzzoutmsg_t);
       /* Make a new message */
       buzzmsg_payload_t m = buzzmsg_payload_new(10);
       buzzmsg_serialize_u8(m, BUZZMSG_BROADCAST);
-      buzzmsg_serialize_u16(m, msgq->robot);
-      buzzmsg_serialize_u16(m, f->bc.id);
+      buzzmsg_serialize_u16(m, vm->outmsgs->robot);
+      buzzobj_serialize(m, f->bc.topic);
       buzzobj_serialize(m, f->bc.value);
       /* Return message */
       return m;
    }
-   else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_SWARM_LIST])) {
+   else if(!buzzdarray_isempty(vm->outmsgs->queues[BUZZMSG_SWARM_LIST])) {
       uint16_t i;
       /* Take the first message in the queue */
-      buzzoutmsg_t f = buzzdarray_get(msgq->queues[BUZZMSG_SWARM_LIST],
+      buzzoutmsg_t f = buzzdarray_get(vm->outmsgs->queues[BUZZMSG_SWARM_LIST],
                                       0, buzzoutmsg_t);
       /* Make a new message */
       buzzmsg_payload_t m = buzzmsg_payload_new(10);
       buzzmsg_serialize_u8(m, BUZZMSG_SWARM_LIST);
-      buzzmsg_serialize_u16(m, msgq->robot);
+      buzzmsg_serialize_u16(m, vm->outmsgs->robot);
       buzzmsg_serialize_u16(m, f->sw.size);
       for(i = 0; i < f->sw.size; ++i) {
          buzzmsg_serialize_u16(m, f->sw.ids[i]);
@@ -395,9 +396,9 @@ buzzmsg_payload_t buzzoutmsg_queue_first(buzzoutmsg_queue_t msgq) {
       /* Return message */
       return m;      
    }
-   else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_VSTIG_PUT])) {
+   else if(!buzzdarray_isempty(vm->outmsgs->queues[BUZZMSG_VSTIG_PUT])) {
       /* Take the first message in the queue */
-      buzzoutmsg_t f = buzzdarray_get(msgq->queues[BUZZMSG_VSTIG_PUT],
+      buzzoutmsg_t f = buzzdarray_get(vm->outmsgs->queues[BUZZMSG_VSTIG_PUT],
                                       0, buzzoutmsg_t);
       /* Make a new message */
       buzzmsg_payload_t m = buzzmsg_payload_new(10);
@@ -407,9 +408,9 @@ buzzmsg_payload_t buzzoutmsg_queue_first(buzzoutmsg_queue_t msgq) {
       /* Return message */
       return m;
    }
-   else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_VSTIG_QUERY])) {
+   else if(!buzzdarray_isempty(vm->outmsgs->queues[BUZZMSG_VSTIG_QUERY])) {
       /* Take the first message in the queue */
-      buzzoutmsg_t f = buzzdarray_get(msgq->queues[BUZZMSG_VSTIG_QUERY],
+      buzzoutmsg_t f = buzzdarray_get(vm->outmsgs->queues[BUZZMSG_VSTIG_QUERY],
                                       0, buzzoutmsg_t);
       /* Make a new message */
       buzzmsg_payload_t m = buzzmsg_payload_new(10);
@@ -419,26 +420,26 @@ buzzmsg_payload_t buzzoutmsg_queue_first(buzzoutmsg_queue_t msgq) {
       /* Return message */
       return m;
    }
-   else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_SWARM_JOIN])) {
+   else if(!buzzdarray_isempty(vm->outmsgs->queues[BUZZMSG_SWARM_JOIN])) {
       /* Take the first message in the queue */
-      buzzoutmsg_t f = buzzdarray_get(msgq->queues[BUZZMSG_SWARM_JOIN],
+      buzzoutmsg_t f = buzzdarray_get(vm->outmsgs->queues[BUZZMSG_SWARM_JOIN],
                                       0, buzzoutmsg_t);
       /* Make a new message */
       buzzmsg_payload_t m = buzzmsg_payload_new(5);
       buzzmsg_serialize_u8(m, BUZZMSG_SWARM_JOIN);
-      buzzmsg_serialize_u16(m, msgq->robot);
+      buzzmsg_serialize_u16(m, vm->outmsgs->robot);
       buzzmsg_serialize_u16(m, f->sw.ids[0]);
       /* Return message */
       return m;      
    }
-   else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_SWARM_LEAVE])) {
+   else if(!buzzdarray_isempty(vm->outmsgs->queues[BUZZMSG_SWARM_LEAVE])) {
       /* Take the first message in the queue */
-      buzzoutmsg_t f = buzzdarray_get(msgq->queues[BUZZMSG_SWARM_LEAVE],
+      buzzoutmsg_t f = buzzdarray_get(vm->outmsgs->queues[BUZZMSG_SWARM_LEAVE],
                                       0, buzzoutmsg_t);
       /* Make a new message */
       buzzmsg_payload_t m = buzzmsg_payload_new(5);
       buzzmsg_serialize_u8(m, BUZZMSG_SWARM_LEAVE);
-      buzzmsg_serialize_u16(m, msgq->robot);
+      buzzmsg_serialize_u16(m, vm->outmsgs->robot);
       buzzmsg_serialize_u16(m, f->sw.ids[0]);
       /* Return message */
       return m;      
@@ -450,45 +451,62 @@ buzzmsg_payload_t buzzoutmsg_queue_first(buzzoutmsg_queue_t msgq) {
 /****************************************/
 /****************************************/
 
-void buzzoutmsg_queue_next(buzzoutmsg_queue_t msgq) {
-   if(!buzzdarray_isempty(msgq->queues[BUZZMSG_BROADCAST])) {
+void buzzoutmsg_queue_next(buzzvm_t vm) {
+   if(!buzzdarray_isempty(vm->outmsgs->queues[BUZZMSG_BROADCAST])) {
       /* Remove the first message in the queue */
-      buzzdarray_remove(msgq->queues[BUZZMSG_BROADCAST], 0);
+      buzzdarray_remove(vm->outmsgs->queues[BUZZMSG_BROADCAST], 0);
    }
-   else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_SWARM_LIST])) {
+   else if(!buzzdarray_isempty(vm->outmsgs->queues[BUZZMSG_SWARM_LIST])) {
       /* Remove the first message in the queue */
-      buzzdarray_remove(msgq->queues[BUZZMSG_SWARM_LIST], 0);
+      buzzdarray_remove(vm->outmsgs->queues[BUZZMSG_SWARM_LIST], 0);
    }
-   else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_VSTIG_PUT])) {
+   else if(!buzzdarray_isempty(vm->outmsgs->queues[BUZZMSG_VSTIG_PUT])) {
       /* Take the first message in the queue */
-      buzzoutmsg_t f = buzzdarray_get(msgq->queues[BUZZMSG_VSTIG_PUT],
+      buzzoutmsg_t f = buzzdarray_get(vm->outmsgs->queues[BUZZMSG_VSTIG_PUT],
                                       0, buzzoutmsg_t);
       /* Remove the element in the vstig dictionary */
       buzzdict_remove(
-         *buzzdict_get(msgq->vstig, &f->vs.id, buzzdict_t),
+         *buzzdict_get(vm->outmsgs->vstig, &f->vs.id, buzzdict_t),
          &f->vs.key);
       /* Remove the first message in the queue */
-      buzzdarray_remove(msgq->queues[BUZZMSG_VSTIG_PUT], 0);
+      buzzdarray_remove(vm->outmsgs->queues[BUZZMSG_VSTIG_PUT], 0);
    }
-   else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_VSTIG_QUERY])) {
+   else if(!buzzdarray_isempty(vm->outmsgs->queues[BUZZMSG_VSTIG_QUERY])) {
       /* Take the first message in the queue */
-      buzzoutmsg_t f = buzzdarray_get(msgq->queues[BUZZMSG_VSTIG_QUERY],
+      buzzoutmsg_t f = buzzdarray_get(vm->outmsgs->queues[BUZZMSG_VSTIG_QUERY],
                                       0, buzzoutmsg_t);
       /* Remove the element in the vstig dictionary */
       buzzdict_remove(
-         *buzzdict_get(msgq->vstig, &f->vs.id, buzzdict_t),
+         *buzzdict_get(vm->outmsgs->vstig, &f->vs.id, buzzdict_t),
          &f->vs.key);
       /* Remove the first message in the queue */
-      buzzdarray_remove(msgq->queues[BUZZMSG_VSTIG_QUERY], 0);
+      buzzdarray_remove(vm->outmsgs->queues[BUZZMSG_VSTIG_QUERY], 0);
    }
-   else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_SWARM_JOIN])) {
+   else if(!buzzdarray_isempty(vm->outmsgs->queues[BUZZMSG_SWARM_JOIN])) {
       /* Remove the first message in the queue */
-      buzzdarray_remove(msgq->queues[BUZZMSG_SWARM_JOIN], 0);
+      buzzdarray_remove(vm->outmsgs->queues[BUZZMSG_SWARM_JOIN], 0);
    }
-   else if(!buzzdarray_isempty(msgq->queues[BUZZMSG_SWARM_LEAVE])) {
+   else if(!buzzdarray_isempty(vm->outmsgs->queues[BUZZMSG_SWARM_LEAVE])) {
       /* Remove the first message in the queue */
-      buzzdarray_remove(msgq->queues[BUZZMSG_SWARM_LEAVE], 0);
+      buzzdarray_remove(vm->outmsgs->queues[BUZZMSG_SWARM_LEAVE], 0);
    }
+}
+
+/****************************************/
+/****************************************/
+
+void buzzoutmsg_broadcast_mark(uint32_t pos, void* data, void* params) {
+   struct buzzoutmsg_broadcast_s* msg = *(struct buzzoutmsg_broadcast_s**)data;
+   buzzvm_t vm = (buzzvm_t)params;
+   buzzstrman_gc_mark(vm->strings,
+                      msg->topic->s.value.sid);
+}
+
+void buzzoutmsg_gc(struct buzzvm_s* vm) {
+   /* Go through all the broadcast topic strings and mark them */
+   buzzdarray_foreach(vm->outmsgs->queues[BUZZMSG_BROADCAST],
+                      buzzoutmsg_broadcast_mark,
+                      vm);
 }
 
 /****************************************/

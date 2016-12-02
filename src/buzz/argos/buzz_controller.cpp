@@ -172,6 +172,7 @@ void CBuzzController::Destroy() {
    if(m_tBuzzVM) {
       buzzvm_function_call(m_tBuzzVM, "destroy", 0);
       buzzvm_destroy(&m_tBuzzVM);
+      buzzdebug_destroy(&m_tBuzzDbgInfo);
    }
 }
 
@@ -310,9 +311,9 @@ void CBuzzController::ProcessOutMsgs() {
    /* Send messages from FIFO */
    do {
       /* Are there more messages? */
-      if(buzzoutmsg_queue_isempty(m_tBuzzVM->outmsgs)) break;
+      if(buzzoutmsg_queue_isempty(m_tBuzzVM)) break;
       /* Get first message */
-      buzzmsg_payload_t m = buzzoutmsg_queue_first(m_tBuzzVM->outmsgs);
+      buzzmsg_payload_t m = buzzoutmsg_queue_first(m_tBuzzVM);
       /* Make sure the next message fits the data buffer */
       if(cData.Size() + buzzmsg_payload_size(m) + sizeof(UInt16)
          >
@@ -325,7 +326,7 @@ void CBuzzController::ProcessOutMsgs() {
       /* Add payload to data buffer */
       cData.AddBuffer(reinterpret_cast<UInt8*>(m->data), buzzmsg_payload_size(m));
       /* Get rid of message */
-      buzzoutmsg_queue_next(m_tBuzzVM->outmsgs);
+      buzzoutmsg_queue_next(m_tBuzzVM);
       buzzmsg_payload_destroy(&m);
    } while(1);
    /* Pad the rest of the data with zeroes */

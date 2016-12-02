@@ -1,6 +1,8 @@
 #ifndef BUZZVM_H
 #define BUZZVM_H
 
+struct buzzvm_s;
+
 #include <buzz/buzzheap.h>
 #include <buzz/buzzstrman.h>
 #include <buzz/buzzinmsg.h>
