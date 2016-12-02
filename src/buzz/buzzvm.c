@@ -127,7 +127,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
    /* Go through the messages */
    while(!buzzinmsg_queue_isempty(vm->inmsgs)) {
       /* Extract the message data */
-      buzzmsg_payload_t msg = buzzinmsg_queue_extract(vm->inmsgs);
+      buzzmsg_payload_t msg = buzzinmsg_queue_extract(vm);
       /* Dispatch the message wrt its type in msg->payload[0] */
       switch(buzzmsg_payload_get(msg, 0)) {
          case BUZZMSG_BROADCAST: {
@@ -141,7 +141,6 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
             const buzzobj_t* l = buzzdict_get(vm->listeners, &topic->s.value.sid, buzzobj_t);
             if(!l) {
                /* No listener, ignore message */
-               buzzobj_destroy(&topic);
                break;
             }
             /* Deserialize value */

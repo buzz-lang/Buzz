@@ -5,6 +5,8 @@
 #include <buzz/buzzmsg.h>
 #include <buzz/buzzvstig.h>
 
+struct buzzvm_s;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

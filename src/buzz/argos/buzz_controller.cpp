@@ -287,7 +287,7 @@ void CBuzzController::ProcessInMsgs() {
          unMsgSize = cData.PopFront<UInt16>();
          /* Append message to the Buzz input message queue */
          if(unMsgSize > 0 && cData.Size() >= unMsgSize) {
-            buzzinmsg_queue_append(m_tBuzzVM->inmsgs,
+            buzzinmsg_queue_append(m_tBuzzVM,
                                    buzzmsg_payload_frombuffer(cData.ToCArray(), unMsgSize));
             /* Get rid of the data read */
             for(size_t i = 0; i < unMsgSize; ++i) cData.PopFront<UInt8>();
