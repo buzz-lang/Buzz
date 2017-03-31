@@ -182,9 +182,9 @@ void buzzmsg_serialize_string(buzzdarray_t buf,
 /****************************************/
 /****************************************/
 
-extern int64_t buzzmsg_deserialize_string(char** data,
-                                          buzzdarray_t buf,
-                                          uint32_t pos) {
+int64_t buzzmsg_deserialize_string(char** data,
+                                   buzzdarray_t buf,
+                                   uint32_t pos) {
    /* Make sure there are enough bytes to read the string length */
    if(pos + sizeof(uint16_t) > buzzdarray_size(buf)) return -1;
    /* Read the string length */

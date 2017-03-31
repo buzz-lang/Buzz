@@ -1,0 +1,46 @@
+#
+# Swarm ids
+#
+SENDERS   = 1
+RECEIVERS = 2
+
+#
+# Data to send
+#
+TOPIC     = "topic"
+COUNTER   = 0
+
+# Increase the counter and send new value
+function send() {
+  COUNTER = COUNTER + 1
+  neighbors.broadcast(TOPIC, COUNTER*100+id)
+  neighbors.broadcast(string.tostring(id), COUNTER*100+id)
+}
+
+# Receive counter and print its value
+function receive() {
+  neighbors.listen(TOPIC, function(topic, counter, robot) {
+    log("R", id, ": Got (", topic, ",", counter, ") from robot #", robot)
+  })
+  neighbors.listen("0", function(topic, counter, robot) {
+    log("R", id, ": Got (", topic, ",", counter, ") from robot #", robot)
+  })
+}
+
+function init() {
+  # # Make a swarm for robot 1 as the sender
+  # s = swarm.create(SENDERS)
+  # s.select(id == 0)
+  # # Make a swarm for the other robots as receivers
+  # r = s.others(RECEIVERS)
+  # r.exec(receive)
+  receive()
+}
+
+function step() {
+  # s.exec(send)
+  send()
+}
+
+function destroy() {
+}

@@ -8,9 +8,6 @@ target_link_libraries(testbuzzdarray buzz)
 add_executable(testbuzzdict testbuzzdict.c)
 target_link_libraries(testbuzzdict buzz)
 
-add_executable(testbuzzmsg testbuzzmsg.c)
-target_link_libraries(testbuzzmsg buzz)
-
 add_executable(testbuzzlex ../buzz/buzzlex.h ../buzz/buzzlex.c testbuzzlex.c)
 target_link_libraries(testbuzzlex buzz)
 
@@ -42,6 +39,7 @@ if(NOT CMAKE_CROSSCOMPILING)
   buzz_make(testinclude1.bzz INCLUDES testinclude2.bzz)
   buzz_make(testio.bzz)
   buzz_make(testmath.bzz)
+  buzz_make(testmsg.bzz)
   buzz_make(testneighbors.bzz)
   buzz_make(testparsing.bzz)
   buzz_make(teststigmergy.bzz)

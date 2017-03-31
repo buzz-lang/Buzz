@@ -120,8 +120,8 @@ int buzzneighbors_broadcast(buzzvm_t vm) {
    buzzvm_lload(vm, 2);
    /* Queue a message with (value_id, value) */
    buzzoutmsg_queue_append_broadcast(
-      vm->outmsgs,
-      buzzvm_stack_at(vm, 2)->s.value.sid,
+      vm,
+      buzzvm_stack_at(vm, 2),
       buzzvm_stack_at(vm, 1));
    return buzzvm_ret0(vm);
 }
@@ -140,7 +140,7 @@ int buzzneighbors_listen(buzzvm_t vm) {
    /* Install listener */
    buzzdict_set(
       vm->listeners,
-      &(buzzvm_stack_at(vm, 2)->s.value.sid),
+      &buzzvm_stack_at(vm, 2)->s.value.sid,
       &buzzvm_stack_at(vm, 1));
    return buzzvm_ret0(vm);
 }

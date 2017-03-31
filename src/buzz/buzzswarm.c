@@ -366,7 +366,7 @@ int buzzswarm_others(buzzvm_t vm) {
    /* Send update, if necessary */
    if(v)
       buzzoutmsg_queue_append_swarm_joinleave(
-         vm->outmsgs, BUZZMSG_SWARM_JOIN, id2);
+         vm, BUZZMSG_SWARM_JOIN, id2);
    /* Create a table to return */
    make_table(vm, id2);
    /* Return */
@@ -387,7 +387,7 @@ int buzzswarm_join(buzzvm_t vm) {
       buzzdict_set(vm->swarms, &id, &v);
       /* Send update */
       buzzoutmsg_queue_append_swarm_joinleave(
-         vm->outmsgs, BUZZMSG_SWARM_JOIN, id);
+         vm, BUZZMSG_SWARM_JOIN, id);
       /* Return */
       return buzzvm_ret0(vm);
    }
@@ -413,7 +413,7 @@ int buzzswarm_leave(buzzvm_t vm) {
       buzzdict_set(vm->swarms, &id, &v);
       /* Send update */
       buzzoutmsg_queue_append_swarm_joinleave(
-         vm->outmsgs, BUZZMSG_SWARM_LEAVE, id);
+         vm, BUZZMSG_SWARM_LEAVE, id);
       /* Return */
       return buzzvm_ret0(vm);
    }
@@ -463,7 +463,7 @@ int buzzswarm_select(buzzvm_t vm) {
       buzzdict_set(vm->swarms, &id, &in);
       /* Send update */
       buzzoutmsg_queue_append_swarm_joinleave(
-         vm->outmsgs,
+         vm,
          in ? BUZZMSG_SWARM_JOIN : BUZZMSG_SWARM_LEAVE,
          id);
       /* Return */

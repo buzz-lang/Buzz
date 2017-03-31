@@ -210,14 +210,14 @@ int buzzvstig_put(buzzvm_t vm) {
          ++((*x)->timestamp);
          (*x)->robot = vm->robot;
          /* Append a PUT message to the out message queue */
-         buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, *x);
+         buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_PUT, id, k, *x);
       }
       else {
          /* Element not found, create a new one */
          buzzvstig_elem_t y = buzzvstig_elem_new(v, 1, vm->robot);
          buzzvstig_store(*vs, &k, &y);
          /* Append a PUT message to the out message queue */
-         buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_PUT, id, k, y);
+         buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_PUT, id, k, y);
       }
    }
    /* Return */
@@ -265,7 +265,7 @@ int buzzvstig_get(buzzvm_t vm) {
          /* Key found */
          buzzvm_push(vm, (*e)->data);
          /* Append the message to the out message queue */
-         buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_QUERY, id, k, *e);
+         buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_QUERY, id, k, *e);
       }
       else {
          /* Key not found, add a new one containing nil */
@@ -274,7 +274,7 @@ int buzzvstig_get(buzzvm_t vm) {
             buzzvstig_elem_new(buzzvm_stack_at(vm, 1),
                                1, vm->robot);
          /* Append the message to the out message queue */
-         buzzoutmsg_queue_append_vstig(vm->outmsgs, BUZZMSG_VSTIG_QUERY, id, k, x);
+         buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_QUERY, id, k, x);
       }
    }
    else {

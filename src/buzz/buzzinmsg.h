@@ -4,6 +4,8 @@
 #include <buzz/buzzdarray.h>
 #include <buzz/buzzmsg.h>
 
+struct buzzvm_s;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -17,19 +19,19 @@ extern "C" {
     * Appends a message to the queue.
     * The ownership of the payload is assumed by the message queue. Make sure
     * the payload is in the heap.
-    * @param msgq The message queue.
+    * @param The Buzz VM.
     * @param payload The message payload.
     */
-   extern void buzzinmsg_queue_append(buzzinmsg_queue_t msgq,
+   extern void buzzinmsg_queue_append(struct buzzvm_s* vm,
                                       buzzmsg_payload_t payload);
 
    /*
     * Extracts a message from the queue.
     * You are in charge of freeing both the message data and the payload.
-    * @param msgq The message queue.
+    * @param The Buzz VM.
     * @return The message data or NULL.
     */
-   extern buzzmsg_payload_t buzzinmsg_queue_extract(buzzinmsg_queue_t msgq);
+   extern buzzmsg_payload_t buzzinmsg_queue_extract(struct buzzvm_s* vm);
 
 #ifdef __cplusplus
 }

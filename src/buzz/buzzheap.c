@@ -143,6 +143,8 @@ void buzzheap_gc(struct buzzvm_s* vm) {
    buzzdict_foreach(vm->vstigs, buzzheap_vstig_mark, vm);
    /* Go through all the objects in the listeners and mark them */
    buzzdict_foreach(vm->listeners, buzzheap_listener_mark, vm);
+   /* Go through all the objects in the out message queue and mark them */
+   buzzoutmsg_gc(vm);
    /* Go through all the objects in the object list and delete the unmarked ones */
    int64_t i = buzzdarray_size(h->objs) - 1;
    while(i >= 0) {
