@@ -63,8 +63,8 @@ void CBuzzQT::Draw(CBuzzController& c_contr) {
    glColor3ub(cColor.GetRed(), cColor.GetGreen(), cColor.GetBlue());
    /* The position of the text is expressed wrt the reference point of
     * the robot */
-   GetMainWindow().GetOpenGLWidget().renderText(0.0, 0.0, 0.4,   // position
-                                                strMsg.c_str()); // text
+   DrawText(CVector3(0.0, 0.0, 0.4), // position
+            strMsg.c_str());         // text
    /* Restore lighting */
    glEnable(GL_LIGHTING);
    /* Restore face culling */
