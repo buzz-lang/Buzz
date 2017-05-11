@@ -168,7 +168,7 @@ uint32_t buzzobj_hash(const buzzobj_t o) {
 int buzzobj_eq(const buzzobj_t a,
                const buzzobj_t b) {
    /* Make sure the type is the same */
-   if(a->o.type != a->o.type) return 0;
+   if(a->o.type != b->o.type) return 0;
    /* Equality means different things for different types */
    switch(a->o.type) {
       case BUZZTYPE_NIL:    return 1;
