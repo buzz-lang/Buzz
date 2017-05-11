@@ -1166,18 +1166,23 @@ int parse_lambda(buzzparser_t par) {
 /****************************************/
 /****************************************/
 
-buzzparser_t buzzparser_new(const char* fscript,
-                            const char* fasm) {
+buzzparser_t buzzparser_new(int argc,
+                            char** argv) {
+   /* Argument parsing */
+   if(argc < 3 || argc > 4) {
+      fprintf(stderr, "buzzparser_new(): expected 3 or 4 arguments, got %d\n", argc);
+      return NULL;
+   }
    /* Create parser state */
    buzzparser_t par = (buzzparser_t)malloc(sizeof(struct buzzparser_s));
    /* Create lexer */
-   par->lex = buzzlex_new(fscript);
+   par->lex = buzzlex_new(argv[1]);
    if(!par->lex) {
       free(par);
       return NULL;
    }
    /* Copy string */
-   par->asmfn = strdup(fasm);
+   par->asmfn = strdup(argv[2]);
    /* Open file */
    par->asmstream = fopen(par->asmfn, "w");
    if(!par->asmstream) {
@@ -1200,6 +1205,31 @@ buzzparser_t buzzparser_new(const char* fscript,
                                buzzdict_strkeyhash,
                                buzzdict_strkeycmp,
                                NULL);
+   /* If 4 arguments were passed, we have a symbol table to parse  */
+   if(argc == 4) {
+      /* Open the file */
+      FILE* stf = fopen(argv[3], "r");
+      if(!stf) {
+         perror(argv[3]);
+         return NULL;
+      }
+      /* Read the file line by line */
+      size_t len;
+      char line[1024];
+      while(fgets(line, 1024, stf)) {
+         /* For each line, add the string to par->strings */
+         len = strlen(line);
+         if(len > 0 && line[len-1] == '\n') line[len-1] = 0;
+         string_add(par->strings, line);
+      }
+      /* Are we done because of an error? */
+      if(ferror(stf)) {
+         perror(argv[3]);
+         return NULL;
+      }
+      /* Done with file */
+      fclose(stf);
+   }
    /* Return parser state */
    return par;
 }

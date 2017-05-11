@@ -44,12 +44,17 @@ extern "C" {
 
    /*
     * Creates a new parser.
-    * @param fscript The input script file name.
-    * @param fasm The output assembler file name.
+    * In this function the arguments must be in the following order:
+    * [0] IGNORED The current command name.
+    * [1] REQUIRED The input script file name.
+    * [2] REQUIRED The output assembler file name.
+    * [3] OPTIONAL The symbol table file name.
+    * @param argv The number of command line arguments
+    * @param argv The list of command line arguments
     * @return The parser state.
     */
-   extern buzzparser_t buzzparser_new(const char* fscript,
-                                      const char* fasm);
+   extern buzzparser_t buzzparser_new(int argc,
+                                      char** argv);
 
    /*
     * Destroys the parser.
