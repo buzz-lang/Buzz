@@ -453,8 +453,11 @@ extern "C" {
    extern buzzvm_state buzzvm_gload(buzzvm_t vm);
 
    /*
-    * Stores the object located at the stack top into the a global variable, pops operand.
+    * Stores the object located at the stack top into a global variable, pops operand.
     * Internally checks whether the operation is valid.
+    * The stack is expected to be:
+    * #1 Value
+    * #2 Symbol name (i.e., name of a variable)
     * @param vm The VM data.
     * @param idx The local variable index.
     */
