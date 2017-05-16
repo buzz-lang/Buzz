@@ -122,13 +122,16 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
       m_pcRABS   = GetSensor  <CCI_RangeAndBearingSensor  >("range_and_bearing");
       /* Get the script name */
       std::string strBCFName;
-      GetNodeAttribute(t_node, "bytecode_file", strBCFName);
+      GetNodeAttributeOrDefault(t_node, "bytecode_file", strBCFName, strBCFName);
       /* Get the script name */
       std::string strDbgFName;
-      GetNodeAttribute(t_node, "debug_file", strDbgFName);
+      GetNodeAttributeOrDefault(t_node, "debug_file", strDbgFName, strDbgFName);
       /* Initialize the rest */
       m_unRobotId = FromString<UInt16>(GetId().substr(2));
-      SetBytecode(strBCFName, strDbgFName);
+      if(strBCFName != "" && strDbgFName != "")
+         SetBytecode(strBCFName, strDbgFName);
+      else
+         m_tBuzzVM = buzzvm_new(m_unRobotId);
       UpdateSensors();
       /* Set initial robot message (id and then all zeros) */
       CByteArray cData;
