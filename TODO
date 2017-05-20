@@ -1,0 +1,115 @@
+* Concentrate on heterogeneity
+- E.g., robots with a better or worse camera
+
+* Information aggregation is an issue
+** The collected info might be Gb in size, and bandwidth is limited and volatile
+
+* TODO Add hot code patching
+- The possibility to add new functions and redefine existing functions
+
+* TODO Test out task allocation strategies
+- Robots must be capable of arbitrating among different tasks, distributed in space and to be executed in parallel
+- TOTA might be interesting to look into for this
+
+* TODO Look into mesh networks
+- How to integrate with Buzz communication?
+- Can we use a mesh network as a fallback mechanism for Buzz?
+- Otherwise, we could just export message primitives that use the mesh network.
+
+* TODO Integration of Buzz and MAVLink
+- Should it be exported into Buzz as a list of low-level primitives (e.g., yaw/pitch/roll control)?
+- Or should it be exported as high-level primitives (e.g., vector-based navigation)?
+
+* TODO Cross-compilation of Buzz onto the Raspberry PI
+
+* TODO Make a good debugger
+- Could be cool to have _reverse debugging_
+- How to make this swarm-wide?
+
+* TODO Better editor
+- Multi-file editing
+      - Files are organized in a set of tabs
+      - Must have button/dialog to choose main executable file
+      - I need a function to open a file and add the file to the tab
+      - I need a function to switch to a tab corresponding to a
+        specific file name
+            - If the file name is not in the list of open tabs,
+              attempt to open the file with the previous function
+            - This is useful to manage compilation errors
+- Swarm visualization
+- Virtual stigmergy visualization
+- Data plotting widget
+- Aggregate data widget w/ plotting
+#+BEGIN_SRC dot :file guiclassdiag.png
+  digraph {
+    graph [ordering="out",rankdir="TB"];
+    node [shape=record,fontname="Courier"];
+    edge [fontname="Courier"];
+    subgraph {
+      rank = same;
+      qmw  [label="{QMainWindow||+closeEvent(...):void\l}"];
+      qed  [label="{QPlainTextEdit||+closeEvent(...):void\l}"];
+      qmdi [label="{QMdiArea||+addSubWindow(...):QMdiSubWindow*\l+currentSubWindow():QMdiSubWindow*\l+removeSubWindow(...):void\l}"];
+    }
+    subgraph {
+      rank = same;
+      bmw [label="{CBuzzQTMainWindow|-m_strMainFile:string\l|+closeEvent(...):void\l+New():void [slot]\l+Open():bool [slot]\l+Save():bool [slot]\l+SaveAs():void [slot]\l+FindReplace():void [slot]\l+SetMainFile():void [slot]\l+Compile():bool [slot]\l+Execute():void [slot]\l+RobotSelected(size_t):void [slot]\l+RobotDeselected(size_t):void [slot]\l+ActiveEditor():CBuzzQTEditor*\l+FindEditorFromPath(string):CBuzzQTEditor*\l}"];
+      bed [label="{CBuzzQTEditor|-m_strFileName:string\l|+closeEvent(...):void\l+NewFile():void\l+OpenFile(string):bool\l+Save():bool\l+SaveAs():void\l+ShortFileName():string\l-MaybeSave():bool\l-SaveFile(string):bool\l}"];
+    }
+    subgraph {
+      rank = same;
+      abc [label="{CBuzzController|-m_ptBuzzVM:buzzvm_t\l-m_tBuzzDbgInfo:buzzdebug_t\l|+SetBytecode(string,string):void\l+ErrorInfo():string\l}"];
+    }
+    edge [arrowhead="empty"];
+    bmw -> qmw;
+    bed -> qed;
+    edge [arrowhead="diamond"];
+    bmw -> qmdi [headlabel="1  ",taillabel="1"];
+    bmw -> abc [headlabel="0..* ",taillabel="1"];
+    qmdi -> bed [headlabel="0..*  ",taillabel="1"];
+  }
+#+END_SRC
+
+#+RESULTS:
+[[file:guiclassdiag.png]]
+** Actions
+- File-New: :: A new, empty subwindow is created, file name must be chosen
+- File-Open: :: A file choice dialog is presented, then a new
+                subwindow is created with the file content
+- File-Save: :: The current subwindow is saved
+- File-SaveAs: :: The current subwindow is saved with a new name
+- Script-SetMainFile :: A file choice dialog is presented, then the
+     selected file is set as the main
+- Script-Compile: :: Compile the main file, if any, and upload it on the robots
+- Script-Execute: :: If the last compilation was successful and all the robots are in state ~READY~, execute the simulation. Otherwise show the compilation error or the robot errors.
+** Logic of the Main File
+| No editor open    | No main                 |
+| One editor open   | Main is that editor     |
+| Many editors open | Main is last set editor |
+| Set main          | Main is set editor      |
+| Close main        | Main is last set editor |
+** Compilation
+The prerequisite to compile a file is that a main file was set. The file is then compiled as ~FILENAME.bo~ and ~FILENAME.bdb~ in the ~TEMP~ directory. The resulting files are uploaded on the robots.
+If an error occurs, the compilation error information dock appears. It is important that the files stay alive, because in case of an error we need to access them.
+** Execution
+The prerequisite for execution is are that
+1. The last compilation was a success; and
+2. All the robots are in ~READY~ state.
+When the execution proceeds, it might happen that one or more robots encounter an error. In this case, the simulation is stopped and a docking window appear that shows the errors.
+** Error Management
+There are two causes of errors: /compilation errors/ and /execution errors/. These types of errors call for different widgets.
+**** Compilation errors
+When a compilation error occurs, it is something that pertains to the script(s) currently open and is reported as such. It is, in other words, an error that is common to every robot. The output of a compilation error is a location (file, line, column) and a message. The widget for this can be a simple dock that shows the error, plus the fact that the editor jumps automatically at the place of the error.
+**** Execution errors
+An execution error can occur on a subset of robots, and every robot might encounter a different error. The output of an execution error is a location (bytecode offset or file/line/column), and a message. For each error and robot, a stack trace can be shown. In this case, the widget should report robot, error message, position. A tree could work, but probably a table with expandable elements would work better. When you click on a row of the table, the editor goes at the location in the code, and the state widget of the robot is shown. The robot is also shown as selected in the simulation.
+** State Widget
+The state widget is shown when the user selects a robot (shift+click) or when an error execution occurs, and the user selects the table row corresponding to the robot. The state widget shows three types of information:
+- Variable state: :: The current value of all the variables.
+- Function list: :: The list of functions defined
+- Backtrace: :: The state of the stack.
+** Help
+It would be nice to have embedded help in the editor. Help should come in various forms:
+1. *Language reference:* the stuff that is already reported on the website
+2. *Buzz Function reference:* functions that have been defined in Buzz must have a documentation string associated. This might require a separated parses that creates this.
+3. *Native function reference:* functions that have been defined in C must also have a documentation string associated. In this case, a dedicated file should be provided by the user, maybe generated by a C function.
+For 2. and 3. it would be nice if both files were in the same format, so the editor can work seamlessly with both. What format? XML?
