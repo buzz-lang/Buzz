@@ -43,6 +43,14 @@ public:
       m_strDebugMsg = str_msg;
    }
 
+   inline buzzdebug_t& GetBuzzDbgInfo() {
+      return m_tBuzzDbgInfo;
+   }
+
+   inline const buzzdebug_t& GetBuzzDbgInfo() const {
+      return m_tBuzzDbgInfo;
+   }
+
    std::string ErrorInfo();
 
 protected:
