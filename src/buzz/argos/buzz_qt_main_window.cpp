@@ -764,7 +764,10 @@ void CBuzzQTMainWindow::HandleEntityDeselection(size_t) {
 /****************************************/
 
 void CBuzzQTMainWindow::VariableTreeChanged() {
-   m_pcBuzzVariableTree->setRootIndex(m_pcBuzzVariableTree->model()->index(0, 0));
+   QAbstractItemModel* pcModel = m_pcBuzzVariableTree->model();
+   m_pcBuzzVariableTree->setModel(NULL);
+   m_pcBuzzVariableTree->setModel(pcModel);
+//   m_pcBuzzVariableTree->setRootIndex(m_pcBuzzVariableTree->model()->index(0, 0));
    m_pcBuzzVariableTree->expandAll();
 }
 
@@ -772,7 +775,10 @@ void CBuzzQTMainWindow::VariableTreeChanged() {
 /****************************************/
 
 void CBuzzQTMainWindow::FunctionTreeChanged() {
-   m_pcBuzzFunctionTree->setRootIndex(m_pcBuzzFunctionTree->model()->index(0, 0));
+   QAbstractItemModel* pcModel = m_pcBuzzFunctionTree->model();
+   m_pcBuzzFunctionTree->setModel(NULL);
+   m_pcBuzzFunctionTree->setModel(pcModel);
+//   m_pcBuzzFunctionTree->setRootIndex(m_pcBuzzFunctionTree->model()->index(0, 0));
    m_pcBuzzFunctionTree->expandAll();
 }
 
