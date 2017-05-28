@@ -641,6 +641,10 @@ void CBuzzQTMainWindow::CheckBuzzStatus(int n_step) {
 void CBuzzQTMainWindow::HandleRunTimeErrorSelection() {
    QList<QTableWidgetItem*> cSel = m_pcRunTimeErrorTable->selectedItems();
    if(!cSel.empty()) {
+      /* Select corresponding robot */
+      m_pcMainWindow->GetOpenGLWidget().SelectEntity(
+         CSimulator::GetInstance().GetSpace().GetEntity(
+            cSel[0]->data(Qt::DisplayRole).toString().toStdString()));
       /* Get error position field */
       QString strPos = cSel[1]->data(Qt::DisplayRole).toString();
       QRegExp cRE("^[a-zA-Z0-9_/.]+:[0-9]+:[0-9]+");
@@ -760,7 +764,6 @@ void CBuzzQTMainWindow::HandleEntityDeselection(size_t) {
 /****************************************/
 
 void CBuzzQTMainWindow::VariableTreeChanged() {
-   fprintf(stderr, "3\n");
    m_pcBuzzVariableTree->setRootIndex(m_pcBuzzVariableTree->model()->index(0, 0));
    m_pcBuzzVariableTree->expandAll();
 }
