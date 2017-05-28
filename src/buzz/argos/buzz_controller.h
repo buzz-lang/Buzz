@@ -24,6 +24,14 @@ public:
    virtual void ControlStep();
    virtual void Destroy();
 
+   inline const std::string& GetBytecodeFName() const {
+      return m_strBytecodeFName;
+   }
+
+   inline const std::string& GetDbgInfoFName() const {
+      return m_strDbgInfoFName;
+   }
+
    virtual void SetBytecode(const std::string& str_bc_fname,
                             const std::string& str_dbg_fname);
 

@@ -5,6 +5,7 @@ class CBuzzQTStateTreeModel;
 class CBuzzQTStateTreeVariableModel;
 class CBuzzQTStateTreeFunctionModel;
 class CBuzzQTStateTreeItem;   
+class CBuzzController;   
 
 #include <buzz/buzzvm.h>
 
@@ -21,7 +22,7 @@ class CBuzzQTStateTreeModel : public QAbstractItemModel {
 
 public:
 
-   CBuzzQTStateTreeModel(buzzvm_t pt_state,
+   CBuzzQTStateTreeModel(CBuzzController* pc_controller,
                          bool b_remove_empty_tables,
                          QObject* pc_parent = 0);
 
@@ -40,8 +41,6 @@ public:
 
    virtual int rowCount(const QModelIndex& c_parent = QModelIndex()) const;
 
-   void SetBuzzState(buzzvm_t pt_state);
-
 public slots:
 
    void Refresh();
@@ -58,6 +57,7 @@ protected:
 
 private:
 
+   CBuzzController* m_pcController;
    buzzvm_t m_ptState;
    CBuzzQTStateTreeItem* m_pcDataRoot;
 
@@ -72,7 +72,7 @@ class CBuzzQTStateTreeVariableModel : public CBuzzQTStateTreeModel {
 
 public:
 
-   CBuzzQTStateTreeVariableModel(buzzvm_t pt_state,
+   CBuzzQTStateTreeVariableModel(CBuzzController* pc_controller,
                                  bool b_remove_empty_tables,
                                  QObject* pc_parent = 0);
 
@@ -97,7 +97,7 @@ class CBuzzQTStateTreeFunctionModel : public CBuzzQTStateTreeModel {
 
 public:
 
-   CBuzzQTStateTreeFunctionModel(buzzvm_t pt_state,
+   CBuzzQTStateTreeFunctionModel(CBuzzController* pc_controller,
                                  bool b_remove_empty_tables,
                                  QObject* pc_parent = 0);
 

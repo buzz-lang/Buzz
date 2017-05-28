@@ -1,5 +1,6 @@
 #include "buzz_qt_statetree_model.h"
 #include "buzz_qt_statetree_item.h"
+#include "buzz_controller.h"
 
 #include <argos3/core/utility/logging/argos_log.h>
 
@@ -8,12 +9,12 @@ using namespace argos;
 /****************************************/
 /****************************************/
 
-CBuzzQTStateTreeModel::CBuzzQTStateTreeModel(buzzvm_t pt_state,
+CBuzzQTStateTreeModel::CBuzzQTStateTreeModel(CBuzzController* pc_controller,
                                              bool b_remove_empty_tables,
                                              QObject* pc_parent) :
    QAbstractItemModel(pc_parent),
    m_bRemoveEmptyTables(b_remove_empty_tables),
-   m_ptState(pt_state) {
+   m_pcController(pc_controller) {
    m_pcDataRoot = new CBuzzQTStateTreeItem();
 }
 
@@ -51,11 +52,19 @@ QModelIndex CBuzzQTStateTreeModel::index(int n_row,
                                          const QModelIndex& c_parent) const {
    if(!hasIndex(n_row, n_column, c_parent)) return QModelIndex();
    CBuzzQTStateTreeItem* pcParentItem;
-   if(!c_parent.isValid()) pcParentItem = m_pcDataRoot;
-   else pcParentItem = static_cast<CBuzzQTStateTreeItem*>(c_parent.internalPointer());
+   if(!c_parent.isValid()) {
+      pcParentItem = m_pcDataRoot;
+   }
+   else {
+      pcParentItem = static_cast<CBuzzQTStateTreeItem*>(c_parent.internalPointer());
+   }
    CBuzzQTStateTreeItem* pcChildItem = pcParentItem->GetChild(n_row);
-   if(pcChildItem) return createIndex(n_row, n_column, pcChildItem);
-   else return QModelIndex();
+   if(pcChildItem) {
+      return createIndex(n_row, n_column, pcChildItem);
+   }
+   else {
+      return QModelIndex();
+   }
 }
 
 /****************************************/
@@ -83,14 +92,6 @@ int CBuzzQTStateTreeModel::rowCount(const QModelIndex& c_parent) const {
 /****************************************/
 /****************************************/
 
-void CBuzzQTStateTreeModel::SetBuzzState(buzzvm_t pt_state) {
-   m_ptState = pt_state;
-   Refresh();
-}
-
-/****************************************/
-/****************************************/
-
 struct SBuzzProcessStateData {
    buzzvm_t VM;
    CBuzzQTStateTreeItem* Item;
@@ -101,7 +102,7 @@ void CBuzzQTStateTreeModel::Refresh() {
    beginResetModel();
    delete m_pcDataRoot;
    m_pcDataRoot = new CBuzzQTStateTreeItem();
-   ProcessBuzzState(m_ptState, m_pcDataRoot);
+   ProcessBuzzState(m_pcController->GetBuzzVM(), m_pcDataRoot);
    m_pcDataRoot->SortChildren();
    endResetModel();
 }
@@ -113,10 +114,12 @@ void CBuzzQTStateTreeModel::Refresh(int) {
 /****************************************/
 /****************************************/
 
-CBuzzQTStateTreeVariableModel::CBuzzQTStateTreeVariableModel(buzzvm_t pt_state,
+CBuzzQTStateTreeVariableModel::CBuzzQTStateTreeVariableModel(CBuzzController* pc_controller,
                                                              bool b_remove_empty_tables,
                                                              QObject* pc_parent) :
-   CBuzzQTStateTreeModel(pt_state, b_remove_empty_tables, pc_parent) {}
+   CBuzzQTStateTreeModel(pc_controller,
+                         b_remove_empty_tables,
+                         pc_parent) {}
 
 /****************************************/
 /****************************************/
@@ -281,10 +284,13 @@ void CBuzzQTStateTreeVariableModel::ProcessBuzzState(buzzvm_t pt_state,
 /****************************************/
 /****************************************/
 
-CBuzzQTStateTreeFunctionModel::CBuzzQTStateTreeFunctionModel(buzzvm_t pt_state,
-                                                             bool b_remove_empty_tables,
-                                                             QObject* pc_parent) :
-   CBuzzQTStateTreeModel(pt_state, b_remove_empty_tables, pc_parent) {}
+CBuzzQTStateTreeFunctionModel::CBuzzQTStateTreeFunctionModel(
+   CBuzzController* pc_controller,
+   bool b_remove_empty_tables,
+   QObject* pc_parent) :
+   CBuzzQTStateTreeModel(pc_controller,
+                         b_remove_empty_tables,
+                         pc_parent) {}
 
 /****************************************/
 /****************************************/

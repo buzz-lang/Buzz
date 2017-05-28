@@ -2,6 +2,8 @@
 # Compile libbuzzargos
 #
 set(ARGOS_BUZZ_SOURCES
+  ../buzzlex.h              ../buzzlex.c
+  ../buzzparser.h           ../buzzparser.c
   ../buzzasm.h              ../buzzasm.c
   ../buzzdebug.h            ../buzzdebug.c
   buzz_controller.h         buzz_controller.cpp
@@ -12,11 +14,12 @@ if(ARGOS_COMPILE_QTOPENGL)
     ${ARGOS_BUZZ_SOURCES}
     buzz_qt.h buzz_qt.cpp
     buzz_qt_editor.h buzz_qt_editor.cpp
-    buzz_qt_find_dialog.h buzz_qt_find_dialog.cpp
+    # buzz_qt_find_dialog.h buzz_qt_find_dialog.cpp
     buzz_qt_main_window.h buzz_qt_main_window.cpp
     buzz_qt_statetree_item.h buzz_qt_statetree_item.cpp
     buzz_qt_statetree_model.h buzz_qt_statetree_model.cpp
-    buzz_qt_syntax_highlighter.h buzz_qt_syntax_highlighter.cpp)
+    buzz_qt_syntax_highlighter.h buzz_qt_syntax_highlighter.cpp
+    )
 endif(ARGOS_COMPILE_QTOPENGL)
 
 add_library(argos3plugin_simulator_buzz SHARED ${ARGOS_BUZZ_SOURCES})
