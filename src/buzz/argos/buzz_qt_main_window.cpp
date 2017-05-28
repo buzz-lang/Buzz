@@ -24,6 +24,7 @@
 #include <QAction>
 #include <QApplication>
 #include <QCloseEvent>
+#include <QDateTime>
 #include <QDockWidget>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -472,7 +473,9 @@ void CBuzzQTMainWindow::Execute() {
    /* Make sure the compiled files exist */
    QFile cBcodeFile(m_strMainBcode);
    QFile cDbgInfoFile(m_strMainDbgInfo);
-   if(!cBcodeFile.exists() || !cDbgInfoFile.exists())
+   if(!cBcodeFile.exists() || !cDbgInfoFile.exists() ||
+      QFileInfo(m_strMainScript).lastModified() >
+      QFileInfo(cBcodeFile).lastModified())
       if(!Compile()) return;
    /* Set the script for all the robots */
    QApplication::setOverrideCursor(Qt::WaitCursor);
