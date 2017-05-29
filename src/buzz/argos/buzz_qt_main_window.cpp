@@ -1151,7 +1151,13 @@ void CBuzzQTMainWindow::SetRunTimeError(int n_row,
       QString::KeepEmptyParts,
       Qt::CaseInsensitive);
    /* Set position and error message (byte offset or file/line/col */
-   if(str_message.startsWith("At bytecode offset", Qt::CaseInsensitive)) {
+   if(str_message == "Script not loaded!") {
+      /* Error message */
+      m_pcRunTimeErrorTable->setItem(
+         n_row, 2,
+         new QTableWidgetItem(str_message));
+   }
+   else if(str_message.startsWith("At bytecode offset", Qt::CaseInsensitive)) {
       /* Position */
       m_pcRunTimeErrorTable->setItem(
          n_row, 1,

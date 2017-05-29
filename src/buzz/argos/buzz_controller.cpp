@@ -225,25 +225,30 @@ void CBuzzController::SetBytecode(const std::string& str_bc_fname,
 /****************************************/
 
 std::string CBuzzController::ErrorInfo() {
-   const buzzdebug_entry_t* ptInfo = buzzdebug_info_get_fromoffset(m_tBuzzDbgInfo, &m_tBuzzVM->pc);
-   std::ostringstream ossErrMsg;
-   if(ptInfo) {
-      ossErrMsg << (*ptInfo)->fname
-                << ":"
-                << (*ptInfo)->line
-                << ":"
-                << (*ptInfo)->col;
+   if(m_tBuzzDbgInfo) {
+      const buzzdebug_entry_t* ptInfo = buzzdebug_info_get_fromoffset(m_tBuzzDbgInfo, &m_tBuzzVM->pc);
+      std::ostringstream ossErrMsg;
+      if(ptInfo) {
+         ossErrMsg << (*ptInfo)->fname
+                   << ":"
+                   << (*ptInfo)->line
+                   << ":"
+                   << (*ptInfo)->col;
+      }
+      else {
+         ossErrMsg << "At bytecode offset "
+                   << m_tBuzzVM->pc;
+      }
+      ossErrMsg << ": "
+                << buzzvm_error_desc[m_tBuzzVM->error];
+      if(m_tBuzzVM->errormsg)
+         ossErrMsg << ": "
+                   << m_tBuzzVM->errormsg;
+      return ossErrMsg.str();
    }
    else {
-      ossErrMsg << "At bytecode offset "
-                << m_tBuzzVM->pc;
+      return "Script not loaded!";
    }
-   ossErrMsg << ": "
-             << buzzvm_error_desc[m_tBuzzVM->error];
-   if(m_tBuzzVM->errormsg)
-      ossErrMsg << ": "
-                << m_tBuzzVM->errormsg;
-   return ossErrMsg.str();
 }
 
 /****************************************/
