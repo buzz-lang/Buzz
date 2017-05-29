@@ -175,7 +175,7 @@ void CBuzzController::Destroy() {
    if(m_tBuzzVM) {
       buzzvm_function_call(m_tBuzzVM, "destroy", 0);
       buzzvm_destroy(&m_tBuzzVM);
-      buzzdebug_destroy(&m_tBuzzDbgInfo);
+      if(m_tBuzzDbgInfo) buzzdebug_destroy(&m_tBuzzDbgInfo);
    }
 }
 

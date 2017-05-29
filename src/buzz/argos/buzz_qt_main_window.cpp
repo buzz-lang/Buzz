@@ -803,7 +803,7 @@ void CBuzzQTMainWindow::PopulateBuzzControllers() {
     * - make sure only one script was associated
     */
    QString cDbgFile;
-   buzzdebug_t tDbgInfo;
+   buzzdebug_t tDbgInfo = NULL;
    for(CSpace::TMapPerType::iterator it = tControllables.begin();
        it != tControllables.end();
        ++it) {
@@ -836,18 +836,23 @@ void CBuzzQTMainWindow::PopulateBuzzControllers() {
       }
    }
    /* Now we have the files associated to the controllers */
-   /* Go through the debug file and load all the contained files */
-   QStringList cScripts;
-   buzzdict_foreach(tDbgInfo->script2off,
-                    GetBuzzScriptFromDbgInfo,
-                    &cScripts);
-   for(int i = 0; i < cScripts.size(); ++i)
-      OpenFile(cScripts[i]);
-   /* If exactly one script has been opened, that is the main one */
-   if(cScripts.size() != 1)
+   if(tDbgInfo) {
+      /* Go through the debug file and load all the contained files */
+      QStringList cScripts;
+      buzzdict_foreach(tDbgInfo->script2off,
+                       GetBuzzScriptFromDbgInfo,
+                       &cScripts);
+      for(int i = 0; i < cScripts.size(); ++i)
+         OpenFile(cScripts[i]);
+      /* If exactly one script has been opened, that is the main one */
+      if(cScripts.size() != 1)
+         SetMainScript("");
+      else
+         SetMainScript(cScripts[0]);
+   }
+   else {
       SetMainScript("");
-   else
-      SetMainScript(cScripts[0]);
+   }
 }
 
 /****************************************/
