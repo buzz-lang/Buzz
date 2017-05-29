@@ -148,7 +148,8 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
 /****************************************/
 
 void CBuzzController::Reset() {
-   SetBytecode(m_strBytecodeFName, m_strDbgInfoFName);
+   if(m_strBytecodeFName != "" && m_strDbgInfoFName != "")
+      SetBytecode(m_strBytecodeFName, m_strDbgInfoFName);
 }
 
 /****************************************/
