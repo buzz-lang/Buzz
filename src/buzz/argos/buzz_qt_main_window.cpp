@@ -1019,8 +1019,6 @@ void CBuzzQTMainWindow::CreateScriptActions() {
    connect(m_pcScriptExecuteAction, SIGNAL(triggered()),
            this, SLOT(Execute()));
    m_pcScriptSetMainMenu = new QMenu(tr("&Set main script"), this);
-   m_pcScriptExecuteAction->setToolTip(tr("Set main script"));
-   m_pcScriptExecuteAction->setStatusTip(tr("Set main script"));
    m_pcScriptSetMainMenu->setEnabled(false);
    QMenu* pcMenu = menuBar()->addMenu(tr("&Script"));
    pcMenu->addAction(m_pcScriptCompileAction);
