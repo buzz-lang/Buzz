@@ -247,7 +247,6 @@ void CBuzzControllerFootBot::SetWheelSpeedsFromVector(const CVector2& c_heading)
 
 void CBuzzControllerFootBot::SetWheels(Real f_left_speed,
                                        Real f_right_speed) {
-   DEBUG("SetWheels(%f, %f)\n", f_left_speed, f_right_speed);
    m_pcWheels->SetLinearVelocity(f_left_speed,
                                  f_right_speed);
 }
