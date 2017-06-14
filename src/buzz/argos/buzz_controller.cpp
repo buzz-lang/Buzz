@@ -148,14 +148,23 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
 /****************************************/
 
 void CBuzzController::Reset() {
-   if(m_strBytecodeFName != "" && m_strDbgInfoFName != "")
-      SetBytecode(m_strBytecodeFName, m_strDbgInfoFName);
+   try {
+      if(m_strBytecodeFName != "" && m_strDbgInfoFName != "")
+         SetBytecode(m_strBytecodeFName, m_strDbgInfoFName);
+   }
+   catch(CARGoSException& ex) {
+      LOGERR << ex.what();
+   }
 }
 
 /****************************************/
 /****************************************/
 
 void CBuzzController::ControlStep() {
+   if(!m_tBuzzVM || m_tBuzzVM->state != BUZZVM_STATE_READY) {
+      fprintf(stderr, "[ROBOT %s] Robot is not ready to execute Buzz script.\n\n",
+              GetId().c_str());
+   }
    ProcessInMsgs();
    UpdateSensors();
    if(buzzvm_function_call(m_tBuzzVM, "step", 0) != BUZZVM_STATE_READY) {
