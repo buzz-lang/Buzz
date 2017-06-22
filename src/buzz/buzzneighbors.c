@@ -26,6 +26,7 @@ static int make_table(buzzvm_t vm, buzzobj_t* t) {
    *t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
    /* Add methods */
    function_register(*t, "get",     buzzneighbors_get);
+   function_register(*t, "filter",  buzzneighbors_filter);
    function_register(*t, "kin",     buzzneighbors_kin);
    function_register(*t, "nonkin",  buzzneighbors_nonkin);
    function_register(*t, "foreach", buzzneighbors_foreach);
@@ -533,8 +534,9 @@ void neighbor_filter_each(const void* key, void* data, void* params) {
    buzzobj_t retval = buzzvm_stack_at(d->vm, 1);
    if(retval->o.type != BUZZTYPE_NIL &&
       (retval->o.type != BUZZTYPE_INT ||
-       retval->i.value != 0))
+       retval->i.value != 0)) {
       buzzdict_set(d->result, &rid, data);
+   }
    /* Get rid of return value */
    buzzvm_pop(d->vm);
 }
@@ -572,7 +574,7 @@ int buzzneighbors_filter(struct buzzvm_s* vm) {
          .closure = closure,
          .result = mapdata->t.value
       };
-      buzzdict_foreach(data->t.value, neighbor_map_each, &fdata);
+      buzzdict_foreach(data->t.value, neighbor_filter_each, &fdata);
    }
    /* Return the table */
    buzzvm_push(vm, t);
