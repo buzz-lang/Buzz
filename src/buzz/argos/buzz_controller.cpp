@@ -249,11 +249,12 @@ std::string CBuzzController::ErrorInfo() {
          ossErrMsg << "At bytecode offset "
                    << m_tBuzzVM->pc;
       }
-      ossErrMsg << ": "
-                << buzzvm_error_desc[m_tBuzzVM->error];
       if(m_tBuzzVM->errormsg)
          ossErrMsg << ": "
                    << m_tBuzzVM->errormsg;
+      else
+         ossErrMsg << ": "
+                   << buzzvm_error_desc[m_tBuzzVM->error];
       return ossErrMsg.str();
    }
    else {

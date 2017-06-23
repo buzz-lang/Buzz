@@ -118,6 +118,7 @@ void buzzheap_vstig_mark(const void* key, void* data, void* params) {
 }
 
 void buzzheap_listener_mark(const void* key, void* data, void* params) {
+   buzzstrman_gc_mark(((buzzvm_t)params)->strings, *(uint16_t*)key);
    buzzheap_objmark(*(buzzobj_t*)data, params);
 }
 
