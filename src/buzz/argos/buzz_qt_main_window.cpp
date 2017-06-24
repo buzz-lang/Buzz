@@ -862,8 +862,8 @@ void CBuzzQTMainWindow::SetMainScript(const QString& str_path) {
    /* This flag is used to decide whether the script file is set or not. */
    bool isSet = !str_path.isEmpty();
    m_strMainScript = str_path;
-   m_strMainBcode = m_strMainScript + ".bo";
-   m_strMainDbgInfo = m_strMainScript + ".bdb";
+   m_strMainBcode = m_strMainScript.left(m_strMainScript.lastIndexOf('.') + 1) + "bo";
+   m_strMainDbgInfo = m_strMainScript.left(m_strMainScript.lastIndexOf('.') + 1) + "bdb";
    /* Activate/deactivate menu items according to isSet flag */
    m_pcScriptExecuteAction->setEnabled(isSet);
    /* Change window title */
