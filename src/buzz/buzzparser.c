@@ -381,12 +381,18 @@ int parse_script(buzzparser_t par) {
 /****************************************/
 
 int parse_statlist(buzzparser_t par) {
+   /* Parse first statement */
    if(!parse_stat(par)) return PARSE_ERROR;
+   /* Keep parsing statements as long as you find tokens */
    while(par->tok && par->tok->type != BUZZTOK_BLOCKCLOSE) {
       while(par->tok && par->tok->type == BUZZTOK_STATEND) {
          buzzlex_destroytok(&par->tok);
          par->tok = buzzlex_nexttok(par->lex);
       }
+      /* Make sure a file inclusion error did not happen */
+      if(!par->tok && !buzzlex_done(par->lex))
+         return PARSE_ERROR;
+      /* Parse the statement */
       if(par->tok && !parse_stat(par)) return PARSE_ERROR;
    }
    return PARSE_OK;
