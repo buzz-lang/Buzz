@@ -150,8 +150,8 @@ void buzzoutmsg_queue_append_broadcast(buzzvm_t vm,
    /* Make a new BROADCAST message */
    buzzoutmsg_t m = (buzzoutmsg_t)malloc(sizeof(union buzzoutmsg_u));
    m->bc.type = BUZZMSG_BROADCAST;
-   m->bc.topic = buzzobj_clone(topic);
-   m->bc.value = buzzobj_clone(value);
+   m->bc.topic = buzzobj_iclone(topic);
+   m->bc.value = buzzobj_iclone(value);
    /* Queue it */
    buzzdarray_push(vm->outmsgs->queues[BUZZMSG_BROADCAST], &m);   
 }
@@ -351,7 +351,7 @@ void buzzoutmsg_queue_append_vstig(buzzvm_t vm,
    buzzoutmsg_t m = (buzzoutmsg_t)malloc(sizeof(union buzzoutmsg_u));
    m->vs.type = type;
    m->vs.id = id;
-   m->vs.key = buzzobj_clone(key);
+   m->vs.key = buzzobj_iclone(key);
    m->vs.data = buzzvstig_elem_clone(data);
    /* Update the dictionary - this also invalidates e */
    buzzdict_set(vs, &m->vs.key, &m);
