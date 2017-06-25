@@ -16,11 +16,6 @@
 #define BUZZTYPE_CLOSURE  5
 #define BUZZTYPE_USERDATA 6
 
-/*
- * Info extraction from an object
- */
-#define buzzobj_type(v)
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -137,11 +132,11 @@ extern "C" {
    extern buzzobj_t buzzobj_new(uint16_t type);
 
    /*
-    * Clones a Buzz object.
+    * Internally used to clones a Buzz object.
     * @param o The Buzz object to clone.
     * @return The cloned object.
     */
-   extern buzzobj_t buzzobj_clone(const buzzobj_t o);
+   extern buzzobj_t buzzobj_iclone(const buzzobj_t o);
 
    /*
     * Destroys a Buzz object.
@@ -184,6 +179,18 @@ extern "C" {
     */
    extern int buzzobj_cmp(const buzzobj_t a,
                           const buzzobj_t b);
+
+   /*
+    * C-closure to return the type of an object.
+    * @param vm The VM data.
+    */
+   extern int buzzobj_type(struct buzzvm_s* vm);
+
+   /*
+    * C-closure to clone a Buzz object.
+    * @param vm The VM data.
+    */
+   extern int buzzobj_clone(struct buzzvm_s* vm);
 
    /*
     * C-closure to return the size of a table.

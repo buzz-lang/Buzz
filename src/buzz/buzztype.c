@@ -61,13 +61,13 @@ buzzobj_t buzzobj_new(uint16_t type) {
 /****************************************/
 /****************************************/
 
-void buzzobj_clone_tableelem(const void* key, void* data, void* params) {
-   buzzobj_t k = buzzobj_clone(*(buzzobj_t*)key);
-   buzzobj_t d = buzzobj_clone(*(buzzobj_t*)data);
+void buzzobj_iclone_tableelem(const void* key, void* data, void* params) {
+   buzzobj_t k = buzzobj_iclone(*(buzzobj_t*)key);
+   buzzobj_t d = buzzobj_iclone(*(buzzobj_t*)data);
    buzzdict_set((buzzdict_t)params, &k, &d);
 }
 
-buzzobj_t buzzobj_clone(const buzzobj_t o) {
+buzzobj_t buzzobj_iclone(const buzzobj_t o) {
    buzzobj_t x = (buzzobj_t)malloc(sizeof(union buzzobj_u));
    x->o.type = o->o.type;
    x->o.marker = o->o.marker;
@@ -106,7 +106,7 @@ buzzobj_t buzzobj_clone(const buzzobj_t o) {
                                    orig->hashf,
                                    orig->keycmpf,
                                    orig->dstryf);
-         buzzdict_foreach(orig, buzzobj_clone_tableelem, x->t.value);
+         buzzdict_foreach(orig, buzzobj_iclone_tableelem, x->t.value);
          return x;
       }
       default:
@@ -264,6 +264,34 @@ int buzzobj_cmp(const buzzobj_t a,
    // TODO better error management
    fprintf(stderr, "[TODO] %s:%d: Error for comparison between Buzz objects of types %d and %d\n", __FILE__, __LINE__, a->o.type, b->o.type);
    abort();
+}
+
+/****************************************/
+/****************************************/
+
+int buzzobj_type(buzzvm_t vm) {
+   /* Get parameter */
+   buzzvm_lnum_assert(vm, 1);
+   buzzvm_lload(vm, 1);
+   buzzobj_t o = buzzvm_stack_at(vm, 1);
+   buzzvm_pop(vm);
+   /* Return a string with the type */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, buzztype_desc[o->o.type], 0));
+   return buzzvm_ret1(vm);
+}
+
+/****************************************/
+/****************************************/
+
+int buzzobj_clone(buzzvm_t vm) {
+   /* Get parameter */
+   buzzvm_lnum_assert(vm, 1);
+   buzzvm_lload(vm, 1);
+   buzzobj_t o = buzzvm_stack_at(vm, 1);
+   buzzvm_pop(vm);
+   /* Return a clone of the object */
+   buzzvm_push(vm, buzzobj_iclone(o));
+   return buzzvm_ret1(vm);
 }
 
 /****************************************/
@@ -527,6 +555,8 @@ int64_t buzzobj_deserialize(buzzobj_t* data,
    buzzvm_gstore(vm);
 
 int buzzobj_register(struct buzzvm_s* vm) {
+   function_register(type);
+   function_register(clone);
    function_register(size);
    function_register(foreach);
    function_register(map);
