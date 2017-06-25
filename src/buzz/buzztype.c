@@ -466,10 +466,6 @@ void buzzobj_serialize_tableelem(const void* key, void* data, void* params) {
    buzzobj_serialize((buzzdarray_t)params, *(buzzobj_t*)data);
 }
 
-void buzzobj_serialize_arrayelem(uint32_t pos, void* data, void* params) {
-   buzzobj_serialize((buzzdarray_t)params, *(buzzobj_t*)data);
-}
-
 void buzzobj_serialize(buzzdarray_t buf,
                        const buzzobj_t data) {
    buzzmsg_serialize_u16(buf, data->o.type);
