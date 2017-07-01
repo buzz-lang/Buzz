@@ -351,19 +351,16 @@ int buzzobj_foreach(buzzvm_t vm) {
 struct buzzobj_map_params {
    buzzvm_t vm;
    buzzobj_t fun;
+   buzzdict_t result;
 };
 
 void buzzobj_map_entry(const void* key, void* data, void* params) {
    /* Cast params */
    struct buzzobj_map_params* p = (struct buzzobj_map_params*)params;
    if(p->vm->state != BUZZVM_STATE_READY) return;
-   /* Duplicate the output table */
-   buzzvm_dup(p->vm);
-   /* Push current key (later we'll set the value in the output table) */
-   buzzvm_push(p->vm, *(buzzobj_t*)key);
    /* Save current stack size */
    uint32_t ss = buzzvm_stack_top(p->vm);
-   /* Push closure and params (current key and value) */
+   /* Push closure and params (key and value) */
    buzzvm_push(p->vm, p->fun);
    buzzvm_push(p->vm, *(buzzobj_t*)key);
    buzzvm_push(p->vm, *(buzzobj_t*)data);
@@ -377,14 +374,17 @@ void buzzobj_map_entry(const void* key, void* data, void* params) {
                       "map(table,function) expects the function to return a value");
       return;
    }
-   /* Set new table value */
-   buzzvm_tput(p->vm);
+   /* Add entry to the return table */
+   buzzobj_t r = buzzvm_stack_at(p->vm, 1);
+   buzzdict_set(p->result, key, &r);
+   /* Get rid of return value */
+   buzzvm_pop(p->vm);
 }
 
 int buzzobj_map(buzzvm_t vm) {
    /* Table and closure expected */
    buzzvm_lnum_assert(vm, 2);
-   /* Get input table */
+   /* Get table */
    buzzvm_lload(vm, 1);
    buzzvm_type_assert(vm, 1, BUZZTYPE_TABLE);
    buzzobj_t t = buzzvm_stack_at(vm, 1);
@@ -392,12 +392,17 @@ int buzzobj_map(buzzvm_t vm) {
    buzzvm_lload(vm, 2);
    buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
    buzzobj_t c = buzzvm_stack_at(vm, 1);
-   /* Create output table */
-   buzzvm_pusht(vm);
+   /* Create a table as the return value */
+   buzzobj_t r = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
+   buzzvm_push(vm, r);
    /* Go through the table element and apply the closure */
-   struct buzzobj_map_params p = { .vm = vm, .fun = c };
+   struct buzzobj_map_params p = {
+      .vm = vm,
+      .fun = c,
+      .result = r->t.value
+   };
    buzzdict_foreach(t->t.value, buzzobj_map_entry, &p);
-   /* Return the output table */
+   /* Return the table */
    return buzzvm_ret1(vm);
 }
 
@@ -458,10 +463,6 @@ int buzzobj_reduce(buzzvm_t vm) {
 
 void buzzobj_serialize_tableelem(const void* key, void* data, void* params) {
    buzzobj_serialize((buzzdarray_t)params, *(buzzobj_t*)key);
-   buzzobj_serialize((buzzdarray_t)params, *(buzzobj_t*)data);
-}
-
-void buzzobj_serialize_arrayelem(uint32_t pos, void* data, void* params) {
    buzzobj_serialize((buzzdarray_t)params, *(buzzobj_t*)data);
 }
 

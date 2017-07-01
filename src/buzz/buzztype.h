@@ -70,15 +70,6 @@ extern "C" {
    } buzztable_t;
 
    /*
-    * Array
-    */
-   typedef struct {
-      uint16_t     type;
-      uint16_t     marker;
-      buzzdarray_t value;
-   } buzzarray_t;
-
-   /*
     * Closure
     */
    typedef struct {
@@ -113,7 +104,6 @@ extern "C" {
       buzzfloat_t    f;    // as floating-point
       buzzstring_t   s;    // as string
       buzztable_t    t;    // as table
-      buzzarray_t    a;    // as array
       buzzclosure_t  c;    // as closure
       buzzuserdata_t u;    // as user data
    };
@@ -203,6 +193,12 @@ extern "C" {
     * @param vm The VM data.
     */
    extern int buzzobj_foreach(struct buzzvm_s* vm);
+
+   /*
+    * C-closure to apply a function to all the elements of a table.
+    * @param vm The VM data.
+    */
+   extern int buzzobj_map(struct buzzvm_s* vm);
 
    /*
     * C-closure to loop through the elements of a table and return an aggregated value.
