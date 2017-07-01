@@ -394,8 +394,20 @@ buzzvstig_elem_t buzzvstig_onconflict_call(buzzvm_t vm,
    }
    else {
       /* No conflict manager, use default behavior */
-      if(lv->robot > rv->robot) return buzzvstig_elem_clone(lv);
-      else return buzzvstig_elem_clone(rv);
+      /* If both values are not nil, or both are nil,
+         keep the value of the robot with the higher id */
+      if(((lv->data->o.type == BUZZTYPE_NIL) && (rv->data->o.type == BUZZTYPE_NIL)) ||
+         ((lv->data->o.type != BUZZTYPE_NIL) && (rv->data->o.type != BUZZTYPE_NIL))) {
+         if(lv->robot > rv->robot)
+            return buzzvstig_elem_clone(lv);
+         else
+            return buzzvstig_elem_clone(rv);
+      }
+      /* If my value is not nil, keep mine */
+      if(lv->data->o.type != BUZZTYPE_NIL)
+         return buzzvstig_elem_clone(lv);
+      /* If the other value is not nil, keep that one */
+      return buzzvstig_elem_clone(rv);
    }
 }
 
