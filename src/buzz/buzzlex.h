@@ -104,6 +104,12 @@ extern "C" {
     * @param lex The lexer state.
     */
 #define buzzlex_getfile(lex) buzzdarray_last((lex), buzzlex_file_t)
+
+   /*
+    * Returns 1 if the lexer has no file left to tokenize, 0 otherwise.
+    * @param lex The lexer state.
+    */
+#define buzzlex_done(lex) buzzdarray_isempty(lex)
    
    /*
     * Processes the next token.

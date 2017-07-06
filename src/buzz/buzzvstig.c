@@ -71,7 +71,7 @@ buzzvstig_elem_t buzzvstig_elem_new(buzzobj_t data,
 
 buzzvstig_elem_t buzzvstig_elem_clone(const buzzvstig_elem_t e) {
    buzzvstig_elem_t x = (buzzvstig_elem_t)malloc(sizeof(struct buzzvstig_elem_s));
-   x->data      = buzzobj_clone(e->data);
+   x->data      = buzzobj_iclone(e->data);
    x->timestamp = e->timestamp;
    x->robot     = e->robot;
    return x;
@@ -303,7 +303,7 @@ int buzzvstig_onconflict(struct buzzvm_s* vm) {
       buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
       /* Clone the closure */
       if((*vs)->onconflict) free((*vs)->onconflict);
-      (*vs)->onconflict = buzzobj_clone(buzzvm_stack_at(vm, 1));
+      (*vs)->onconflict = buzzobj_iclone(buzzvm_stack_at(vm, 1));
    }
    else {
       /* No virtual stigmergy found, just push false */
@@ -331,7 +331,7 @@ int buzzvstig_onconflictlost(struct buzzvm_s* vm) {
       buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
       /* Clone the closure */
       if((*vs)->onconflictlost) free((*vs)->onconflictlost);
-      (*vs)->onconflictlost = buzzobj_clone(buzzvm_stack_at(vm, 1));
+      (*vs)->onconflictlost = buzzobj_iclone(buzzvm_stack_at(vm, 1));
    }
    else {
       /* No virtual stigmergy found, just push false */
@@ -394,8 +394,20 @@ buzzvstig_elem_t buzzvstig_onconflict_call(buzzvm_t vm,
    }
    else {
       /* No conflict manager, use default behavior */
-      if(lv->robot > rv->robot) return buzzvstig_elem_clone(lv);
-      else return buzzvstig_elem_clone(rv);
+      /* If both values are not nil, or both are nil,
+         keep the value of the robot with the higher id */
+      if(((lv->data->o.type == BUZZTYPE_NIL) && (rv->data->o.type == BUZZTYPE_NIL)) ||
+         ((lv->data->o.type != BUZZTYPE_NIL) && (rv->data->o.type != BUZZTYPE_NIL))) {
+         if(lv->robot > rv->robot)
+            return buzzvstig_elem_clone(lv);
+         else
+            return buzzvstig_elem_clone(rv);
+      }
+      /* If my value is not nil, keep mine */
+      if(lv->data->o.type != BUZZTYPE_NIL)
+         return buzzvstig_elem_clone(lv);
+      /* If the other value is not nil, keep that one */
+      return buzzvstig_elem_clone(rv);
    }
 }
 

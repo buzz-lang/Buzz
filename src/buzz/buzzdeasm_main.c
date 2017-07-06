@@ -11,7 +11,7 @@
 int main(int argc, char** argv) {
    /* Parse command line */
    if(argc != 4) {
-      fprintf(stderr, "Usage:\n\t%s <bytecodefile.bo> <debugfile.bdbg> <outfile.basm>\n\n", argv[0]);
+      fprintf(stderr, "Usage:\n\t%s <bytecodefile.bo> <debugfile.bdb> <outfile.basm>\n\n", argv[0]);
       return 0;
    }
    /* Open bytecode file */

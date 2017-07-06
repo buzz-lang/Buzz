@@ -16,11 +16,6 @@
 #define BUZZTYPE_CLOSURE  5
 #define BUZZTYPE_USERDATA 6
 
-/*
- * Info extraction from an object
- */
-#define buzzobj_type(v)
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -75,15 +70,6 @@ extern "C" {
    } buzztable_t;
 
    /*
-    * Array
-    */
-   typedef struct {
-      uint16_t     type;
-      uint16_t     marker;
-      buzzdarray_t value;
-   } buzzarray_t;
-
-   /*
     * Closure
     */
    typedef struct {
@@ -118,7 +104,6 @@ extern "C" {
       buzzfloat_t    f;    // as floating-point
       buzzstring_t   s;    // as string
       buzztable_t    t;    // as table
-      buzzarray_t    a;    // as array
       buzzclosure_t  c;    // as closure
       buzzuserdata_t u;    // as user data
    };
@@ -137,11 +122,11 @@ extern "C" {
    extern buzzobj_t buzzobj_new(uint16_t type);
 
    /*
-    * Clones a Buzz object.
+    * Internally used to clones a Buzz object.
     * @param o The Buzz object to clone.
     * @return The cloned object.
     */
-   extern buzzobj_t buzzobj_clone(const buzzobj_t o);
+   extern buzzobj_t buzzobj_iclone(const buzzobj_t o);
 
    /*
     * Destroys a Buzz object.
@@ -186,6 +171,18 @@ extern "C" {
                           const buzzobj_t b);
 
    /*
+    * C-closure to return the type of an object.
+    * @param vm The VM data.
+    */
+   extern int buzzobj_type(struct buzzvm_s* vm);
+
+   /*
+    * C-closure to clone a Buzz object.
+    * @param vm The VM data.
+    */
+   extern int buzzobj_clone(struct buzzvm_s* vm);
+
+   /*
     * C-closure to return the size of a table.
     * @param vm The VM data.
     */
@@ -196,6 +193,12 @@ extern "C" {
     * @param vm The VM data.
     */
    extern int buzzobj_foreach(struct buzzvm_s* vm);
+
+   /*
+    * C-closure to apply a function to all the elements of a table.
+    * @param vm The VM data.
+    */
+   extern int buzzobj_map(struct buzzvm_s* vm);
 
    /*
     * C-closure to loop through the elements of a table and return an aggregated value.
