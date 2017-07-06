@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 2.8.12)
 #
 # Set the path additional cmake files must be searched for
 #
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
+set(CMAKE_MODULE_PATH $ENV{CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
 #
 # Set CMake policies to select wanted behaviors
