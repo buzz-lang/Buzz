@@ -103,6 +103,7 @@ int BuzzDebug(buzzvm_t vm) {
 CBuzzController::CBuzzController() :
    m_pcRABA(NULL),
    m_pcRABS(NULL),
+   m_pcPos(NULL),
    m_tBuzzVM(NULL),
    m_tBuzzDbgInfo(NULL) {}
 
@@ -120,6 +121,10 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
       /* Get pointers to devices */
       m_pcRABA   = GetActuator<CCI_RangeAndBearingActuator>("range_and_bearing");
       m_pcRABS   = GetSensor  <CCI_RangeAndBearingSensor  >("range_and_bearing");
+      try {
+         m_pcPos = GetSensor  <CCI_PositioningSensor>("positioning");
+      }
+      catch(CARGoSException& ex) {}
       /* Get the script name */
       std::string strBCFName;
       GetNodeAttributeOrDefault(t_node, "bytecode_file", strBCFName, strBCFName);
@@ -336,17 +341,29 @@ void CBuzzController::ProcessOutMsgs() {
       if(buzzoutmsg_queue_isempty(m_tBuzzVM)) break;
       /* Get first message */
       buzzmsg_payload_t m = buzzoutmsg_queue_first(m_tBuzzVM);
-      /* Make sure the next message fits the data buffer */
-      if(cData.Size() + buzzmsg_payload_size(m) + sizeof(UInt16)
-         >
-         m_pcRABA->GetSize()) {
-         buzzmsg_payload_destroy(&m);
-         break;
+      /* Make sure the message is smaller than the data buffer
+       * Without this check, large messages would clog the queue forever
+       */
+      size_t unMsgSize = buzzmsg_payload_size(m) + sizeof(UInt16);
+      if(unMsgSize < m_pcRABA->GetSize()) {
+         /* Make sure the next message fits the data buffer */
+         if(cData.Size() + unMsgSize > m_pcRABA->GetSize()) {
+            buzzmsg_payload_destroy(&m);
+            break;
+         }
+         /* Add message length to data buffer */
+         cData << static_cast<UInt16>(buzzmsg_payload_size(m));
+         /* Add payload to data buffer */
+         cData.AddBuffer(reinterpret_cast<UInt8*>(m->data), buzzmsg_payload_size(m));
       }
-      /* Add message length to data buffer */
-      cData << static_cast<UInt16>(buzzmsg_payload_size(m));
-      /* Add payload to data buffer */
-      cData.AddBuffer(reinterpret_cast<UInt8*>(m->data), buzzmsg_payload_size(m));
+      else {
+         RLOGERR << "Discarded oversize message ("
+                 << unMsgSize
+                 << " bytes). Max size is "
+                 << m_pcRABA->GetSize()
+                 << " bytes."
+                 << std::endl;
+      }
       /* Get rid of message */
       buzzoutmsg_queue_next(m_tBuzzVM);
       buzzmsg_payload_destroy(&m);
@@ -361,6 +378,21 @@ void CBuzzController::ProcessOutMsgs() {
 /****************************************/
 
 void CBuzzController::UpdateSensors() {
+   /*
+    * Update positioning sensor
+    */
+   if(m_pcPos != NULL) {
+      /* Get positioning readings */
+      const CCI_PositioningSensor::SReading& sPosRead = m_pcPos->GetReading();
+      /* Create empty positioning data table */
+      buzzobj_t tPose = buzzobj_new(BUZZTYPE_TABLE);
+      /* Store position data */
+      TablePut(tPose, "position", sPosRead.Position);
+      /* Store orientation data */
+      TablePut(tPose, "orientation", sPosRead.Orientation);
+      /* Register positioning data table as global symbol */
+      Register("pose", tPose);
+   }
 }
 
 /****************************************/
@@ -368,7 +400,7 @@ void CBuzzController::UpdateSensors() {
 
 buzzvm_state CBuzzController::Register(const std::string& str_key,
                                        buzzobj_t t_obj) {
-   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 0));
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 1));
    buzzvm_push(m_tBuzzVM, t_obj);
    buzzvm_gstore(m_tBuzzVM);
    return m_tBuzzVM->state;
@@ -379,7 +411,7 @@ buzzvm_state CBuzzController::Register(const std::string& str_key,
 
 buzzvm_state CBuzzController::Register(const std::string& str_key,
                                        SInt32 n_value) {
-   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 0));
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 1));
    buzzvm_pushi(m_tBuzzVM, n_value);
    buzzvm_gstore(m_tBuzzVM);
    return m_tBuzzVM->state;
@@ -390,7 +422,7 @@ buzzvm_state CBuzzController::Register(const std::string& str_key,
 
 buzzvm_state CBuzzController::Register(const std::string& str_key,
                                        Real f_value) {
-   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 0));
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 1));
    buzzvm_pushf(m_tBuzzVM, f_value);
    buzzvm_gstore(m_tBuzzVM);
    return m_tBuzzVM->state;
@@ -409,7 +441,7 @@ buzzvm_state CBuzzController::Register(const std::string& str_key,
 
 buzzvm_state CBuzzController::Register(const std::string& str_key,
                                        const CVector3& c_vec) {
-   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 0));
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 1));
    buzzvm_pusht(m_tBuzzVM);
    buzzobj_t tVecTable = buzzvm_stack_at(m_tBuzzVM, 1);
    buzzvm_gstore(m_tBuzzVM);
@@ -424,7 +456,7 @@ buzzvm_state CBuzzController::Register(const std::string& str_key,
 
 buzzvm_state CBuzzController::Register(const std::string& str_key,
                                        const CQuaternion& c_quat) {
-   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 0));
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 1));
    buzzvm_pusht(m_tBuzzVM);
    buzzobj_t tQuatTable = buzzvm_stack_at(m_tBuzzVM, 1);
    buzzvm_gstore(m_tBuzzVM);
@@ -441,7 +473,7 @@ buzzvm_state CBuzzController::Register(const std::string& str_key,
 
 buzzvm_state CBuzzController::Register(const std::string& str_key,
                                        const CColor& c_color) {
-   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 0));
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 1));
    buzzvm_pusht(m_tBuzzVM);
    buzzobj_t tColorTable = buzzvm_stack_at(m_tBuzzVM, 1);
    buzzvm_gstore(m_tBuzzVM);
@@ -458,7 +490,7 @@ buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
                                        const std::string& str_key,
                                        buzzobj_t t_obj) {
    buzzvm_push(m_tBuzzVM, t_table);
-   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 0));
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 1));
    buzzvm_push(m_tBuzzVM, t_obj);
    buzzvm_tput(m_tBuzzVM);
    return m_tBuzzVM->state;
@@ -471,7 +503,7 @@ buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
                                        const std::string& str_key,
                                        SInt32 n_value) {
    buzzvm_push(m_tBuzzVM, t_table);
-   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 0));
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 1));
    buzzvm_pushi(m_tBuzzVM, n_value);
    buzzvm_tput(m_tBuzzVM);
    return m_tBuzzVM->state;
@@ -484,7 +516,7 @@ buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
                                        const std::string& str_key,
                                        Real f_value) {
    buzzvm_push(m_tBuzzVM, t_table);
-   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 0));
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 1));
    buzzvm_pushf(m_tBuzzVM, f_value);
    buzzvm_tput(m_tBuzzVM);
    return m_tBuzzVM->state;
@@ -506,7 +538,7 @@ buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
                                        const std::string& str_key,
                                        const CVector3& c_vec) {
    buzzvm_push(m_tBuzzVM, t_table);
-   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 0));
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 1));
    buzzvm_pusht(m_tBuzzVM);
    buzzobj_t tVecTable = buzzvm_stack_at(m_tBuzzVM, 1);
    buzzvm_tput(m_tBuzzVM);
@@ -523,7 +555,7 @@ buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
                                        const std::string& str_key,
                                        const CQuaternion& c_quat) {
    buzzvm_push(m_tBuzzVM, t_table);
-   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 0));
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 1));
    buzzvm_pusht(m_tBuzzVM);
    buzzobj_t tQuatTable = buzzvm_stack_at(m_tBuzzVM, 1);
    buzzvm_tput(m_tBuzzVM);
@@ -542,7 +574,7 @@ buzzvm_state CBuzzController::TablePut(buzzobj_t t_table,
                                        const std::string& str_key,
                                        const CColor& c_color) {
    buzzvm_push(m_tBuzzVM, t_table);
-   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 0));
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, str_key.c_str(), 1));
    buzzvm_pusht(m_tBuzzVM);
    buzzobj_t tColorTable = buzzvm_stack_at(m_tBuzzVM, 1);
    buzzvm_tput(m_tBuzzVM);
