@@ -186,6 +186,13 @@ extern "C" {
 #define buzzvstig_store(vs, key, el) buzzdict_set((vs)->data, (key), (el));
 
 /*
+ * Deletes data from a virtual stigmergy structure.
+ * @param vs The virtual stigmergy structure.
+ * @param key The key.
+ */
+#define buzzvstig_remove(vs, key) buzzdict_remove((vs)->data, (key));
+
+/*
  * Applies the given function to each element in the virtual stigmergy structure.
  * @param vs The virtual stigmergy structure.
  * @param fun The function.

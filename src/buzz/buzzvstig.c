@@ -205,15 +205,30 @@ int buzzvstig_put(buzzvm_t vm) {
       /* Look for the element */
       const buzzvstig_elem_t* x = buzzvstig_fetch(*vs, &k);
       if(x) {
-         /* Element found, update it */
-         (*x)->data = v;
-         ++((*x)->timestamp);
-         (*x)->robot = vm->robot;
-         /* Append a PUT message to the out message queue */
-         buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_PUT, id, k, *x);
+         /* Element found */
+         if(v->o.type != BUZZTYPE_NIL) {
+            /* New value is not nil, update the existing element */
+            (*x)->data = v;
+            ++((*x)->timestamp);
+            (*x)->robot = vm->robot;
+            /* Append a PUT message to the out message queue */
+            buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_PUT, id, k, *x);
+         }
+         else {
+            /* New value is nil, must delete the existing element */
+            /* Make a new element with nil as value to update neighbors */
+            buzzvstig_elem_t y = buzzvstig_elem_new(
+               buzzobj_new(BUZZTYPE_NIL), // nil value
+               (*x)->timestamp + 1,       // new timestamp
+               vm->robot);                // robot id
+            /* Append a PUT message to the out message queue with nil in it */
+            buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_PUT, id, k, y);
+            /* Delete the existing element */
+            buzzvstig_remove(*vs, &k);
+         }
       }
-      else {
-         /* Element not found, create a new one */
+      else if(v->o.type != BUZZTYPE_NIL) {
+         /* Element not found and new value is not nil, store it */
          buzzvstig_elem_t y = buzzvstig_elem_new(v, 1, vm->robot);
          buzzvstig_store(*vs, &k, &y);
          /* Append a PUT message to the out message queue */
@@ -268,11 +283,12 @@ int buzzvstig_get(buzzvm_t vm) {
          buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_QUERY, id, k, *e);
       }
       else {
-         /* Key not found, add a new one containing nil */
+         /* Key not found, make a new one containing nil */
          buzzvm_pushnil(vm);
          buzzvstig_elem_t x =
-            buzzvstig_elem_new(buzzvm_stack_at(vm, 1),
-                               1, vm->robot);
+            buzzvstig_elem_new(buzzvm_stack_at(vm, 1), // nil value
+                               0,                      // timestamp
+                               vm->robot);             // robot id
          /* Append the message to the out message queue */
          buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_QUERY, id, k, x);
       }
@@ -372,7 +388,7 @@ buzzvstig_elem_t buzzvstig_onconflict_call(buzzvm_t vm,
       /* Make new entry with return value */
       /* Make sure it's a table */
       if(buzzvm_stack_at(vm, 1)->o.type != BUZZTYPE_TABLE) {
-         fprintf(stderr, "[WARNING] [ROBOT %u] Return value type is %d\n", vm->robot, buzzvm_stack_at(vm, 1)->o.type);
+         fprintf(stderr, "[WARNING] [ROBOT %u] virtual stigmergy onconflict(): Return value type is %s, expected table\n", vm->robot, buzztype_desc[buzzvm_stack_at(vm, 1)->o.type]);
          return NULL;
       }
       /* Get the robot id */
@@ -394,8 +410,7 @@ buzzvstig_elem_t buzzvstig_onconflict_call(buzzvm_t vm,
    }
    else {
       /* No conflict manager, use default behavior */
-      /* If both values are not nil, or both are nil,
-         keep the value of the robot with the higher id */
+      /* If both values are not nil, keep the value of the robot with the higher id */
       if(((lv->data->o.type == BUZZTYPE_NIL) && (rv->data->o.type == BUZZTYPE_NIL)) ||
          ((lv->data->o.type != BUZZTYPE_NIL) && (rv->data->o.type != BUZZTYPE_NIL))) {
          if(lv->robot > rv->robot)
@@ -407,7 +422,10 @@ buzzvstig_elem_t buzzvstig_onconflict_call(buzzvm_t vm,
       if(lv->data->o.type != BUZZTYPE_NIL)
          return buzzvstig_elem_clone(lv);
       /* If the other value is not nil, keep that one */
-      return buzzvstig_elem_clone(rv);
+      if(rv->data->o.type != BUZZTYPE_NIL)
+         return buzzvstig_elem_clone(rv);
+      /* Otherwise nothing to do */
+      return NULL;
    }
 }
 
