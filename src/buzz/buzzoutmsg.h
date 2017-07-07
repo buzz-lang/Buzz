@@ -19,17 +19,14 @@ extern "C" {
       buzzdarray_t queues[BUZZMSG_TYPE_COUNT];
       /* Vstig message dict for fast duplicate management */
       buzzdict_t vstig;
-      /* The robot id */
-      uint16_t robot;
    };
    typedef struct buzzoutmsg_queue_s* buzzoutmsg_queue_t;
 
    /*
     * Create a new message queue.
-    * @param robot The robot id.
     * @return A new message queue.
     */
-   extern buzzoutmsg_queue_t buzzoutmsg_queue_new(uint16_t robot);
+   extern buzzoutmsg_queue_t buzzoutmsg_queue_new();
 
    /*
     * Destroys a message queue.

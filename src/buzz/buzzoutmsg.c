@@ -96,7 +96,7 @@ int buzzoutmsg_vstig_cmp(const void* a, const void* b) {
 /****************************************/
 /****************************************/
 
-buzzoutmsg_queue_t buzzoutmsg_queue_new(uint16_t robot) {
+buzzoutmsg_queue_t buzzoutmsg_queue_new() {
    buzzoutmsg_queue_t q = (buzzoutmsg_queue_t)malloc(sizeof(struct buzzoutmsg_queue_s));
    q->queues[BUZZMSG_BROADCAST]   = buzzdarray_new(1, sizeof(buzzoutmsg_t), buzzoutmsg_destroy);
    q->queues[BUZZMSG_SWARM_LIST]  = buzzdarray_new(1, sizeof(buzzoutmsg_t), buzzoutmsg_destroy);
@@ -110,7 +110,6 @@ buzzoutmsg_queue_t buzzoutmsg_queue_new(uint16_t robot) {
                            buzzdict_uint16keyhash,
                            buzzdict_uint16keycmp,
                            buzzoutmsg_vstig_destroy);
-   q->robot = robot;
    return q;
 }
 
@@ -374,7 +373,6 @@ buzzmsg_payload_t buzzoutmsg_queue_first(buzzvm_t vm) {
       /* Make a new message */
       buzzmsg_payload_t m = buzzmsg_payload_new(10);
       buzzmsg_serialize_u8(m, BUZZMSG_BROADCAST);
-      buzzmsg_serialize_u16(m, vm->outmsgs->robot);
       buzzobj_serialize(m, f->bc.topic);
       buzzobj_serialize(m, f->bc.value);
       /* Return message */
@@ -388,7 +386,6 @@ buzzmsg_payload_t buzzoutmsg_queue_first(buzzvm_t vm) {
       /* Make a new message */
       buzzmsg_payload_t m = buzzmsg_payload_new(10);
       buzzmsg_serialize_u8(m, BUZZMSG_SWARM_LIST);
-      buzzmsg_serialize_u16(m, vm->outmsgs->robot);
       buzzmsg_serialize_u16(m, f->sw.size);
       for(i = 0; i < f->sw.size; ++i) {
          buzzmsg_serialize_u16(m, f->sw.ids[i]);
@@ -427,7 +424,6 @@ buzzmsg_payload_t buzzoutmsg_queue_first(buzzvm_t vm) {
       /* Make a new message */
       buzzmsg_payload_t m = buzzmsg_payload_new(5);
       buzzmsg_serialize_u8(m, BUZZMSG_SWARM_JOIN);
-      buzzmsg_serialize_u16(m, vm->outmsgs->robot);
       buzzmsg_serialize_u16(m, f->sw.ids[0]);
       /* Return message */
       return m;      
@@ -439,7 +435,6 @@ buzzmsg_payload_t buzzoutmsg_queue_first(buzzvm_t vm) {
       /* Make a new message */
       buzzmsg_payload_t m = buzzmsg_payload_new(5);
       buzzmsg_serialize_u8(m, BUZZMSG_SWARM_LEAVE);
-      buzzmsg_serialize_u16(m, vm->outmsgs->robot);
       buzzmsg_serialize_u16(m, f->sw.ids[0]);
       /* Return message */
       return m;      

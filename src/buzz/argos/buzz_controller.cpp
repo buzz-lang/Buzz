@@ -315,6 +315,7 @@ void CBuzzController::ProcessInMsgs() {
          /* Append message to the Buzz input message queue */
          if(unMsgSize > 0 && cData.Size() >= unMsgSize) {
             buzzinmsg_queue_append(m_tBuzzVM,
+                                   unRobotId,
                                    buzzmsg_payload_frombuffer(cData.ToCArray(), unMsgSize));
             /* Get rid of the data read */
             for(size_t i = 0; i < unMsgSize; ++i) cData.PopFront<UInt8>();
@@ -345,7 +346,7 @@ void CBuzzController::ProcessOutMsgs() {
        * Without this check, large messages would clog the queue forever
        */
       size_t unMsgSize = buzzmsg_payload_size(m) + sizeof(UInt16);
-      if(unMsgSize < m_pcRABA->GetSize()) {
+      if(unMsgSize < m_pcRABA->GetSize() - sizeof(UInt16)) {
          /* Make sure the next message fits the data buffer */
          if(cData.Size() + unMsgSize > m_pcRABA->GetSize()) {
             buzzmsg_payload_destroy(&m);
@@ -360,7 +361,7 @@ void CBuzzController::ProcessOutMsgs() {
          RLOGERR << "Discarded oversize message ("
                  << unMsgSize
                  << " bytes). Max size is "
-                 << m_pcRABA->GetSize()
+                 << m_pcRABA->GetSize() - sizeof(UInt16)
                  << " bytes."
                  << std::endl;
       }
