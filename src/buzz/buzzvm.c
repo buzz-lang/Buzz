@@ -114,10 +114,6 @@ void buzzvm_vstig_destroy(const void* key, void* data, void* params) {
 /****************************************/
 /****************************************/
 
-void buzzvm_inmsg_destroy(uint32_t pos, void* data, void* param) {
-   buzzmsg_payload_destroy((buzzmsg_payload_t*)data);
-}
-
 void buzzvm_outmsg_destroy(uint32_t pos, void* data, void* param) {
    fprintf(stderr, "[TODO] %s:%d\n", __FILE__, __LINE__);
 }
@@ -127,16 +123,15 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
    /* Go through the messages */
    while(!buzzinmsg_queue_isempty(vm->inmsgs)) {
       /* Extract the message data */
-      buzzmsg_payload_t msg = buzzinmsg_queue_extract(vm);
+      uint16_t rid;
+      buzzmsg_payload_t msg;
+      buzzinmsg_queue_extract(vm, &rid, &msg);
       /* Dispatch the message wrt its type in msg->payload[0] */
       switch(buzzmsg_payload_get(msg, 0)) {
          case BUZZMSG_BROADCAST: {
-            /* Deserialize the robot id */
-            uint16_t rid;
-            int64_t pos = buzzmsg_deserialize_u16(&rid, msg, 1);
             /* Deserialize the topic */
             buzzobj_t topic;
-            pos = buzzobj_deserialize(&topic, msg, pos, vm);
+            int64_t pos = buzzobj_deserialize(&topic, msg, 1, vm);
             /* Make sure there's a listener to call */
             const buzzobj_t* l = buzzdict_get(vm->listeners, &topic->s.value.sid, buzzobj_t);
             if(!l) {
@@ -266,10 +261,8 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                buzzvstig_elem_t c =
                   buzzvstig_onconflict_call(vm, *vs, k, *l, v);
                free(v);
-               if(!c) {
-                  fprintf(stderr, "[WARNING] [ROBOT %u] Error resolving PUT conflict\n", vm->robot);
-                  break;
-               }
+               /* Make sure conflict manager returned with an element to process */
+               if(!c) break;
                /* Did this robot lose the conflict? */
                if((c->robot != vm->robot) &&
                   ((*l)->robot == vm->robot)) {
@@ -296,16 +289,9 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
             break;
          }
          case BUZZMSG_SWARM_LIST: {
-            /* Deserialize robot id */
-            uint16_t rid;
-            int64_t pos = buzzmsg_deserialize_u16(&rid, msg, 1);
-            if(pos < 0) {
-               fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARM_LIST message received\n", vm->robot);
-               break;
-            }
             /* Deserialize number of swarm ids */
             uint16_t nsids;
-            pos = buzzmsg_deserialize_u16(&nsids, msg, pos);
+            int64_t pos = buzzmsg_deserialize_u16(&nsids, msg, 1);
             if(pos < 0) {
                fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARM_LIST message received\n", vm->robot);
                break;
@@ -326,16 +312,9 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
             break;
          }
          case BUZZMSG_SWARM_JOIN: {
-            /* Deserialize robot id */
-            uint16_t rid;
-            int64_t pos = buzzmsg_deserialize_u16(&rid, msg, 1);
-            if(pos < 0) {
-               fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARM_JOIN message received\n", vm->robot);
-               break;
-            }
             /* Deserialize swarm id */
             uint16_t sid;
-            pos = buzzmsg_deserialize_u16(&sid, msg, pos);
+            int64_t pos = buzzmsg_deserialize_u16(&sid, msg, 1);
             if(pos < 0) {
                fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARM_JOIN message received\n", vm->robot);
                break;
@@ -345,16 +324,9 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
             break;
          }
          case BUZZMSG_SWARM_LEAVE: {
-            /* Deserialize robot id */
-            uint16_t rid;
-            int64_t pos = buzzmsg_deserialize_u16(&rid, msg, 1);
-            if(pos < 0) {
-               fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARM_LEAVE message received\n", vm->robot);
-               break;
-            }
             /* Deserialize swarm id */
             uint16_t sid;
-            pos = buzzmsg_deserialize_u16(&sid, msg, pos);
+            int64_t pos = buzzmsg_deserialize_u16(&sid, msg, 1);
             if(pos < 0) {
                fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_SWARM_LEAVE message received\n", vm->robot);
                break;
@@ -440,7 +412,7 @@ buzzvm_t buzzvm_new(uint16_t robot) {
    vm->swarmmembers = buzzswarm_members_new();
    vm->swarmbroadcast = SWARM_BROADCAST_PERIOD;
    /* Create message queues */
-   vm->inmsgs = buzzinmsg_queue_new(20);
+   vm->inmsgs = buzzinmsg_queue_new();
    vm->outmsgs = buzzoutmsg_queue_new(robot);
    /* Create virtual stigmergy */
    vm->vstigs = buzzdict_new(10,
@@ -486,8 +458,7 @@ void buzzvm_destroy(buzzvm_t* vm) {
    buzzdarray_destroy(&(*vm)->swarmstack);
    buzzswarm_members_destroy(&((*vm)->swarmmembers));
    /* Get rid of the message queues */
-   buzzdarray_foreach((*vm)->inmsgs, buzzvm_inmsg_destroy, NULL);
-   buzzdarray_destroy(&(*vm)->inmsgs);
+   buzzinmsg_queue_destroy(&(*vm)->inmsgs);
    buzzoutmsg_queue_destroy(&(*vm)->outmsgs);
    /* Get rid of the virtual stigmergy structures */
    buzzdict_destroy(&(*vm)->vstigs);

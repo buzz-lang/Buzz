@@ -468,7 +468,7 @@ void buzzobj_serialize_tableelem(const void* key, void* data, void* params) {
 
 void buzzobj_serialize(buzzdarray_t buf,
                        const buzzobj_t data) {
-   buzzmsg_serialize_u16(buf, data->o.type);
+   buzzmsg_serialize_u8(buf, data->o.type);
    switch(data->o.type) {
       case BUZZTYPE_NIL: {
          break;
@@ -486,7 +486,7 @@ void buzzobj_serialize(buzzdarray_t buf,
          break;
       }
       case BUZZTYPE_TABLE: {
-         buzzmsg_serialize_u32(buf, buzzdict_size(data->t.value));
+         buzzmsg_serialize_u8(buf, buzzdict_size(data->t.value));
          buzzdict_foreach(data->t.value, buzzobj_serialize_tableelem, buf);
          break;
       }
@@ -503,8 +503,8 @@ int64_t buzzobj_deserialize(buzzobj_t* data,
                             uint32_t pos,
                             struct buzzvm_s* vm) {
    int64_t p = pos;
-   uint16_t type;
-   p = buzzmsg_deserialize_u16(&type, buf, p);
+   uint8_t type;
+   p = buzzmsg_deserialize_u8(&type, buf, p);
    if(p < 0) return -1;
    *data = buzzheap_newobj(vm->heap, type);
    switch(type) {
@@ -527,8 +527,9 @@ int64_t buzzobj_deserialize(buzzobj_t* data,
          return p;
       }
       case BUZZTYPE_TABLE: {
-         uint32_t size, i;
-         p = buzzmsg_deserialize_u32(&size, buf, p);
+         uint8_t size;
+         uint16_t i;
+         p = buzzmsg_deserialize_u8(&size, buf, p);
          if(p < 0) return -1;
          for(i = 0; i < size; ++i) {
             buzzobj_t k;
