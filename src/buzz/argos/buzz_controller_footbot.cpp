@@ -41,8 +41,32 @@ static int BuzzGoTo(buzzvm_t vm) {
    buzzvm_lload(vm, 1);
    buzzvm_lload(vm, 2);
    /* Create a new vector with that */
-   CVector2 cDir(buzzvm_stack_at(vm, 2)->f.value,
-                 buzzvm_stack_at(vm, 1)->f.value);
+   buzzobj_t tLS = buzzvm_stack_at(vm, 2);
+   buzzobj_t tRS = buzzvm_stack_at(vm, 1);
+   Real fLS = 0.0, fRS = 0.0;
+   if(tLS->o.type == BUZZTYPE_INT) fLS = tLS->i.value;
+   else if(tLS->o.type == BUZZTYPE_FLOAT) fLS = tLS->f.value;
+   else {
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_TYPE,
+                      "goto(x,y): expected %s, got %s in first argument",
+                      buzztype_desc[BUZZTYPE_FLOAT],
+                      buzztype_desc[tLS->o.type]
+         );
+      return vm->state;
+   }      
+   if(tRS->o.type == BUZZTYPE_INT) fRS = tRS->i.value;
+   else if(tRS->o.type == BUZZTYPE_FLOAT) fRS = tRS->f.value;
+   else {
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_TYPE,
+                      "goto(x,y): expected %s, got %s in second argument",
+                      buzztype_desc[BUZZTYPE_FLOAT],
+                      buzztype_desc[tRS->o.type]
+         );
+      return vm->state;
+   }
+   CVector2 cDir(fLS, fRS);
    /* Get pointer to the controller */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
    buzzvm_gload(vm);
