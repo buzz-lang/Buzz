@@ -41,7 +41,7 @@ math.vec2.length = function(v) {
 # RETURN: The angle of the vector.
 #
 math.vec2.angle = function(v) {
-  return math.atan2(v.y, v.x)
+  return math.atan(v.y, v.x)
 }
 
 #
