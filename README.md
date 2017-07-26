@@ -56,4 +56,5 @@ Execute these commands:
     $ sudo make install
 
 On Linux, run this command too:
+
     $ sudo ldconfig
