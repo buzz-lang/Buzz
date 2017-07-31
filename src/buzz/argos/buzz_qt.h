@@ -7,6 +7,7 @@
 #include <buzz/argos/buzz_controller.h>
 
 class CBuzzQTMainWindow;
+class CBuzzController;
 
 using namespace argos;
 
@@ -25,10 +26,14 @@ public:
 
    virtual void Init(TConfigurationNode& t_tree);
    virtual void Destroy();
-   
-   void Draw(CFootBotEntity& c_entity);
 
-   void Draw(CSpiriEntity& c_entity);
+   template <class E> void Register() {
+      RegisterUserFunction<CBuzzQT,E>(&CBuzzQT::Draw<E>);
+   }
+   
+   template <class E> void Draw(E& c_entity) {
+      Draw(dynamic_cast<CBuzzController&>(c_entity.template GetComponent<CControllableEntity>("controller").GetController()));
+   }
 
 protected:
 
