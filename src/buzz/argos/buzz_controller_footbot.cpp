@@ -311,3 +311,6 @@ buzzvm_state CBuzzControllerFootBot::RegisterFunctions() {
 /****************************************/
 
 REGISTER_CONTROLLER(CBuzzControllerFootBot, "buzz_controller_footbot");
+
+#include <argos3/plugins/robots/foot-bot/simulator/footbot_entity.h>
+REGISTER_BUZZ_ROBOT(CFootBotEntity);

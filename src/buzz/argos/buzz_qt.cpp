@@ -6,8 +6,6 @@
 /****************************************/
  
 CBuzzQT::CBuzzQT() {
-   RegisterUserFunction<CBuzzQT,CFootBotEntity>(&CBuzzQT::Draw);
-   RegisterUserFunction<CBuzzQT,CSpiriEntity>(&CBuzzQT::Draw);
 }
  
 /****************************************/
@@ -47,4 +45,18 @@ void CBuzzQT::Draw(CBuzzController& c_contr) {
 /****************************************/
 /****************************************/
  
+void CBuzzQT::Call(CEntity& c_entity) {
+   TThunk t_thunk = m_cThunks[c_entity.GetTag()];
+   if(t_thunk) (this->*t_thunk)(c_entity);
+   else if(CBuzzController::BUZZ_ROBOTS[c_entity.GetTag()]) {
+      Draw(dynamic_cast<CBuzzController&>(
+              dynamic_cast<CComposableEntity&>(c_entity).
+              GetComponent<CControllableEntity>("controller").
+              GetController()));
+   }
+}
+
+/****************************************/
+/****************************************/
+
 REGISTER_QTOPENGL_USER_FUNCTIONS(CBuzzQT, "buzz_qt")

@@ -27,13 +27,7 @@ public:
    virtual void Init(TConfigurationNode& t_tree);
    virtual void Destroy();
 
-   template <class E> void Register() {
-      RegisterUserFunction<CBuzzQT,E>(&CBuzzQT::Draw<E>);
-   }
-   
-   template <class E> void Draw(E& c_entity) {
-      Draw(dynamic_cast<CBuzzController&>(c_entity.template GetComponent<CControllableEntity>("controller").GetController()));
-   }
+   virtual void Call(CEntity& c_entity);
 
 protected:
 

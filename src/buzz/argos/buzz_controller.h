@@ -62,6 +62,9 @@ public:
 
    std::string ErrorInfo();
 
+   typedef std::map<size_t, bool> TBuzzRobots;
+   static TBuzzRobots BUZZ_ROBOTS;
+
 protected:
 
    virtual buzzvm_state RegisterFunctions();
@@ -173,5 +176,16 @@ protected:
    std::string m_strDebugMsg;
 
 };
+
+#include <argos3/core/utility/plugins/vtable.h>
+
+#define REGISTER_BUZZ_ROBOT(ROBOT_TYPE)                                 \
+   class C ## ROBOT_TYPE ## BuzzController ## Proxy {                   \
+   public:                                                              \
+   C ## ROBOT_TYPE ## BuzzController ## Proxy() {                       \
+      CBuzzController::BUZZ_ROBOTS[GetTag<ROBOT_TYPE,CEntity>()] = true; \
+   }                                                                    \
+   };                                                                   \
+   C ## ROBOT_TYPE ## BuzzController ## Proxy ROBOT_TYPE ## BuzzController ## _p;
 
 #endif
