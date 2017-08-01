@@ -238,3 +238,6 @@ buzzvm_state CBuzzControllerSpiri::RegisterFunctions() {
 /****************************************/
 
 REGISTER_CONTROLLER(CBuzzControllerSpiri, "buzz_controller_spiri");
+
+#include <argos3/plugins/robots/spiri/simulator/spiri_entity.h>
+REGISTER_BUZZ_ROBOT(CSpiriEntity);
