@@ -227,10 +227,6 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_VSTIG_PUT message received\n", vm->robot);
                break;
             }
-            /* Look for virtual stigmergy */
-            const buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
-            if(!vs) break;
-            /* Virtual stigmergy found */
             /* Deserialize key and value from msg */
             buzzobj_t k;         // key
             buzzvstig_elem_t v = // value
@@ -239,11 +235,32 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_VSTIG_PUT message received\n", vm->robot);
                break;
             }
-            /* Deserialization successful */
+            /* Look for virtual stigmergy */
+            const buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
+            if(!vs) {
+               /* Virtual stigmergy not found, simply propagate the message */
+               buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_QUERY, id, k, v);
+               break;
+            }
+            /* Virtual stigmergy found */
             /* Fetch local vstig element */
             const buzzvstig_elem_t* l = buzzvstig_fetch(*vs, &k);
-            if((!l) ||                           /* Element not found */
-               (*l)->timestamp < v->timestamp) { /* Local element is older */
+            if(!l) {
+               /* Element not found */
+               if(v->data->o.type == BUZZTYPE_NIL) {
+                  /* This robot knows nothing about the query, just propagate it */
+                  buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_QUERY, id, k, v);
+               }
+               else {
+                  /* Store element and propagate PUT message */
+                  buzzvstig_store(*vs, &k, &v);
+                  buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_PUT, id, k, v);
+               }
+               break;
+            }
+            /* Element found */
+            if((*l)->timestamp < v->timestamp) {
+               /* Local element is older */
                /* Store element */
                buzzvstig_store(*vs, &k, &v);
                buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_PUT, id, k, v);
