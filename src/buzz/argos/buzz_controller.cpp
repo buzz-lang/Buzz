@@ -137,7 +137,32 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
       std::string strDbgFName;
       GetNodeAttributeOrDefault(t_node, "debug_file", strDbgFName, strDbgFName);
       /* Initialize the rest */
-      m_unRobotId = FromString<UInt16>(GetId().substr(2));
+      bool bIDSuccess = false;
+
+      /* Find Buzz ID */
+      size_t tStartPos = GetId().find_last_of("_");
+      if(tStartPos != std::string::npos){
+         /* Checks for ID after last "_" ie. footbot_group3_10 -> 10 */
+         m_unRobotId = FromString<UInt16>(GetId().substr(tStartPos+1));
+         LOG << "Found last of in " << GetId() << " substr " << GetId().substr(tStartPos+1) 
+             << " ID: " << m_unRobotId << std::endl;
+         bIDSuccess = true;
+      }
+
+      /* FromString return 0 if passed an invalid string */
+      if(!m_unRobotId){
+         /* Checks for ID after first number footbot_simulated10 -> 10 */
+         tStartPos = GetId().find_first_of("0123456789");
+         if(tStartPos != std::string::npos){
+            LOG << "Found number in " << GetId() << " substr " << GetId().substr(tStartPos) << std::endl;
+            m_unRobotId = FromString<UInt16>(GetId().substr(tStartPos));
+            bIDSuccess = true;
+         }
+      }
+
+      if(!bIDSuccess)
+            THROW_ARGOSEXCEPTION("Error in finding Buzz ID from name \"" << GetId() << "\"");
+
       if(strBCFName != "" && strDbgFName != "")
          SetBytecode(strBCFName, strDbgFName);
       else
