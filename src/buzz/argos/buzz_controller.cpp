@@ -138,6 +138,7 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
       GetNodeAttributeOrDefault(t_node, "debug_file", strDbgFName, strDbgFName);
       /* Initialize the rest */
       bool bIDSuccess = false;
+      m_unRobotId = 0;
 
       /* Find Buzz ID */
       size_t tStartPos = GetId().find_last_of("_");
@@ -147,7 +148,7 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
          bIDSuccess = true;
       }
       /* FromString() returns 0 if passed an invalid string */
-      if(!m_unRobotId){
+      if(!m_unRobotId || !bIDSuccess){
          /* Checks for ID after first number footbot_simulated10 -> 10 */
          tStartPos = GetId().find_first_of("0123456789");
          if(tStartPos != std::string::npos){
