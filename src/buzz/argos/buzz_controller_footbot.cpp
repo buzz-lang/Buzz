@@ -300,7 +300,7 @@ buzzvm_state CBuzzControllerFootBot::RegisterFunctions() {
    }
    if(m_pcLEDs) {
       /* BuzzSetLEDs */
-      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "setleds", 1));
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "set_leds", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzSetLEDs));
       buzzvm_gstore(m_tBuzzVM);
    }
