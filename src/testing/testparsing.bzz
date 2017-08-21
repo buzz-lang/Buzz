@@ -43,3 +43,58 @@ else {
 # }
 
 # f()
+
+function foo() {
+  print("foo(); ", self)
+  return { # Table with 2 elements
+    .x = { # Table with 3 elements
+      .y = { # Table with 4 elements
+        .c = function(s) {
+          print(".x.y['c'](); ", self)
+          return function(s) {
+            print("<anonymous>(); ", self)
+          }
+        },
+        .d = 1,
+        .e = 2,
+        .f = 3
+      },
+      .a = 1,
+      .b = 2
+    },
+    .z = 0
+  }
+}
+
+function getKey() {
+  return "c"
+}
+
+t = { .bar = foo } # Table with 1 element
+
+foo() # Prints "foo(); [nil]"
+
+# Case with no nested table
+t2 = t.bar() # Prints "foo(); [table with 1 elems]"
+
+# Case with 3 nested tables and using 2 ways of accessing fields
+t3 = t2.x.y["c"]() # Prints ".x.y['c'](); [table with 4 elems]"
+
+# Case with no nested table and called from global scope
+t3() # Prints "<anonymous>(); [table with 4 elems]" <-- Should be "[nil]", this is a bug of Buzz
+
+# Case with all in 1 line
+t.bar().x.y["c"]()()
+
+# Case with a closure call to get the table's key
+t2["x"].y[getKey()]() # Prints ".x.y['c'](); [table with 4 elems]"
+
+# --- Output:
+#   foo(); [nil]
+#   foo(); [table with 1 elems]
+#   .x.y['c'](); [table with 4 elems]
+#   <anonymous>(); [table with 4 elems]
+#   foo(); [table with 1 elems]
+#   .x.y['c'](); [table with 4 elems]
+#   <anonymous>(); [table with 4 elems]
+#   .x.y['c'](); [table with 4 elems]
