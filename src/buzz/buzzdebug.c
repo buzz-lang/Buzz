@@ -276,6 +276,8 @@ buzzvm_state buzzdebug_closure_call(buzzvm_t vm,
          vm->state = BUZZVM_STATE_READY;
       else return vm->state;
    }
+   /* Insert the self table */
+   buzzdarray_insert(vm->stack, buzzdarray_size(vm->stack) - argc - 1, buzzobj_new(BUZZTYPE_NIL));
    /* Push the argument count */
    buzzvm_pushi(vm, argc);
    /* Save the current stack depth */
