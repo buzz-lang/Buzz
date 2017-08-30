@@ -846,6 +846,10 @@ buzzvm_state buzzvm_execute_script(buzzvm_t vm) {
 
 buzzvm_state buzzvm_closure_call(buzzvm_t vm,
                                  uint32_t argc) {
+   /* Insert the self table right before the closure */
+   buzzdarray_insert(vm->stack,
+                     buzzdarray_size(vm->stack) - argc - 1,
+                     buzzobj_new(BUZZTYPE_NIL));
    /* Push the argument count */
    buzzvm_pushi(vm, argc);
    /* Save the current stack depth */
@@ -942,6 +946,8 @@ buzzvm_state buzzvm_call(buzzvm_t vm, int isswrm) {
    /* Get rid of the function arguments */
    for(i = argn+1; i > 0; --i)
       buzzdarray_pop(vm->stack);
+   /* Pop unused self table */
+   buzzdarray_pop(vm->stack);
    /* Push return address */
    buzzvm_pushi((vm), vm->pc);
    /* Make a new stack for the function */
