@@ -21,7 +21,7 @@
 # specified in these variables:
 #
 # 1. the environment variable BUZZ_INCLUDE_PATH
-# 2. the CMake variable BUZZ_INCLUDE_PATH
+# 2. the CMake variable BUZZ_BZZ_INCLUDE_DIR
 #
 # The Buzz tools are assumed already detected through
 # FindBuzz.cmake. However, you can also manually set following the
