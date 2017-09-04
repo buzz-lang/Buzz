@@ -65,6 +65,83 @@ public:
    typedef std::map<size_t, bool> TBuzzRobots;
    static TBuzzRobots BUZZ_ROBOTS;
 
+   buzzvm_state Register(const std::string& str_key,
+                         buzzobj_t t_obj);
+
+   buzzvm_state Register(const std::string& str_key,
+                         SInt32 n_value);
+
+   buzzvm_state Register(const std::string& str_key,
+                         Real f_value);
+
+   buzzvm_state Register(const std::string& str_key,
+                         const CRadians& c_angle);
+
+   buzzvm_state Register(const std::string& str_key,
+                         const CVector3& c_vec);
+   
+   buzzvm_state Register(const std::string& str_key,
+                         const CQuaternion& c_quat);
+   
+   buzzvm_state Register(const std::string& str_key,
+                         const CColor& c_color);
+
+   buzzvm_state TablePut(buzzobj_t t_table,
+                         const std::string& str_key,
+                         buzzobj_t t_obj);
+
+   buzzvm_state TablePut(buzzobj_t t_table,
+                         const std::string& str_key,
+                         SInt32 n_value);
+
+   buzzvm_state TablePut(buzzobj_t t_table,
+                         const std::string& str_key,
+                         Real f_value);
+
+   buzzvm_state TablePut(buzzobj_t t_table,
+                         const std::string& str_key,
+                         const CRadians& c_angle);
+
+   buzzvm_state TablePut(buzzobj_t t_table,
+                         const std::string& str_key,
+                         const CVector3& c_vec);
+
+   buzzvm_state TablePut(buzzobj_t t_table,
+                         const std::string& str_key,
+                         const CQuaternion& c_quat);
+
+   buzzvm_state TablePut(buzzobj_t t_table,
+                         const std::string& str_key,
+                         const CColor& c_color);
+
+   buzzvm_state TablePut(buzzobj_t t_table,
+                         SInt32 n_idx,
+                         buzzobj_t t_obj);
+
+   buzzvm_state TablePut(buzzobj_t t_table,
+                         SInt32 n_idx,
+                         SInt32 n_value);
+
+   buzzvm_state TablePut(buzzobj_t t_table,
+                         SInt32 n_idx,
+                         Real f_value);
+
+   buzzvm_state TablePut(buzzobj_t t_table,
+                         SInt32 n_idx,
+                         const CRadians& c_angle);
+
+   buzzvm_state TablePut(buzzobj_t t_table,
+                         SInt32 n_idx,
+                         const CVector3& c_vec);
+
+   buzzvm_state TablePut(buzzobj_t t_table,
+                         SInt32 n_idx,
+                         const CQuaternion& c_quat);
+
+   buzzvm_state TablePut(buzzobj_t t_table,
+                         SInt32 n_idx,
+                         const CColor& c_color);
+
 protected:
 
    virtual buzzvm_state RegisterFunctions();
@@ -73,83 +150,6 @@ protected:
    virtual void ProcessOutMsgs();
 
    virtual void UpdateSensors();
-
-   buzzvm_state Register(const std::string& str_key,
-                         buzzobj_t t_obj);
-
-   buzzvm_state Register(const std::string& str_key,
-                         SInt32 n_value);
-
-   buzzvm_state Register(const std::string& str_key,
-                         Real f_value);
-
-   buzzvm_state Register(const std::string& str_key,
-                         const CRadians& c_angle);
-
-   buzzvm_state Register(const std::string& str_key,
-                         const CVector3& c_vec);
-   
-   buzzvm_state Register(const std::string& str_key,
-                         const CQuaternion& c_quat);
-   
-   buzzvm_state Register(const std::string& str_key,
-                         const CColor& c_color);
-
-   buzzvm_state TablePut(buzzobj_t t_table,
-                         const std::string& str_key,
-                         buzzobj_t t_obj);
-
-   buzzvm_state TablePut(buzzobj_t t_table,
-                         const std::string& str_key,
-                         SInt32 n_value);
-
-   buzzvm_state TablePut(buzzobj_t t_table,
-                         const std::string& str_key,
-                         Real f_value);
-
-   buzzvm_state TablePut(buzzobj_t t_table,
-                         const std::string& str_key,
-                         const CRadians& c_angle);
-
-   buzzvm_state TablePut(buzzobj_t t_table,
-                         const std::string& str_key,
-                         const CVector3& c_vec);
-
-   buzzvm_state TablePut(buzzobj_t t_table,
-                         const std::string& str_key,
-                         const CQuaternion& c_quat);
-
-   buzzvm_state TablePut(buzzobj_t t_table,
-                         const std::string& str_key,
-                         const CColor& c_color);
-
-   buzzvm_state TablePut(buzzobj_t t_table,
-                         SInt32 n_idx,
-                         buzzobj_t t_obj);
-
-   buzzvm_state TablePut(buzzobj_t t_table,
-                         SInt32 n_idx,
-                         SInt32 n_value);
-
-   buzzvm_state TablePut(buzzobj_t t_table,
-                         SInt32 n_idx,
-                         Real f_value);
-
-   buzzvm_state TablePut(buzzobj_t t_table,
-                         SInt32 n_idx,
-                         const CRadians& c_angle);
-
-   buzzvm_state TablePut(buzzobj_t t_table,
-                         SInt32 n_idx,
-                         const CVector3& c_vec);
-
-   buzzvm_state TablePut(buzzobj_t t_table,
-                         SInt32 n_idx,
-                         const CQuaternion& c_quat);
-
-   buzzvm_state TablePut(buzzobj_t t_table,
-                         SInt32 n_idx,
-                         const CColor& c_color);
 
 protected:
 

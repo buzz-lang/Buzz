@@ -11,6 +11,7 @@
 
 #include <stdlib.h>
 #include <math.h>
+#define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
 
 #ifdef __cplusplus

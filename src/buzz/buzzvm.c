@@ -24,40 +24,43 @@ static uint16_t SWARM_BROADCAST_PERIOD = 10;
 /****************************************/
 
 void buzzvm_dump(buzzvm_t vm) {
-   int64_t i;
+   int64_t i, j;
    fprintf(stderr, "============================================================\n");
    fprintf(stderr, "state: %d\terror: %d\n", vm->state, vm->error);
    fprintf(stderr, "code size: %u\tpc: %d\n", vm->bcode_size, vm->pc);
    fprintf(stderr, "stacks: %" PRId64 "\tcur elem: %" PRId64 " (size %" PRId64 ")\n", buzzdarray_size(vm->stacks), buzzvm_stack_top(vm), buzzvm_stack_top(vm));
-   for(i = buzzvm_stack_top(vm)-1; i >= 0; --i) {
-      fprintf(stderr, "\t%" PRId64 "\t", i);
-      buzzobj_t o = buzzdarray_get(vm->stack, i, buzzobj_t);
-      switch(o->o.type) {
-         case BUZZTYPE_NIL:
-            fprintf(stderr, "[nil]\n");
-            break;
-         case BUZZTYPE_INT:
-            fprintf(stderr, "[int] %d\n", o->i.value);
-            break;
-         case BUZZTYPE_FLOAT:
-            fprintf(stderr, "[float] %f\n", o->f.value);
-            break;
-         case BUZZTYPE_TABLE:
-            fprintf(stderr, "[table] %d elements\n", buzzdict_size(o->t.value));
-            break;
-         case BUZZTYPE_CLOSURE:
-            if(o->c.value.isnative) {
-               fprintf(stderr, "[n-closure] %d\n", o->c.value.ref);
-            }
-            else {
-               fprintf(stderr, "[c-closure] %d\n", o->c.value.ref);
-            }
-            break;
-         case BUZZTYPE_STRING:
-            fprintf(stderr, "[string] %d:'%s'\n", o->s.value.sid, o->s.value.str);
-            break;
-         default:
-            fprintf(stderr, "[TODO] type = %d\n", o->o.type);
+   for(i = buzzdarray_size(vm->stacks)-1; i >= 0 ; --i) {
+      fprintf(stderr, "===== stack: %" PRId64 " =====\n", i);
+      for(j = buzzdarray_size(buzzdarray_get(vm->stacks, i, buzzdarray_t)) - 1; j >= 0; --j) {
+         fprintf(stderr, "\t%" PRId64 "\t", j);
+         buzzobj_t o = buzzdarray_get(buzzdarray_get(vm->stacks, i, buzzdarray_t), j, buzzobj_t);
+         switch(o->o.type) {
+            case BUZZTYPE_NIL:
+               fprintf(stderr, "[nil]\n");
+               break;
+            case BUZZTYPE_INT:
+               fprintf(stderr, "[int] %d\n", o->i.value);
+               break;
+            case BUZZTYPE_FLOAT:
+               fprintf(stderr, "[float] %f\n", o->f.value);
+               break;
+            case BUZZTYPE_TABLE:
+               fprintf(stderr, "[table] %d elements\n", buzzdict_size(o->t.value));
+               break;
+            case BUZZTYPE_CLOSURE:
+               if(o->c.value.isnative) {
+                  fprintf(stderr, "[n-closure] %d\n", o->c.value.ref);
+               }
+               else {
+                  fprintf(stderr, "[c-closure] %d\n", o->c.value.ref);
+               }
+               break;
+            case BUZZTYPE_STRING:
+               fprintf(stderr, "[string] %d:'%s'\n", o->s.value.sid, o->s.value.str);
+               break;
+            default:
+               fprintf(stderr, "[TODO] type = %d\n", o->o.type);
+         }
       }
    }
    fprintf(stderr, "============================================================\n\n");
@@ -119,9 +122,10 @@ void buzzvm_outmsg_destroy(uint32_t pos, void* data, void* param) {
 }
 
 void buzzvm_process_inmsgs(buzzvm_t vm) {
-   if(vm->state != BUZZVM_STATE_READY) return;
    /* Go through the messages */
    while(!buzzinmsg_queue_isempty(vm->inmsgs)) {
+      /* Make sure the VM is in the right state */
+      if(vm->state != BUZZVM_STATE_READY) return;
       /* Extract the message data */
       uint16_t rid;
       buzzmsg_payload_t msg;

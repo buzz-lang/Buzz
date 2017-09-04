@@ -108,7 +108,7 @@ int buzzdebug_fromfile(buzzdebug_t dbg,
    /* Keep reading until you reach the end of the data or an error */
    uint32_t offset;
    uint64_t line, col;
-   uint16_t srcfnlen, srcfnlenmax = 100;
+   uint16_t srcfnlen, srcfnlenmax = 512;
    char* srcfname = (char*)malloc(srcfnlenmax);
    while(!feof(fd) && !ferror(fd)) {
       /* Read fields */
