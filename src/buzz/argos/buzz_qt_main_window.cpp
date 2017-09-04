@@ -433,7 +433,7 @@ bool CBuzzQTMainWindow::Compile() {
       m_pcCompilationMsg->setPlainText(
          cBuzzCompiler.readAllStandardError());
       /* Jump to error line, if error message allows it */
-      QRegExp cRE("^[a-zA-Z0-9_/.]+:[0-9]+:[0-9]+");
+      QRegExp cRE("^[a-zA-Z0-9_/.-]+:[0-9]+:[0-9]+");
       QString strErrorMsg = m_pcCompilationMsg->toPlainText();
       if(cRE.indexIn(strErrorMsg) == 0) {
          /* Parse file, line, column */
@@ -647,7 +647,7 @@ void CBuzzQTMainWindow::HandleRunTimeErrorSelection() {
             cSel[0]->data(Qt::DisplayRole).toString().toStdString()));
       /* Get error position field */
       QString strPos = cSel[1]->data(Qt::DisplayRole).toString();
-      QRegExp cRE("^[a-zA-Z0-9_/.]+:[0-9]+:[0-9]+");
+      QRegExp cRE("^[a-zA-Z0-9_/.-]+:[0-9]+:[0-9]+");
       if(cRE.indexIn(strPos) == 0) {
          /* Parse file, line, column */
          QStringList cFields = strPos.split(":");

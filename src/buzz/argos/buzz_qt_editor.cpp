@@ -263,14 +263,16 @@ void CBuzzQTEditor::UpdateLineNumberAreaWidth(int) {
 void CBuzzQTEditor::GoTo(int n_line,
                          int n_column) {
    QTextCursor cCursor = textCursor();
-   cCursor.setPosition(0, QTextCursor::MoveAnchor);
+   cCursor.movePosition(QTextCursor::Start,
+                        QTextCursor::MoveAnchor);
    cCursor.movePosition(QTextCursor::Down,
                         QTextCursor::MoveAnchor,
-                        n_line - 1);
+                        n_line);
    cCursor.movePosition(QTextCursor::NextCharacter,
                         QTextCursor::MoveAnchor,
-                        n_column + 1);
+                        n_column);
    setTextCursor(cCursor);
+   setFocus(Qt::OtherFocusReason);
 }
 
 /****************************************/
