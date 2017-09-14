@@ -23,7 +23,7 @@ public:
    virtual ~CBuzzQTEditor() {}
 
    /**
-    * Returns the canonical path to the script file.
+    * Returns the absolute path to the script file.
     */
    QString GetScriptPath() const {
       return m_strScriptPath;
@@ -54,6 +54,18 @@ signals:
     */
    void RecentFilesChanged();
 
+   /**
+    * This signal is emitted when the editor wants to update the main status bar
+    * with a new line and column number
+  **/
+   void EditorCursorUpdate(int line, int column);
+
+   /**
+    * This signal is emitted when the name of the working file in the editor changes,
+    * and the title of the window needs to change.
+   **/
+   void EditorFileNameChanged(QString& filename);
+
 public slots:
 
    /**
@@ -72,7 +84,7 @@ public slots:
     * @return <tt>true</tt> for success, <tt>false</tt> for failure.
     */
    bool Save();
-      
+
    /**
     * Attempts to save the script file with a new name.
     * @return <tt>true</tt> for success, <tt>false</tt> for failure.
@@ -120,6 +132,11 @@ private slots:
     */
    void UpdateRecentFiles();
 
+   /**
+    * Triggers calls to the main window to update the status bar
+    */
+    void UpdateLineAndColumnIndicator();
+
 private:
 
    /********************/
@@ -155,7 +172,7 @@ private:
    /** Number of recent files stored in the "File" menu */
    enum { MAX_RECENT_FILES = 5 };
 
-   /** The canonical path to the script file */
+   /** The absolute path to the script file */
    QString m_strScriptPath;
 
    /** The number line area */

@@ -25,7 +25,7 @@ using namespace argos;
 class CBuzzQTTabWidget : public QTabWidget {
 
    Q_OBJECT
-   
+
 public:
 
    CBuzzQTTabWidget(QWidget* pc_parent) : QTabWidget(pc_parent) {}
@@ -40,7 +40,7 @@ protected:
    virtual void tabRemoved(int) {
       emit TabRemoved();
    }
-   
+
 };
 
 /****************************************/
@@ -212,6 +212,16 @@ public slots:
     */
    void FunctionTreeChanged();
 
+   /**
+    * Updates the status bar with the latest line and column number info
+    */
+    void ReceiveLineAndColumnNumbers(int line, int column);
+
+    /**
+     * Updates the window title to the name of the file currently in the editor
+     */
+     void HandleEditorFileChange(QString& filename);
+
 private:
 
    /**
@@ -274,7 +284,7 @@ private:
    void SetRunTimeError(int n_row,
                         const QString& str_robot_id,
                         const QString& str_message);
-   
+
 private:
 
    /** The main script is the one passed to bzzc. This contains the full path. */
@@ -348,7 +358,7 @@ private:
    QAction* m_pcScriptExecuteAction;
    /** Qt menu: set main script */
    QMenu* m_pcScriptSetMainMenu;
-   
+
 };
 
 #endif
