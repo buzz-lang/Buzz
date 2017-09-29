@@ -9,11 +9,6 @@
 /****************************************/
 /****************************************/
 
-CBuzzController::TBuzzRobots CBuzzController::BUZZ_ROBOTS;
-
-/****************************************/
-/****************************************/
-
 int BuzzLOG (buzzvm_t vm) {
    LOG << "BUZZ: ";
    for(UInt32 i = 1; i < buzzdarray_size(vm->lsyms->syms); ++i) {

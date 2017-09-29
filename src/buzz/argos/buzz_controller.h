@@ -63,7 +63,10 @@ public:
    std::string ErrorInfo();
 
    typedef std::map<size_t, bool> TBuzzRobots;
-   static TBuzzRobots BUZZ_ROBOTS;
+   static TBuzzRobots& BUZZ_ROBOTS() {
+      static TBuzzRobots tBuzzRobots;
+      return tBuzzRobots;
+   }
 
    buzzvm_state Register(const std::string& str_key,
                          buzzobj_t t_obj);
@@ -183,7 +186,7 @@ protected:
    class C ## ROBOT_TYPE ## BuzzController ## Proxy {                   \
    public:                                                              \
    C ## ROBOT_TYPE ## BuzzController ## Proxy() {                       \
-      CBuzzController::BUZZ_ROBOTS[GetTag<ROBOT_TYPE,CEntity>()] = true; \
+      CBuzzController::BUZZ_ROBOTS()[GetTag<ROBOT_TYPE,CEntity>()] = true; \
    }                                                                    \
    };                                                                   \
    C ## ROBOT_TYPE ## BuzzController ## Proxy ROBOT_TYPE ## BuzzController ## _p;
