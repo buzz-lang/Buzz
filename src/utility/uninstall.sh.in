@@ -11,7 +11,7 @@ echo
 echo 'Uninstalling Buzz... '
 
 sudo rm -rf @CMAKE_INSTALL_PREFIX@/doc/buzz
-sudo rm -rf @CMAKE_INSTALL_PREFIX@/lib/libbuzz.*
+sudo rm -rf @CMAKE_INSTALL_PREFIX@/lib/libbuzz*
 sudo rm -rf @CMAKE_INSTALL_PREFIX@/lib/pkgconfig/buzz.pc
 sudo rm -rf @CMAKE_INSTALL_PREFIX@/include/buzz
 sudo rm -rf @CMAKE_INSTALL_PREFIX@/bin/bzzc

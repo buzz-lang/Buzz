@@ -149,6 +149,10 @@ bool CBuzzQTMainWindow::OpenFile(const QString& str_path) {
    /* Handle its signals */
    connect(pcEditor, SIGNAL(RecentFilesChanged()),
            this, SLOT(UpdateRecentFilesActions()));
+   connect(pcEditor, SIGNAL(EditorCursorUpdate(int, int)),
+           this, SLOT(ReceiveLineAndColumnNumbers(int, int)));
+   connect(pcEditor, SIGNAL(EditorFileNameChanged(QString&)),
+           this, SLOT(HandleEditorFileChange(QString&)));
    /* Attempt to load the file */
    if(pcEditor->Open()) {
       /* Success */
@@ -208,6 +212,10 @@ void CBuzzQTMainWindow::NewOpen() {
               this, SLOT(SetTabModified(bool)));
       connect(pcEditor, SIGNAL(RecentFilesChanged()),
               this, SLOT(UpdateRecentFilesActions()));
+      connect(pcEditor, SIGNAL(EditorCursorUpdate(int, int)),
+              this, SLOT(ReceiveLineAndColumnNumbers(int, int)));
+      connect(pcEditor, SIGNAL(EditorFileNameChanged(QString&)),
+              this, SLOT(HandleEditorFileChange(QString&)));
       /* Add tab and focus on it */
       int nIdx = m_pcEditors->addTab(pcEditor, StrippedFileName(strFName));
       m_pcEditors->setCurrentIndex(nIdx);
@@ -433,7 +441,7 @@ bool CBuzzQTMainWindow::Compile() {
       m_pcCompilationMsg->setPlainText(
          cBuzzCompiler.readAllStandardError());
       /* Jump to error line, if error message allows it */
-      QRegExp cRE("^[a-zA-Z0-9_/.]+:[0-9]+:[0-9]+");
+      QRegExp cRE("^[a-zA-Z0-9_/.-]+:[0-9]+:[0-9]+");
       QString strErrorMsg = m_pcCompilationMsg->toPlainText();
       if(cRE.indexIn(strErrorMsg) == 0) {
          /* Parse file, line, column */
@@ -647,7 +655,7 @@ void CBuzzQTMainWindow::HandleRunTimeErrorSelection() {
             cSel[0]->data(Qt::DisplayRole).toString().toStdString()));
       /* Get error position field */
       QString strPos = cSel[1]->data(Qt::DisplayRole).toString();
-      QRegExp cRE("^[a-zA-Z0-9_/.]+:[0-9]+:[0-9]+");
+      QRegExp cRE("^[a-zA-Z0-9_/.-]+:[0-9]+:[0-9]+");
       if(cRE.indexIn(strPos) == 0) {
          /* Parse file, line, column */
          QStringList cFields = strPos.split(":");
@@ -780,6 +788,23 @@ void CBuzzQTMainWindow::FunctionTreeChanged() {
    m_pcBuzzFunctionTree->setModel(pcModel);
 //   m_pcBuzzFunctionTree->setRootIndex(m_pcBuzzFunctionTree->model()->index(0, 0));
    m_pcBuzzFunctionTree->expandAll();
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzQTMainWindow::ReceiveLineAndColumnNumbers(int line, int column) {
+  std::stringstream statusstream;
+  statusstream << "Line: " << line << " Column: " << column;
+  QString qstr = QString::fromStdString(statusstream.str());
+  statusBar()->showMessage(qstr);
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzQTMainWindow::HandleEditorFileChange(QString& filename) {
+  setWindowTitle(tr("Buzz Editor - ") + StrippedFileName(filename));
 }
 
 /****************************************/

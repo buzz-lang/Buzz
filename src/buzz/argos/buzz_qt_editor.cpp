@@ -81,6 +81,8 @@ CBuzzQTEditor::CBuzzQTEditor(const QString& str_path) :
            this, SLOT(UpdateLineNumberArea(const QRect&, int)));
    connect(this, SIGNAL(cursorPositionChanged()),
            this, SLOT(HighlightCurrentLine()));
+   connect(this, SIGNAL(cursorPositionChanged()),
+           this, SLOT(UpdateLineAndColumnIndicator()));
    /* Final touches */
    UpdateLineNumberAreaWidth(0);
    HighlightCurrentLine();
@@ -200,11 +202,14 @@ bool CBuzzQTEditor::SaveAs() {
       tr("Buzz scripts (*.bzz)") // file filter
       );
    /* Was the file chosen? */
-   if(strFName.isEmpty())
-      return false;
+   if(strFName.isEmpty()) {
+     return false;
+   }
    /* Update the script file name */
-   m_strScriptPath = QFileInfo(strFName).canonicalFilePath();
+   m_strScriptPath = QFileInfo(strFName).absoluteFilePath();
    UpdateRecentFiles();
+   /* Notify the main window that it needs to update the title with the updated filename */
+   emit EditorFileNameChanged(m_strScriptPath);
    /* Save the file */
    return Save();
 }
@@ -263,14 +268,16 @@ void CBuzzQTEditor::UpdateLineNumberAreaWidth(int) {
 void CBuzzQTEditor::GoTo(int n_line,
                          int n_column) {
    QTextCursor cCursor = textCursor();
-   cCursor.setPosition(0, QTextCursor::MoveAnchor);
+   cCursor.movePosition(QTextCursor::Start,
+                        QTextCursor::MoveAnchor);
    cCursor.movePosition(QTextCursor::Down,
                         QTextCursor::MoveAnchor,
-                        n_line - 1);
+                        n_line);
    cCursor.movePosition(QTextCursor::NextCharacter,
                         QTextCursor::MoveAnchor,
-                        n_column + 1);
+                        n_column);
    setTextCursor(cCursor);
+   setFocus(Qt::OtherFocusReason);
 }
 
 /****************************************/
@@ -306,7 +313,7 @@ void CBuzzQTEditor::UpdateLineNumberArea(const QRect& c_rect,
       UpdateLineNumberAreaWidth(0);
    }
 }
-   
+
 /****************************************/
 /****************************************/
 
@@ -338,3 +345,9 @@ void CBuzzQTEditor::UpdateRecentFiles() {
 
 /****************************************/
 /****************************************/
+
+void CBuzzQTEditor::UpdateLineAndColumnIndicator() {
+  QTextCursor cursor = textCursor();
+  // The first argument is the line number, the second is the column number
+  emit EditorCursorUpdate(cursor.blockNumber() + 1, cursor.columnNumber() + 1);
+}
