@@ -177,6 +177,7 @@ int buzzvstig_create(buzzvm_t vm) {
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id", 1));
    buzzvm_pushi(vm, id);
    buzzvm_tput(vm);
+   function_register(foreach);
    function_register(size);
    function_register(put);
    function_register(get);
@@ -242,6 +243,48 @@ int buzzvstig_put(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+struct buzzvstig_foreach_params {
+   buzzvm_t vm;
+   buzzobj_t fun;
+};
+
+void buzzvstig_foreach_entry(const void* key, void* data, void* params) {
+   /* Cast params */
+   struct buzzvstig_foreach_params* p = (struct buzzvstig_foreach_params*)params;
+   if(p->vm->state != BUZZVM_STATE_READY) return;
+   /* Push closure and params (key, value, robot) */
+   buzzvm_push(p->vm, p->fun);
+   buzzvm_push(p->vm, *(buzzobj_t*)key);
+   buzzvm_push(p->vm, (*(buzzvstig_elem_t*)data)->data);
+   buzzvm_pushi(p->vm, (*(buzzvstig_elem_t*)data)->robot);
+   /* Call closure */
+   p->vm->state = buzzvm_closure_call(p->vm, 3);
+}
+
+int buzzvstig_foreach(struct buzzvm_s* vm) {
+   /* Make sure you got one argument */
+   buzzvm_lnum_assert(vm, 1);
+   /* Get vstig id */
+   id_get();
+   /* Look for virtual stigmergy */
+   const buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
+   if(vs) {
+      /* Virtual stigmergy found */
+      /* Get closure */
+      buzzvm_lload(vm, 1);
+      buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
+      buzzobj_t c = buzzvm_stack_at(vm, 1);
+      /* Go through the elements and apply the closure */
+      struct buzzvstig_foreach_params p = { .vm = vm, .fun = c };
+      buzzdict_foreach((*vs)->data, buzzvstig_foreach_entry, &p);
+   }
+   /* Return */
+   return buzzvm_ret0(vm);
+}
+
+/****************************************/
+/****************************************/
+
 int buzzvstig_size(buzzvm_t vm) {
    buzzvm_lnum_assert(vm, 0);
    /* Get vstig id */
@@ -297,7 +340,6 @@ int buzzvstig_get(buzzvm_t vm) {
       /* No virtual stigmergy found, just push false */
       /* If this happens, its a bug */
       buzzvm_pushnil(vm);
-      fprintf(stderr, "[BUG] [ROBOT %u] Can't find virtual stigmergy %u\n", vm->robot, id);
    }
    /* Return the value found */
    return buzzvm_ret1(vm);
