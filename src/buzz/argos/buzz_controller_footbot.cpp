@@ -36,37 +36,78 @@ void CBuzzControllerFootBot::SWheelTurningParams::Init(TConfigurationNode& t_nod
 /****************************************/
 /****************************************/
 
-static int BuzzGoTo(buzzvm_t vm) {
+static int BuzzGoToC(buzzvm_t vm) {
    /* Push the vector components */
    buzzvm_lload(vm, 1);
    buzzvm_lload(vm, 2);
    /* Create a new vector with that */
-   buzzobj_t tLS = buzzvm_stack_at(vm, 2);
-   buzzobj_t tRS = buzzvm_stack_at(vm, 1);
-   Real fLS = 0.0, fRS = 0.0;
-   if(tLS->o.type == BUZZTYPE_INT) fLS = tLS->i.value;
-   else if(tLS->o.type == BUZZTYPE_FLOAT) fLS = tLS->f.value;
+   buzzobj_t tX = buzzvm_stack_at(vm, 2);
+   buzzobj_t tY = buzzvm_stack_at(vm, 1);
+   CVector2 cDir;
+   if(tX->o.type == BUZZTYPE_INT) cDir.SetX(tX->i.value);
+   else if(tX->o.type == BUZZTYPE_FLOAT) cDir.SetX(tX->f.value);
    else {
       buzzvm_seterror(vm,
                       BUZZVM_ERROR_TYPE,
-                      "goto(x,y): expected %s, got %s in first argument",
+                      "gotoc(x,y): expected %s, got %s in first argument",
                       buzztype_desc[BUZZTYPE_FLOAT],
-                      buzztype_desc[tLS->o.type]
+                      buzztype_desc[tX->o.type]
          );
       return vm->state;
    }      
-   if(tRS->o.type == BUZZTYPE_INT) fRS = tRS->i.value;
-   else if(tRS->o.type == BUZZTYPE_FLOAT) fRS = tRS->f.value;
+   if(tY->o.type == BUZZTYPE_INT) cDir.SetY(tY->i.value);
+   else if(tY->o.type == BUZZTYPE_FLOAT) cDir.SetY(tY->f.value);
    else {
       buzzvm_seterror(vm,
                       BUZZVM_ERROR_TYPE,
-                      "goto(x,y): expected %s, got %s in second argument",
+                      "gotoc(x,y): expected %s, got %s in second argument",
                       buzztype_desc[BUZZTYPE_FLOAT],
-                      buzztype_desc[tRS->o.type]
+                      buzztype_desc[tY->o.type]
          );
       return vm->state;
    }
-   CVector2 cDir(fLS, fRS);
+   /* Get pointer to the controller */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
+   buzzvm_gload(vm);
+   /* Call function */
+   reinterpret_cast<CBuzzControllerFootBot*>(buzzvm_stack_at(vm, 1)->u.value)->SetWheelSpeedsFromVector(cDir);
+   return buzzvm_ret0(vm);
+}
+
+/****************************************/
+/****************************************/
+
+static int BuzzGoToP(buzzvm_t vm) {
+   /* Push the vector components */
+   buzzvm_lload(vm, 1);
+   buzzvm_lload(vm, 2);
+   /* Create a new vector with that */
+   buzzobj_t tLinSpeed = buzzvm_stack_at(vm, 2);
+   buzzobj_t tAngSpeed = buzzvm_stack_at(vm, 1);
+   Real fLinSpeed = 0.0, fAngSpeed = 0.0;
+   if(tLinSpeed->o.type == BUZZTYPE_INT) fLinSpeed = tLinSpeed->i.value;
+   else if(tLinSpeed->o.type == BUZZTYPE_FLOAT) fLinSpeed = tLinSpeed->f.value;
+   else {
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_TYPE,
+                      "gotop(linspeed,angspeed): expected %s, got %s in first argument",
+                      buzztype_desc[BUZZTYPE_FLOAT],
+                      buzztype_desc[tLinSpeed->o.type]
+         );
+      return vm->state;
+   }      
+   if(tAngSpeed->o.type == BUZZTYPE_INT) fAngSpeed = tAngSpeed->i.value;
+   else if(tAngSpeed->o.type == BUZZTYPE_FLOAT) fAngSpeed = tAngSpeed->f.value;
+   else {
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_TYPE,
+                      "goto(linspeed,angspeed): expected %s, got %s in second argument",
+                      buzztype_desc[BUZZTYPE_FLOAT],
+                      buzztype_desc[tAngSpeed->o.type]
+         );
+      return vm->state;
+   }
+   CVector2 cDir(fLinSpeed, CRadians(fAngSpeed));
    /* Get pointer to the controller */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
    buzzvm_gload(vm);
@@ -293,9 +334,16 @@ buzzvm_state CBuzzControllerFootBot::RegisterFunctions() {
       buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "set_wheels", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzSetWheels));
       buzzvm_gstore(m_tBuzzVM);
-      /* BuzzGoTo */
+      /* BuzzGoTo with Cartesian coordinates */
       buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "goto", 1));
-      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGoTo));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGoToC));
+      buzzvm_gstore(m_tBuzzVM);
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "gotoc", 1));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGoToC));
+      buzzvm_gstore(m_tBuzzVM);
+      /* BuzzGoTo with Polar coordinates */
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "gotop", 1));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGoToP));
       buzzvm_gstore(m_tBuzzVM);
    }
    if(m_pcLEDs) {

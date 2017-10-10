@@ -23,14 +23,75 @@ static int BuzzLand(buzzvm_t vm) {
    return buzzvm_ret1(vm);
 }
 
-static int BuzzGoTo(buzzvm_t vm) {
+static int BuzzGoToC(buzzvm_t vm) {
    /* Push the vector components */
    buzzvm_lload(vm, 1);
    buzzvm_lload(vm, 2);
    /* Create a new vector with that */
-   CVector3 cDir(buzzvm_stack_at(vm, 2)->f.value,
-                 buzzvm_stack_at(vm, 1)->f.value,
-                 0.0f);
+   CVector3 cDir;
+   buzzobj_t tX = buzzvm_stack_at(vm, 2);
+   buzzobj_t tY = buzzvm_stack_at(vm, 1);
+   if(tX->o.type == BUZZTYPE_INT) cDir.SetX(tX->i.value);
+   else if(tX->o.type == BUZZTYPE_FLOAT) cDir.SetX(tX->f.value);
+   else {
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_TYPE,
+                      "gotoc(x,y): expected %s, got %s in first argument",
+                      buzztype_desc[BUZZTYPE_FLOAT],
+                      buzztype_desc[tX->o.type]
+         );
+      return vm->state;
+   }      
+   if(tY->o.type == BUZZTYPE_INT) cDir.SetY(tY->i.value);
+   else if(tY->o.type == BUZZTYPE_FLOAT) cDir.SetY(tY->f.value);
+   else {
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_TYPE,
+                      "gotoc(x,y): expected %s, got %s in second argument",
+                      buzztype_desc[BUZZTYPE_FLOAT],
+                      buzztype_desc[tY->o.type]
+         );
+      return vm->state;
+   }
+   /* Get pointer to the controller */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
+   buzzvm_gload(vm);
+   /* Call function */
+   reinterpret_cast<CBuzzControllerSpiri*>(buzzvm_stack_at(vm, 1)->u.value)->SetDirection(cDir);
+   return buzzvm_ret0(vm);
+}
+
+static int BuzzGoToP(buzzvm_t vm) {
+   /* Push the vector components */
+   buzzvm_lload(vm, 1);
+   buzzvm_lload(vm, 2);
+   /* Create a new vector with that */
+   buzzobj_t tLinSpeed = buzzvm_stack_at(vm, 2);
+   buzzobj_t tAngSpeed = buzzvm_stack_at(vm, 1);
+   Real fLinSpeed = 0.0, fAngSpeed = 0.0;
+   if(tLinSpeed->o.type == BUZZTYPE_INT) fLinSpeed = tLinSpeed->i.value;
+   else if(tLinSpeed->o.type == BUZZTYPE_FLOAT) fLinSpeed = tLinSpeed->f.value;
+   else {
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_TYPE,
+                      "goto(x,y): expected %s, got %s in first argument",
+                      buzztype_desc[BUZZTYPE_FLOAT],
+                      buzztype_desc[tLinSpeed->o.type]
+         );
+      return vm->state;
+   }      
+   if(tAngSpeed->o.type == BUZZTYPE_INT) fAngSpeed = tAngSpeed->i.value;
+   else if(tAngSpeed->o.type == BUZZTYPE_FLOAT) fAngSpeed = tAngSpeed->f.value;
+   else {
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_TYPE,
+                      "goto(x,y): expected %s, got %s in second argument",
+                      buzztype_desc[BUZZTYPE_FLOAT],
+                      buzztype_desc[tAngSpeed->o.type]
+         );
+      return vm->state;
+   }
+   CVector3 cDir(fLinSpeed, CRadians(fAngSpeed), CRadians::ZERO);
    /* Get pointer to the controller */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
    buzzvm_gload(vm);
@@ -209,8 +270,16 @@ buzzvm_state CBuzzControllerSpiri::RegisterFunctions() {
    }
    /* BuzzGoTo */
    if(m_pcPropellers) {
+      /* With cartesian coordinates */
       buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "goto", 1));
-      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGoTo));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGoToC));
+      buzzvm_gstore(m_tBuzzVM);
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "gotoc", 1));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGoToC));
+      buzzvm_gstore(m_tBuzzVM);
+      /* With polar coordinates */
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "gotop", 1));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGoToP));
       buzzvm_gstore(m_tBuzzVM);
    }
    /* BuzzRotate */
