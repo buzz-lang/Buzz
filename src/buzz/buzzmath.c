@@ -159,7 +159,7 @@ int buzzmath_floor(buzzvm_t vm) {
    /* Get argument */
    buzzvm_lload(vm, 1);
    buzzobj_t o = buzzvm_stack_at(vm, 1);
-   if(o->o.type == BUZZTYPE_FLOAT)    buzzvm_pushf(vm, floor(o->f.value));
+   if(o->o.type == BUZZTYPE_FLOAT)    buzzvm_pushi(vm, floor(o->f.value));
    else buzzmath_error(o);
    /* Return result */
    return buzzvm_ret1(vm);
