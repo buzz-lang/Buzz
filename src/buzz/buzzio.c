@@ -34,7 +34,6 @@ static void buzzio_update_error(buzzvm_t vm) {
    buzzvm_pushi(vm, errno);
    buzzvm_tput(vm);
    /* Update error message */
-   buzzvm_push(vm, t);
    buzzvm_pushs(vm, buzzvm_string_register(vm, "error_message", 1));
    if(errno) buzzvm_pushs(vm, buzzvm_string_register(vm, strerror(errno), 0));
    else buzzvm_pushs(vm, buzzvm_string_register(vm, "No error", 0));
