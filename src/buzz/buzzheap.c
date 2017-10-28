@@ -112,9 +112,9 @@ void buzzheap_vstigobj_mark(const void* key, void* data, void* params) {
 }
 
 void buzzheap_vstig_mark(const void* key, void* data, void* params) {
-   buzzvstig_foreach(*(buzzvstig_t*)data,
-                     buzzheap_vstigobj_mark,
-                     params);
+   buzzvstig_foreach_elem(*(buzzvstig_t*)data,
+                          buzzheap_vstigobj_mark,
+                          params);
 }
 
 void buzzheap_listener_mark(const void* key, void* data, void* params) {

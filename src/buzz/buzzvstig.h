@@ -132,6 +132,13 @@ extern "C" {
    extern int buzzvstig_get(struct buzzvm_s* vm);
 
    /*
+    * Buzz C closure to loop through the elements of a stigmergy object.
+    * @param vm The Buzz VM state.
+    * @return The updated VM state.
+    */
+   extern int buzzvstig_foreach(struct buzzvm_s* vm);
+
+   /*
     * Buzz C closure to set the function to call on write conflict.
     * @param vm The Buzz VM state.
     * @return The updated VM state.
@@ -199,6 +206,6 @@ extern "C" {
  * @param params A buffer to pass along.
  * @see buzzdict_foreach()
  */
-#define buzzvstig_foreach(vs, fun, params) buzzdict_foreach((vs)->data, fun, params);
+#define buzzvstig_foreach_elem(vs, fun, params) buzzdict_foreach((vs)->data, fun, params);
 
 #endif

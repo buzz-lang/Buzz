@@ -32,10 +32,14 @@ function step() {
   if(t < 10) {
     # Put step count
     s.put(id, t)
+    # Use foreach
+    s.foreach(function(key,value,robot) {
+      log("F fb ", id, ": vstig[", key, "] = ", value, ", robot = ", robot)
+    })
     # Print other known values in stigmergy
     i = 0
     while(i < robots) {
-      log("fb ", id, ": vstig[", i, "] = ", s.get(i))
+      log("W fb ", id, ": vstig[", i, "] = ", s.get(i))
       i = i + 1
     }
     log()
@@ -45,7 +49,7 @@ function step() {
       # Print other known values in stigmergy
       i = 0
       while(i < robots) {
-        log("fb ", id, ": vstig[", i, "] = ", s.get(i))
+        log("W fb ", id, ": vstig[", i, "] = ", s.get(i))
         i = i + 1
       }
       log()

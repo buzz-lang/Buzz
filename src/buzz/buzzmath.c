@@ -114,6 +114,7 @@ int buzzmath_register(buzzvm_t vm) {
    /* Register constants */
    constant_register("pi", 3.14159265358979323846);
    /* Push "math.rng" table symbol */
+   buzzvm_dup(vm);
    buzzvm_pushs(vm, buzzvm_string_register(vm, "rng", 1));
    /* Make math.rng table */
    buzzvm_pusht(vm);
@@ -123,7 +124,7 @@ int buzzmath_register(buzzvm_t vm) {
    rng_function_register(gaussian);
    rng_function_register(exponential);
    /* Register math.rng table */
-   buzzvm_gstore(vm);
+   buzzvm_tput(vm);
    /* Register math table */
    buzzvm_gstore(vm);
    /* Initialize random number generator */

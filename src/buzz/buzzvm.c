@@ -228,7 +228,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
             uint16_t id;
             int64_t pos = buzzmsg_deserialize_u16(&id, msg, 1);
             if(pos < 0) {
-               fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_VSTIG_PUT message received\n", vm->robot);
+               fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_VSTIG_QUERY message received (1)\n", vm->robot);
                break;
             }
             /* Deserialize key and value from msg */
@@ -236,7 +236,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
             buzzvstig_elem_t v = // value
                (buzzvstig_elem_t)malloc(sizeof(struct buzzvstig_elem_s));
             if(buzzvstig_elem_deserialize(&k, &v, msg, pos, vm) < 0) {
-               fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_VSTIG_PUT message received\n", vm->robot);
+               fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_VSTIG_QUERY message received (2)\n", vm->robot);
                break;
             }
             /* Look for virtual stigmergy */

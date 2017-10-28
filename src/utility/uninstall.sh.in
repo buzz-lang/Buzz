@@ -26,3 +26,5 @@ sudo rm -rf @CMAKE_INSTALL_PREFIX@/share/man/man1/bzzasm.1.gz
 sudo rm -rf @CMAKE_INSTALL_PREFIX@/share/man/man1/bzzdeasm.1.gz
 sudo rm -rf @CMAKE_INSTALL_PREFIX@/share/man/man1/bzzrun.1.gz
 sudo rm -rf @ARGOS_PREFIX@/lib/argos3/libargos3plugin_simulator_buzz.*
+sudo rm -rf @CMAKE_ROOT@/Modules/FindBuzz.cmake
+sudo rm -rf @CMAKE_ROOT@/Modules/UseBuzz.cmake

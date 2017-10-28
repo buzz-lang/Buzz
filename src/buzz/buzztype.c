@@ -490,8 +490,27 @@ void buzzobj_serialize(buzzdarray_t buf,
          buzzdict_foreach(data->t.value, buzzobj_serialize_tableelem, buf);
          break;
       }
+      case BUZZTYPE_CLOSURE: {
+         // TODO here we assume that the first and only element of the
+         // activation record is nil, which is true only for basic
+         // functions. For table closures, we currently have no check,
+         // so while table closures technically can pass the
+         // subsequent test, they cannot in fact be serialized
+         // correctly. More work is necessary to serialize the
+         // closures completely. The only supported cases are
+         // serializing a function and the test case in
+         // testmobilecode.bzz, which involves a table.
+         if(buzzdarray_size(data->c.value.actrec) == 1) {
+            buzzmsg_serialize_u8(buf, data->c.value.isnative);
+            buzzmsg_serialize_u32(buf, data->c.value.ref);
+         }
+         else {
+            fprintf(stderr, "[TODO] %s:%d: can't serialize a nested closure\n", __FILE__, __LINE__);
+         }
+         break;
+      }
       default:
-         fprintf(stderr, "[TODO] %s %d\n", __FILE__, __LINE__);
+         fprintf(stderr, "[TODO] %s:%d Can't serialize an object of type %s\n", __FILE__, __LINE__, buzztype_desc[data->o.type]);
    }
 }
 
@@ -542,8 +561,15 @@ int64_t buzzobj_deserialize(buzzobj_t* data,
          }
          return p;
       }
+      case BUZZTYPE_CLOSURE: {
+         buzzobj_t nil = buzzheap_newobj(vm->heap, BUZZTYPE_NIL);
+         buzzdarray_push((*data)->c.value.actrec, &nil);
+         p = buzzmsg_deserialize_u8(&((*data)->c.value.isnative), buf, p);
+         if(p < 0) return -1;
+         return buzzmsg_deserialize_u32((uint32_t*)(&((*data)->c.value.ref)), buf, p);
+      }
       default:
-         fprintf(stderr, "TODO: %s %d\n", __FILE__, __LINE__);
+         fprintf(stderr, "[TODO] %s:%d Can't deserialize an object of type %s\n", __FILE__, __LINE__, buzztype_desc[type]);
          return -1;
    }
 }

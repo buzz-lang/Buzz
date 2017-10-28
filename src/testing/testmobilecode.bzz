@@ -1,0 +1,20 @@
+function f(x) {
+   return x
+}
+
+function init() {
+ vs = stigmergy.create(1)
+ if(id == 1) {
+    t = { .closure = f }
+    vs.put("t", t)
+  }
+}
+
+function step() {
+  u = vs.get("t")
+  if(u) debug(u.closure(id))
+  else debug("nil")
+}
+
+function destroy() {
+}
