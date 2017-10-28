@@ -35,7 +35,19 @@ install(FILES buzz-mode.el DESTINATION share/buzz/emacs)
 #
 # Install CMake modules and scripts
 #
-install(FILES FindBuzz.cmake UseBuzz.cmake DESTINATION ${CMAKE_ROOT}/Modules)
+install(FILES FindBuzz.cmake UseBuzz.cmake DESTINATION share/buzz/cmake)
+if(BUZZ_SYMLINK_CMAKE_SCRIPTS)
+  install(CODE "execute_process( \
+    COMMAND ${CMAKE_COMMAND} -E create_symlink \
+    ${CMAKE_INSTALL_PREFIX}/share/buzz/cmake/FindBuzz.cmake \
+    ${CMAKE_ROOT}/Modules/FindBuzz.cmake   \
+    )")
+  install(CODE "execute_process( \
+    COMMAND ${CMAKE_COMMAND} -E create_symlink \
+    ${CMAKE_INSTALL_PREFIX}/share/buzz/cmake/UseBuzz.cmake \
+    ${CMAKE_ROOT}/Modules/UseBuzz.cmake   \
+    )")
+endif(BUZZ_SYMLINK_CMAKE_SCRIPTS)
 
 #
 # Compress and install man pages in share/man/man1
