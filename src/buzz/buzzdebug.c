@@ -335,6 +335,68 @@ buzzvm_state buzzdebug_function_call(buzzvm_t vm,
 /****************************************/
 /****************************************/
 
+static void buzzdebug_print_obj(FILE* stream,
+                                buzzobj_t o,
+                                buzzvm_t vm);
+
+struct buzzdebug_print_table_params_s {
+   FILE* stream;
+   buzzvm_t vm;
+};
+
+static void buzzdebug_print_table_elem(const void* key,
+                                       void* data,
+                                       void* params) {
+   struct buzzdebug_print_table_params_s* p =
+      (struct buzzdebug_print_table_params_s*)params;
+   fprintf(p->stream, "\t\t\t");
+   buzzdebug_print_obj(p->stream, *(buzzobj_t*)key, p->vm);
+   fprintf(p->stream, " -> ");
+   buzzdebug_print_obj(p->stream, *(buzzobj_t*)data, p->vm);
+   fprintf(p->stream, "\n");
+}
+
+static void buzzdebug_print_table(FILE* stream,
+                                  buzzdict_t t,
+                                  buzzvm_t vm) {
+   fprintf(stream, "[table] %" PRIu32 " elements\n", buzzdict_size(t));
+   struct buzzdebug_print_table_params_s params = {
+      .stream = stream,
+      .vm = vm
+   };
+   buzzdict_foreach(t, buzzdebug_print_table_elem, &params);
+}
+
+void buzzdebug_print_obj(FILE* stream,
+                         buzzobj_t o,
+                         buzzvm_t vm) {
+   switch(o->o.type) {
+      case BUZZTYPE_NIL:
+         fprintf(stream, "[nil]");
+         break;
+      case BUZZTYPE_INT:
+         fprintf(stream, "[int] %d", o->i.value);
+         break;
+      case BUZZTYPE_FLOAT:
+         fprintf(stream, "[float] %f", o->f.value);
+         break;
+      case BUZZTYPE_TABLE:
+         buzzdebug_print_table(stream, o->t.value, vm);
+         break;
+      case BUZZTYPE_CLOSURE:
+         if(o->c.value.isnative)
+            fprintf(stream, "[n-closure] %d", o->c.value.ref);
+         else
+            fprintf(stream, "[c-closure] %d", o->c.value.ref);
+         break;
+      case BUZZTYPE_STRING:
+         fprintf(stream, "[string] %d:'%s'", o->s.value.sid, o->s.value.str);
+         break;
+      default:
+         fprintf(stream, "[TODO] type = %d", o->o.type);
+   }
+}
+
 void buzzdebug_stack_dump(buzzvm_t vm,
                           uint32_t idx,
                           FILE* stream) {
@@ -350,31 +412,8 @@ void buzzdebug_stack_dump(buzzvm_t vm,
    for(i = buzzdarray_size(s)-1; i >= 0; --i) {
       fprintf(stream, "\t%" PRIu64 "\t", i);
       buzzobj_t o = buzzdarray_get(s, i, buzzobj_t);
-      switch(o->o.type) {
-         case BUZZTYPE_NIL:
-            fprintf(stream, "[nil]\n");
-            break;
-         case BUZZTYPE_INT:
-            fprintf(stream, "[int] %d\n", o->i.value);
-            break;
-         case BUZZTYPE_FLOAT:
-            fprintf(stream, "[float] %f\n", o->f.value);
-            break;
-         case BUZZTYPE_TABLE:
-            fprintf(stream, "[table] %d elements\n", buzzdict_size(o->t.value));
-            break;
-         case BUZZTYPE_CLOSURE:
-            if(o->c.value.isnative)
-               fprintf(stream, "[n-closure] %d\n", o->c.value.ref);
-            else
-               fprintf(stream, "[c-closure] %d\n", o->c.value.ref);
-            break;
-         case BUZZTYPE_STRING:
-            fprintf(stream, "[string] %d:'%s'\n", o->s.value.sid, o->s.value.str);
-            break;
-         default:
-            fprintf(stream, "[TODO] type = %d\n", o->o.type);
-      }
+      buzzdebug_print_obj(stream, o, vm);
+      fprintf(stream, "\n");
    }
    fprintf(stream, "============================================================\n\n");
 }
