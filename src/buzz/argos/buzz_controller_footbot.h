@@ -5,6 +5,7 @@
 #include <argos3/plugins/robots/generic/control_interface/ci_differential_steering_actuator.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_leds_actuator.h>
 #include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_proximity_sensor.h>
+#include <argos3/plugins/robots/generic/control_interface/ci_colored_blob_omnidirectional_camera_sensor.h>
 
 using namespace argos;
 
@@ -48,6 +49,8 @@ public:
    void SetWheels(Real f_left_speed, Real f_right_speed);
    void SetWheelSpeedsFromVector(const CVector2& c_heading);
    void SetLEDs(const CColor& c_color);
+   void CameraEnable();
+   void CameraDisable();
 
 private:
 
@@ -61,6 +64,8 @@ protected:
    CCI_LEDsActuator* m_pcLEDs;
    /* Pointer to the proximity sensor */
    CCI_FootBotProximitySensor* m_pcProximity;
+   /* Pointer to the camera sensor */
+   CCI_ColoredBlobOmnidirectionalCameraSensor* m_pcCamera;
 
    /* The turning parameters. */
    SWheelTurningParams m_sWheelTurningParams;

@@ -4,7 +4,6 @@
 #include <buzz/argos/buzz_controller.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_quadrotor_position_actuator.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_colored_blob_perspective_camera_sensor.h>
-#include <argos3/plugins/robots/generic/control_interface/ci_positioning_sensor.h>
 
 using namespace argos;
 
@@ -35,8 +34,6 @@ protected:
    CCI_QuadRotorPositionActuator* m_pcPropellers;
    /* Pointer to the camera sensor */
    CCI_ColoredBlobPerspectiveCameraSensor* m_pcCamera;
-   /* Pointer to the position sensor */
-   CCI_PositioningSensor* m_pcPosition;
 
 };
 

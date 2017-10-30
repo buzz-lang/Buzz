@@ -119,7 +119,7 @@ static int BuzzGoToP(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
-int BuzzSetWheels(buzzvm_t vm) {
+static int BuzzSetWheels(buzzvm_t vm) {
    buzzvm_lnum_assert(vm, 2);
    /* Push speeds */
    buzzvm_lload(vm, 1); /* Left speed */
@@ -141,7 +141,7 @@ int BuzzSetWheels(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
-int BuzzSetLEDs(buzzvm_t vm) {
+static int BuzzSetLEDs(buzzvm_t vm) {
    buzzvm_lnum_assert(vm, 3);
    /* Push the color components */
    buzzvm_lload(vm, 1);
@@ -165,10 +165,32 @@ int BuzzSetLEDs(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+static int BuzzCameraEnable(buzzvm_t vm) {
+   /* Get pointer to the controller */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
+   buzzvm_gload(vm);
+   /* Call function */
+   reinterpret_cast<CBuzzControllerFootBot*>(buzzvm_stack_at(vm, 1)->u.value)->CameraEnable();
+   return buzzvm_ret0(vm);
+}
+
+static int BuzzCameraDisable(buzzvm_t vm) {
+   /* Get pointer to the controller */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
+   buzzvm_gload(vm);
+   /* Call function */
+   reinterpret_cast<CBuzzControllerFootBot*>(buzzvm_stack_at(vm, 1)->u.value)->CameraDisable();
+   return buzzvm_ret0(vm);
+}
+
+/****************************************/
+/****************************************/
+
 CBuzzControllerFootBot::CBuzzControllerFootBot() :
    m_pcWheels(NULL),
    m_pcLEDs(NULL),
-   m_pcProximity(NULL) {
+   m_pcProximity(NULL),
+   m_pcCamera(NULL) {
 }
 
 /****************************************/
@@ -188,13 +210,11 @@ void CBuzzControllerFootBot::Init(TConfigurationNode& t_node) {
          m_sWheelTurningParams.Init(GetNode(t_node, "wheel_turning"));
       }
       catch(CARGoSException& ex) {}
-      try {
-         m_pcLEDs = GetActuator<CCI_LEDsActuator>("leds");
-      }
+      try { m_pcLEDs = GetActuator<CCI_LEDsActuator>("leds"); }
       catch(CARGoSException& ex) {}
-      try {
-         m_pcProximity = GetSensor<CCI_FootBotProximitySensor>("footbot_proximity");
-      }
+      try { m_pcProximity = GetSensor<CCI_FootBotProximitySensor>("footbot_proximity"); }
+      catch(CARGoSException& ex) {}
+      try { m_pcCamera = GetSensor<CCI_ColoredBlobOmnidirectionalCameraSensor>("colored_blob_omnidirectional_camera"); }
       catch(CARGoSException& ex) {}
       /* Initialize the rest */
       CBuzzController::Init(t_node);
@@ -235,6 +255,25 @@ void CBuzzControllerFootBot::UpdateSensors() {
          TablePut(tProxRead, "angle", tProxReads[i].Angle);
          /* Store read table in the proximity table */
          TablePut(tProxTable, i, tProxRead);
+      }
+   }
+   /*
+    * Camera
+    */
+   if(m_pcCamera) {
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "blobs", 1));
+      buzzvm_pusht(m_tBuzzVM);
+      buzzobj_t tBlobs = buzzvm_stack_at(m_tBuzzVM, 1);
+      buzzvm_gstore(m_tBuzzVM);
+      const CCI_ColoredBlobOmnidirectionalCameraSensor::SReadings& sBlobs = m_pcCamera->GetReadings();
+      for(size_t i = 0; i < sBlobs.BlobList.size(); ++i) {
+         buzzvm_pusht(m_tBuzzVM);
+         buzzobj_t tEntry = buzzvm_stack_at(m_tBuzzVM, 1);
+         buzzvm_pop(m_tBuzzVM);
+         TablePut(tBlobs, i, tEntry);
+         TablePut(tEntry, "distance", sBlobs.BlobList[i]->Distance);
+         TablePut(tEntry, "angle",    sBlobs.BlobList[i]->Angle);
+         TablePut(tEntry, "color",    sBlobs.BlobList[i]->Color);
       }
    }
 }
@@ -326,6 +365,20 @@ void CBuzzControllerFootBot::SetLEDs(const CColor& c_color) {
 /****************************************/
 /****************************************/
 
+void CBuzzControllerFootBot::CameraEnable() {
+   m_pcCamera->Enable();
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzControllerFootBot::CameraDisable() {
+   m_pcCamera->Disable();
+}
+
+/****************************************/
+/****************************************/
+
 buzzvm_state CBuzzControllerFootBot::RegisterFunctions() {
    /* Register base functions */
    CBuzzController::RegisterFunctions();
@@ -350,6 +403,18 @@ buzzvm_state CBuzzControllerFootBot::RegisterFunctions() {
       /* BuzzSetLEDs */
       buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "set_leds", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzSetLEDs));
+      buzzvm_gstore(m_tBuzzVM);
+   }
+   if(m_pcCamera) {
+      /* BuzzCameraEnable */
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "camera_enable", 1));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzCameraEnable));
+      buzzvm_gstore(m_tBuzzVM);
+   }
+   if(m_pcCamera) {
+      /* BuzzCameraDisable */
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "camera_disable", 1));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzCameraDisable));
       buzzvm_gstore(m_tBuzzVM);
    }
    return m_tBuzzVM->state;

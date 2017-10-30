@@ -13,6 +13,10 @@ extern "C" {
 
    extern int buzzmath_floor(buzzvm_t vm);
 
+   extern int buzzmath_ceil(buzzvm_t vm);
+
+   extern int buzzmath_round(buzzvm_t vm);
+
    extern int buzzmath_log(buzzvm_t vm);
 
    extern int buzzmath_log2(buzzvm_t vm);

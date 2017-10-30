@@ -136,8 +136,7 @@ static int BuzzCameraDisable(buzzvm_t vm) {
 
 CBuzzControllerSpiri::CBuzzControllerSpiri() :
    m_pcPropellers(NULL),
-   m_pcCamera(NULL),
-   m_pcPosition(NULL) {
+   m_pcCamera(NULL) {
 }
 
 /****************************************/
@@ -155,8 +154,6 @@ void CBuzzControllerSpiri::Init(TConfigurationNode& t_node) {
    catch(CARGoSException& ex) {}
    try { m_pcCamera = GetSensor<CCI_ColoredBlobPerspectiveCameraSensor>("colored_blob_perspective_camera"); }
    catch(CARGoSException& ex) {}
-   try { m_pcPosition = GetSensor<CCI_PositioningSensor>("positioning"); }
-   catch(CARGoSException& ex) {}
    /* Initialize the rest */
    try {
       CBuzzController::Init(t_node);
@@ -170,12 +167,13 @@ void CBuzzControllerSpiri::Init(TConfigurationNode& t_node) {
 /****************************************/
 
 void CBuzzControllerSpiri::UpdateSensors() {
-   /* Positioning */
-   if(m_pcPosition) {
-      Register("position", m_pcPosition->GetReading().Position);
-      Register("orientation", m_pcPosition->GetReading().Orientation);
-   }
-   /* Camera */
+   /*
+    * Update generic sensors
+    */
+   CBuzzController::UpdateSensors();
+   /*
+    * Camera
+    */
    if(m_pcCamera) {
       buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "blobs", 1));
       buzzvm_pusht(m_tBuzzVM);
@@ -198,7 +196,7 @@ void CBuzzControllerSpiri::UpdateSensors() {
 /****************************************/
 
 bool CBuzzControllerSpiri::TakeOff() {
-   CVector3 cPos = m_pcPosition->GetReading().Position;
+   CVector3 cPos = m_pcPos->GetReading().Position;
    if(Abs(cPos.GetZ() - 2.0f) < 0.01f) return false;
    cPos.SetZ(2.0f);
    m_pcPropellers->SetAbsolutePosition(cPos);
@@ -209,7 +207,7 @@ bool CBuzzControllerSpiri::TakeOff() {
 /****************************************/
 
 bool CBuzzControllerSpiri::Land() {
-   CVector3 cPos = m_pcPosition->GetReading().Position;
+   CVector3 cPos = m_pcPos->GetReading().Position;
    if(Abs(cPos.GetZ()) < 0.01f) return false;
    cPos.SetZ(0.0f);
    m_pcPropellers->SetAbsolutePosition(cPos);
@@ -257,13 +255,13 @@ buzzvm_state CBuzzControllerSpiri::RegisterFunctions() {
    if(CBuzzController::RegisterFunctions() != BUZZVM_STATE_READY)
       return m_tBuzzVM->state;
    /* BuzzTakeOff */
-   if(m_pcPropellers && m_pcPosition) {
+   if(m_pcPropellers && m_pcPos) {
       buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "takeoff", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzTakeOff));
       buzzvm_gstore(m_tBuzzVM);
    }
    /* BuzzLand */
-   if(m_pcPropellers && m_pcPosition) {
+   if(m_pcPropellers && m_pcPos) {
       buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "land", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzLand));
       buzzvm_gstore(m_tBuzzVM);
