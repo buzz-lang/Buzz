@@ -334,6 +334,7 @@ int buzzvstig_get(buzzvm_t vm) {
                                vm->robot);             // robot id
          /* Append the message to the out message queue */
          buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_QUERY, id, k, x);
+         free(x);
       }
    }
    else {
