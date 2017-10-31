@@ -186,7 +186,6 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                /* Store element */
                buzzvstig_store(*vs, &k, &v);
                buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_PUT, id, k, v);
-               free(v);
             }
             else if(((*l)->timestamp == v->timestamp) && /* Same timestamp */
                     ((*l)->robot != v->robot)) {         /* Different robot */
@@ -264,7 +263,6 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                   /* Store element and propagate PUT message */
                   buzzvstig_store(*vs, &k, &v);
                   buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_PUT, id, k, v);
-                  free(v);
                }
                break;
             }
@@ -274,7 +272,6 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                /* Store element */
                buzzvstig_store(*vs, &k, &v);
                buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_PUT, id, k, v);
-               free(v);
             }
             else if((*l)->timestamp > v->timestamp) {
                /* Local element is newer */
