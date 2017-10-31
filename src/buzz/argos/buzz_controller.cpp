@@ -407,7 +407,7 @@ void CBuzzController::UpdateSensors() {
       /* Get positioning readings */
       const CCI_PositioningSensor::SReading& sPosRead = m_pcPos->GetReading();
       /* Create empty positioning data table */
-      buzzobj_t tPose = buzzobj_new(BUZZTYPE_TABLE);
+      buzzobj_t tPose = buzzheap_newobj(m_tBuzzVM->heap, BUZZTYPE_TABLE);
       /* Store position data */
       TablePut(tPose, "position", sPosRead.Position);
       /* Store orientation data */

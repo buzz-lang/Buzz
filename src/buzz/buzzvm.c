@@ -174,6 +174,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                (buzzvstig_elem_t)malloc(sizeof(struct buzzvstig_elem_s));
             if(buzzvstig_elem_deserialize(&k, &v, msg, pos, vm) < 0) {
                fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_VSTIG_PUT message received\n", vm->robot);
+               free(v);
                break;
             }
             /* Deserialization successful */
@@ -185,6 +186,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                /* Store element */
                buzzvstig_store(*vs, &k, &v);
                buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_PUT, id, k, v);
+               free(v);
             }
             else if(((*l)->timestamp == v->timestamp) && /* Same timestamp */
                     ((*l)->robot != v->robot)) {         /* Different robot */
@@ -237,6 +239,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                (buzzvstig_elem_t)malloc(sizeof(struct buzzvstig_elem_s));
             if(buzzvstig_elem_deserialize(&k, &v, msg, pos, vm) < 0) {
                fprintf(stderr, "[WARNING] [ROBOT %u] Malformed BUZZMSG_VSTIG_QUERY message received (2)\n", vm->robot);
+               free(v);
                break;
             }
             /* Look for virtual stigmergy */
@@ -244,6 +247,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
             if(!vs) {
                /* Virtual stigmergy not found, simply propagate the message */
                buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_QUERY, id, k, v);
+               free(v);
                break;
             }
             /* Virtual stigmergy found */
@@ -254,11 +258,13 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                if(v->data->o.type == BUZZTYPE_NIL) {
                   /* This robot knows nothing about the query, just propagate it */
                   buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_QUERY, id, k, v);
+                  free(v);
                }
                else {
                   /* Store element and propagate PUT message */
                   buzzvstig_store(*vs, &k, &v);
                   buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_PUT, id, k, v);
+                  free(v);
                }
                break;
             }
@@ -268,6 +274,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                /* Store element */
                buzzvstig_store(*vs, &k, &v);
                buzzoutmsg_queue_append_vstig(vm, BUZZMSG_VSTIG_PUT, id, k, v);
+               free(v);
             }
             else if((*l)->timestamp > v->timestamp) {
                /* Local element is newer */
@@ -853,7 +860,7 @@ buzzvm_state buzzvm_closure_call(buzzvm_t vm,
    /* Insert the self table right before the closure */
    buzzdarray_insert(vm->stack,
                      buzzdarray_size(vm->stack) - argc - 1,
-                     buzzobj_new(BUZZTYPE_NIL));
+                     buzzheap_newobj(vm->heap, BUZZTYPE_NIL));
    /* Push the argument count */
    buzzvm_pushi(vm, argc);
    /* Save the current stack depth */
