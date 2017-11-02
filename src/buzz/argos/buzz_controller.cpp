@@ -201,7 +201,8 @@ void CBuzzController::ControlStep() {
               m_tBuzzVM->robot,
               m_strBytecodeFName.c_str(),
               ErrorInfo().c_str());
-      buzzvm_dump(m_tBuzzVM);
+      buzzdebug_stack_dump(m_tBuzzVM, 1, stdout);
+      return;
    }
    ProcessOutMsgs();
 }
