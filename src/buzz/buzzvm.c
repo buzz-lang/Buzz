@@ -466,6 +466,8 @@ buzzvm_t buzzvm_new(uint16_t robot) {
 /****************************************/
 
 void buzzvm_destroy(buzzvm_t* vm) {
+   /* Get rid of the rng state */
+   free((*vm)->rngstate);
    /* Get rid of the stack */
    buzzstrman_destroy(&(*vm)->strings);
    /* Get rid of the global variable table */
