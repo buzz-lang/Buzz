@@ -20,7 +20,7 @@ int main() {
 
    printf("\n=== ADDING DUPLICATE STRING ===\n\n");
    buzzstrman_register(sm, "ciao", 1);
-   buzzstrman_register(sm, "eh, si tira avanti", 1);
+   buzzstrman_register(sm, "eh, si tira avanti", 0);
    buzzstrman_print(sm);
 
    printf("\n=== GARBAGE COLLECTION ===\n\n");
@@ -30,6 +30,24 @@ int main() {
    buzzstrman_gc_prune(sm);
    buzzstrman_print(sm);
 
+   printf("\n=== HIGH ID ===\n\n");
+   for( int i = 0 ; i < 60000 ; i++ ) {
+     buzzstrman_register(sm, "la vita difficile", 0);
+     buzzstrman_gc_clear(sm);
+     buzzstrman_gc_prune(sm);
+   }
+   buzzstrman_register(sm, "mondo durissimo", 0);
+   buzzstrman_print(sm);
+
+   printf("\n=== ID OVERLOAD ===\n\n");
+   for( int i = 0 ; i < 6000 ; i++ ) {
+     buzzstrman_register(sm, "la vita difficile", 0);
+     buzzstrman_gc_clear(sm);
+     buzzstrman_gc_prune(sm);
+   }
+   buzzstrman_register(sm, "mondo durissimo", 0);
+   buzzstrman_print(sm);
+   
    buzzstrman_destroy(&sm);
    return 0;
 }

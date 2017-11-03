@@ -207,6 +207,14 @@ uint16_t buzzstrman_register(buzzstrman_t sm,
    /* Not found, add a new string */
    uint16_t id2 = sm->maxsid;
    ++sm->maxsid;
+
+   /* Avoid id = 0 */
+   if( !sm->maxsid ) ++sm->maxsid;
+
+   /* Avoid overwriting existing strings */
+   while(buzzdict_get(sm->id2str, &sm->maxsid, buzzid2strdata_t))
+     ++sm->maxsid;
+
    char* str2 = strdup(str);
    buzzid2strdata_t sd = buzzid2strdata_new(str2, protect);
    buzzdict_set(sm->str2id, &str2, &id2);
