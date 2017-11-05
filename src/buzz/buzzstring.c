@@ -177,6 +177,7 @@ int buzzstring_toint(buzzvm_t vm) {
    const char* s = buzzvm_stack_at(vm, 1)->s.value.str;
    /* Convert the string to int */
    char* endptr;
+   errno = 0;
    int32_t i = strtod(s, &endptr);
    /* Was the conversion successful? */
    if((errno != 0 && i == 0) || /* An error occurred */
@@ -204,6 +205,7 @@ int buzzstring_tofloat(buzzvm_t vm) {
    const char* s = buzzvm_stack_at(vm, 1)->s.value.str;
    /* Convert the string to int */
    char* endptr;
+   errno = 0;
    float f = strtof(s, &endptr);
    /* Was the conversion successful? */
    if((errno != 0 && f == 0) || /* An error occurred */
