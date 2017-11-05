@@ -164,8 +164,8 @@ int buzzio_fforeach(buzzvm_t vm) {
    ssize_t len = getline(&line, &cap, f);
    while(len >= 0 &&
          vmstate == BUZZVM_STATE_READY) {
-      /* Remove newline */
-      line[len-1] = '\0';
+      /* Remove newline if present */
+      if(line[len-1] == '\n') line[len-1] = '\0';
       /* Put closure on the stack (will be wiped by buzzvm_closure_call) */
       buzzvm_dup(vm);
       /* Push string argument */
