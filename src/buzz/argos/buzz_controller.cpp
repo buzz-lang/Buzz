@@ -201,7 +201,10 @@ void CBuzzController::ControlStep() {
               m_tBuzzVM->robot,
               m_strBytecodeFName.c_str(),
               ErrorInfo().c_str());
-      buzzvm_dump(m_tBuzzVM);
+      for(UInt32 i = 1; i <= buzzdarray_size(m_tBuzzVM->stacks); ++i) {
+         buzzdebug_stack_dump(m_tBuzzVM, i, stdout);
+      }
+      return;
    }
    ProcessOutMsgs();
 }

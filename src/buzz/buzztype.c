@@ -366,6 +366,7 @@ void buzzobj_map_entry(const void* key, void* data, void* params) {
    buzzvm_push(p->vm, *(buzzobj_t*)data);
    /* Call closure */
    p->vm->state = buzzvm_closure_call(p->vm, 2);
+   if(p->vm->state != BUZZVM_STATE_READY) return;
    /* Make sure a value was returned */
    if(buzzvm_stack_top(p->vm) <= ss) {
       /* Error */
@@ -430,6 +431,7 @@ void buzzobj_reduce_entry(const void* key, void* data, void* params) {
    buzzvm_push(p->vm, accum);
    /* Call closure */
    p->vm->state = buzzvm_closure_call(p->vm, 3);
+   if(p->vm->state != BUZZVM_STATE_READY) return;
    /* Make sure a value was returned */
    if(buzzvm_stack_top(p->vm) <= ss)
       /* Error */
