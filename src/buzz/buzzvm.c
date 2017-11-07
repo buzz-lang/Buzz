@@ -557,6 +557,7 @@ int buzzvm_set_bcode(buzzvm_t vm,
    vm->bcode = bcode;
    /* Set program counter */
    vm->pc = i;
+   vm->oldpc = vm->pc;
    /*
     * Register function definitions
     * Stop when you find a 'nop'
@@ -591,7 +592,7 @@ int buzzvm_set_bcode(buzzvm_t vm,
 
 #define assert_pc(IDX) if((IDX) < 0 || (IDX) >= vm->bcode_size) { buzzvm_seterror(vm, BUZZVM_ERROR_PC, NULL); return vm->state; }
 
-#define inc_pc() ++vm->pc; assert_pc(vm->pc);
+#define inc_pc() vm->oldpc = vm->pc; ++vm->pc; assert_pc(vm->pc);
 
 #define get_arg(TYPE) assert_pc(vm->pc + sizeof(TYPE)); TYPE arg = *((TYPE*)(vm->bcode + vm->pc)); vm->pc += sizeof(TYPE);
 
@@ -964,7 +965,10 @@ buzzvm_state buzzvm_call(buzzvm_t vm, int isswrm) {
    vm->stack = buzzdarray_new(1, sizeof(buzzobj_t), NULL);
    buzzdarray_push(vm->stacks, &(vm->stack));
    /* Jump to/execute the function */
-   if(c->c.value.isnative) vm->pc = c->c.value.ref;
+   if(c->c.value.isnative) {
+      vm->oldpc = vm->pc;
+      vm->pc = c->c.value.ref;
+   }
    else buzzdarray_get(vm->flist,
                        c->c.value.ref,
                        buzzvm_funp)(vm);
@@ -1201,6 +1205,7 @@ buzzvm_state buzzvm_ret0(buzzvm_t vm) {
    /* Make sure that element is an integer */
    buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
    /* Use that element as program counter */
+   vm->oldpc = vm->pc;
    vm->pc = buzzvm_stack_at(vm, 1)->i.value;
    /* Pop the return address */
    return buzzvm_pop(vm);
@@ -1232,6 +1237,7 @@ buzzvm_state buzzvm_ret1(buzzvm_t vm) {
    /* Make sure that element is an integer */
    buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
    /* Use that element as program counter */
+   vm->oldpc = vm->pc;
    vm->pc = buzzvm_stack_at(vm, 1)->i.value;
    /* Pop the return address */
    buzzvm_pop(vm);

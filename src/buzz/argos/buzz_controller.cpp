@@ -268,7 +268,7 @@ void CBuzzController::SetBytecode(const std::string& str_bc_fname,
 
 std::string CBuzzController::ErrorInfo() {
    if(m_tBuzzDbgInfo) {
-      const buzzdebug_entry_t* ptInfo = buzzdebug_info_get_fromoffset(m_tBuzzDbgInfo, &m_tBuzzVM->pc);
+      const buzzdebug_entry_t* ptInfo = buzzdebug_info_get_fromoffset(m_tBuzzDbgInfo, &m_tBuzzVM->oldpc);
       std::ostringstream ossErrMsg;
       if(ptInfo) {
          ossErrMsg << (*ptInfo)->fname
@@ -279,7 +279,7 @@ std::string CBuzzController::ErrorInfo() {
       }
       else {
          ossErrMsg << "At bytecode offset "
-                   << m_tBuzzVM->pc;
+                   << m_tBuzzVM->oldpc;
       }
       if(m_tBuzzVM->errormsg)
          ossErrMsg << ": "

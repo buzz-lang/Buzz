@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <buzz/buzzvm.h>
+#include <buzz/buzzset.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,18 +19,31 @@ extern "C" {
       /* Script column */
       uint64_t col;
       /* Script file name */
-      char* fname;
+      const char* fname;
    };
    typedef struct buzzdebug_entry_s* buzzdebug_entry_t;
+
+   struct buzzdebug_fep_entry_s {
+      /* Bytecode offset where the function starts */
+      int64_t off;
+      /* Function name, NULL for anonymous functions */
+      char* fname;
+      /* Parameter names */
+      buzzdarray_t params;
+   };
 
    /*
     * Definition of the buzz debug data structure.
     */
    struct buzzdebug_s {
+      /* File name set */
+      buzzset_t fnames;
       /* Offset -> script information */
       buzzdict_t off2script;
       /* Script -> offset information */
       buzzdict_t script2off;
+      /* Function entry points */
+      buzzdarray_t feps;
       /* Breakpoint list */
       buzzdarray_t breakpoints;
    };
@@ -169,6 +183,16 @@ extern "C" {
    extern void buzzdebug_stack_dump(buzzvm_t vm,
                                     uint32_t idx,
                                     FILE* stream);
+
+   /**
+    * Prints the backtrace (i.e., the call stack).
+    * @param vm The VM data.
+    * @param dbg The debug data structure.
+    * @param stream The output stream.
+    */
+   extern void buzzdebug_backtrace(buzzvm_t vm,
+                                   buzzdebug_t dbg,
+                                   FILE* stream);
 
 #ifdef __cplusplus
 }
