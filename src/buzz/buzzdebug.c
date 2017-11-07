@@ -173,7 +173,6 @@ void buzzdebug_entry_dump(const void* key, void* data, void* params) {
          fwrite(e->fname,  1, strfnlen, i->fd) < strfnlen)
          i->ok = 0;
    }
-   fprintf(stderr, "[DEBUG] Wrote: off=%" PRId32 ", line=%" PRIu64 ", col=%" PRIu64 ", fname=(%p)'%s'\n", *(int32_t*)key, e->line, e->col, e->fname, e->fname);
 }
 
 int buzzdebug_tofile(const char* fname,
@@ -200,7 +199,6 @@ void buzzdebug_info_set(buzzdebug_t dbg,
                         uint64_t line,
                         uint64_t col,
                         const char* fname) {
-   fprintf(stderr, "[DEBUG] Inserted: off=%" PRId32 ", line=%" PRIu64 ", col=%" PRIu64 ", fname=(%p)'%s'\n", offset, line, col, fname, fname);
    /* Save filename */
    /* Check whether it's already in the set */
    const char* fn;
