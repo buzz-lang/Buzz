@@ -35,6 +35,7 @@ if(NOT CMAKE_CROSSCOMPILING)
 
   buzz_make(test_takeoff_divide_flock.bzz)
   buzz_make(testempty.bzz)
+  buzz_make(testdebug.bzz)
   buzz_make(testbehavior.bzz)
   buzz_make(testclosure.bzz)
   buzz_make(testhexagon.bzz)
