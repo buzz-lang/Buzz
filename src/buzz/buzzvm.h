@@ -143,6 +143,8 @@ extern "C" {
       uint32_t bcode_size;
       /* Program counter */
       int32_t pc;
+      /* Old program counter (for error reporting) */
+      int32_t oldpc;
       /* Current stack content */
       buzzdarray_t stack;
       /* Stack list */
