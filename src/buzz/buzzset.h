@@ -77,13 +77,13 @@ extern "C" {
                               const void* data);
 
    /*
-    * Gets an element.
+    * Finds an element.
     * @param s The set.
     * @param data The element to find.
     * @return The position of the found element, or NULL.
     */
-   extern void* buzzset_get(buzzset_t s,
-                            const void* data);
+   extern void* buzzset_find(buzzset_t s,
+                             const void* data);
 
    /*
     * Applies a function to each element of the set.
@@ -112,5 +112,15 @@ extern "C" {
  * @return <tt>true</tt> if the set is empty.
  */
 #define buzzset_isempty(s) (buzzset_size(s) == 0)
+
+/*
+ * Fetches the element that matches the given data, or NULL is nothing is found.
+ * The returned element is casted to a pointer to the given type.
+ * @param s The set.
+ * @param data The data.
+ * @param type The element type.
+ * @see buzzdict_find
+ */
+#define buzzset_fetch(s, data, type) (const type*)(buzzset_find(s, data))
 
 #endif

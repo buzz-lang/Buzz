@@ -214,8 +214,8 @@ void buzzset_remove(buzzset_t s,
 /****************************************/
 /****************************************/
 
-void* buzzset_get(buzzset_t s,
-                  const void* data) {
+void* buzzset_find(buzzset_t s,
+                   const void* data) {
    buzzset_tree_t res = buzzset_tree_find(s, s->data, data);
    if(!res) return NULL;
    return res->data;
