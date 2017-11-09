@@ -705,6 +705,12 @@ int parse_conditionlist(buzzparser_t par,
 }
 
 int parse_condition(buzzparser_t par) {
+   if(par->tok->type == BUZZTOK_NOT) {
+      fetchtok();
+      if(!parse_condition(par)) return PARSE_ERROR;
+      chunk_append("\tnot");
+      return PARSE_OK;
+   }
    if(!parse_comparison(par)) return PARSE_ERROR;
    while(par->tok->type == BUZZTOK_ANDOR) {
       char op[4];
@@ -717,35 +723,20 @@ int parse_condition(buzzparser_t par) {
 }
 
 int parse_comparison(buzzparser_t par) {
-   if(par->tok->type == BUZZTOK_PAROPEN) {
+   if(!parse_expression(par)) return PARSE_ERROR;
+   if(par->tok->type == BUZZTOK_CMP) {
+      char op[4];
+      if     (strcmp(par->tok->value, "==") == 0) strcpy(op, "eq");
+      else if(strcmp(par->tok->value, "!=") == 0) strcpy(op, "neq");
+      else if(strcmp(par->tok->value, "<")  == 0) strcpy(op, "lt");
+      else if(strcmp(par->tok->value, "<=") == 0) strcpy(op, "lte");
+      else if(strcmp(par->tok->value, ">")  == 0) strcpy(op, "gt");
+      else if(strcmp(par->tok->value, ">=") == 0) strcpy(op, "gte");
       fetchtok();
-      if(!parse_condition(par)) return PARSE_ERROR;
-      tokmatch(BUZZTOK_PARCLOSE);
-      fetchtok();
-      return PARSE_OK;
-   }
-   else if(par->tok->type == BUZZTOK_NOT) {
-      fetchtok();
-      if(!parse_comparison(par)) return PARSE_ERROR;
-      chunk_append("\tnot");
-      return PARSE_OK;
-   }
-   else {
       if(!parse_expression(par)) return PARSE_ERROR;
-      if(par->tok->type == BUZZTOK_CMP) {
-         char op[4];
-         if     (strcmp(par->tok->value, "==") == 0) strcpy(op, "eq");
-         else if(strcmp(par->tok->value, "!=") == 0) strcpy(op, "neq");
-         else if(strcmp(par->tok->value, "<")  == 0) strcpy(op, "lt");
-         else if(strcmp(par->tok->value, "<=") == 0) strcpy(op, "lte");
-         else if(strcmp(par->tok->value, ">")  == 0) strcpy(op, "gt");
-         else if(strcmp(par->tok->value, ">=") == 0) strcpy(op, "gte");
-         fetchtok();
-         if(!parse_expression(par)) return PARSE_ERROR;
-         chunk_append("\t%s", op);
-      }
-      return PARSE_OK;
+      chunk_append("\t%s", op);
    }
+   return PARSE_OK;
 }
 
 /****************************************/
@@ -932,7 +923,7 @@ int parse_operand(buzzparser_t par) {
    }
    else if(par->tok->type == BUZZTOK_PAROPEN) {
       fetchtok();
-      if(!parse_expression(par)) return PARSE_ERROR;
+      if(!parse_condition(par)) return PARSE_ERROR;
       tokmatch(BUZZTOK_PARCLOSE);
       fetchtok();
       return PARSE_OK;
