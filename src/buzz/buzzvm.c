@@ -1116,6 +1116,12 @@ buzzvm_state buzzvm_tput(buzzvm_t vm) {
    buzzvm_pop(vm);
    buzzvm_pop(vm);
    buzzvm_pop(vm);
+   if(k->o.type != BUZZTYPE_INT &&
+      k->o.type != BUZZTYPE_FLOAT &&
+      k->o.type != BUZZTYPE_STRING) {
+      buzzvm_seterror(vm, BUZZVM_ERROR_TYPE, "a %s value can't be used as table key", buzztype_desc[k->o.type]);
+      return vm->state;
+   }
    if(v->o.type == BUZZTYPE_NIL) {
       /* Nil, erase entry */
       buzzdict_remove(t->t.value, &k);
@@ -1149,6 +1155,12 @@ buzzvm_state buzzvm_tget(buzzvm_t vm) {
    buzzobj_t t = buzzvm_stack_at(vm, 2);
    buzzvm_pop(vm);
    buzzvm_pop(vm);
+   if(k->o.type != BUZZTYPE_INT &&
+      k->o.type != BUZZTYPE_FLOAT &&
+      k->o.type != BUZZTYPE_STRING) {
+      buzzvm_seterror(vm, BUZZVM_ERROR_TYPE, "a %s value can't be used as table key", k->o.type);
+      return vm->state;
+   }
    const buzzobj_t* v = buzzdict_get(t->t.value, &k, buzzobj_t);
    if(v) buzzvm_push(vm, *v);
    else buzzvm_pushnil(vm);
