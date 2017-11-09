@@ -26,7 +26,7 @@ uint32_t buzzobj_table_hash(const void* key) {
          return ((uint32_t)(k->s.value.sid) % BUZZTYPE_TABLE_BUCKETS);
       }
       default:
-         fprintf(stderr, "[TODO] %s:%d\n", __FILE__, __LINE__);
+         fprintf(stderr, "Can't use a %s value as table key\n", buzztype_desc[k->o.type]);
          abort();
    }
 }
