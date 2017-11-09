@@ -1,0 +1,16 @@
+var a = 3-1
+var b = 6*7
+
+if (a != b) {
+  print("a != b")
+}
+else {
+  print("unsupported")
+}
+
+if (3-1 != 6*7) {
+  print("(3-1) != (6*7)")
+}
+else {
+  print("unsupported")
+}
