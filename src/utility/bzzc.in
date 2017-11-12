@@ -19,7 +19,7 @@ function help() {
 # Version function
 #
 function version() {
-    echo "$0 version ${BUZZ_VERSION}${BUZZ_RELEASE}"
+    echo "$0 version ${BUZZ_VERSION}-${BUZZ_RELEASE}"
 }
 
 #

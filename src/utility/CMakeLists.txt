@@ -5,6 +5,11 @@ configure_file(
   bzzc.in
   ${CMAKE_BINARY_DIR}/utility/bzzc
   @ONLY)
+install(
+  FILES ${CMAKE_BINARY_DIR}/utility/bzzc
+  DESTINATION bin
+  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
 
 #
 # Configuration file for pkg-config
@@ -25,14 +30,6 @@ configure_file(
 install(
   FILES ${CMAKE_BINARY_DIR}/utility/uninstall.sh
   DESTINATION share/buzz
-  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-
-#
-# Install bzzcompile in bin/
-#
-install(
-  FILES bzzc
-  DESTINATION bin
   PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 #
