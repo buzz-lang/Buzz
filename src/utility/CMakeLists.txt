@@ -1,4 +1,12 @@
 #
+# Process file bzzc
+#
+configure_file(
+  bzzc.in
+  ${CMAKE_BINARY_DIR}/utility/bzzc
+  @ONLY)
+
+#
 # Configuration file for pkg-config
 #
 configure_file(

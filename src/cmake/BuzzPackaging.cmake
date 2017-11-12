@@ -25,14 +25,13 @@ if(NOT DEFINED CPACK_PACKAGE_VERSION_PATCH)
   execute_process(
     COMMAND git describe --abbrev=0
     COMMAND cut -d. -f3
-    COMMAND cut -d- -f1
     COMMAND tr -d '\n'
     OUTPUT_VARIABLE CPACK_PACKAGE_VERSION_PATCH)
 endif(NOT DEFINED CPACK_PACKAGE_VERSION_PATCH)
 if(NOT DEFINED CPACK_PACKAGE_RELEASE)
 execute_process(
-  COMMAND git describe --abbrev=0
-  COMMAND cut -d- -f2
+  COMMAND git describe
+  COMMAND cut -d- -f2-
   COMMAND tr -d '\n'
   OUTPUT_VARIABLE CPACK_PACKAGE_RELEASE)
 endif(NOT DEFINED CPACK_PACKAGE_RELEASE)

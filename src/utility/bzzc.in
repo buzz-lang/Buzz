@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# Version information
+BUZZ_VERSION="@CPACK_PACKAGE_VERSION@"
+BUZZ_RELEASE="@CPACK_PACKAGE_RELEASE@"
+
+# Stop on any error
 set -e
 
 #
@@ -8,6 +13,13 @@ set -e
 function help() {
     echo -e "Usage:\n\t$0 [-I path1:path2:...:pathN] [-b bytecode.bo] [-d debug.bdb] [-a asm.basm] infile.bzz\n"
     echo "Type 'man bzzc' for more information."
+}
+
+#
+# Version function
+#
+function version() {
+    echo "$0 version ${BUZZ_VERSION}${BUZZ_RELEASE}"
 }
 
 #
@@ -73,6 +85,11 @@ do
         ;;
         -h|--help)
             help
+            shift
+            exit 0
+        ;;
+        -v|--version)
+            version
             shift
             exit 0
         ;;
