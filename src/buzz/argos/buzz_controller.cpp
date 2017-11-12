@@ -52,7 +52,7 @@ int BuzzLOG (buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
-int BuzzDebug(buzzvm_t vm) {
+int BuzzDebugPrint(buzzvm_t vm) {
    /* Get pointer to controller user data */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
    buzzvm_gload(vm);
@@ -255,7 +255,7 @@ void CBuzzController::SetBytecode(const std::string& str_bc_fname,
    }
    /* Register basic function */
    if(RegisterFunctions() != BUZZVM_STATE_READY) {
-      THROW_ARGOSEXCEPTION("Error while registering functions");
+      THROW_ARGOSEXCEPTION("Error while registering functions: " << ErrorInfo());
    }
    /* Execute the global part of the script */
    buzzvm_execute_script(m_tBuzzVM);
@@ -298,17 +298,30 @@ std::string CBuzzController::ErrorInfo() {
 /****************************************/
 
 buzzvm_state CBuzzController::RegisterFunctions() {
-   /* Pointer to this controller */
+   /*
+    * Pointer to this controller
+    */
    buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "controller", 1));
    buzzvm_pushu(m_tBuzzVM, this);
    buzzvm_gstore(m_tBuzzVM);
-   /* BuzzLOG */
+   /*
+    * BuzzLOG
+    */
    buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "log", 1));
    buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzLOG));
    buzzvm_gstore(m_tBuzzVM);
-   /* BuzzDebug */
+   /*
+    * Buzz debug facilities
+    */
+   /* Initialize debug table */
    buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "debug", 1));
-   buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzDebug));
+   buzzvm_pusht(m_tBuzzVM);
+   /* debug.print() */
+   buzzvm_dup(m_tBuzzVM);
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "print", 1));
+   buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzDebugPrint));
+   buzzvm_tput(m_tBuzzVM);
+   /* Finalize debug table */
    buzzvm_gstore(m_tBuzzVM);
    return m_tBuzzVM->state;
 }
