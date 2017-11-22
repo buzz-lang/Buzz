@@ -9,6 +9,23 @@
 /****************************************/
 /****************************************/
 
+pthread_mutex_t CBuzzController::TRAJECTORY_MUTEX;
+CSet<CBuzzController*> CBuzzController::TRAJECTORY_CONTROLLERS;
+
+/*
+ * A class used to trick the linker to initialize the trajectory mutex
+ * during static initialization.
+ */
+class CBuzzControllerMutexInitializer {
+public:
+   CBuzzControllerMutexInitializer() {
+      pthread_mutex_init(&CBuzzController::TRAJECTORY_MUTEX, NULL);
+   }
+} __cBuzzControllerMutexInitializer;
+
+/****************************************/
+/****************************************/
+
 int BuzzLOG (buzzvm_t vm) {
    LOG << "BUZZ: ";
    for(UInt32 i = 1; i < buzzdarray_size(vm->lsyms->syms); ++i) {
@@ -93,8 +110,249 @@ int BuzzDebugPrint(buzzvm_t vm) {
             break;
       }
    }
-   cContr.SetDebugMsg(oss.str());
+   cContr.GetARGoSDebugInfo().Msg = oss.str();
    return buzzvm_ret0(vm);
+}
+
+int BuzzDebugTrajectoryEnable(buzzvm_t vm) {
+   /*
+    * Possible signatures
+    * debug.trajectory.enable(maxpoints)
+    *    enable trajectory planning setting how many points should be stored
+    * debug.trajectory.enable()
+    *    enable trajectory planning keeping maxpoints' last value (default is 30)
+    */
+   /* Get pointer to controller user data */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
+   buzzvm_gload(vm);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_USERDATA);
+   CBuzzController* pcContr = reinterpret_cast<CBuzzController*>(buzzvm_stack_at(vm, 1)->u.value);
+   /* Parse arguments */
+   SInt32 nMaxPoints = pcContr->GetARGoSDebugInfo().Trajectory.MaxPoints;
+   if(buzzvm_lnum(vm) > 0) {
+      buzzvm_lload(vm, 1);
+      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+      nMaxPoints = buzzvm_stack_at(vm, 1)->i.value;
+   }
+   /* Call method */
+   CBuzzController::DebugTrajectoryEnable(pcContr, nMaxPoints);
+   return buzzvm_ret0(vm);
+}
+
+int BuzzDebugTrajectoryDisable(buzzvm_t vm) {
+   /*
+    * Possible signatures
+    * debug.trajectory.disable()
+    *    disables trajectory tracking
+    */
+   /* Get pointer to controller user data */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
+   buzzvm_gload(vm);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_USERDATA);
+   CBuzzController* pcContr = reinterpret_cast<CBuzzController*>(buzzvm_stack_at(vm, 1)->u.value);
+   /* Call method */
+   CBuzzController::DebugTrajectoryDisable(pcContr);
+   return buzzvm_ret0(vm);
+}
+
+int BuzzDebugTrajectoryClear(buzzvm_t vm) {
+   /*
+    * Possible signatures
+    * debug.trajectory.clear()
+    *    deletes all the trajectory points
+    */
+   /* Get pointer to controller user data */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
+   buzzvm_gload(vm);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_USERDATA);
+   CBuzzController& cContr = *reinterpret_cast<CBuzzController*>(buzzvm_stack_at(vm, 1)->u.value);
+   cContr.GetARGoSDebugInfo().TrajectoryClear();
+   return buzzvm_ret0(vm);
+}
+
+int BuzzDebugRayAdd(buzzvm_t vm) {
+   /*
+    * Possible signatures
+    * debug.rays.add(r,g,b, x,y,z)
+    *    draws a ray from the reference point of the robot to (x,y,z).
+    *    (x,y,z) is expressed wrt the robot reference frame
+    * debug.rays.add(r,g,b, x0,y0,z0, x1,y1,z1)
+    *    draws a ray from (x0,y0,z0) to (x1,y1,z1)
+    *    (x0,y0,z0) and (x1,y1,z1) are expressed wrt the robot reference frame
+   */
+   CColor cColor;
+   CVector3 cStart, cEnd;
+   /* Parse arguments */
+   int64_t argn = buzzvm_lnum(vm);
+   if(argn == 6) {
+      /* Parse color */
+      buzzvm_lload(vm, 1); /* red */
+      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+      buzzvm_lload(vm, 2); /* green */
+      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+      buzzvm_lload(vm, 3); /* blue */
+      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+      cColor.Set(buzzvm_stack_at(vm, 3)->i.value,
+                 buzzvm_stack_at(vm, 2)->i.value,
+                 buzzvm_stack_at(vm, 1)->i.value);
+      /* Parse end vector */
+      buzzvm_lload(vm, 4); /* x */
+      buzzvm_type_assert(vm, 1, BUZZTYPE_FLOAT);
+      buzzvm_lload(vm, 5); /* y */
+      buzzvm_type_assert(vm, 1, BUZZTYPE_FLOAT);
+      buzzvm_lload(vm, 6); /* z */
+      buzzvm_type_assert(vm, 1, BUZZTYPE_FLOAT);
+      cEnd.Set(buzzvm_stack_at(vm, 3)->f.value,
+               buzzvm_stack_at(vm, 2)->f.value,
+               buzzvm_stack_at(vm, 1)->f.value);
+   }
+   else if(argn == 9) {
+      /* Parse color */
+      buzzvm_lload(vm, 1); /* red */
+      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+      buzzvm_lload(vm, 2); /* green */
+      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+      buzzvm_lload(vm, 3); /* blue */
+      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+      cColor.Set(buzzvm_stack_at(vm, 3)->i.value,
+                 buzzvm_stack_at(vm, 2)->i.value,
+                 buzzvm_stack_at(vm, 1)->i.value);
+      /* Parse start vector */
+      buzzvm_lload(vm, 4); /* x */
+      buzzvm_type_assert(vm, 1, BUZZTYPE_FLOAT);
+      buzzvm_lload(vm, 5); /* y */
+      buzzvm_type_assert(vm, 1, BUZZTYPE_FLOAT);
+      buzzvm_lload(vm, 6); /* z */
+      buzzvm_type_assert(vm, 1, BUZZTYPE_FLOAT);
+      cStart.Set(buzzvm_stack_at(vm, 3)->f.value,
+                 buzzvm_stack_at(vm, 2)->f.value,
+                 buzzvm_stack_at(vm, 1)->f.value);
+      /* Parse end vector */
+      buzzvm_lload(vm, 7); /* x */
+      buzzvm_type_assert(vm, 1, BUZZTYPE_FLOAT);
+      buzzvm_lload(vm, 8); /* y */
+      buzzvm_type_assert(vm, 1, BUZZTYPE_FLOAT);
+      buzzvm_lload(vm, 9); /* z */
+      buzzvm_type_assert(vm, 1, BUZZTYPE_FLOAT);
+      cEnd.Set(buzzvm_stack_at(vm, 3)->f.value,
+               buzzvm_stack_at(vm, 2)->f.value,
+               buzzvm_stack_at(vm, 1)->f.value);
+   }
+   else {
+      // TODO bomb out
+   }
+   /* Get pointer to controller user data */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
+   buzzvm_gload(vm);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_USERDATA);
+   CBuzzController& cContr = *reinterpret_cast<CBuzzController*>(buzzvm_stack_at(vm, 1)->u.value);
+   /* Call method */
+   cContr.GetARGoSDebugInfo().RayAdd(cColor, cStart, cEnd);
+   return buzzvm_ret0(vm);
+}
+
+int BuzzDebugRayClear(buzzvm_t vm) {
+   /*
+    * Possible signatures
+    * debug.rays.clear()
+    *    deletes all the rays
+    */
+   /* Get pointer to controller user data */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
+   buzzvm_gload(vm);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_USERDATA);
+   CBuzzController& cContr = *reinterpret_cast<CBuzzController*>(buzzvm_stack_at(vm, 1)->u.value);
+   /* Call method */
+   cContr.GetARGoSDebugInfo().RayClear();
+   return buzzvm_ret0(vm);
+}
+
+/****************************************/
+/****************************************/
+
+CBuzzController::SDebug::SRay::SRay(const CColor& c_color,
+                                    const CVector3& c_start,
+                                    const CVector3& c_end) :
+   Ray(c_start, c_end),
+   Color(c_color) {}
+
+/****************************************/
+/****************************************/
+
+CBuzzController::SDebug::SDebug() {
+   Trajectory.Tracking = false;
+   Trajectory.MaxPoints = 50;
+}
+
+/****************************************/
+/****************************************/
+
+CBuzzController::SDebug::~SDebug() {
+   TrajectoryClear();
+   RayClear();
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzController::SDebug::Clear() {
+   Msg = "";
+   RayClear();
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzController::SDebug::TrajectoryEnable(SInt32 n_size) {
+   Trajectory.Tracking = true;
+   Trajectory.MaxPoints = n_size;
+   while(Trajectory.Data.size() > Trajectory.MaxPoints)
+      Trajectory.Data.pop_front();
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzController::SDebug::TrajectoryDisable() {
+   Trajectory.Tracking = false;
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzController::SDebug::TrajectoryAdd(const CVector3& c_pos) {
+   Trajectory.Data.push_front(c_pos);
+   while(Trajectory.Data.size() > Trajectory.MaxPoints) {
+      Trajectory.Data.pop_back();
+   }
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzController::SDebug::TrajectoryClear() {
+   while(!Trajectory.Data.empty()) {
+      Trajectory.Data.pop_back();
+   }
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzController::SDebug::RayAdd(const CColor& c_color,
+                                     const CVector3& c_start,
+                                     const CVector3& c_end) {
+   Rays.push_back(new SRay(c_color, c_start, c_end));
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzController::SDebug::RayClear() {
+   while(!Rays.empty()) {
+      delete Rays.back();
+      Rays.pop_back();
+   }
 }
 
 /****************************************/
@@ -134,7 +392,6 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
       /* Initialize the rest */
       bool bIDSuccess = false;
       m_unRobotId = 0;
-
       /* Find Buzz ID */
       size_t tStartPos = GetId().find_last_of("_");
       if(tStartPos != std::string::npos){
@@ -174,8 +431,11 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
 /****************************************/
 
 void CBuzzController::Reset() {
-   /* Reset debug message */
-   m_strDebugMsg = "";
+   /* Reset debug information */
+   m_sDebug.Clear();
+   m_sDebug.TrajectoryClear();
+   m_sDebug.TrajectoryDisable();
+   m_sDebug.RayClear();
    try {
       /* Set the bytecode again */
       if(m_strBytecodeFName != "" && m_strDbgInfoFName != "")
@@ -190,6 +450,13 @@ void CBuzzController::Reset() {
 /****************************************/
 
 void CBuzzController::ControlStep() {
+   /* Update debugging information */
+   m_sDebug.Clear();
+   if(m_sDebug.Trajectory.Tracking) {
+      const CCI_PositioningSensor::SReading& sPosRead = m_pcPos->GetReading();
+      m_sDebug.TrajectoryAdd(sPosRead.Position);
+   }
+   /* Take care of the rest */
    if(!m_tBuzzVM || m_tBuzzVM->state != BUZZVM_STATE_READY) {
       fprintf(stderr, "[ROBOT %s] Robot is not ready to execute Buzz script.\n\n",
               GetId().c_str());
@@ -321,6 +588,45 @@ buzzvm_state CBuzzController::RegisterFunctions() {
    buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "print", 1));
    buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzDebugPrint));
    buzzvm_tput(m_tBuzzVM);
+   /* Initialize debug.rays table */
+   buzzvm_dup(m_tBuzzVM);
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "rays", 1));
+   buzzvm_pusht(m_tBuzzVM);
+   /* debug.rays.add() */
+   buzzvm_dup(m_tBuzzVM);
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "add", 1));
+   buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzDebugRayAdd));
+   buzzvm_tput(m_tBuzzVM);
+   /* debug.rays.clear() */
+   buzzvm_dup(m_tBuzzVM);
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "clear", 1));
+   buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzDebugRayClear));
+   buzzvm_tput(m_tBuzzVM);
+   /* Finalize debug.rays table */
+   buzzvm_tput(m_tBuzzVM);
+   if(m_pcPos != NULL) {
+      /* Initialize debug.trajectory table */
+      buzzvm_dup(m_tBuzzVM);
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "trajectory", 1));
+      buzzvm_pusht(m_tBuzzVM);
+      /* debug.trajectory.enable() */
+      buzzvm_dup(m_tBuzzVM);
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "enable", 1));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzDebugTrajectoryEnable));
+      buzzvm_tput(m_tBuzzVM);
+      /* debug.trajectory.disable() */
+      buzzvm_dup(m_tBuzzVM);
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "disable", 1));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzDebugTrajectoryDisable));
+      buzzvm_tput(m_tBuzzVM);
+      /* debug.trajectory.clear() */
+      buzzvm_dup(m_tBuzzVM);
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "clear", 1));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzDebugTrajectoryClear));
+      buzzvm_tput(m_tBuzzVM);
+      /* Finalize debug.trajectory table */
+      buzzvm_tput(m_tBuzzVM);
+   }
    /* Finalize debug table */
    buzzvm_gstore(m_tBuzzVM);
    return m_tBuzzVM->state;

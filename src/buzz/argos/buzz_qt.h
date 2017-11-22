@@ -29,6 +29,8 @@ public:
 
    virtual void Call(CEntity& c_entity);
 
+   virtual void DrawInWorld();
+
 protected:
 
    virtual void Draw(CBuzzController& c_contr);

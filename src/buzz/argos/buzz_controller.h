@@ -7,13 +7,60 @@
 #include <argos3/plugins/robots/generic/control_interface/ci_positioning_sensor.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_range_and_bearing_actuator.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_range_and_bearing_sensor.h>
+#include <argos3/core/utility/math/ray3.h>
+#include <argos3/core/utility/datatypes/set.h>
 #include <buzz/buzzvm.h>
 #include <buzz/buzzdebug.h>
 #include <string>
+#include <list>
 
 using namespace argos;
 
 class CBuzzController : public CCI_Controller {
+
+public:
+
+   struct SDebug {
+      /* A ray and its color */
+      struct SRay {
+         CRay3 Ray;
+         CColor Color;
+         SRay(const CColor& c_color,
+              const CVector3& c_start,
+              const CVector3& c_end);
+      };
+      /* Trajectory-related data */
+      struct {
+         /* Whether trajectory tracking is on or off */
+         bool Tracking;
+         /* Max number of trajectory points to store */
+         SInt32 MaxPoints;
+         /* Trajectory data */
+         std::list<CVector3> Data;
+         /* Drawing color */
+         CColor Color;
+      } Trajectory;
+      /* Message */
+      std::string Msg;
+      /* Rays to draw */
+      std::vector<SRay*> Rays;
+      /* Constructor */
+      SDebug();
+      /* Destructor */
+      ~SDebug();
+      /* Data clearing at each step */
+      void Clear();
+      /* Trajectory toggling */
+      void TrajectoryEnable(SInt32 n_size);
+      void TrajectoryDisable();
+      void TrajectoryAdd(const CVector3& c_pos);
+      void TrajectoryClear();
+      /* Ray functions */
+      void RayAdd(const CColor& c_color,
+                  const CVector3& c_start,
+                  const CVector3& c_end);
+      void RayClear();
+   };
 
 public:
 
@@ -44,12 +91,12 @@ public:
       return m_tBuzzVM;
    }
 
-   inline const std::string& GetDebugMsg() const {
-      return m_strDebugMsg;
+   inline SDebug& GetARGoSDebugInfo() {
+      return m_sDebug;
    }
 
-   inline void SetDebugMsg(const std::string& str_msg) {
-      m_strDebugMsg = str_msg;
+   inline const SDebug& GetARGoSDebugInfo() const {
+      return m_sDebug;
    }
 
    inline buzzdebug_t& GetBuzzDbgInfo() {
@@ -175,9 +222,30 @@ protected:
    std::string m_strDbgInfoFName;
    /* The actual bytecode */
    CByteArray m_cBytecode;
-   /* Debug message */
-   std::string m_strDebugMsg;
+   /* Debugging information */
+   SDebug m_sDebug;
 
+public:
+   
+   /* Mutex for trajectory tracking */
+   static pthread_mutex_t TRAJECTORY_MUTEX;
+   /* List of controllers with trajectory tracking enabled */
+   static CSet<CBuzzController*> TRAJECTORY_CONTROLLERS;
+   /* Enables trajectory tracking in controllers */
+   static void DebugTrajectoryEnable(CBuzzController* pc_cntr,
+                                SInt32 n_max_points) {
+      pc_cntr->GetARGoSDebugInfo().TrajectoryEnable(n_max_points);
+      pthread_mutex_lock(&TRAJECTORY_MUTEX);
+      TRAJECTORY_CONTROLLERS.insert(pc_cntr);
+      pthread_mutex_unlock(&TRAJECTORY_MUTEX);
+   }
+   /* Disables trajectory tracking in controllers */
+   static void DebugTrajectoryDisable(CBuzzController* pc_cntr) {
+      pc_cntr->GetARGoSDebugInfo().TrajectoryDisable();
+      pthread_mutex_lock(&TRAJECTORY_MUTEX);
+      TRAJECTORY_CONTROLLERS.erase(pc_cntr);
+      pthread_mutex_unlock(&TRAJECTORY_MUTEX);
+   }
 };
 
 #include <argos3/core/utility/plugins/vtable.h>
