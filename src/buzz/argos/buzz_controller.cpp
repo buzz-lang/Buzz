@@ -117,22 +117,62 @@ int BuzzDebugPrint(buzzvm_t vm) {
 int BuzzDebugTrajectoryEnable(buzzvm_t vm) {
    /*
     * Possible signatures
+    * debug.trajectory.enable(maxpoints,r,g,b)
+    *    enable trajectory tracking setting how many points should be stored and the drawing color
     * debug.trajectory.enable(maxpoints)
-    *    enable trajectory planning setting how many points should be stored
+    *    enable trajectory tracking setting how many points should be stored
+    * debug.trajectory.enable(r,g,b)
+    *    enable trajectory tracking keeping maxpoints' last value and setting the drawing color
     * debug.trajectory.enable()
-    *    enable trajectory planning keeping maxpoints' last value (default is 30)
+    *    enable trajectory tracking keeping maxpoints' last value (default is 30)
     */
    /* Get pointer to controller user data */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
    buzzvm_gload(vm);
    buzzvm_type_assert(vm, 1, BUZZTYPE_USERDATA);
    CBuzzController* pcContr = reinterpret_cast<CBuzzController*>(buzzvm_stack_at(vm, 1)->u.value);
-   /* Parse arguments */
+   /* Get last known value for max points */
    SInt32 nMaxPoints = pcContr->GetARGoSDebugInfo().Trajectory.MaxPoints;
-   if(buzzvm_lnum(vm) > 0) {
+   /* Parse arguments */
+   if(buzzvm_lnum(vm) == 4) {
+      /* Max points */
       buzzvm_lload(vm, 1);
       buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
       nMaxPoints = buzzvm_stack_at(vm, 1)->i.value;
+      /* RGB drawing color */
+      buzzvm_lload(vm, 2);
+      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+      buzzvm_lload(vm, 3);
+      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+      buzzvm_lload(vm, 4);
+      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+      pcContr->GetARGoSDebugInfo().Trajectory.Color.Set(
+         buzzvm_stack_at(vm, 3)->i.value,
+         buzzvm_stack_at(vm, 2)->i.value,
+         buzzvm_stack_at(vm, 1)->i.value);
+   }
+   else if(buzzvm_lnum(vm) == 3) {
+      /* RGB drawing color */
+      buzzvm_lload(vm, 1);
+      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+      buzzvm_lload(vm, 2);
+      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+      buzzvm_lload(vm, 3);
+      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+      pcContr->GetARGoSDebugInfo().Trajectory.Color.Set(
+         buzzvm_stack_at(vm, 3)->i.value,
+         buzzvm_stack_at(vm, 2)->i.value,
+         buzzvm_stack_at(vm, 1)->i.value);
+   }
+   else if(buzzvm_lnum(vm) == 1) {
+      /* Max points */
+      buzzvm_lload(vm, 1);
+      buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+      nMaxPoints = buzzvm_stack_at(vm, 1)->i.value;
+   }
+   else if(buzzvm_lnum(vm) != 0) {
+      /* Bomb out */
+      buzzvm_seterror(vm, BUZZVM_ERROR_LNUM, "expected 4, 3, or 1 arguments, but %" PRId64 " were passed", buzzvm_lnum(vm));
    }
    /* Call method */
    CBuzzController::DebugTrajectoryEnable(pcContr, nMaxPoints);
@@ -239,7 +279,8 @@ int BuzzDebugRayAdd(buzzvm_t vm) {
                buzzvm_stack_at(vm, 1)->f.value);
    }
    else {
-      // TODO bomb out
+      /* Bomb out */
+      buzzvm_seterror(vm, BUZZVM_ERROR_LNUM, "expected 6 or 9 arguments, but %" PRId64 " were passed", buzzvm_lnum(vm));
    }
    /* Get pointer to controller user data */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
@@ -307,7 +348,7 @@ void CBuzzController::SDebug::TrajectoryEnable(SInt32 n_size) {
    Trajectory.Tracking = true;
    Trajectory.MaxPoints = n_size;
    while(Trajectory.Data.size() > Trajectory.MaxPoints)
-      Trajectory.Data.pop_front();
+      Trajectory.Data.pop_back();
 }
 
 /****************************************/
