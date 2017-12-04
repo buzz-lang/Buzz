@@ -498,23 +498,25 @@ void CBuzzController::ControlStep() {
       m_sDebug.TrajectoryAdd(sPosRead.Position);
    }
    /* Take care of the rest */
-   if(!m_tBuzzVM || m_tBuzzVM->state != BUZZVM_STATE_READY) {
+   if(m_tBuzzVM && m_tBuzzVM->state == BUZZVM_STATE_READY) {
+      ProcessInMsgs();
+      UpdateSensors();
+      if(buzzvm_function_call(m_tBuzzVM, "step", 0) != BUZZVM_STATE_READY) {
+         fprintf(stderr, "[ROBOT %u] %s: execution terminated abnormally: %s\n\n",
+                 m_tBuzzVM->robot,
+                 m_strBytecodeFName.c_str(),
+                 ErrorInfo().c_str());
+         for(UInt32 i = 1; i <= buzzdarray_size(m_tBuzzVM->stacks); ++i) {
+            buzzdebug_stack_dump(m_tBuzzVM, i, stdout);
+         }
+         return;
+      }
+      ProcessOutMsgs();
+   }
+   else {
       fprintf(stderr, "[ROBOT %s] Robot is not ready to execute Buzz script.\n\n",
               GetId().c_str());
    }
-   ProcessInMsgs();
-   UpdateSensors();
-   if(buzzvm_function_call(m_tBuzzVM, "step", 0) != BUZZVM_STATE_READY) {
-      fprintf(stderr, "[ROBOT %u] %s: execution terminated abnormally: %s\n\n",
-              m_tBuzzVM->robot,
-              m_strBytecodeFName.c_str(),
-              ErrorInfo().c_str());
-      for(UInt32 i = 1; i <= buzzdarray_size(m_tBuzzVM->stacks); ++i) {
-         buzzdebug_stack_dump(m_tBuzzVM, i, stdout);
-      }
-      return;
-   }
-   ProcessOutMsgs();
 }
 
 /****************************************/
