@@ -1,4 +1,17 @@
 #
+# Process file bzzc
+#
+configure_file(
+  bzzc.in
+  ${CMAKE_BINARY_DIR}/utility/bzzc
+  @ONLY)
+install(
+  FILES ${CMAKE_BINARY_DIR}/utility/bzzc
+  DESTINATION bin
+  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
+
+#
 # Configuration file for pkg-config
 #
 configure_file(
@@ -20,14 +33,6 @@ install(
   PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 #
-# Install bzzcompile in bin/
-#
-install(
-  FILES bzzc
-  DESTINATION bin
-  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-
-#
 # Install the Emacs mode in share/buzz/emacs
 #
 install(FILES buzz-mode.el DESTINATION share/buzz/emacs)
@@ -37,15 +42,15 @@ install(FILES buzz-mode.el DESTINATION share/buzz/emacs)
 #
 install(FILES FindBuzz.cmake UseBuzz.cmake DESTINATION share/buzz/cmake)
 if(BUZZ_SYMLINK_CMAKE_SCRIPTS)
-  install(CODE "execute_process( \
-    COMMAND ${CMAKE_COMMAND} -E create_symlink \
-    ${CMAKE_INSTALL_PREFIX}/share/buzz/cmake/FindBuzz.cmake \
-    ${CMAKE_ROOT}/Modules/FindBuzz.cmake   \
+  install(CODE "execute_process(
+    COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${CMAKE_INSTALL_PREFIX}/share/buzz/cmake/FindBuzz.cmake
+    ${CMAKE_ROOT}/Modules/FindBuzz.cmake
     )")
-  install(CODE "execute_process( \
-    COMMAND ${CMAKE_COMMAND} -E create_symlink \
-    ${CMAKE_INSTALL_PREFIX}/share/buzz/cmake/UseBuzz.cmake \
-    ${CMAKE_ROOT}/Modules/UseBuzz.cmake   \
+  install(CODE "execute_process(
+    COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${CMAKE_INSTALL_PREFIX}/share/buzz/cmake/UseBuzz.cmake
+    ${CMAKE_ROOT}/Modules/UseBuzz.cmake
     )")
 endif(BUZZ_SYMLINK_CMAKE_SCRIPTS)
 

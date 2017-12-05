@@ -1,1 +1,19 @@
-error()
+function init() {
+  set_wheels(10.0,5.0)
+  if(id < 2) {
+    debug.trajectory.enable(100)
+  }
+}
+
+function step() {
+	debug.print("ciao")
+	debug.rays.add(255, 0, 0, 1.0, 0.0, 0.0)
+  debug.rays.add(0, 255, 0, 0.0, 1.0, 0.0)
+  debug.rays.add(0, 0, 255, 0.0, 0.0, 1.0)
+}
+
+function reset() {
+}
+
+function destroy() {
+}

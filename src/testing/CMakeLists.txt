@@ -23,7 +23,7 @@ target_link_libraries(testbuzzstrman buzz)
 
 if(NOT CMAKE_CROSSCOMPILING)
   # Make sure only the locally compiled tools are used
-  set(BUZZ_COMPILER ${CMAKE_SOURCE_DIR}/utility/bzzc)
+  set(BUZZ_COMPILER ${CMAKE_BINARY_DIR}/utility/bzzc)
   set(BUZZ_PARSER ${CMAKE_BINARY_DIR}/buzz/bzzparse)
   set(BUZZ_ASSEMBLER ${CMAKE_BINARY_DIR}/buzz/bzzasm)
   set(BUZZ_BZZ_INCLUDE_DIR

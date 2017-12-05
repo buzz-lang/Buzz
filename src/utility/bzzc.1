@@ -5,7 +5,8 @@
 .SH NAME
 bzzc \- the Buzz compiler
 .SH SYNOPSIS
-\fBbzzc\fR [ \fB-I \fIpath1:path2:...:pathN \fR]
+\fBbzzc\fR [ \fB-v \fR]
+     [ \fB-I \fIpath1:path2:...:pathN \fR]
      [ \fB-b \fIscript.bo \fR]
      [ \fB-d \fIscript.bdb \fR]
      \fIscript.bzz
@@ -18,6 +19,9 @@ containing debugging information.  The file \fIscript.bo\fR must be
 uploaded on the robot.  The file \fIscript.bdb\fR is located on the
 machine used by the developer to debug/monitor the robots.
 .SH OPTIONS
+.TP
+\fB\-v|--version\fR
+Shows version information
 .TP
 \fB\-I|--include \fIpath1:path2:...:pathN\fR
 Append the given paths to \fBBUZZ_INCLUDE_PATH\fR

@@ -341,7 +341,7 @@ function init() {
 function step() {
   extradbg = ""
   statef()
-  debug(statestr, ": ", extradbg)
+  debug.print(statestr, ": ", extradbg)
 }
 
 #

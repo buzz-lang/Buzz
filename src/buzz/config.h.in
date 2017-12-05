@@ -1,0 +1,5 @@
+/*
+ * Buzz version information
+ */
+#define BUZZ_VERSION "@CPACK_PACKAGE_VERSION@"
+#define BUZZ_RELEASE "@CPACK_PACKAGE_RELEASE@"
