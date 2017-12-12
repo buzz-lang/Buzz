@@ -57,10 +57,12 @@ extern "C" {
 
    /*
     * Clones a virtual stigmergy entry.
+    * @param vm The Buzz VM state.
     * @param e The entry to clone.
     * @return A new virtual stigmergy entry.
     */
-   extern buzzvstig_elem_t buzzvstig_elem_clone(const buzzvstig_elem_t e);
+   extern buzzvstig_elem_t buzzvstig_elem_clone(struct buzzvm_s* vm,
+                                                const buzzvstig_elem_t e);
 
    /*
     * Creates a new virtual stigmergy structure.

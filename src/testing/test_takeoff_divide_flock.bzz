@@ -177,7 +177,7 @@ function state_takeoff() {
 function transition_to_search_for_target() {
   statef = state_search_for_target
   statestr = "search_for_target"
-  yaw_start = orientation.yaw % (2. * math.pi)
+  yaw_start = pose.orientation.yaw % (2. * math.pi)
   camera_enable()
   mytargetdata = {}
   mytargetdata.dist = DISTANCE_MAX
@@ -192,7 +192,7 @@ function state_search_for_target() {
   # Can I see any object?
   if(size(blobs) == 0) {
     # No object in sight
-    var cur_yaw = orientation.yaw % (2. * math.pi)
+    var cur_yaw = pose.orientation.yaw % (2. * math.pi)
     var yaw_diff = (cur_yaw - yaw_start) % (2. * math.pi)
     if(yaw_diff >= (0.95 * 2. * math.pi)) {
       # Made a complete turn and no object found, give up

@@ -146,7 +146,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
             buzzobj_t value;
             pos = buzzobj_deserialize(&value, msg, pos, vm);
             /* Make an object for the robot id */
-            buzzobj_t rido = buzzheap_newobj(vm->heap, BUZZTYPE_INT);
+            buzzobj_t rido = buzzheap_newobj(vm, BUZZTYPE_INT);
             rido->i.value = rid;
             /* Call listener */
             buzzvm_push(vm, *l);
@@ -204,7 +204,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                   ((*l)->robot == vm->robot)) {
                   /* Yes */
                   /* Save current local entry */
-                  buzzvstig_elem_t ol = buzzvstig_elem_clone(*l);
+                  buzzvstig_elem_t ol = buzzvstig_elem_clone(vm, *l);
                   /* Store winning value */
                   buzzvstig_store(*vs, &k, &c);
                   /* Call conflict lost manager */
@@ -293,7 +293,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
                   ((*l)->robot == vm->robot)) {
                   /* Yes */
                   /* Save current local entry */
-                  buzzvstig_elem_t ol = buzzvstig_elem_clone(*l);
+                  buzzvstig_elem_t ol = buzzvstig_elem_clone(vm, *l);
                   /* Store winning value */
                   buzzvstig_store(*vs, &k, &c);
                   /* Call conflict lost manager */
@@ -860,7 +860,7 @@ buzzvm_state buzzvm_closure_call(buzzvm_t vm,
    /* Insert the self table right before the closure */
    buzzdarray_insert(vm->stack,
                      buzzdarray_size(vm->stack) - argc - 1,
-                     buzzheap_newobj(vm->heap, BUZZTYPE_NIL));
+                     buzzheap_newobj(vm, BUZZTYPE_NIL));
    /* Push the argument count */
    buzzvm_pushi(vm, argc);
    /* Save the current stack depth */
@@ -1016,7 +1016,7 @@ buzzvm_state buzzvm_push(buzzvm_t vm, buzzobj_t v) {
 /****************************************/
 
 buzzvm_state buzzvm_pushu(buzzvm_t vm, void* v) {
-   buzzobj_t o = buzzheap_newobj(vm->heap, BUZZTYPE_USERDATA);
+   buzzobj_t o = buzzheap_newobj(vm, BUZZTYPE_USERDATA);
    o->u.value = v;
    buzzvm_push(vm, o);
    return vm->state;
@@ -1026,7 +1026,7 @@ buzzvm_state buzzvm_pushu(buzzvm_t vm, void* v) {
 /****************************************/
 
 buzzvm_state buzzvm_pushnil(buzzvm_t vm) {
-   buzzobj_t o = buzzheap_newobj(vm->heap, BUZZTYPE_NIL);
+   buzzobj_t o = buzzheap_newobj(vm, BUZZTYPE_NIL);
    buzzvm_push(vm, o);
    return vm->state;
 }
@@ -1035,10 +1035,10 @@ buzzvm_state buzzvm_pushnil(buzzvm_t vm) {
 /****************************************/
 
 buzzvm_state buzzvm_pushc(buzzvm_t vm, int32_t rfrnc, int32_t nat) {
-   buzzobj_t o = buzzheap_newobj((vm->heap), BUZZTYPE_CLOSURE);
+   buzzobj_t o = buzzheap_newobj(vm, BUZZTYPE_CLOSURE);
    o->c.value.isnative = nat;
    o->c.value.ref = rfrnc;
-   buzzobj_t nil = buzzheap_newobj(vm->heap, BUZZTYPE_NIL);
+   buzzobj_t nil = buzzheap_newobj(vm, BUZZTYPE_NIL);
    buzzdarray_push(o->c.value.actrec, &nil);
    buzzvm_push(vm, o);
    return vm->state;
@@ -1048,7 +1048,7 @@ buzzvm_state buzzvm_pushc(buzzvm_t vm, int32_t rfrnc, int32_t nat) {
 /****************************************/
 
 buzzvm_state buzzvm_pushi(buzzvm_t vm, int32_t v) {
-   buzzobj_t o = buzzheap_newobj(vm->heap, BUZZTYPE_INT);
+   buzzobj_t o = buzzheap_newobj(vm, BUZZTYPE_INT);
    o->i.value = v;
    buzzvm_push(vm, o);
    return vm->state;
@@ -1058,7 +1058,7 @@ buzzvm_state buzzvm_pushi(buzzvm_t vm, int32_t v) {
 /****************************************/
 
 buzzvm_state buzzvm_pushf(buzzvm_t vm, float v) {
-   buzzobj_t o = buzzheap_newobj(vm->heap, BUZZTYPE_FLOAT);
+   buzzobj_t o = buzzheap_newobj(vm, BUZZTYPE_FLOAT);
    o->f.value = v;
    buzzvm_push(vm, o);
    return vm->state;
@@ -1075,7 +1075,7 @@ buzzvm_state buzzvm_pushs(buzzvm_t vm, uint16_t strid) {
                       strid);
       return vm->state;
    }
-   buzzobj_t o = buzzheap_newobj(vm->heap, BUZZTYPE_STRING);
+   buzzobj_t o = buzzheap_newobj(vm, BUZZTYPE_STRING);
    o->s.value.sid = (strid);
    o->s.value.str = buzzstrman_get(vm->strings, strid);
    buzzvm_push(vm, o);
@@ -1086,7 +1086,7 @@ buzzvm_state buzzvm_pushs(buzzvm_t vm, uint16_t strid) {
 /****************************************/
 
 buzzvm_state buzzvm_pushl(buzzvm_t vm, int32_t addr) {
-   buzzobj_t o = buzzheap_newobj(((vm)->heap), BUZZTYPE_CLOSURE);
+   buzzobj_t o = buzzheap_newobj(vm, BUZZTYPE_CLOSURE);
    o->c.value.isnative = 1;
    o->c.value.ref = addr;
    if(vm->lsyms) {
@@ -1097,7 +1097,7 @@ buzzvm_state buzzvm_pushl(buzzvm_t vm, int32_t addr) {
                                          i, buzzobj_t));
    }
    else {
-      buzzobj_t nil = buzzheap_newobj(vm->heap, BUZZTYPE_NIL);
+      buzzobj_t nil = buzzheap_newobj(vm, BUZZTYPE_NIL);
       buzzdarray_push(o->c.value.actrec,
                       &nil);
    }
@@ -1129,7 +1129,7 @@ buzzvm_state buzzvm_tput(buzzvm_t vm) {
    else if(v->o.type == BUZZTYPE_CLOSURE) {
       /* Method call */
       int i;
-      buzzobj_t o = buzzheap_newobj((vm->heap), BUZZTYPE_CLOSURE);
+      buzzobj_t o = buzzheap_newobj(vm, BUZZTYPE_CLOSURE);
       o->c.value.isnative = v->c.value.isnative;
       o->c.value.ref = v->c.value.ref;
       buzzdarray_push(o->c.value.actrec, &t);
