@@ -72,6 +72,7 @@ void buzzoutmsg_destroy(uint32_t pos, void* data, void* params) {
          break;
       case BUZZMSG_VSTIG_PUT:
       case BUZZMSG_VSTIG_QUERY:
+         free(m->vs.data);
          break;
    }
    free(m);
