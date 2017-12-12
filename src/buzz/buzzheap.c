@@ -126,11 +126,7 @@ buzzobj_t buzzheap_clone(buzzvm_t vm, const buzzobj_t o) {
 /****************************************/
 /****************************************/
 
-static void buzzheap_objmark(buzzobj_t o, buzzvm_t h);
-static void buzzheap_darrayobj_mark(uint32_t pos, void* data, void* params);
-static void buzzheap_dictobj_mark(const void* key, void* data, void* params);
-
-void buzzheap_objmark(buzzobj_t o,
+void buzzheap_obj_mark(buzzobj_t o,
                       buzzvm_t vm) {
    /*
     * Nothing to do if the object is already marked
@@ -154,12 +150,12 @@ void buzzheap_objmark(buzzobj_t o,
 }
 
 void buzzheap_dictobj_mark(const void* key, void* data, void* params) {
-   buzzheap_objmark(*(buzzobj_t*)key, params);
-   buzzheap_objmark(*(buzzobj_t*)data, params);
+   buzzheap_obj_mark(*(buzzobj_t*)key, params);
+   buzzheap_obj_mark(*(buzzobj_t*)data, params);
 }
 
 void buzzheap_darrayobj_mark(uint32_t pos, void* data, void* params) {
-   buzzheap_objmark(*(buzzobj_t*)data, (buzzvm_t)params);
+   buzzheap_obj_mark(*(buzzobj_t*)data, (buzzvm_t)params);
 }
 
 void buzzheap_stack_mark(uint32_t pos, void* data, void* params) {
@@ -175,8 +171,8 @@ void buzzheap_lsyms_mark(uint32_t pos, void* data, void* params) {
 }
 
 void buzzheap_vstigobj_mark(const void* key, void* data, void* params) {
-   buzzheap_objmark((*(buzzobj_t*)key), params);
-   buzzheap_objmark((*(buzzvstig_elem_t*)data)->data, params);
+   buzzheap_obj_mark((*(buzzobj_t*)key), params);
+   buzzheap_obj_mark((*(buzzvstig_elem_t*)data)->data, params);
 }
 
 void buzzheap_vstig_mark(const void* key, void* data, void* params) {
@@ -187,11 +183,11 @@ void buzzheap_vstig_mark(const void* key, void* data, void* params) {
 
 void buzzheap_listener_mark(const void* key, void* data, void* params) {
    buzzstrman_gc_mark(((buzzvm_t)params)->strings, *(uint16_t*)key);
-   buzzheap_objmark(*(buzzobj_t*)data, params);
+   buzzheap_obj_mark(*(buzzobj_t*)data, params);
 }
 
 void buzzheap_gsymobj_mark(const void* key, void* data, void* params) {
-   buzzheap_objmark(*(buzzobj_t*)data, params);
+   buzzheap_obj_mark(*(buzzobj_t*)data, params);
 }
 
 void buzzheap_gc(struct buzzvm_s* vm) {

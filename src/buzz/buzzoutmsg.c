@@ -1,4 +1,5 @@
 #include "buzzvm.h"
+#include "buzzheap.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -488,8 +489,8 @@ void buzzoutmsg_queue_next(buzzvm_t vm) {
 void buzzoutmsg_broadcast_mark(uint32_t pos, void* data, void* params) {
    struct buzzoutmsg_broadcast_s* msg = *(struct buzzoutmsg_broadcast_s**)data;
    buzzvm_t vm = (buzzvm_t)params;
-   buzzstrman_gc_mark(vm->strings,
-                      msg->topic->s.value.sid);
+   buzzheap_obj_mark(msg->topic, vm);
+   buzzheap_obj_mark(msg->value, vm);
 }
 
 void buzzoutmsg_vstig_mark(uint32_t pos, void* data, void* params) {

@@ -56,14 +56,17 @@ extern "C" {
    extern buzzobj_t buzzheap_clone(struct buzzvm_s* vm,
                                    const buzzobj_t o);
 
-   extern void buzzheap_vstigobj_mark(const void* key, void* data, void* params);
-
    /**
     * Performs garbage collection, if necessary.
     * Internally uses a simple mark-and-sweep algorithm.
     * @param vm The Buzz VM.
     */
    void buzzheap_gc(struct buzzvm_s* vm);
+
+   extern void buzzheap_obj_mark(buzzobj_t o, struct buzzvm_s* vm);
+   extern void buzzheap_darrayobj_mark(uint32_t pos, void* data, void* params);
+   extern void buzzheap_dictobj_mark(const void* key, void* data, void* params);
+   extern void buzzheap_vstigobj_mark(const void* key, void* data, void* params);
 
 #ifdef __cplusplus
 }
