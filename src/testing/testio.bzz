@@ -21,3 +21,4 @@ else {
   io.fwrite(g, "Ma", "Porca", "Puttana", "Maiala")
   io.fwrite(g, "E", "Davvero", "Pero")
 }
+io.fclose(g)
