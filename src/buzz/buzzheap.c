@@ -43,16 +43,84 @@ void buzzheap_destroy(buzzheap_t* h) {
 /****************************************/
 /****************************************/
 
-buzzobj_t buzzheap_newobj(buzzheap_t h,
+buzzobj_t buzzheap_newobj(buzzvm_t vm,
                           uint16_t type) {
    /* Create a new object. calloc() fills it with zeroes */
    buzzobj_t o = buzzobj_new(type);
    /* Set the object marker */
-   o->o.marker = h->marker;
+   o->o.marker = vm->heap->marker;
    /* Add object to list */
-   buzzdarray_push(h->objs, &o);
+   buzzdarray_push(vm->heap->objs, &o);
    /* All done */
    return o;
+}
+
+/****************************************/
+/****************************************/
+
+struct buzzheap_clone_tableelem_s {
+   buzzvm_t vm;
+   buzzdict_t t;
+};
+
+void buzzheap_clone_tableelem(const void* key, void* data, void* params) {
+   struct buzzheap_clone_tableelem_s* p = (struct buzzheap_clone_tableelem_s*)params;
+   buzzobj_t k = buzzheap_clone(p->vm, *(buzzobj_t*)key);
+   buzzobj_t d = buzzheap_clone(p->vm, *(buzzobj_t*)data);
+   buzzdict_set(p->t, &k, &d);
+}
+
+buzzobj_t buzzheap_clone(buzzvm_t vm, const buzzobj_t o) {
+   buzzobj_t x = (buzzobj_t)malloc(sizeof(union buzzobj_u));
+   x->o.type = o->o.type;
+   x->o.marker = o->o.marker;
+   buzzdarray_push(vm->heap->objs, &x);
+   switch(o->o.type) {
+      case BUZZTYPE_NIL: {
+         return x;
+      }
+      case BUZZTYPE_INT: {
+         x->i.value = o->i.value;
+         return x;
+      }
+      case BUZZTYPE_FLOAT: {
+         x->f.value = o->f.value;
+         return x;
+      }
+      case BUZZTYPE_STRING: {
+         x->s.value.sid = o->s.value.sid;
+         x->s.value.str = o->s.value.str;
+         return x;
+      }
+      case BUZZTYPE_USERDATA: {
+         x->u.value = o->u.value;
+         return x;
+      }
+      case BUZZTYPE_CLOSURE: {
+         x->c.value.ref = o->c.value.ref;
+         x->c.value.actrec = buzzdarray_clone(o->c.value.actrec);
+         x->c.value.isnative = o->c.value.isnative;
+         return x;
+      }
+      case BUZZTYPE_TABLE: {
+         buzzdict_t orig = o->t.value;
+         x->t.value = buzzdict_new(orig->num_buckets,
+                                   orig->key_size,
+                                   orig->data_size,
+                                   orig->hashf,
+                                   orig->keycmpf,
+                                   orig->dstryf);
+         struct buzzheap_clone_tableelem_s p = {
+            .vm = vm,
+            .t = x->t.value
+         };
+         buzzdict_foreach(orig, buzzheap_clone_tableelem, &p);
+         return x;
+      }
+      default:
+         fprintf(stderr, "[BUG] %s:%d: Clone for Buzz object type %d\n", __FILE__, __LINE__, o->o.type);
+         abort();
+   }
 }
 
 /****************************************/

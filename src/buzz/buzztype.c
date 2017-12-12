@@ -61,63 +61,6 @@ buzzobj_t buzzobj_new(uint16_t type) {
 /****************************************/
 /****************************************/
 
-void buzzobj_iclone_tableelem(const void* key, void* data, void* params) {
-   buzzobj_t k = buzzobj_iclone(*(buzzobj_t*)key);
-   buzzobj_t d = buzzobj_iclone(*(buzzobj_t*)data);
-   buzzdict_set((buzzdict_t)params, &k, &d);
-}
-
-buzzobj_t buzzobj_iclone(const buzzobj_t o) {
-   buzzobj_t x = (buzzobj_t)malloc(sizeof(union buzzobj_u));
-   x->o.type = o->o.type;
-   x->o.marker = o->o.marker;
-   switch(o->o.type) {
-      case BUZZTYPE_NIL: {
-         return x;
-      }
-      case BUZZTYPE_INT: {
-         x->i.value = o->i.value;
-         return x;
-      }
-      case BUZZTYPE_FLOAT: {
-         x->f.value = o->f.value;
-         return x;
-      }
-      case BUZZTYPE_STRING: {
-         x->s.value.sid = o->s.value.sid;
-         x->s.value.str = o->s.value.str;
-         return x;
-      }
-      case BUZZTYPE_USERDATA: {
-         x->u.value = o->u.value;
-         return x;
-      }
-      case BUZZTYPE_CLOSURE: {
-         x->c.value.ref = o->c.value.ref;
-         x->c.value.actrec = buzzdarray_clone(o->c.value.actrec);
-         x->c.value.isnative = o->c.value.isnative;
-         return x;
-      }
-      case BUZZTYPE_TABLE: {
-         buzzdict_t orig = o->t.value;
-         x->t.value = buzzdict_new(orig->num_buckets,
-                                   orig->key_size,
-                                   orig->data_size,
-                                   orig->hashf,
-                                   orig->keycmpf,
-                                   orig->dstryf);
-         buzzdict_foreach(orig, buzzobj_iclone_tableelem, x->t.value);
-         return x;
-      }
-      default:
-         fprintf(stderr, "[BUG] %s:%d: Clone for Buzz object type %d\n", __FILE__, __LINE__, o->o.type);
-         abort();
-   }
-}
-
-/****************************************/
-/****************************************/
-
 void buzzobj_destroy(buzzobj_t* o) {
    if((*o)->o.type == BUZZTYPE_TABLE) {
       buzzdict_destroy(&((*o)->t.value));
@@ -290,7 +233,7 @@ int buzzobj_clone(buzzvm_t vm) {
    buzzobj_t o = buzzvm_stack_at(vm, 1);
    buzzvm_pop(vm);
    /* Return a clone of the object */
-   buzzvm_push(vm, buzzobj_iclone(o));
+   buzzvm_push(vm, buzzheap_clone(vm, o));
    return buzzvm_ret1(vm);
 }
 
@@ -394,7 +337,7 @@ int buzzobj_map(buzzvm_t vm) {
    buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
    buzzobj_t c = buzzvm_stack_at(vm, 1);
    /* Create a table as the return value */
-   buzzobj_t r = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
+   buzzobj_t r = buzzheap_newobj(vm, BUZZTYPE_TABLE);
    buzzvm_push(vm, r);
    /* Go through the table element and apply the closure */
    struct buzzobj_map_params p = {
@@ -527,7 +470,7 @@ int64_t buzzobj_deserialize(buzzobj_t* data,
    uint8_t type;
    p = buzzmsg_deserialize_u8(&type, buf, p);
    if(p < 0) return -1;
-   *data = buzzheap_newobj(vm->heap, type);
+   *data = buzzheap_newobj(vm, type);
    switch(type) {
       case BUZZTYPE_NIL: {
          return p;
@@ -564,7 +507,7 @@ int64_t buzzobj_deserialize(buzzobj_t* data,
          return p;
       }
       case BUZZTYPE_CLOSURE: {
-         buzzobj_t nil = buzzheap_newobj(vm->heap, BUZZTYPE_NIL);
+         buzzobj_t nil = buzzheap_newobj(vm, BUZZTYPE_NIL);
          buzzdarray_push((*data)->c.value.actrec, &nil);
          p = buzzmsg_deserialize_u8(&((*data)->c.value.isnative), buf, p);
          if(p < 0) return -1;

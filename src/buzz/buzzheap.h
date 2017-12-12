@@ -40,18 +40,28 @@ extern "C" {
 
    /**
     * Creates a new Buzz object.
-    * @param h The heap.
+    * @param vm The Buzz VM.
     * @param The object type.
     * @param The new object.
     */
-   buzzobj_t buzzheap_newobj(buzzheap_t h,
+   buzzobj_t buzzheap_newobj(struct buzzvm_s* vm,
                              uint16_t type);
+
+   /*
+    * Internally used to clones a Buzz object.
+    * @param vm The Buzz VM.
+    * @param o The Buzz object to clone.
+    * @return The cloned object.
+    */
+   extern buzzobj_t buzzheap_clone(struct buzzvm_s* vm,
+                                   const buzzobj_t o);
+
+   extern void buzzheap_vstigobj_mark(const void* key, void* data, void* params);
 
    /**
     * Performs garbage collection, if necessary.
     * Internally uses a simple mark-and-sweep algorithm.
     * @param vm The Buzz VM.
-    * @param h The heap.
     */
    void buzzheap_gc(struct buzzvm_s* vm);
 

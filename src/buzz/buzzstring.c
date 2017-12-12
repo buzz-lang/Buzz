@@ -17,7 +17,7 @@
 
 int buzzstring_register(buzzvm_t vm) {
    /* Make "string" table */
-   buzzobj_t t = buzzheap_newobj(vm->heap, BUZZTYPE_TABLE);
+   buzzobj_t t = buzzheap_newobj(vm, BUZZTYPE_TABLE);
    /* Register methods */
    function_register(t, length);
    function_register(t, sub);

@@ -73,9 +73,6 @@ void buzzoutmsg_destroy(uint32_t pos, void* data, void* params) {
          break;
       case BUZZMSG_VSTIG_PUT:
       case BUZZMSG_VSTIG_QUERY:
-         free(m->vs.key);
-         buzzobj_destroy(&m->vs.data->data);
-         free(m->vs.data);
          break;
    }
    free(m);
@@ -149,8 +146,8 @@ void buzzoutmsg_queue_append_broadcast(buzzvm_t vm,
    /* Make a new BROADCAST message */
    buzzoutmsg_t m = (buzzoutmsg_t)malloc(sizeof(union buzzoutmsg_u));
    m->bc.type = BUZZMSG_BROADCAST;
-   m->bc.topic = buzzobj_iclone(topic);
-   m->bc.value = buzzobj_iclone(value);
+   m->bc.topic = buzzheap_clone(vm, topic);
+   m->bc.value = buzzheap_clone(vm, value);
    /* Queue it */
    buzzdarray_push(vm->outmsgs->queues[BUZZMSG_BROADCAST], &m);   
 }
@@ -350,8 +347,8 @@ void buzzoutmsg_queue_append_vstig(buzzvm_t vm,
    buzzoutmsg_t m = (buzzoutmsg_t)malloc(sizeof(union buzzoutmsg_u));
    m->vs.type = type;
    m->vs.id = id;
-   m->vs.key = buzzobj_iclone(key);
-   m->vs.data = buzzvstig_elem_clone(data);
+   m->vs.key = buzzheap_clone(vm, key);
+   m->vs.data = buzzvstig_elem_clone(vm, data);
    /* Update the dictionary - this also invalidates e */
    buzzdict_set(vs, &m->vs.key, &m);
    if(etype > -1) {
@@ -497,10 +494,23 @@ void buzzoutmsg_broadcast_mark(uint32_t pos, void* data, void* params) {
                       msg->topic->s.value.sid);
 }
 
+void buzzoutmsg_vstig_mark(uint32_t pos, void* data, void* params) {
+   struct buzzoutmsg_vstig_s* msg = *(struct buzzoutmsg_vstig_s**)data;
+   buzzvm_t vm = (buzzvm_t)params;
+   buzzheap_vstigobj_mark(&msg->key, &msg->data, vm);
+}
+
 void buzzoutmsg_gc(struct buzzvm_s* vm) {
    /* Go through all the broadcast topic strings and mark them */
    buzzdarray_foreach(vm->outmsgs->queues[BUZZMSG_BROADCAST],
                       buzzoutmsg_broadcast_mark,
+                      vm);
+   /* Go through all the vstig keys and values and mark them */
+   buzzdarray_foreach(vm->outmsgs->queues[BUZZMSG_VSTIG_PUT],
+                      buzzoutmsg_vstig_mark,
+                      vm);
+   buzzdarray_foreach(vm->outmsgs->queues[BUZZMSG_VSTIG_QUERY],
+                      buzzoutmsg_vstig_mark,
                       vm);
 }
 

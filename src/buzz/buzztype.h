@@ -122,13 +122,6 @@ extern "C" {
    extern buzzobj_t buzzobj_new(uint16_t type);
 
    /*
-    * Internally used to clones a Buzz object.
-    * @param o The Buzz object to clone.
-    * @return The cloned object.
-    */
-   extern buzzobj_t buzzobj_iclone(const buzzobj_t o);
-
-   /*
     * Destroys a Buzz object.
     * @param o The object to destroy.
     */
