@@ -171,7 +171,7 @@ void dict_to_array(const void* key, void* data, void* params) {
       /* Grow buffer if necessary */
       if(p->count >= p->size) {
          p->size *= 2;
-         p->data = realloc(p->data, p->size);
+         p->data = realloc(p->data, p->size * sizeof(uint16_t));
       }
       /* Append swarm id */
       p->data[p->count] = *(uint16_t*)key;
