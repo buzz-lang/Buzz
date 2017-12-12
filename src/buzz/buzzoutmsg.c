@@ -63,8 +63,6 @@ void buzzoutmsg_destroy(uint32_t pos, void* data, void* params) {
    buzzoutmsg_t m = *(buzzoutmsg_t*)data;
    switch(m->type) {
       case BUZZMSG_BROADCAST:
-         buzzobj_destroy(&m->bc.topic);
-         buzzobj_destroy(&m->bc.value);
          break;
       case BUZZMSG_SWARM_JOIN:
       case BUZZMSG_SWARM_LEAVE:
