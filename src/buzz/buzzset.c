@@ -32,8 +32,8 @@ static void buzzset_tree_destroy(buzzset_t s,
    if(!n) return;
    if(n->left) buzzset_tree_destroy(s, n->left);
    if(n->right) buzzset_tree_destroy(s, n->right);
-   if(s->dstryf) s->dstryf(&n->data, NULL);
-   else free(n->data);
+   if(s->dstryf) s->dstryf(n->data, NULL);
+   free(n->data);
    free(n);
 }
 
