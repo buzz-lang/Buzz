@@ -403,6 +403,7 @@ CBuzzController::CBuzzController() :
    m_pcRABA(NULL),
    m_pcRABS(NULL),
    m_pcPos(NULL),
+   m_pcBattery(NULL),
    m_tBuzzVM(NULL),
    m_tBuzzDbgInfo(NULL) {}
 
@@ -422,6 +423,10 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
       m_pcRABS   = GetSensor  <CCI_RangeAndBearingSensor  >("range_and_bearing");
       try {
          m_pcPos = GetSensor  <CCI_PositioningSensor>("positioning");
+      }
+      catch(CARGoSException& ex) {}
+      try {
+         m_pcBattery = GetSensor<CCI_BatterySensor>("battery");
       }
       catch(CARGoSException& ex) {}
       /* Get the script name */
@@ -779,6 +784,21 @@ void CBuzzController::UpdateSensors() {
       TablePut(tPose, "orientation", sPosRead.Orientation);
       /* Register positioning data table as global symbol */
       Register("pose", tPose);
+   }
+   /*
+    * Update the battery sensor
+    */
+   if(m_pcBattery != NULL) {
+      /* Get battery readings */
+      const CCI_BatterySensor::SReading& sBatRead = m_pcBattery->GetReading();
+      /* Create empty battery data table */
+      buzzobj_t tBattery = buzzheap_newobj(m_tBuzzVM, BUZZTYPE_TABLE);
+      /* Store charge data */
+      TablePut(tBattery, "available_charge", sBatRead.AvailableCharge);
+      /* Store time data */
+      TablePut(tBattery, "time_left", sBatRead.TimeLeft);
+      /* Register battery data table as global symbol */
+      Register("battery", tBattery);
    }
 }
 

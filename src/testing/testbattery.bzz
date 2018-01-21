@@ -1,0 +1,6 @@
+function init() {
+}
+
+function step() {
+  log("battery: charge = ", battery.available_charge, ", time = ", battery.time_left)
+}
