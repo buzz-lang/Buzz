@@ -14,3 +14,29 @@ if (3-1 != 6*7) {
 else {
   print("unsupported")
 }
+
+if (3-1 != 6*7) 
+{
+  print("(3-1) != (6*7)")
+}
+else {
+  print("unsupported")
+}
+
+if (3-1 != 6*7) 
+{
+  print("(3-1) != (6*7)")
+}
+else 
+{
+  print("unsupported")
+}
+
+
+if (3-1 != 6*7) {
+  print("(3-1) != (6*7)")
+}
+else 
+{
+  print("unsupported")
+}

@@ -606,6 +606,8 @@ int parse_if(buzzparser_t par) {
    /* Jamp to label 1 if the condition is false */
    /* Label 1 is either if end (in case of no else branch) or else branch */
    chunk_append("\tjumpz " LABELREF "%u", lab1);
+   /* Allow the use of non-cuddled brackets */
+   while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
    if(!parse_blockstat(par)) return PARSE_ERROR;
    /* Eat away the newlines, if any */
    while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
@@ -615,6 +617,8 @@ int parse_if(buzzparser_t par) {
       chunk_append("\tjump " LABELREF "%u", lab2);
       /* Mark this place as label 1 and keep parsing */
       chunk_append(LABELREF "%u", lab1);
+      /* Allow the use of non-cuddled brackets */
+      while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
       if(!parse_blockstat(par)) return PARSE_ERROR;
       /* Mark the if end as label 2 */
       chunk_append(LABELREF "%u", lab2);
@@ -650,6 +654,8 @@ int parse_for(buzzparser_t par) {
    if(!parse_expression(par)) return PARSE_ERROR;
    tokmatch(BUZZTOK_PARCLOSE);
    fetchtok();
+   /* Allow the use of non-cuddled brackets */
+   while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
    return parse_block(par);
 }
 
@@ -674,6 +680,8 @@ int parse_while(buzzparser_t par) {
    fetchtok();
    /* If the condition is false, jump to the end */
    chunk_append("\tjumpz " LABELREF "%u", wend);
+   /* Allow the use of non-cuddled brackets */
+   while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
    /* Parse block */
    if(!parse_blockstat(par)) return PARSE_ERROR;
    /* Jump back to while start */
