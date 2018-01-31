@@ -220,9 +220,15 @@ int buzz_asm(const char* fname,
             char* line = strsep(&debuginfo, ",\n");
             char* col = strsep(&debuginfo, ",\n");
             char* srcfname = strsep(&debuginfo, ",\n");
-            uint64_t l = strtol(line, NULL, 10);
-            uint64_t c = strtol(col, NULL, 10);
-            buzzdebug_info_set(*dbg, *size, l, c,srcfname);
+            uint64_t l = 0;
+            uint64_t c = 0;
+            if (line) {
+              l = strtol(line, NULL, 10);
+            }
+            if (col) {
+              c = strtol(col, NULL, 10);
+            }
+            buzzdebug_info_set(*dbg, *size, l, c, srcfname);
          }
          /* Remove trailing space from label info */
          endc = labelinfo + strlen(labelinfo) - 1;
