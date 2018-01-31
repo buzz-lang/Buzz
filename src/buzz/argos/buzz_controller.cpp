@@ -764,6 +764,34 @@ void CBuzzController::ProcessOutMsgs() {
    while(cData.Size() < m_pcRABA->GetSize()) cData << static_cast<UInt8>(0);
    /* Send message */
    m_pcRABA->SetData(cData);
+   /*
+    * Update debug.msgqueue information
+    */
+   /* Get debug table */
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "debug", 1));
+   buzzvm_gload(m_tBuzzVM);
+   /* Create new debug.msgqueue table */
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "msgqueue", 1));
+   buzzobj_t tMsgQueue = buzzheap_newobj(m_tBuzzVM, BUZZTYPE_TABLE);
+   /* Set debug.msgqueue.total */
+   TablePut(tMsgQueue,
+            "total",
+            static_cast<SInt32>(buzzoutmsg_queue_size(m_tBuzzVM)));
+   /* Set debug.msgqueue.broadcast */
+   TablePut(tMsgQueue,
+            "broadcast",
+            static_cast<SInt32>(buzzdarray_size(m_tBuzzVM->outmsgs->queues[BUZZMSG_BROADCAST])));
+   /* Set debug.msgqueue.vstig */
+   TablePut(tMsgQueue,
+            "vstig",
+            static_cast<SInt32>(buzzdarray_size(m_tBuzzVM->outmsgs->queues[BUZZMSG_VSTIG_PUT])) + static_cast<SInt32>(buzzdarray_size(m_tBuzzVM->outmsgs->queues[BUZZMSG_VSTIG_QUERY])));
+   /* Set debug.msgqueue.swarm */
+   TablePut(tMsgQueue,
+            "swarm",
+            static_cast<SInt32>(buzzdarray_size(m_tBuzzVM->outmsgs->queues[BUZZMSG_SWARM_JOIN])) + static_cast<SInt32>(buzzdarray_size(m_tBuzzVM->outmsgs->queues[BUZZMSG_SWARM_LEAVE])));
+   /* Save table */
+   buzzvm_push(m_tBuzzVM, tMsgQueue);
+   buzzvm_tput(m_tBuzzVM);
 }
 
 /****************************************/
