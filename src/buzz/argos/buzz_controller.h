@@ -7,6 +7,7 @@
 #include <argos3/plugins/robots/generic/control_interface/ci_positioning_sensor.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_range_and_bearing_actuator.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_range_and_bearing_sensor.h>
+#include <argos3/plugins/robots/generic/control_interface/ci_battery_sensor.h>
 #include <argos3/core/utility/math/ray3.h>
 #include <argos3/core/utility/datatypes/set.h>
 #include <buzz/buzzvm.h>
@@ -209,6 +210,8 @@ protected:
    CCI_RangeAndBearingSensor* m_pcRABS;
    /* Pointer to the positioning sensor */
    CCI_PositioningSensor* m_pcPos;
+   /* Pointer to the battery sensor */
+   CCI_BatterySensor* m_pcBattery;
 
    /* The robot numeric id */
    UInt16 m_unRobotId;
