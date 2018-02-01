@@ -15,7 +15,7 @@
  */
 #define bcode_resize(INC)                       \
    if((*size) + (INC) >= bcode_max_size) {      \
-      bcode_max_size *= 2;                      \
+      bcode_max_size += INC;                    \
       *buf = realloc(*buf, bcode_max_size);     \
    }                                            \
 
