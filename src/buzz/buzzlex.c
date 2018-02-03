@@ -22,7 +22,8 @@ char *buzztok_desc[] = {
 buzzlex_file_t buzzlex_file_new(const char* fname) {
    /* Find the file, possibly using the include path */
    char fpath[PATH_MAX];
-   strcpy(fpath, fname);
+   strncpy(fpath, fname, PATH_MAX-1);
+   fpath[PATH_MAX-1] = '\0';
    FILE* fd = fopen(fpath, "rb");
    if(!fd) {
       /* Get the include path from the environment, if present */
