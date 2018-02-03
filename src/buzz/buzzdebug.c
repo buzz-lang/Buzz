@@ -201,9 +201,6 @@ void buzzdebug_info_set(buzzdebug_t dbg,
                         const char* fname) {
    /* Save filename */
    /* Check whether it's already in the set */
-   if (!fname) {
-     return;
-   }
    const char* fn;
    const char** test = buzzset_fetch(dbg->fnames, &fname, char*);
    if(test) {
