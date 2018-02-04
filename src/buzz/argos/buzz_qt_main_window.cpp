@@ -672,12 +672,10 @@ void CBuzzQTMainWindow::HandleRunTimeErrorSelection() {
 /****************************************/
 /****************************************/
 
-void CBuzzQTMainWindow::HandleEntitySelection(size_t un_index) {
+void CBuzzQTMainWindow::HandleEntitySelection(CEntity* pc_entity) {
    /* Get selected entity */
    CComposableEntity* pcSelectedEntity =
-      dynamic_cast<CComposableEntity*>(
-         CSimulator::GetInstance().GetSpace().
-         GetRootEntityVector()[un_index]);
+      dynamic_cast<CComposableEntity*>(pc_entity);
    /* Make sure it's a composable entity */
    if(pcSelectedEntity != NULL) {
       /* Search for it in the list of entities managed by the editor */
@@ -741,7 +739,7 @@ void CBuzzQTMainWindow::HandleEntitySelection(size_t un_index) {
 /****************************************/
 /****************************************/
 
-void CBuzzQTMainWindow::HandleEntityDeselection(size_t) {
+void CBuzzQTMainWindow::HandleEntityDeselection(CEntity* pc_entity) {
    /* Disconnect signals */
    disconnect(&(m_pcMainWindow->GetOpenGLWidget()), SIGNAL(StepDone(int)),
               m_pcBuzzVariableTree->model(), SLOT(Refresh(int)));
@@ -1121,10 +1119,10 @@ void CBuzzQTMainWindow::CreateBuzzStateDocks() {
    addDockWidget(Qt::LeftDockWidgetArea, m_pcBuzzFunctionDock);
    m_pcBuzzFunctionDock->hide();
    /* Connect stuff */
-   connect(&(m_pcMainWindow->GetOpenGLWidget()), SIGNAL(EntitySelected(size_t)),
-           this, SLOT(HandleEntitySelection(size_t)));
-   connect(&(m_pcMainWindow->GetOpenGLWidget()), SIGNAL(EntityDeselected(size_t)),
-           this, SLOT(HandleEntityDeselection(size_t)));
+   connect(&(m_pcMainWindow->GetOpenGLWidget()), SIGNAL(EntitySelected(CEntity*)),
+           this, SLOT(HandleEntitySelection(CEntity*)));
+   connect(&(m_pcMainWindow->GetOpenGLWidget()), SIGNAL(EntityDeselected(CEntity*)),
+           this, SLOT(HandleEntityDeselection(CEntity*)));
 }
 
 /****************************************/

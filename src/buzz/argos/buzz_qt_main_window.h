@@ -7,6 +7,7 @@
 namespace argos {
    class CQTOpenGLMainWindow;
    class CComposableEntity;
+   class CEntity;
 }
 class CBuzzQTMainWindow;
 class CBuzzController;
@@ -193,14 +194,15 @@ public slots:
 
    /**
     * Handles the selection of an entity in ARGoS.
-    * @param un_index The index of the selected entity.
+    * @param pc_entity The selected entity.
     */
-   void HandleEntitySelection(size_t un_index);
+   void HandleEntitySelection(CEntity* pc_entity);
 
    /**
     * Handles the deselection of an entity in ARGoS.
+    * @param pc_entity The selected entity.
     */
-   void HandleEntityDeselection(size_t);
+   void HandleEntityDeselection(CEntity* pc_entity);
 
    /**
     * Handles changes in the variable tree.
