@@ -43,7 +43,7 @@ buzzlex_file_t buzzlex_file_new(const char* fname) {
             /* Add / at the end if missing */
             if(fpath[strlen(fpath)-1] != '/') strcat(fpath, "/");
             /* fpath += fname */
-            strcat(fpath, fname);
+            strncat(fpath, fname, PATH_MAX-1);
             /* Try to open the file */
             fd = fopen(fpath, "rb");
          }
