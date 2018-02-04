@@ -1220,7 +1220,9 @@ buzzvm_state buzzvm_ret0(buzzvm_t vm) {
    vm->oldpc = vm->pc;
    vm->pc = buzzvm_stack_at(vm, 1)->i.value;
    /* Pop the return address */
-   return buzzvm_pop(vm);
+   buzzvm_pop(vm);
+   /* Push nil as the return value */
+   return buzzvm_pushnil(vm);
 }
 
 /****************************************/
@@ -1259,3 +1261,17 @@ buzzvm_state buzzvm_ret1(buzzvm_t vm) {
 
 /****************************************/
 /****************************************/
+
+buzzvm_state buzzvm_lload(buzzvm_t vm, uint32_t idx) {
+   /* Make sure there are sufficient local symbols in the stack */
+   if(buzzvm_lnum(vm) < idx) {
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_LNUM,
+                      "not enough local symbols in stack (maybe you called a function with an insufficient number of parameters?)"
+         );
+      return vm->state;
+   }
+   /* Return the local symbol */
+   buzzvm_push(vm, buzzdarray_get(vm->lsyms->syms, idx, buzzobj_t));
+   return vm->state;
+}

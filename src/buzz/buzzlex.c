@@ -39,11 +39,15 @@ buzzlex_file_t buzzlex_file_new(const char* fname) {
          /* Make sure it's not an empty field */
          if(dir[0] != '\0') {
             /* fpath = dir */
-            strcpy(fpath, dir);
+            strncpy(fpath, dir, PATH_MAX-1);
+            fpath[PATH_MAX-1] = '\0';
             /* Add / at the end if missing */
-            if(fpath[strlen(fpath)-1] != '/') strcat(fpath, "/");
+            if(fpath[strlen(fpath)-1] != '/') {
+               strncat(fpath, "/", PATH_MAX-1);
+               fpath[PATH_MAX-1] = '\0';
+            }
             /* fpath += fname */
-            strncpy(fpath, fname, PATH_MAX-1);
+            strncat(fpath, fname, PATH_MAX-1);
             fpath[PATH_MAX-1] = '\0';
             /* Try to open the file */
             fd = fopen(fpath, "rb");
@@ -181,6 +185,15 @@ static buzztok_t buzzlex_newtok(buzztok_type_e type,
                                 uint64_t col,
                                 char* fname) {
    buzztok_t retval = (buzztok_t)malloc(sizeof(struct buzztok_s));
+   if(retval == NULL) {
+      fprintf(stderr,
+              "%s:%" PRIu64 ":%" PRIu64 ": Fatal error: out of memory while creating a new token for '%s'\n",
+              fname,
+              line,
+              col,
+              value);
+      exit(1);
+   }
    retval->type = type;
    retval->value = value;
    retval->line = line;
