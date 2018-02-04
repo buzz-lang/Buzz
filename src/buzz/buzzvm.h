@@ -496,6 +496,16 @@ extern "C" {
     */
    extern buzzvm_state buzzvm_ret1(buzzvm_t vm);
 
+   /*
+    * Pushes the local variable located at the given stack index.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    * @param idx The local variable index.
+    */
+   extern buzzvm_state buzzvm_lload(buzzvm_t vm, uint32_t idx);
+   
 #ifdef __cplusplus
 }
 #endif
@@ -598,16 +608,6 @@ extern "C" {
  */
 #define buzzvm_lnum_assert(vm, num) if(buzzvm_lnum(vm) != num) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_LNUM; asprintf(&(vm)->errormsg, "%s: expected %d parameters, got %" PRId64, buzzvm_error_desc[(vm)->error], num, buzzvm_lnum(vm)); return (vm)->state; }
 
-/*
- * Pushes the local variable located at the given stack index.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- * @param idx The local variable index.
- */
-#define buzzvm_lload(vm, idx) buzzvm_push(vm, buzzdarray_get((vm)->lsyms->syms, idx, buzzobj_t));
-   
 /*
  * Stores the object located at the stack top into the a local variable, pops operand.
  * Internally checks whether the operation is valid.
