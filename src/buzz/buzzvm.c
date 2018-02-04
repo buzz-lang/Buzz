@@ -1220,7 +1220,9 @@ buzzvm_state buzzvm_ret0(buzzvm_t vm) {
    vm->oldpc = vm->pc;
    vm->pc = buzzvm_stack_at(vm, 1)->i.value;
    /* Pop the return address */
-   return buzzvm_pop(vm);
+   buzzvm_pop(vm);
+   /* Push nil as the return value */
+   return buzzvm_pushnil(vm);
 }
 
 /****************************************/
