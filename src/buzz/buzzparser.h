@@ -19,6 +19,8 @@ extern "C" {
 
    /* The parser state */
    struct buzzparser_s {
+      /* The script file name */
+      char* scriptfn;
       /* The output assembler file name */
       char* asmfn;
       /* The output assembler file stream */
