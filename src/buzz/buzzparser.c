@@ -332,8 +332,13 @@ void chunk_print(uint32_t pos, void* data, void* params) {
 
 int match(buzzparser_t par,
           buzztok_type_e type) {
-   if(!par->tok)
+   if(!par->tok) {
+      fprintf(stderr,
+              "%s: Syntax error: expected %s, found end of file\n",
+              par->scriptfn,
+              buzztok_desc[type]);
       return PARSE_ERROR;
+   }
    if(par->tok->type != type) {
       fprintf(stderr,
               "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: expected %s, found %s\n",
@@ -1237,6 +1242,8 @@ buzzparser_t buzzparser_new(int argc,
       free(par);
       return NULL;
    }
+   /* Copy the script file name */
+   par->scriptfn = strdup(argv[1]);
    /* Copy string */
    par->asmfn = strdup(argv[2]);
    /* Open file */
@@ -1299,6 +1306,7 @@ void buzzparser_destroy(buzzparser_t* par) {
    buzzdarray_destroy(&((*par)->symstack));
    free((*par)->asmfn);
    fclose((*par)->asmstream);
+   free((*par)->scriptfn);
    buzzlex_destroy(&((*par)->lex));
    if((*par)->tok) buzzlex_destroytok(&((*par)->tok));
    free(*par);
