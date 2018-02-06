@@ -415,8 +415,6 @@ bool CBuzzQTMainWindow::Compile() {
          "The main script has not been set!");
       return false;
    }
-   /* Save everything */
-   SaveAll();
    /* Change cursor */
    QApplication::setOverrideCursor(Qt::WaitCursor);
    /* Stop simulation */
