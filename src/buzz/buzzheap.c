@@ -127,7 +127,7 @@ buzzobj_t buzzheap_clone(buzzvm_t vm, const buzzobj_t o) {
 /****************************************/
 
 void buzzheap_obj_mark(buzzobj_t o,
-                      buzzvm_t vm) {
+                       buzzvm_t vm) {
    /*
     * Nothing to do if the object is already marked
     * This avoids infinite looping when cycles are present
@@ -176,7 +176,12 @@ void buzzheap_vstigobj_mark(const void* key, void* data, void* params) {
 }
 
 void buzzheap_vstig_mark(const void* key, void* data, void* params) {
-   buzzvstig_foreach_elem(*(buzzvstig_t*)data,
+   buzzvstig_t vstig = *(buzzvstig_t*)data;
+   if(vstig->onconflict)
+      buzzheap_obj_mark(vstig->onconflict, params);
+   if(vstig->onconflictlost)
+      buzzheap_obj_mark(vstig->onconflictlost, params);
+   buzzvstig_foreach_elem(vstig,
                           buzzheap_vstigobj_mark,
                           params);
 }

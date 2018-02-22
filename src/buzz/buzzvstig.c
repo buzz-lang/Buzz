@@ -108,8 +108,6 @@ buzzvstig_t buzzvstig_new() {
 
 void buzzvstig_destroy(buzzvstig_t* vs) {
    buzzdict_destroy(&((*vs)->data));
-   free((*vs)->onconflict);
-   free((*vs)->onconflictlost);
    free(*vs);
 }
 
