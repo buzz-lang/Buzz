@@ -9,7 +9,6 @@
  */
 #include <QApplication>
 #include <QFileDialog>
-#include <QFileInfo>
 #include <QMessageBox>
 #include <QPainter>
 #include <QSettings>
@@ -54,10 +53,8 @@ static QString SCRIPT_TEMPLATE =
 /****************************************/
 
 CBuzzQTEditor::CBuzzQTEditor(const QString& str_path) :
-   m_strScriptPath(
-      QFileInfo(str_path).exists() ?
-      QFileInfo(str_path).canonicalFilePath() :
-      str_path) {
+   m_cScriptFile(str_path),
+   m_cReloadTimer(this) {
    /* This widget is deleted when the close event is accepted */
    setAttribute(Qt::WA_DeleteOnClose);
    /* Set font */
@@ -83,9 +80,13 @@ CBuzzQTEditor::CBuzzQTEditor(const QString& str_path) :
            this, SLOT(HighlightCurrentLine()));
    connect(this, SIGNAL(cursorPositionChanged()),
            this, SLOT(UpdateLineAndColumnIndicator()));
+   /* Setup reload timer */
+   connect(&m_cReloadTimer, SIGNAL(timeout()), this, SLOT(ReloadScript()));
+   m_cReloadTimer.setInterval(2000);
    /* Final touches */
    UpdateLineNumberAreaWidth(0);
    HighlightCurrentLine();
+   m_cReloadTimer.start();
 }
 
 /****************************************/
@@ -145,13 +146,16 @@ void CBuzzQTEditor::New() {
 
 bool CBuzzQTEditor::Open() {
    /* Attempt to open file */
-   QFile cFile(m_strScriptPath);
+   QFile cFile(GetScriptPath());
    if(!cFile.open(QFile::ReadOnly | QFile::Text)) {
       return false;
    }
    /* Read succeeded */
    /* Change cursor to hourglass */
    QApplication::setOverrideCursor(Qt::WaitCursor);
+   /* Update last modified time */
+   m_cScriptFile.refresh();
+   m_cLastModified = m_cScriptFile.lastModified();
    /* Read text */
    QTextStream cTxt(&cFile);
    setPlainText(cTxt.readAll());
@@ -169,12 +173,12 @@ bool CBuzzQTEditor::Open() {
 
 bool CBuzzQTEditor::Save() {
    /* Attempt to open file */
-   QFile cFile(m_strScriptPath);
+   QFile cFile(GetScriptPath());
    if(!cFile.open(QFile::WriteOnly | QFile::Text)) {
       /* Read failed */
       QMessageBox::warning(this, tr("Buzz Editor"),
                            tr("Cannot write file %1:\n%2.")
-                           .arg(m_strScriptPath)
+                           .arg(GetScriptPath())
                            .arg(cFile.errorString()));
       return false;
    }
@@ -185,6 +189,9 @@ bool CBuzzQTEditor::Save() {
    cTxt << toPlainText();
    /* Handle 'modified' flag */
    document()->setModified(false);
+   /* Update last modified time */
+   m_cScriptFile.refresh();
+   m_cLastModified = m_cScriptFile.lastModified();
    /* Restore cursor */
    QApplication::restoreOverrideCursor();
    return true;
@@ -198,7 +205,7 @@ bool CBuzzQTEditor::SaveAs() {
    const QString strFName = QFileDialog::getSaveFileName(
       this, // parent
       tr("Save file"),           // dialog title
-      m_strScriptPath,           // by default the current file name is selected
+      GetScriptPath(),           // by default the current file name is selected
       tr("Buzz scripts (*.bzz)") // file filter
       );
    /* Was the file chosen? */
@@ -206,10 +213,14 @@ bool CBuzzQTEditor::SaveAs() {
      return false;
    }
    /* Update the script file name */
-   m_strScriptPath = QFileInfo(strFName).absoluteFilePath();
+   m_cScriptFile.setFile(strFName);
+   /* Update last modified time */
+   m_cScriptFile.refresh();
+   m_cLastModified = m_cScriptFile.lastModified();
    UpdateRecentFiles();
    /* Notify the main window that it needs to update the title with the updated filename */
-   emit EditorFileNameChanged(m_strScriptPath);
+   QString m_strScriptFileName = GetScriptPath();
+   emit EditorFileNameChanged(m_strScriptFileName);
    /* Save the file */
    return Save();
 }
@@ -227,7 +238,7 @@ void CBuzzQTEditor::closeEvent(QCloseEvent* pc_event) {
             this, // parent widget
             tr("Buzz editor"), // dialog title
             tr("'%1' has been modified. Do you want to save your changes?")
-            .arg(m_strScriptPath),
+            .arg(GetScriptPath()),
             QMessageBox::Save |
             QMessageBox::Discard |
             QMessageBox::Cancel);
@@ -330,9 +341,9 @@ void CBuzzQTEditor::UpdateRecentFiles() {
    /* Get list of recent files */
    QStringList cFiles = cSettings.value("recentFiles").toStringList();
    /* Remove current file name, if any */
-   cFiles.removeAll(m_strScriptPath);
+   cFiles.removeAll(GetScriptPath());
    /* Add current file name to the list */
-   cFiles.prepend(m_strScriptPath);
+   cFiles.prepend(GetScriptPath());
    /* Remove extra file names */
    while(cFiles.size() > MAX_RECENT_FILES) {
       cFiles.removeLast();
@@ -351,3 +362,37 @@ void CBuzzQTEditor::UpdateLineAndColumnIndicator() {
   // The first argument is the line number, the second is the column number
   emit EditorCursorUpdate(cursor.blockNumber() + 1, cursor.columnNumber() + 1);
 }
+
+/****************************************/
+/****************************************/
+
+void CBuzzQTEditor::ReloadScript() {
+   m_cScriptFile.refresh();
+   if(m_cScriptFile.lastModified() > m_cLastModified) {
+      m_cReloadTimer.stop();
+      if(!document()->isModified()) {
+         Open();
+      }
+      else {
+         /* Whether or not to reload the data */
+         if(document()->isModified()) {
+            QMessageBox::StandardButton cChoice =
+               QMessageBox::warning(
+                  this, // parent widget
+                  tr("Buzz editor"), // dialog title
+                  tr("'%1' has been modified outside this editor. Do you want to reload the file?")
+                  .arg(GetScriptPath()),
+                  QMessageBox::Ok |
+                  QMessageBox::Cancel);
+            if(cChoice == QMessageBox::Ok) {
+               document()->setModified(false);
+               Open();
+            }
+         }
+      }
+      m_cReloadTimer.start();
+   }
+}
+
+/****************************************/
+/****************************************/

@@ -3,7 +3,10 @@
 
 class CBuzzQTEditor;
 
+#include <QDateTime>
+#include <QFileInfo>
 #include <QPlainTextEdit>
+#include <QTimer>
 
 class CBuzzQTEditor : public QPlainTextEdit {
 
@@ -26,7 +29,7 @@ public:
     * Returns the absolute path to the script file.
     */
    QString GetScriptPath() const {
-      return m_strScriptPath;
+      return m_cScriptFile.absoluteFilePath();
    }
 
    /**
@@ -57,13 +60,13 @@ signals:
    /**
     * This signal is emitted when the editor wants to update the main status bar
     * with a new line and column number
-  **/
+    **/
    void EditorCursorUpdate(int line, int column);
 
    /**
     * This signal is emitted when the name of the working file in the editor changes,
     * and the title of the window needs to change.
-   **/
+    **/
    void EditorFileNameChanged(QString& filename);
 
 public slots:
@@ -135,7 +138,12 @@ private slots:
    /**
     * Triggers calls to the main window to update the status bar
     */
-    void UpdateLineAndColumnIndicator();
+   void UpdateLineAndColumnIndicator();
+
+   /**
+    * Attempt to reload the script, if modified outside the editor.
+    */
+   void ReloadScript();
 
 private:
 
@@ -172,11 +180,17 @@ private:
    /** Number of recent files stored in the "File" menu */
    enum { MAX_RECENT_FILES = 5 };
 
-   /** The absolute path to the script file */
-   QString m_strScriptPath;
+   /** Script file information */
+   QFileInfo m_cScriptFile;
+
+   /** The date and time the file was last modified (used to reload a file if modified outside the editor) */
+   QDateTime m_cLastModified;
 
    /** The number line area */
    CLineNumberArea* m_pcLineNumberArea;
+
+   /** Timer to check whether the file should be reloaded (if modified outside the editor) */
+   QTimer m_cReloadTimer;
 
 };
 
