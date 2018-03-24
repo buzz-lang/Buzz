@@ -260,7 +260,6 @@ static int make_table(buzzvm_t vm, uint16_t id) {
    function_register(in);
    function_register(select);
    function_register(exec);
-   function_register(others);
    /* Add swarm id */
    buzzvm_dup(vm);
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id", 1));
@@ -279,6 +278,9 @@ int buzzswarm_register(buzzvm_t vm) {
    buzzvm_pusht(vm);
    /* Add methods */
    function_register(create);
+   function_register(union);
+   function_register(intersection);
+   function_register(difference);
    function_register(id);
    /* Save 'swarm' table */
    buzzvm_gstore(vm);
@@ -347,10 +349,6 @@ int buzzswarm_others(buzzvm_t vm) {
    /* Get the swarm entry */
    const uint8_t* x = buzzdict_get(vm->swarms, &id1, uint8_t);
    if(!x) {
-      buzzvm_seterror(vm,
-                      BUZZVM_ERROR_SWARM,
-                      NULL);
-      return vm->state;
       buzzvm_seterror(vm,
                       BUZZVM_ERROR_SWARM,
                       NULL);
@@ -517,6 +515,102 @@ int buzzswarm_exec(buzzvm_t vm) {
       /* Get rid of the current call structure */
       return buzzvm_ret0(vm);
    }
+}
+
+/****************************************/
+/****************************************/
+
+static int buzzswarm_check(struct buzzvm_s* vm) {
+   /*
+    * Assert that the top of the stack element is a valid swarm
+    */
+   /* Mke sure it's a table */
+   buzzvm_type_assert(vm, 1, BUZZTYPE_TABLE);
+   /* Get the 'id' element */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "id", 1));
+   buzzvm_tget(vm);
+   /* Make sure it's an integer */
+   if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_INT) {
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_SWARM,
+                      NULL);
+      /* Return error */
+      return -1;
+   }
+   /*
+    * Verify membership
+    */
+   /* Get the id */
+   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;
+   /* Fetch the swarm with the given id */
+   const uint8_t* x = buzzdict_get(vm->swarms, &id, uint8_t);
+   /* Return 1 if the robot is in the swarm, 0 otherwise */
+   return (x && *x);
+}
+
+/****************************************/
+/****************************************/
+
+#define buzzswarm_set_operation_boilerplate(COND)                 \
+   /* Make sure there are three arguments */                      \
+   buzzvm_lnum_assert(vm, 3);                                     \
+   /* Get the arguments, make sure they are of the right type */  \
+   /* Id: must be an integer */                                   \
+   buzzvm_lload(vm, 1);                                           \
+   buzzvm_type_assert(vm, 1, BUZZTYPE_INT);                       \
+   uint16_t id = buzzvm_stack_at(vm, 1)->i.value;                 \
+   /* Swarm 1: must be a table with id = existing swarm */        \
+   buzzvm_lload(vm, 1);                                           \
+   int s1 = buzzswarm_check(vm);                                  \
+   if(s1 < 0) return vm->state;                                   \
+   /* Swarm 2: must be a table with id = existing swarm */        \
+   buzzvm_lload(vm, 1);                                           \
+   int s2 = buzzswarm_check(vm);                                  \
+   if(s2 < 0) return vm->state;                                   \
+   /* Membership condition */                                     \
+   uint8_t v = COND;                                              \
+   /* Add a new entry to the swarm list */                        \
+   buzzdict_set(vm->swarms, &id, &v);                             \
+   /* Create a table */                                           \
+   make_table(vm, id);                                            \
+   /* Send update, if necessary */                                \
+   if(v)                                                          \
+      buzzoutmsg_queue_append_swarm_joinleave(                    \
+         vm, BUZZMSG_SWARM_JOIN, id);                             \
+   /* Return swarm */                                             \
+   return buzzvm_ret1(vm);
+
+/****************************************/
+/****************************************/
+
+int buzzswarm_union(struct buzzvm_s* vm) {
+   /*
+    * If this robot is part of either swarm, it becomes part of the
+    * result swarm
+    */
+   buzzswarm_set_operation_boilerplate(s1 || s2);
+}
+
+/****************************************/
+/****************************************/
+
+int buzzswarm_intersection(struct buzzvm_s* vm) {
+   /*
+    * If this robot is part of both swarms, it becomes part of the
+    * result swarm
+    */
+   buzzswarm_set_operation_boilerplate(s1 && s2);
+}
+
+/****************************************/
+/****************************************/
+
+int buzzswarm_difference(struct buzzvm_s* vm) {
+   /*
+    * If this robot is part of the first swarm but not the second, it
+    * becomes part of the result swarm
+    */
+   buzzswarm_set_operation_boilerplate(s1 && !s2);
 }
 
 /****************************************/

@@ -152,6 +152,27 @@ extern "C" {
     */
    extern int buzzswarm_exec(struct buzzvm_s* vm);
 
+   /*
+    * Buzz C closure to perform the union of two swarms.
+    * @param vm The Buzz VM state.
+    * @return The updated VM state.
+    */
+   extern int buzzswarm_union(struct buzzvm_s* vm);
+
+   /*
+    * Buzz C closure to perform the intersection of two swarms.
+    * @param vm The Buzz VM state.
+    * @return The updated VM state.
+    */
+   extern int buzzswarm_intersection(struct buzzvm_s* vm);
+   
+   /*
+    * Buzz C closure to perform the difference between two swarms.
+    * @param vm The Buzz VM state.
+    * @return The updated VM state.
+    */
+   extern int buzzswarm_difference(struct buzzvm_s* vm);
+   
 #ifdef __cplusplus
 }
 #endif
