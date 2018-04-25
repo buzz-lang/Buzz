@@ -477,6 +477,7 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
 /****************************************/
 
 void CBuzzController::Reset() {
+   buzzvm_function_call(m_tBuzzVM, "reset", 0);
    /* Reset debug information */
    m_sDebug.Clear();
    m_sDebug.TrajectoryClear();
