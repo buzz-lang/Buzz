@@ -186,9 +186,36 @@ static int BuzzCameraDisable(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+static int BuzzGripperLock(buzzvm_t vm) {
+   /* Get pointer to the controller */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
+   buzzvm_gload(vm);
+   /* Call function */
+   reinterpret_cast<CBuzzControllerFootBot*>(
+      buzzvm_stack_at(vm, 1)->u.value)->GripperLock();
+   return buzzvm_ret0(vm);
+}
+
+/****************************************/
+/****************************************/
+
+static int BuzzGripperUnlock(buzzvm_t vm) {
+   /* Get pointer to the controller */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
+   buzzvm_gload(vm);
+   /* Call function */
+   reinterpret_cast<CBuzzControllerFootBot*>(
+      buzzvm_stack_at(vm, 1)->u.value)->GripperUnlock();
+   return buzzvm_ret0(vm);
+}
+
+/****************************************/
+/****************************************/
+
 CBuzzControllerFootBot::CBuzzControllerFootBot() :
    m_pcWheels(NULL),
    m_pcLEDs(NULL),
+   m_pcGripper(NULL),
    m_pcProximity(NULL),
    m_pcCamera(NULL) {
 }
@@ -211,6 +238,8 @@ void CBuzzControllerFootBot::Init(TConfigurationNode& t_node) {
       }
       catch(CARGoSException& ex) {}
       try { m_pcLEDs = GetActuator<CCI_LEDsActuator>("leds"); }
+      catch(CARGoSException& ex) {}
+      try { m_pcGripper = GetActuator<CCI_FootBotGripperActuator>("footbot_gripper"); }
       catch(CARGoSException& ex) {}
       try { m_pcProximity = GetSensor<CCI_FootBotProximitySensor>("footbot_proximity"); }
       catch(CARGoSException& ex) {}
@@ -382,6 +411,20 @@ void CBuzzControllerFootBot::CameraDisable() {
 /****************************************/
 /****************************************/
 
+void CBuzzControllerFootBot::GripperLock() {
+   m_pcGripper->LockPositive();
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzControllerFootBot::GripperUnlock() {
+   m_pcGripper->Unlock();
+}
+
+/****************************************/
+/****************************************/
+
 buzzvm_state CBuzzControllerFootBot::RegisterFunctions() {
    /* Register base functions */
    CBuzzController::RegisterFunctions();
@@ -413,11 +456,19 @@ buzzvm_state CBuzzControllerFootBot::RegisterFunctions() {
       buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "camera_enable", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzCameraEnable));
       buzzvm_gstore(m_tBuzzVM);
-   }
-   if(m_pcCamera) {
       /* BuzzCameraDisable */
       buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "camera_disable", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzCameraDisable));
+      buzzvm_gstore(m_tBuzzVM);
+   }
+   if(m_pcGripper) {
+      /* BuzzGripperLock */
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "gripper_lock", 1));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGripperLock));
+      buzzvm_gstore(m_tBuzzVM);
+      /* BuzzGripperUnlock */
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "gripper_unlock", 1));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGripperUnlock));
       buzzvm_gstore(m_tBuzzVM);
    }
    return m_tBuzzVM->state;
