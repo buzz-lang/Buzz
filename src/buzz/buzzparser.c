@@ -568,6 +568,17 @@ int parse_fun(buzzparser_t par) {
    tokmatch(BUZZTOK_FUN);
    fetchtok();
    tokmatch(BUZZTOK_ID);
+   /* Look it up in the symbol table */
+   const struct sym_s* s = sym_lookup(par->tok->value, par->symstack);
+   if(s) {
+      fprintf(stderr,
+              "%s:%" PRIu64 ":%" PRIu64 ": Duplicated symbol '%s'\n",
+              buzzlex_getfile(par->lex)->fname,
+              par->tok->line,
+              par->tok->col,
+              par->tok->value);
+      return PARSE_ERROR;
+   }
    /* Add a symbol for this function */
    sym_add(par, par->tok->value, SCOPE_AUTO);
    /* Make a new chunk for this function and get the associated symbol */

@@ -477,6 +477,17 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
 /****************************************/
 
 void CBuzzController::Reset() {
+   buzzvm_function_call(m_tBuzzVM, "reset", 0);
+   if(buzzvm_function_call(m_tBuzzVM, "step", 0) != BUZZVM_STATE_READY) {
+      fprintf(stderr, "[ROBOT %u] %s: execution terminated abnormally: %s\n\n",
+              m_tBuzzVM->robot,
+              m_strBytecodeFName.c_str(),
+              ErrorInfo().c_str());
+      for(UInt32 i = 1; i <= buzzdarray_size(m_tBuzzVM->stacks); ++i) {
+         buzzdebug_stack_dump(m_tBuzzVM, i, stdout);
+      }
+      return;
+   }
    /* Reset debug information */
    m_sDebug.Clear();
    m_sDebug.TrajectoryClear();
@@ -516,6 +527,8 @@ void CBuzzController::ControlStep() {
          }
          return;
       }
+      /* Remove useless return value from stack */
+      buzzvm_pop(m_tBuzzVM);
       ProcessOutMsgs();
    }
    else {
@@ -575,7 +588,18 @@ void CBuzzController::SetBytecode(const std::string& str_bc_fname,
    /* Execute the global part of the script */
    buzzvm_execute_script(m_tBuzzVM);
    /* Call the Init() function */
-   buzzvm_function_call(m_tBuzzVM, "init", 0);
+   if(buzzvm_function_call(m_tBuzzVM, "init", 0) != BUZZVM_STATE_READY) {
+      fprintf(stderr, "[ROBOT %u] %s: execution terminated abnormally: %s\n\n",
+              m_tBuzzVM->robot,
+              m_strBytecodeFName.c_str(),
+              ErrorInfo().c_str());
+      for(UInt32 i = 1; i <= buzzdarray_size(m_tBuzzVM->stacks); ++i) {
+         buzzdebug_stack_dump(m_tBuzzVM, i, stdout);
+      }
+      return;
+   }
+   /* Remove useless return value from stack */
+   buzzvm_pop(m_tBuzzVM);
 }
 
 /****************************************/

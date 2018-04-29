@@ -890,7 +890,22 @@ buzzvm_state buzzvm_function_call(buzzvm_t vm,
    /* Get associated symbol */
    buzzvm_gload(vm);
    /* Make sure it's a closure */
-   buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
+   if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_NIL) {
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_TYPE,
+                      "cannot find function '%s()'",
+                      fname);
+      return vm->state;
+   }
+   if(buzzvm_stack_at(vm, 1)->o.type != BUZZTYPE_CLOSURE) {
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_TYPE,
+                      "function '%s()': expected closure, got %s",
+                      fname,
+                      buzztype_desc[buzzvm_stack_at(vm, 1)->o.type]
+         );
+      return vm->state;
+   }
    /* Move closure before arguments */
    if(argc > 0) {
       buzzdarray_insert(vm->stack,
