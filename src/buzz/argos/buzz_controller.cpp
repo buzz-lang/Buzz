@@ -497,6 +497,7 @@ void CBuzzController::Reset() {
       /* Set the bytecode again */
       if(m_strBytecodeFName != "" && m_strDbgInfoFName != "")
          SetBytecode(m_strBytecodeFName, m_strDbgInfoFName);
+      UpdateSensors();
    }
    catch(CARGoSException& ex) {
       LOGERR << ex.what();
