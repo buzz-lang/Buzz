@@ -1,0 +1,79 @@
+# Use Shift + Click to select a robot
+# When a robot is selected, its variables appear in this editor
+
+# Use Ctrl + Click (Cmd + Click on Mac) to move a selected robot to a different location
+
+
+
+# Put your global variables here
+function hsv2rgb(hsv) {
+  var rgb = {.r=0.0, .g=0.0, .b=0.0}
+  var c = hsv.v * hsv.s
+  var x = c * (1 - math.abs((hsv.h / (math.pi/3)) % 2 - 1))
+  var m = hsv.v - c
+  if(hsv.h < math.pi/3) {
+    rgb.r = c
+    rgb.g = x
+  }
+  else if(hsv.h < 2*math.pi/3) {
+    rgb.r = x
+    rgb.g = c
+  }
+  else if(hsv.h < math.pi) {
+    rgb.g = c
+    rgb.b = x
+  }
+  else if(hsv.h < 4*math.pi/3) {
+    rgb.g = x
+    rgb.b = c
+  }
+  else if(hsv.h < 5*math.pi/3) {
+    rgb.r = x
+    rgb.b = c
+  }
+  else {
+    rgb.r = c
+    rgb.b = x
+  }
+  rgb.r = 255 * (rgb.r + m)
+  rgb.g = 255 * (rgb.g + m)
+  rgb.b = 255 * (rgb.b + m)
+  return rgb
+}
+
+
+
+# This function is executed every time you press the 'execute' button
+function init() {
+  count  = 0
+}
+
+
+
+# This function is executed at each time step
+# It must contain the logic of your controller
+function step() {
+  var hsv = {.h=count / 180.0 * math.pi, .s=1.0, .v=1.0}
+  var rgb = hsv2rgb(hsv)
+  set_leds(rgb.r, rgb.g, rgb.b)
+  count = (count + 1) % 360
+}
+
+
+
+# This function is executed every time you press the 'reset'
+# button in the GUI. It is supposed to restore the state
+# of the controller to whatever it was right after init() was
+# called. The state of sensors and actuators is reset
+# automatically by ARGoS.
+function reset() {
+   # put your code here
+}
+
+
+
+# This function is executed only once, when the robot is removed
+# from the simulation
+function destroy() {
+   # put your code here
+}
