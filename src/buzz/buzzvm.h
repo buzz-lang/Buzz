@@ -537,12 +537,31 @@ extern "C" {
  * @param tpe The type to check
  */
 #define buzzvm_type_assert(vm, idx, tpe)                                \
-   if(buzzvm_stack_at((vm), idx)->o.type != tpe) {                      \
+   if(buzzvm_stack_at((vm), (idx))->o.type != tpe) {                    \
       buzzvm_seterror((vm),                                             \
                       BUZZVM_ERROR_TYPE,                                \
                       "expected %s, got %s",                            \
                       buzztype_desc[tpe],                               \
-                      buzztype_desc[buzzvm_stack_at((vm), idx)->o.type] \
+                      buzztype_desc[buzzvm_stack_at((vm), (idx))->o.type] \
+         );                                                             \
+      return (vm)->state;                                               \
+   }
+
+/*
+ * Checks whether the type at the given stack position is a number (int or float).
+ * If the type is wrong, it updates the VM state and exits the current function.
+ * This function is designed to be used within int-returning functions such as
+ * BuzzVM hook functions or buzzvm_step().
+ * @param vm The VM data.
+ * @param idx The stack index, where 0 is the stack top and >0 goes down the stack.
+ */
+#define buzzvm_type_assert_number(vm, idx)                              \
+   if(buzzvm_stack_at((vm), (idx))->o.type != BUZZTYPE_INT &&           \
+      buzzvm_stack_at((vm), (idx))->o.type != BUZZTYPE_FLOAT) {         \
+      buzzvm_seterror((vm),                                             \
+                      BUZZVM_ERROR_TYPE,                                \
+                      "expected int or float, got %s",                  \
+                      buzztype_desc[buzzvm_stack_at((vm), (idx))->o.type] \
          );                                                             \
       return (vm)->state;                                               \
    }
@@ -562,6 +581,30 @@ extern "C" {
  */
 #define buzzvm_stack_at(vm, idx) buzzdarray_get((vm)->stack, (buzzvm_stack_top(vm) - (idx)), buzzobj_t)
 
+/*
+ * Converts a number at the given position in the stack to int.
+ * It does not internally check whether the element to convert is a number or not.
+ * This function does not change the state of the stack.
+ * @param vm The VM data.
+ * @param idx The stack index, where 0 is the stack top and >0 goes down the stack.
+ */
+#define buzzvm_stack_number_to_int(vm, idx)                       \
+   (buzzvm_stack_at((vm), (idx))->o.type == BUZZTYPE_INT ?  \
+    buzzvm_stack_at((vm), (idx))->i.value :                 \
+    (int32_t)buzzvm_stack_at((vm), (idx))->f.value)
+   
+/*
+ * Converts a number at the given position in the stack to float.
+ * It does not internally check whether the element to convert is a number or not.
+ * This function does not change the state of the stack.
+ * @param vm The VM data.
+ * @param idx The stack index, where 0 is the stack top and >0 goes down the stack.
+ */
+#define buzzvm_stack_number_to_float(vm, idx)                       \
+   (buzzvm_stack_at((vm), (idx))->o.type == BUZZTYPE_FLOAT ?  \
+    buzzvm_stack_at((vm), (idx))->f.value :                   \
+    (float)buzzvm_stack_at((vm), (idx))->i.value)
+   
 /*
  * Terminates the current Buzz script.
  * This function is designed to be used within int-returning functions such as
