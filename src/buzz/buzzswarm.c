@@ -530,7 +530,7 @@ static int buzzswarm_check(struct buzzvm_s* vm) {
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id", 1));
    buzzvm_tget(vm);
    /* Make sure it's an integer */
-   if(buzzvm_stack_at(vm, 1)->o.type == BUZZTYPE_INT) {
+   if(buzzvm_stack_at(vm, 1)->o.type != BUZZTYPE_INT) {
       buzzvm_seterror(vm,
                       BUZZVM_ERROR_SWARM,
                       NULL);
@@ -560,11 +560,11 @@ static int buzzswarm_check(struct buzzvm_s* vm) {
    buzzvm_type_assert(vm, 1, BUZZTYPE_INT);                       \
    uint16_t id = buzzvm_stack_at(vm, 1)->i.value;                 \
    /* Swarm 1: must be a table with id = existing swarm */        \
-   buzzvm_lload(vm, 1);                                           \
+   buzzvm_lload(vm, 2);                                           \
    int s1 = buzzswarm_check(vm);                                  \
    if(s1 < 0) return vm->state;                                   \
    /* Swarm 2: must be a table with id = existing swarm */        \
-   buzzvm_lload(vm, 1);                                           \
+   buzzvm_lload(vm, 3);                                           \
    int s2 = buzzswarm_check(vm);                                  \
    if(s2 < 0) return vm->state;                                   \
    /* Membership condition */                                     \
