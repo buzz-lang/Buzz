@@ -406,6 +406,72 @@ int buzzobj_reduce(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+struct buzzobj_filter_params {
+   buzzvm_t vm;
+   buzzobj_t fun;
+   buzzdict_t result;
+};
+
+void buzzobj_filter_entry(const void* key, void* data, void* params) {
+   /* Cast params */
+   struct buzzobj_filter_params* p = (struct buzzobj_filter_params*)params;
+   if(p->vm->state != BUZZVM_STATE_READY) return;
+   /* Save current stack size */
+   uint32_t ss = buzzvm_stack_top(p->vm);
+   /* Push closure and params (key and value) */
+   buzzvm_push(p->vm, p->fun);
+   buzzvm_push(p->vm, *(buzzobj_t*)key);
+   buzzvm_push(p->vm, *(buzzobj_t*)data);
+   /* Call closure */
+   p->vm->state = buzzvm_closure_call(p->vm, 2);
+   if(p->vm->state != BUZZVM_STATE_READY) return;
+   /* Make sure a value was returned */
+   if(buzzvm_stack_top(p->vm) <= ss) {
+      /* Error */
+      buzzvm_seterror(p->vm,
+                      BUZZVM_ERROR_STACK,
+                      "filter(table,predicate) expects the predicate to return a value");
+      return;
+   }
+   /* Add entry to the return table */
+   buzzobj_t retval = buzzvm_stack_at(p->vm, 1);
+   if(retval->o.type != BUZZTYPE_NIL &&
+      (retval->o.type != BUZZTYPE_INT ||
+       retval->i.value != 0)) {
+      buzzdict_set(p->result, key, data);
+   }
+   /* Get rid of return value */
+   buzzvm_pop(p->vm);
+}
+
+int buzzobj_filter(buzzvm_t vm) {
+   /* Table and closure expected */
+   buzzvm_lnum_assert(vm, 2);
+   /* Get table */
+   buzzvm_lload(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_TABLE);
+   buzzobj_t t = buzzvm_stack_at(vm, 1);
+   /* Get closure */
+   buzzvm_lload(vm, 2);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
+   buzzobj_t c = buzzvm_stack_at(vm, 1);
+   /* Create a table as the return value */
+   buzzobj_t r = buzzheap_newobj(vm, BUZZTYPE_TABLE);
+   buzzvm_push(vm, r);
+   /* Go through the table element and apply the closure */
+   struct buzzobj_filter_params p = {
+      .vm = vm,
+      .fun = c,
+      .result = r->t.value
+   };
+   buzzdict_foreach(t->t.value, buzzobj_filter_entry, &p);
+   /* Return the table */
+   return buzzvm_ret1(vm);
+}
+
+/****************************************/
+/****************************************/
+
 void buzzobj_serialize_tableelem(const void* key, void* data, void* params) {
    buzzobj_serialize((buzzdarray_t)params, *(buzzobj_t*)key);
    buzzobj_serialize((buzzdarray_t)params, *(buzzobj_t*)data);
