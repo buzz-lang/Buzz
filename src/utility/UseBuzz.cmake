@@ -66,14 +66,16 @@ function(buzz_make _SCRIPT)
   if(NOT _buzz_make_EXT STREQUAL ".bzz")
     message(FATAL_ERROR "buzz_make('${_SCRIPT}'): script name must end with .bzz")
   endif(NOT _buzz_make_EXT STREQUAL ".bzz")
-  # Make _BYTECODE and _DEBUG name with .bo and .bdb instead of .bzz
+  # Make _BYTECODE, _BASM and _DEBUG names with .bo, .basm, and .bdb instead of .bzz
   get_filename_component(_buzz_make_FNAME "${_SCRIPT}" NAME_WE)
   set(_buzz_make_BYTECODE "${_buzz_make_FNAME}.bo")
   set(_buzz_make_DEBUG "${_buzz_make_FNAME}.bdb")
+  set(_buzz_make_BASM "${_buzz_make_FNAME}.basm")
   get_filename_component(_buzz_make_DIR "${_SCRIPT}" DIRECTORY)
   if(NOT "${_buzz_make_DIR}" STREQUAL "")
     set(_buzz_make_BYTECODE "${_buzz_make_DIR}${_buzz_make_BYTECODE}")
     set(_buzz_make_DEBUG "${_buzz_make_DIR}${_buzz_make_DEBUG}")
+    set(_buzz_make_BASM "${_buzz_make_DIR}${_buzz_make_BASM}")
   endif(NOT "${_buzz_make_DIR}" STREQUAL "")
   # Parse function arguments
   cmake_parse_arguments(_buzz_make
@@ -95,8 +97,8 @@ function(buzz_make _SCRIPT)
   endif(NOT _buzz_make_BUZZ_INCLUDE_PATH STREQUAL "")
   # Define compilation command
   add_custom_command(
-    OUTPUT "${_buzz_make_BYTECODE}" "${_buzz_make_DEBUG}"
-    COMMAND "BZZPARSE=${BUZZ_PARSER}" "BZZASM=${BUZZ_ASSEMBLER}" "${BUZZ_COMPILER}" ${_buzz_make_BUZZ_INCLUDE_PATH} -b "${_buzz_make_BYTECODE}" -d "${_buzz_make_DEBUG}" "${CMAKE_CURRENT_SOURCE_DIR}/${_SCRIPT}"
+    OUTPUT "${_buzz_make_BYTECODE}" "${_buzz_make_BASM}" "${_buzz_make_DEBUG}"
+    COMMAND "BZZPARSE=${BUZZ_PARSER}" "BZZASM=${BUZZ_ASSEMBLER}" "${BUZZ_COMPILER}" ${_buzz_make_BUZZ_INCLUDE_PATH} -b "${_buzz_make_BYTECODE}" -d "${_buzz_make_DEBUG}" -a "${_buzz_make_BASM}" "${CMAKE_CURRENT_SOURCE_DIR}/${_SCRIPT}"
     MAIN_DEPENDENCY "${CMAKE_CURRENT_SOURCE_DIR}/${_SCRIPT}"
     DEPENDS ${_buzz_make_INCLUDES}
     COMMENT "Compiling Buzz script ${_SCRIPT}")

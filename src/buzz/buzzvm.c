@@ -858,9 +858,10 @@ buzzvm_state buzzvm_execute_script(buzzvm_t vm) {
 buzzvm_state buzzvm_closure_call(buzzvm_t vm,
                                  uint32_t argc) {
    /* Insert the self table right before the closure */
+   buzzobj_t o = buzzheap_newobj(vm, BUZZTYPE_NIL);
    buzzdarray_insert(vm->stack,
                      buzzdarray_size(vm->stack) - argc - 1,
-                     buzzheap_newobj(vm, BUZZTYPE_NIL));
+                     &o);
    /* Push the argument count */
    buzzvm_pushi(vm, argc);
    /* Save the current stack depth */

@@ -200,6 +200,12 @@ extern "C" {
    extern int buzzobj_reduce(struct buzzvm_s* vm);
 
    /*
+    * C-closure to loop through the elements of a table and return a new table with the elements that pass the filter.
+    * @param vm The VM data.
+    */
+   extern int buzzobj_filter(struct buzzvm_s* vm);
+
+   /*
     * Serializes a Buzz object.
     * The data is appended to the given buffer. The buffer is treated as a
     * dynamic array of uint8_t.
