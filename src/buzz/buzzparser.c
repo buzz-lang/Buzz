@@ -380,6 +380,9 @@ int parse_product(buzzparser_t par);
 int parse_modulo(buzzparser_t par);
 int parse_power(buzzparser_t par);
 int parse_powerrest(buzzparser_t par);
+int parse_bitshift(buzzparser_t par);
+int parse_bitwiseandor(buzzparser_t par);
+int parse_bitwisenot(buzzparser_t par);
 int parse_operand(buzzparser_t par);
 
 int parse_command(buzzparser_t par);
@@ -738,16 +741,17 @@ int parse_conditionlist(buzzparser_t par,
 }
 
 int parse_condition(buzzparser_t par) {
-   if(par->tok->type == BUZZTOK_NOT) {
+   if(par->tok->type == BUZZTOK_LNOT) {
       fetchtok();
       if(!parse_condition(par)) return PARSE_ERROR;
-      chunk_append("\tnot");
+      chunk_append("\tlnot");
       return PARSE_OK;
    }
    if(!parse_comparison(par)) return PARSE_ERROR;
-   while(par->tok->type == BUZZTOK_ANDOR) {
-      char op[4];
-      strcpy(op, par->tok->value);
+   while(par->tok->type == BUZZTOK_LANDOR) {
+      char op[5];
+      op[0] = 'l';
+      strcpy(op+1, par->tok->value);
       fetchtok();
       if(!parse_comparison(par)) return PARSE_ERROR;
       chunk_append("\t%s", op);
@@ -914,7 +918,7 @@ int parse_modulo(buzzparser_t par) {
 }
 
 int parse_power(buzzparser_t par) {
-   return parse_operand(par) && parse_powerrest(par);
+   return parse_bitshift(par) && parse_powerrest(par);
 }
 
 int parse_powerrest(buzzparser_t par) {
@@ -923,6 +927,44 @@ int parse_powerrest(buzzparser_t par) {
       if(!parse_power(par)) return PARSE_ERROR;
       chunk_append("\tpow");
    }
+   return PARSE_OK;
+}
+
+int parse_bitshift(buzzparser_t par) {
+   if(!parse_bitwiseandor(par)) return PARSE_ERROR;
+   while(par->tok->type == BUZZTOK_LRSHIFT) {
+      char op[3];
+      strncpy(op, par->tok->value, 2);
+      op[2] = 0;
+      fetchtok();
+      if(!parse_bitwiseandor(par)) return PARSE_ERROR;
+      if(strcmp(op, "<<") == 0) { chunk_append("\tlshift"); }
+      else if(strcmp(op, ">>") == 0) { chunk_append("\trshift"); }
+   }
+   return PARSE_OK;
+}
+
+int parse_bitwiseandor(buzzparser_t par) {
+   if(!parse_bitwisenot(par)) return PARSE_ERROR;
+   while(par->tok->type == BUZZTOK_BANDOR) {
+      char op = par->tok->value[0];
+      fetchtok();
+      if(!parse_bitwisenot(par)) return PARSE_ERROR;
+      if(op == '&') { chunk_append("\tband"); }
+      else if(op == '|') { chunk_append("\tbor"); }
+      else return PARSE_ERROR;
+   }
+   return PARSE_OK;
+}
+
+int parse_bitwisenot(buzzparser_t par) {
+   if(par->tok->type == BUZZTOK_BNOT) {
+      fetchtok();
+      if(!parse_bitwisenot(par)) return PARSE_ERROR;
+      chunk_append("\tbnot");      
+      return PARSE_OK;
+   }
+   if(!parse_operand(par)) return PARSE_ERROR;
    return PARSE_OK;
 }
 

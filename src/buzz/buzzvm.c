@@ -16,7 +16,7 @@ const char *buzzvm_state_desc[] = { "no code", "ready", "done", "error", "stoppe
 
 const char *buzzvm_error_desc[] = { "none", "unknown instruction", "stack error", "wrong number of local variables", "pc out of range", "function id out of range", "type mismatch", "unknown string id", "unknown swarm id" };
 
-const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "dup", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "and", "or", "not", "eq", "neq", "gt", "gte", "lt", "lte", "gload", "gstore", "pusht", "tput", "tget", "callc", "calls", "pushf", "pushi", "pushs", "pushcn", "pushcc", "pushl", "lload", "lstore", "jump", "jumpz", "jumpnz"};
+const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "dup", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "land", "lor", "lnot", "band", "bor", "bnot", "lshift", "rshift", "eq", "neq", "gt", "gte", "lt", "lte", "gload", "gstore", "pusht", "tput", "tget", "callc", "calls", "pushf", "pushi", "pushs", "pushcn", "pushcc", "pushl", "lload", "lstore", "jump", "jumpz", "jumpnz"};
 
 static uint16_t SWARM_BROADCAST_PERIOD = 10;
 
@@ -674,18 +674,43 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          inc_pc();
          break;
       }
-      case BUZZVM_INSTR_AND: {
-         buzzvm_and(vm);
+      case BUZZVM_INSTR_LAND: {
+         buzzvm_land(vm);
          inc_pc();
          break;
       }
-      case BUZZVM_INSTR_OR: {
-         buzzvm_or(vm);
+      case BUZZVM_INSTR_LOR: {
+         buzzvm_lor(vm);
          inc_pc();
          break;
       }
-      case BUZZVM_INSTR_NOT: {
-         buzzvm_not(vm);
+      case BUZZVM_INSTR_LNOT: {
+         buzzvm_lnot(vm);
+         inc_pc();
+         break;
+      }
+      case BUZZVM_INSTR_BAND: {
+         buzzvm_band(vm);
+         inc_pc();
+         break;
+      }
+      case BUZZVM_INSTR_BOR: {
+         buzzvm_bor(vm);
+         inc_pc();
+         break;
+      }
+      case BUZZVM_INSTR_BNOT: {
+         buzzvm_bnot(vm);
+         inc_pc();
+         break;
+      }
+      case BUZZVM_INSTR_LSHIFT: {
+         buzzvm_lshift(vm);
+         inc_pc();
+         break;
+      }
+      case BUZZVM_INSTR_RSHIFT: {
+         buzzvm_rshift(vm);
          inc_pc();
          break;
       }

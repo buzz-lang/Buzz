@@ -12,8 +12,9 @@
 char *buzztok_desc[] = {
       "identifier", "numeric constant", "string", "variable",
       "nil", "if", "else", "function", "return",
-      "for", "while", "and/or", "not", "+ or -", "* or /",
-      "%", "^", "{", "}", "(", ")", "[", "]", "; or newline",
+      "for", "while", "logic and/or", "logic not", "+ or -", "* or /",
+      "%", "^", "bit shift", "bitwise and/or", "bitwise not",
+      "{", "}", "(", ")", "[", "]", "; or newline",
       ",", "=", ".", "== != < <= > >=" };
 
 /****************************************/
@@ -121,8 +122,8 @@ static int buzzlex_isid(char c) {
    return isalnum(c) || (c == '_');
 }
 
-static int buzzlex_isarith(char c) {
-   return (c == '+') || (c == '-') || (c == '*') || (c == '/') || (c == '%') || (c == '^');
+static int buzzlex_isarithlogic(char c) {
+   return (c == '+') || (c == '-') || (c == '*') || (c == '/') || (c == '%') || (c == '^') || (c == '&') || (c == '|');
 }
 
 static int buzzlex_isquote(char c) {
@@ -418,9 +419,9 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
       checkkeyword("return",   BUZZTOK_RETURN);
       checkkeyword("for",      BUZZTOK_FOR);
       checkkeyword("while",    BUZZTOK_WHILE);
-      checkkeyword("and",      BUZZTOK_ANDOR);
-      checkkeyword("or",       BUZZTOK_ANDOR);
-      checkkeyword("not",      BUZZTOK_NOT);
+      checkkeyword("and",      BUZZTOK_LANDOR);
+      checkkeyword("or",       BUZZTOK_LANDOR);
+      checkkeyword("not",      BUZZTOK_LNOT);
       checkkeyword("nil",      BUZZTOK_NIL);
       /* No keyword found, consider it an id */
       return buzzlex_newtok(BUZZTOK_ID,
@@ -463,16 +464,28 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
                                lexf->fname);
       }
       else {
-         /* Syntax error */
-         fprintf(stderr,
-                 "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: expected '=' after '!'\n",
-                 lexf->fname,
-                 lexf->cur_line,
-                 tokstart);
-         return NULL;
+         /* Bitwise not */
+         return buzzlex_newtok(BUZZTOK_BNOT,
+                               NULL,
+                               lexf->cur_line,
+                               tokstart,
+                               lexf->fname);
       }
    }
    else if((c == '<') || (c == '>')) {
+      /* Is it a bit shift operator? */
+      if(lexf->cur_c < lexf->buf_size &&
+         c == lexf->buf[lexf->cur_c]) {
+         nextchar();
+         char* val = (char*)malloc(3);
+         strncpy(val, lexf->buf + lexf->cur_c - 2, 2);
+         val[2] = 0;
+         return buzzlex_newtok(BUZZTOK_LRSHIFT,
+                               val,
+                               lexf->cur_line,
+                               tokstart,
+                               lexf->fname);
+      }
       /* It's a comparison operator */
       size_t start = lexf->cur_c - 1;
       /* Include the '=' if present */
@@ -489,7 +502,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
                             tokstart,
                             lexf->fname);
    }
-   else if(buzzlex_isarith(c)) {
+   else if(buzzlex_isarithlogic(c)) {
       /* Arithmetic operator */
       char* val = (char*)malloc(2);
       strncpy(val, lexf->buf + lexf->cur_c - 1, 1);
@@ -518,6 +531,13 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
          }
          case '^': {
             return buzzlex_newtok(BUZZTOK_POW,
+                                  val,
+                                  lexf->cur_line,
+                                  tokstart,
+                                  lexf->fname);
+         }
+         case '&': case '|': {
+            return buzzlex_newtok(BUZZTOK_BANDOR,
                                   val,
                                   lexf->cur_line,
                                   tokstart,
