@@ -600,6 +600,7 @@ int buzzobj_register(struct buzzvm_s* vm) {
    function_register(foreach);
    function_register(map);
    function_register(reduce);
+   function_register(filter);
    return vm->state;
 }
 
