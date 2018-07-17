@@ -9,6 +9,7 @@ bzzc \- the Buzz compiler
      [ \fB-I \fIpath1:path2:...:pathN \fR]
      [ \fB-b \fIscript.bo \fR]
      [ \fB-d \fIscript.bdb \fR]
+     [ \fB-a \fIscript.basm \fR]
      \fIscript.bzz
 .SH DESCRIPTION
 .P
@@ -17,7 +18,9 @@ produces two files: \fIscript.bo\fR, the compiled bytecode ready to be
 executed by the Buzz Virtual Machine, and \fIscript.bdb\fR, a file
 containing debugging information.  The file \fIscript.bo\fR must be
 uploaded on the robot.  The file \fIscript.bdb\fR is located on the
-machine used by the developer to debug/monitor the robots.
+machine used by the developer to debug/monitor the robots. Optionally,
+\fBbzzc\fR can also create the Buzz assembly file. This occurs when
+the option \fB-a\fR is specified.
 .SH OPTIONS
 .TP
 \fB\-v|--version\fR
@@ -31,6 +34,9 @@ Set explicitly the bytecode file name
 .TP
 \fB\-d|--debug \fIscript.bdb
 Set explicitly the debug file name
+.TP
+\fB\-a|--asm \fIscript.basm
+Set explicitly the assembly file name
 .SH ENVIRONMENT
 .TP
 .B BUZZ_INCLUDE_PATH
