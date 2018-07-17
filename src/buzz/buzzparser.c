@@ -538,12 +538,21 @@ int parse_var(buzzparser_t par) {
    /* Add a symbol for this variable */
    sym_add(par, par->tok->value, SCOPE_AUTO);
    s = sym_lookup(par->tok->value, par->symstack);
-   /* Is lvalue a global symbol? If so, push its string id */
-   if(s->global) chunk_append("\tpushs %" PRId64, s->pos);
+   /* Is lvalue a global symbol? */
+   if(s->global) {
+      /*  Push its string id */
+      chunk_append("\tpushs %" PRId64, s->pos);
+   }
    /* Is the variable initialized? */
    fetchtok();
    if(par->tok->type == BUZZTOK_ASSIGN) {
       /* Initialization on the spot */
+      /* If the value is a local symbol, it might be referenced in the expression after the = */
+      /* Thus, we must initialize it to nil and register it as local symbol */
+      if(!s->global) {
+         chunk_append("\tpushnil");
+         chunk_append("\tlstore %" PRId64, s->pos);
+      }
       /* Consume the = */
       fetchtok();
       /* Parse the expression */
