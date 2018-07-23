@@ -105,3 +105,16 @@ math.vec2.scale = function(v, s) {
 math.vec2.dot = function(v1, v2) {
   return v1.x * v2.x + v1.y * v2.y
 }
+
+#
+# Rotates v by angle a (in radians)
+# PARAM v: A vector2
+# PARAM a: An angle (in radians)
+# RETURN: the rotated vector
+#
+math.vec2.rotate = function(v, a) {
+  return {
+    .x = v.x * math.cos(a) - v.y * math.sin(a),
+    .y = v.x * math.sin(a) + v.y * math.cos(a)
+  }
+}
