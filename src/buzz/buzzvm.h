@@ -696,24 +696,24 @@ extern "C" {
    buzzdarray_pop(vm->stack);                                           \
    if(op1->o.type == BUZZTYPE_INT &&                                    \
       op2->o.type == BUZZTYPE_INT) {                                    \
-      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_INT);        \
+      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_INT);              \
       res->i.value = op2->i.value oper op1->i.value;                    \
       buzzvm_push(vm, res);                                             \
    }                                                                    \
    else if(op1->o.type == BUZZTYPE_INT &&                               \
            op2->o.type == BUZZTYPE_FLOAT) {                             \
-      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_FLOAT);      \
+      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_FLOAT);            \
       res->f.value = op2->f.value oper op1->i.value;                    \
       buzzvm_push(vm, res);                                             \
    }                                                                    \
    else if(op1->o.type == BUZZTYPE_FLOAT &&                             \
            op2->o.type == BUZZTYPE_INT) {                               \
-      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_FLOAT);      \
+      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_FLOAT);            \
       res->f.value = op2->i.value oper op1->f.value;                    \
       buzzvm_push(vm, res);                                             \
    }                                                                    \
    else {                                                               \
-      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_FLOAT);      \
+      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_FLOAT);            \
       res->f.value = op2->f.value oper op1->f.value;                    \
       buzzvm_push(vm, res);                                             \
    }
