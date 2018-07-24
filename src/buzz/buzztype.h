@@ -170,6 +170,16 @@ extern "C" {
    extern int buzzobj_type(struct buzzvm_s* vm);
 
    /*
+    * C-closure to convert a float to int.
+    */
+   extern int buzzobj_int(struct buzzvm_s* vm);
+
+   /*
+    * C-closure to convert an int to float.
+    */
+   extern int buzzobj_tofloat(struct buzzvm_s* vm);
+
+   /*
     * C-closure to clone a Buzz object.
     * @param vm The VM data.
     */

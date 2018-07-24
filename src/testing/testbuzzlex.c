@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
       tok = buzzlex_nexttok(lex);
       if(!tok) done = 1;
       else {
-         fprintf(stdout, "TOKEN %s %2" PRIu64 " %2" PRIu64 " %-20s %s\n",
+         fprintf(stdout, "TOKEN %s %2" PRIu64 " %2" PRIu64 " %-20s '%s'\n",
                  tok->fname,
                  tok->line,
                  tok->col,

@@ -226,6 +226,34 @@ int buzzobj_type(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+int buzzobj_int(struct buzzvm_s* vm) {
+   /* Get float parameter and make sure it's a float */
+   buzzvm_lnum_assert(vm, 1);
+   buzzvm_lload(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_FLOAT);
+   buzzobj_t f = buzzvm_stack_at(vm, 1);
+   buzzvm_pop(vm);
+   buzzvm_pushi(vm, f->f.value);
+   return buzzvm_ret1(vm);
+}
+
+/****************************************/
+/****************************************/
+
+int buzzobj_float(struct buzzvm_s* vm) {
+   /* Get int parameter and make sure it's an int */
+   buzzvm_lnum_assert(vm, 1);
+   buzzvm_lload(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+   buzzobj_t i = buzzvm_stack_at(vm, 1);
+   buzzvm_pop(vm);
+   buzzvm_pushf(vm, i->i.value);
+   return buzzvm_ret1(vm);
+}
+
+/****************************************/
+/****************************************/
+
 int buzzobj_clone(buzzvm_t vm) {
    /* Get parameter */
    buzzvm_lnum_assert(vm, 1);
@@ -595,6 +623,8 @@ int64_t buzzobj_deserialize(buzzobj_t* data,
 
 int buzzobj_register(struct buzzvm_s* vm) {
    function_register(type);
+   function_register(int);
+   function_register(float);
    function_register(clone);
    function_register(size);
    function_register(foreach);

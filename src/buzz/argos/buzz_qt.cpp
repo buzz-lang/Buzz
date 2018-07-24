@@ -37,10 +37,11 @@ void CBuzzQT::Draw(CBuzzController& c_contr) {
    /* This is the message that will be shown */
    std::string strMsg("R" + ToString(c_contr.GetBuzzVM()->robot));
    /* Append debug message */
-   if(sDebug.Msg != "")
-      strMsg += ": " + sDebug.Msg;
+   if(sDebug.Msg.Text != "")
+      strMsg += ": " + sDebug.Msg.Text;
    DrawText(CVector3(0.0, 0.0, 0.4), // position
-            strMsg.c_str());         // text
+            strMsg.c_str(),          // text
+            sDebug.Msg.Color);       // color
    /* Draw vectors */
    for(size_t i = 0;
        i < sDebug.Rays.size();

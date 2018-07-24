@@ -42,7 +42,12 @@ public:
          CColor Color;
       } Trajectory;
       /* Message */
-      std::string Msg;
+      struct {
+         /* Message text */
+         std::string Text;
+         /* Text color */
+         CColor Color;
+      } Msg;
       /* Rays to draw */
       std::vector<SRay*> Rays;
       /* Constructor */

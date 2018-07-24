@@ -271,9 +271,14 @@ int buzz_asm(const char* fname,
       noarg_instr(BUZZVM_INSTR_MOD);
       noarg_instr(BUZZVM_INSTR_POW);
       noarg_instr(BUZZVM_INSTR_UNM);
-      noarg_instr(BUZZVM_INSTR_AND);
-      noarg_instr(BUZZVM_INSTR_OR);
-      noarg_instr(BUZZVM_INSTR_NOT);
+      noarg_instr(BUZZVM_INSTR_LAND);
+      noarg_instr(BUZZVM_INSTR_LOR);
+      noarg_instr(BUZZVM_INSTR_LNOT);
+      noarg_instr(BUZZVM_INSTR_BAND);
+      noarg_instr(BUZZVM_INSTR_BOR);
+      noarg_instr(BUZZVM_INSTR_BNOT);
+      noarg_instr(BUZZVM_INSTR_LSHIFT);
+      noarg_instr(BUZZVM_INSTR_RSHIFT);
       noarg_instr(BUZZVM_INSTR_EQ);
       noarg_instr(BUZZVM_INSTR_NEQ);
       noarg_instr(BUZZVM_INSTR_GT);
