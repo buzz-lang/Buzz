@@ -69,6 +69,29 @@ int BuzzLOG (buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+int BuzzDebugSetColor(buzzvm_t vm) {
+   /* Get pointer to controller user data */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
+   buzzvm_gload(vm);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_USERDATA);
+   CBuzzController& cContr = *reinterpret_cast<CBuzzController*>(buzzvm_stack_at(vm, 1)->u.value);
+   /* RGB drawing color */
+   buzzvm_lload(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+   buzzvm_lload(vm, 2);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+   buzzvm_lload(vm, 3);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
+   cContr.GetARGoSDebugInfo().Msg.Color.Set(
+      buzzvm_stack_at(vm, 3)->i.value,
+      buzzvm_stack_at(vm, 2)->i.value,
+      buzzvm_stack_at(vm, 1)->i.value);
+   return buzzvm_ret0(vm);
+}
+
+/****************************************/
+/****************************************/
+
 int BuzzDebugPrint(buzzvm_t vm) {
    /* Get pointer to controller user data */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
@@ -110,7 +133,7 @@ int BuzzDebugPrint(buzzvm_t vm) {
             break;
       }
    }
-   cContr.GetARGoSDebugInfo().Msg = oss.str();
+   cContr.GetARGoSDebugInfo().Msg.Text = oss.str();
    return buzzvm_ret0(vm);
 }
 
@@ -337,7 +360,7 @@ CBuzzController::SDebug::~SDebug() {
 /****************************************/
 
 void CBuzzController::SDebug::Clear() {
-   Msg = "";
+   Msg.Text = "";
    RayClear();
 }
 
@@ -660,6 +683,11 @@ buzzvm_state CBuzzController::RegisterFunctions() {
    buzzvm_dup(m_tBuzzVM);
    buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "print", 1));
    buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzDebugPrint));
+   buzzvm_tput(m_tBuzzVM);
+   /* debug.set_color() */
+   buzzvm_dup(m_tBuzzVM);
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "set_color", 1));
+   buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzDebugSetColor));
    buzzvm_tput(m_tBuzzVM);
    /* Initialize debug.rays table */
    buzzvm_dup(m_tBuzzVM);
