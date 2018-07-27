@@ -1,4 +1,4 @@
-include "vec2.bzz"
+include "include/vec2.bzz"
 
 function printvec2(msg, v) {
   print(msg, "<", v.x, ",", v.y, ">")

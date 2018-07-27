@@ -28,7 +28,7 @@ if(NOT CMAKE_CROSSCOMPILING)
   set(BUZZ_ASSEMBLER ${CMAKE_BINARY_DIR}/buzz/bzzasm)
   set(BUZZ_BZZ_INCLUDE_DIR
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/include)
+    ${CMAKE_SOURCE_DIR})
   # Initialize Buzz CMake stuff
   set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/utility)
   include(UseBuzz)
@@ -59,4 +59,5 @@ if(NOT CMAKE_CROSSCOMPILING)
   buzz_make(testfor.bzz)
   buzz_make(testmobilecode.bzz)
   buzz_make(testbattery.bzz)
+  buzz_make(testtablelib.bzz INCLUDES ${CMAKE_SOURCE_DIR}/include/table.bzz)
 endif(NOT CMAKE_CROSSCOMPILING)
