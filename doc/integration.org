@@ -1,0 +1,24 @@
+#+OPTIONS: H:3
+#+TITLE: Integrating Buzz with C and C++
+
+* Basics: The BuzzVM is Stack-Based
+The Buzz VM is stack-based. This means that every operation the VM can
+perform uses elements on a stack as operands. For instance, to perform
+a sum, the Buzz VM takes the two top elements in the stack, sums them
+together, pops them from the stack, and then pushes the result on the
+stack.
+
+For this reason, when you want to integrate Buzz with existing C or
+C++ code, the interaction between the BuzzVM and external code must
+occur through the stack.
+
+* Adding New Data Structures
+Imagine that you want to add a new 
+
+* Adding New Functions
+
+* The Main Loop
+
+* A Skeleton Implementation in C
+
+* A Skeleton Implementation in C++

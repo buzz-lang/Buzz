@@ -1,4 +1,4 @@
-include "string.bzz"
+include "include/string.bzz"
 
 ########################################
 #
@@ -7,7 +7,7 @@ include "string.bzz"
 ########################################
 
 TARGETDIST_VSTIG = 2
-ROBOTS           = 100 # this must match the number of robots in the swarm
+ROBOTS           = 10 # this must match the number of robots in the swarm
 DISTANCE_MAX     = 60000.
 
 ########################################

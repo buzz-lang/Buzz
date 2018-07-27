@@ -1,0 +1,91 @@
+########################################
+#
+# Swap table elements
+#
+# PARAM t: the table
+# PARAM a: index of first element 
+# PARAM b: index of second element
+function swap(t, i, j) {
+  if(i != j) {
+    var k = t[i]
+    t[i] = t[j]
+    t[j] = k
+  }
+}
+
+########################################
+#
+# Number comparator
+function cmp_number(a, b) {
+  return (a <= b)
+}
+
+########################################
+#
+# Table sorting
+#
+# Sorts the elements of a table using the given precedence comparator.
+#
+# The comparator must follow this logic:
+#
+# function cmp(a,b) {
+  #   if(a <= b) return 1
+  #   else return 0
+  # }
+function sort(t, cmp) {
+  #
+  # Partition elements by pivot
+  #
+  partition = function(l, h) {
+    # We use the last element as pivot 
+    pivot = t[h]
+    # Used to mark the current element after the pivot
+    var i = l
+    # Move elements according to pivot
+    var j = l
+    while(j < h) {
+      # Compare current element with pivot
+      if(cmp(t[j], pivot)) {
+        # Swap current element with smallest
+        swap(t, i, j)
+        # Increase index of element after pivot
+        i = i + 1
+      }
+      # Next element
+      j = j + 1
+    }
+    # Swap pivot element with smallest
+    swap(t, i, h)
+    return i
+  }
+  #
+  # Quicksort
+  #
+  qsort = function(l, h) {
+    # There are still elements to partition
+    if(l < h) {
+      # Partitioning index
+      var p = partition(l, h)
+      # Sort elements before and after p
+      qsort(l, p-1)
+      qsort(p+1, h)
+    }
+  }
+  qsort(0, size(t)-1)
+}
+
+########################################
+#
+# Table shuffling
+#
+# Shuffles the element of a table in-place.
+function shuffle(t) {
+  # Durstenfeld shuffle algorithm
+  var i = 0
+  var sz = size(t)
+  while(i < sz-1) {
+    var j = math.rng.uniform(i, sz)
+    swap(t, i, j)
+    i = i + 1
+  }
+}

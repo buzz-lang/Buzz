@@ -1,0 +1,23 @@
+include "include/table.bzz"
+
+t = {}
+i = 0
+while(i < 10) {
+  t[i] = math.rng.uniform(1.0)
+  i = i + 1
+}
+
+foreach(t, function(k,v) { print(k, " -> ", v) })
+print("")
+
+sort(t, cmp_number)
+foreach(t, function(k,v) { print(k, " -> ", v) })
+print("")
+
+sort(t, function(a,b) { return not cmp_number(a,b) })
+foreach(t, function(k,v) { print(k, " -> ", v) })
+print("")
+
+shuffle(t)
+foreach(t, function(k,v) { print(k, " -> ", v) })
+print("")
