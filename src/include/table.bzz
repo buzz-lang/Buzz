@@ -1,10 +1,25 @@
 #
+# Make 'table' namespace
+#
+table = {}
+
+#
+# Prints the contents of a table.
+# PARAM t: The table
+#
+table.print = function(t) {
+  foreach(t, function(k,v) {
+      print(k, " -> ", v)
+    })
+}
+
+#
 # Swap table elements.
 # PARAM t: The table
 # PARAM a: Index of first element 
 # PARAM b: Index of second element
 #
-function swap(t, i, j) {
+table.swap = function(t, i, j) {
   if(i != j) {
     var k = t[i]
     t[i] = t[j]
@@ -18,7 +33,7 @@ function swap(t, i, j) {
 # PARAM b: A number
 # RETURN: nil if a > b, 1 otherwise
 #
-function cmp_number(a, b) {
+table.cmp_number = function(a, b) {
   return (a <= b)
 }
 
@@ -34,7 +49,7 @@ function cmp_number(a, b) {
 # PARAM t:   The table
 # PARAM cmp: The comparator
 #
-function sort(t, cmp) {
+table.sort = function(t, cmp) {
   #
   # Partition elements by pivot
   #
@@ -49,7 +64,7 @@ function sort(t, cmp) {
       # Compare current element with pivot
       if(cmp(t[j], pivot)) {
         # Swap current element with smallest
-        swap(t, i, j)
+        table.swap(t, i, j)
         # Increase index of element after pivot
         i = i + 1
       }
@@ -57,7 +72,7 @@ function sort(t, cmp) {
       j = j + 1
     }
     # Swap pivot element with smallest
-    swap(t, i, h)
+    table.swap(t, i, h)
     return i
   }
   #
@@ -80,13 +95,13 @@ function sort(t, cmp) {
 # In-place table shuffling.
 # PARAM t: The table
 #
-function shuffle(t) {
+table.shuffle = function(t) {
   # Durstenfeld shuffle algorithm
   var i = 0
   var sz = size(t)
   while(i < sz-1) {
     var j = math.rng.uniform(i, sz)
-    swap(t, i, j)
+    table.swap(t, i, j)
     i = i + 1
   }
 }
