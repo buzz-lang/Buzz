@@ -1,10 +1,9 @@
-########################################
 #
-# Swap table elements
+# Swap table elements.
+# PARAM t: The table
+# PARAM a: Index of first element 
+# PARAM b: Index of second element
 #
-# PARAM t: the table
-# PARAM a: index of first element 
-# PARAM b: index of second element
 function swap(t, i, j) {
   if(i != j) {
     var k = t[i]
@@ -13,25 +12,28 @@ function swap(t, i, j) {
   }
 }
 
-########################################
 #
-# Number comparator
+# Number comparator.
+# PARAM a: A number
+# PARAM b: A number
+# RETURN: nil if a > b, 1 otherwise
+#
 function cmp_number(a, b) {
   return (a <= b)
 }
 
-########################################
 #
-# Table sorting
-#
+# In-place table sorting.
 # Sorts the elements of a table using the given precedence comparator.
-#
 # The comparator must follow this logic:
-#
 # function cmp(a,b) {
-  #   if(a <= b) return 1
-  #   else return 0
-  # }
+#   if(a <= b) return 1
+#   else return 0
+# }
+#
+# PARAM t:   The table
+# PARAM cmp: The comparator
+#
 function sort(t, cmp) {
   #
   # Partition elements by pivot
@@ -74,11 +76,10 @@ function sort(t, cmp) {
   qsort(0, size(t)-1)
 }
 
-########################################
 #
-# Table shuffling
+# In-place table shuffling.
+# PARAM t: The table
 #
-# Shuffles the element of a table in-place.
 function shuffle(t) {
   # Durstenfeld shuffle algorithm
   var i = 0

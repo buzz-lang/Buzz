@@ -74,7 +74,7 @@ math.vec2.add = function(v1, v2) {
 # Calculates v1 - v2.
 # PARAM v1: A vector2.
 # PARAM v2: A vector2.
-# RETURN: v1 + v2
+# RETURN: v1 - v2
 #
 math.vec2.sub = function(v1, v2) {
   return {
