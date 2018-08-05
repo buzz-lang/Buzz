@@ -1,8 +1,8 @@
-for(i = 0, i < 5, i = i + 1) {
-  log(i)
+function f() {
+  var i
+  for(i = 0, i < 10, i = i + 1) {
+    print(i)
+  }
 }
 
-for(i = 0, i < 5, i = i + 1) 
-{
-  log(i)
-}
+f()

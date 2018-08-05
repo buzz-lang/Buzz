@@ -666,29 +666,63 @@ int parse_if(buzzparser_t par) {
 /****************************************/
 
 int parse_for(buzzparser_t par) {
+   /*
+    * for(init, cond, update) body
+    * 
+    *          <init>
+    * Lcond:   <cond>
+    *          jumpnz Lbody
+    *          jump Lend
+    * Lupdate: <update>
+    *          jump Lcond
+    * Lbody:   <body>
+    *          jump Lupdate
+    * Lend:    ...
+    */
+   /* Save labels */
+   uint32_t lcond   = par->labels;
+   uint32_t lupdate = lcond + 1;
+   uint32_t lbody   = lupdate + 1;
+   uint32_t lend    = lbody + 1;
+   par->labels += 4;
+   /* Parse tokens */
    tokmatch(BUZZTOK_FOR);
    fetchtok();
    tokmatch(BUZZTOK_PAROPEN);
    fetchtok();
-   struct idrefinfo_s idrefinfo;
-   if(!parse_idref(par, 1, &idrefinfo)) return PARSE_ERROR;
-   tokmatch(BUZZTOK_ASSIGN);
-   fetchtok();
-   if(!parse_expression(par)) return PARSE_ERROR;
+   /* Parse init code */
+   if(!parse_command(par)) return PARSE_ERROR;
    tokmatch(BUZZTOK_LISTSEP);
    fetchtok();
+   /* Place cond label */
+   chunk_append(LABELREF "%u", lcond);
+   /* Parse cond code */
    if(!parse_condition(par)) return PARSE_ERROR;
    tokmatch(BUZZTOK_LISTSEP);
    fetchtok();
-   if(!parse_idref(par, 1, &idrefinfo)) return PARSE_ERROR;
-   tokmatch(BUZZTOK_ASSIGN);
-   fetchtok();
-   if(!parse_expression(par)) return PARSE_ERROR;
+   /* If the condition is true, jump to the body */
+   chunk_append("\tjumpnz " LABELREF "%u", lbody);
+   /* Otherwise, jump to the end */
+   chunk_append("\tjump " LABELREF "%u", lend);
+   /* Place update label */
+   chunk_append(LABELREF "%u", lupdate);
+   /* Parse update code */
+   if(!parse_command(par)) return PARSE_ERROR;
    tokmatch(BUZZTOK_PARCLOSE);
    fetchtok();
    /* Allow the use of non-cuddled brackets */
    while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
-   return parse_block(par);
+   /* Jump to the condition */
+   chunk_append("\tjump " LABELREF "%u", lcond);
+   /* Place body label */
+   chunk_append(LABELREF "%u", lbody);
+   /* Parse body code */
+   if(!parse_blockstat(par)) return PARSE_ERROR;
+   /* Jump to the update */
+   chunk_append("\tjump " LABELREF "%u", lupdate);
+   /* Place end label */
+   chunk_append(LABELREF "%u", lend);
+   return PARSE_OK;
 }
 
 /****************************************/
