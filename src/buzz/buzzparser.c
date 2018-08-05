@@ -580,6 +580,17 @@ int parse_fun(buzzparser_t par) {
    tokmatch(BUZZTOK_FUN);
    fetchtok();
    tokmatch(BUZZTOK_ID);
+   /* Make sure this function definition is not nested within another function definition */
+   if(buzzdarray_size(par->symstack) > 1) {
+      fprintf(stderr,
+              "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: the definition of function %s() is nested within another scope. To define local functions, use the lambda syntax %s = function() { ... }.\n",
+              buzzlex_getfile(par->lex)->fname,
+              par->tok->line,
+              par->tok->col,
+              par->tok->value,
+              par->tok->value);
+      return PARSE_ERROR;
+   }
    /* Look it up in the symbol table */
    const struct sym_s* s = sym_lookup(par->tok->value, par->symstack);
    if(!s) {
