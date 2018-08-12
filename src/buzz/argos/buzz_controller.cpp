@@ -478,7 +478,7 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
          }
       }
       if(!bIDSuccess) {
-            THROW_ARGOSEXCEPTION("Error in finding Buzz ID from name \"" << GetId() << "\"");
+         THROW_ARGOSEXCEPTION("Error finding Buzz ID from name \"" << GetId() << "\"");
       }
       if(strBCFName != "" && strDbgFName != "")
          SetBytecode(strBCFName, strDbgFName);
@@ -542,6 +542,8 @@ void CBuzzController::ControlStep() {
       ProcessInMsgs();
       UpdateSensors();
       if(buzzvm_function_call(m_tBuzzVM, "step", 0) != BUZZVM_STATE_READY) {
+         LOG.Flush();
+         LOGERR.Flush();
          fprintf(stderr, "[ROBOT %u] %s: execution terminated abnormally: %s\n\n",
                  m_tBuzzVM->robot,
                  m_strBytecodeFName.c_str(),
