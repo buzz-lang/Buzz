@@ -346,9 +346,14 @@ void buzzobj_map_entry(const void* key, void* data, void* params) {
                       "map(table,function) expects the function to return a value");
       return;
    }
-   /* Add entry to the return table */
+   /* Manage return value */
    buzzobj_t r = buzzvm_stack_at(p->vm, 1);
-   buzzdict_set(p->result, key, &r);
+   if(r->o.type != BUZZTYPE_NIL) {
+      buzzdict_set(p->result, key, &r);
+   }
+   else {
+      buzzdict_remove(p->result, key);
+   }
    /* Get rid of return value */
    buzzvm_pop(p->vm);
 }
