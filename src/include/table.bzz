@@ -9,7 +9,7 @@ table = {}
 #
 table.print = function(t) {
   foreach(t, function(k,v) {
-      print(k, " -> ", v)
+      log(k, " -> ", v)
     })
 }
 
