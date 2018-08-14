@@ -46,11 +46,13 @@ string.indexoflast = function(s, m) {
   return nil
 }
 
+#
 # Splits a string s using the delimiters in d. The string list is
 # returned in a table indexed by value (starting at 0).
 # PARAM s: The string
 # PARAM d: A string containing the delimiters
 # RETURN: A table containing the tokens
+#
 string.split = function(s, d) {
   var i1 = 0  # index to move along s (token start)
   var i2 = 0  # index to move along s (token end)

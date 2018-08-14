@@ -1,11 +1,25 @@
-########################################
 #
-# Swap table elements
+# Make 'table' namespace
 #
-# PARAM t: the table
-# PARAM a: index of first element 
-# PARAM b: index of second element
-function swap(t, i, j) {
+table = {}
+
+#
+# Prints the contents of a table.
+# PARAM t: The table
+#
+table.print = function(t) {
+  foreach(t, function(k,v) {
+      log(k, " -> ", v)
+    })
+}
+
+#
+# Swap table elements.
+# PARAM t: The table
+# PARAM a: Index of first element 
+# PARAM b: Index of second element
+#
+table.swap = function(t, i, j) {
   if(i != j) {
     var k = t[i]
     t[i] = t[j]
@@ -13,26 +27,29 @@ function swap(t, i, j) {
   }
 }
 
-########################################
 #
-# Number comparator
-function cmp_number(a, b) {
+# Number comparator.
+# PARAM a: A number
+# PARAM b: A number
+# RETURN: nil if a > b, 1 otherwise
+#
+table.cmp_number = function(a, b) {
   return (a <= b)
 }
 
-########################################
 #
-# Table sorting
-#
+# In-place table sorting.
 # Sorts the elements of a table using the given precedence comparator.
-#
 # The comparator must follow this logic:
-#
 # function cmp(a,b) {
-  #   if(a <= b) return 1
-  #   else return 0
-  # }
-function sort(t, cmp) {
+#   if(a <= b) return 1
+#   else return 0
+# }
+#
+# PARAM t:   The table
+# PARAM cmp: The comparator
+#
+table.sort = function(t, cmp) {
   #
   # Partition elements by pivot
   #
@@ -47,7 +64,7 @@ function sort(t, cmp) {
       # Compare current element with pivot
       if(cmp(t[j], pivot)) {
         # Swap current element with smallest
-        swap(t, i, j)
+        table.swap(t, i, j)
         # Increase index of element after pivot
         i = i + 1
       }
@@ -55,7 +72,7 @@ function sort(t, cmp) {
       j = j + 1
     }
     # Swap pivot element with smallest
-    swap(t, i, h)
+    table.swap(t, i, h)
     return i
   }
   #
@@ -74,18 +91,17 @@ function sort(t, cmp) {
   qsort(0, size(t)-1)
 }
 
-########################################
 #
-# Table shuffling
+# In-place table shuffling.
+# PARAM t: The table
 #
-# Shuffles the element of a table in-place.
-function shuffle(t) {
+table.shuffle = function(t) {
   # Durstenfeld shuffle algorithm
   var i = 0
   var sz = size(t)
   while(i < sz-1) {
     var j = math.rng.uniform(i, sz)
-    swap(t, i, j)
+    table.swap(t, i, j)
     i = i + 1
   }
 }

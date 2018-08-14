@@ -59,7 +59,7 @@ For detail, see `comment-dwim'."
         (modify-syntax-entry ?< "." synTable)
         (modify-syntax-entry ?= "." synTable)
         ;; Extra word constituents
-        (modify-syntax-entry ?_ "_" synTable)
+        (modify-syntax-entry ?_ "w" synTable)
         synTable))
 
 ;;
@@ -68,7 +68,7 @@ For detail, see `comment-dwim'."
 ;; Identifiers
 (setq buzz-identifier-regexp "[[:alpha:]_][[:alnum:]_]*")
 ;; Constants
-(setq buzz-constant-regexp "[[:upper:]_][[:upper:][:digit:]_]*")
+(setq buzz-constant-regexp "[[:upper:]][[:upper:][:digit:]_]*")
 ;; Keywords
 (setq buzz-keywords '("var" "nil" "if" "else" "function" "return" "for" "while" "and" "or" "not" "size" "foreach" "map" "reduce" "include"))
 (setq buzz-keywords-regexp (regexp-opt buzz-keywords 'words))

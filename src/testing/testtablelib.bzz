@@ -7,17 +7,17 @@ while(i < 10) {
   i = i + 1
 }
 
-foreach(t, function(k,v) { print(k, " -> ", v) })
+table.print(t)
 print("")
 
-sort(t, cmp_number)
-foreach(t, function(k,v) { print(k, " -> ", v) })
+table.sort(t, table.cmp_number)
+table.print(t)
 print("")
 
-sort(t, function(a,b) { return not cmp_number(a,b) })
-foreach(t, function(k,v) { print(k, " -> ", v) })
+table.sort(t, function(a,b) { return not table.cmp_number(a,b) })
+table.print(t)
 print("")
 
-shuffle(t)
-foreach(t, function(k,v) { print(k, " -> ", v) })
+table.shuffle(t)
+table.print(t)
 print("")
