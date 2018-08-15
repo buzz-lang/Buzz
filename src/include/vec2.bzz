@@ -50,7 +50,7 @@ math.vec2.angle = function(v) {
 # RETURN: The normalized form.
 #
 math.vec2.norm = function(v) {
-  var l = math.length(v)
+  var l = math.vec2.length(v)
   return {
     .x = v.x / l,
     .y = v.y / l
