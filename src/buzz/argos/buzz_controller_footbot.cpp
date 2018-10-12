@@ -196,9 +196,6 @@ static int BuzzGripperLock(buzzvm_t vm) {
    return buzzvm_ret0(vm);
 }
 
-/****************************************/
-/****************************************/
-
 static int BuzzGripperUnlock(buzzvm_t vm) {
    /* Get pointer to the controller */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
@@ -206,6 +203,44 @@ static int BuzzGripperUnlock(buzzvm_t vm) {
    /* Call function */
    reinterpret_cast<CBuzzControllerFootBot*>(
       buzzvm_stack_at(vm, 1)->u.value)->GripperUnlock();
+   return buzzvm_ret0(vm);
+}
+
+/****************************************/
+/****************************************/
+
+static int BuzzTurretEnable(buzzvm_t vm) {
+   /* Get pointer to the controller */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
+   buzzvm_gload(vm);
+   /* Call function */
+   reinterpret_cast<CBuzzControllerFootBot*>(
+      buzzvm_stack_at(vm, 1)->u.value)->TurretEnable();
+   return buzzvm_ret0(vm);
+}
+
+static int BuzzTurretDisable(buzzvm_t vm) {
+   /* Get pointer to the controller */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
+   buzzvm_gload(vm);
+   /* Call function */
+   reinterpret_cast<CBuzzControllerFootBot*>(
+      buzzvm_stack_at(vm, 1)->u.value)->TurretDisable();
+   return buzzvm_ret0(vm);
+}
+
+static int BuzzTurretSet(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 1);
+   /* Push rotation */
+   buzzvm_lload(vm, 1);
+   buzzvm_type_assert(vm, 1, BUZZTYPE_FLOAT);
+   /* Get pointer to the controller */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
+   buzzvm_gload(vm);
+   /* Call function */
+   reinterpret_cast<CBuzzControllerFootBot*>(
+      buzzvm_stack_at(vm, 1)->u.value)->TurretSet(
+         buzzvm_stack_at(vm, 2)->f.value);
    return buzzvm_ret0(vm);
 }
 
@@ -240,6 +275,8 @@ void CBuzzControllerFootBot::Init(TConfigurationNode& t_node) {
       try { m_pcLEDs = GetActuator<CCI_LEDsActuator>("leds"); }
       catch(CARGoSException& ex) {}
       try { m_pcGripper = GetActuator<CCI_FootBotGripperActuator>("footbot_gripper"); }
+      catch(CARGoSException& ex) {}
+      try { m_pcTurretA = GetActuator<CCI_FootBotTurretActuator>("footbot_turret"); }
       catch(CARGoSException& ex) {}
       try { m_pcProximity = GetSensor<CCI_FootBotProximitySensor>("footbot_proximity"); }
       catch(CARGoSException& ex) {}
@@ -425,6 +462,27 @@ void CBuzzControllerFootBot::GripperUnlock() {
 /****************************************/
 /****************************************/
 
+void CBuzzControllerFootBot::TurretEnable() {
+   m_pcTurretA->SetMode(CCI_FootBotTurretActuator::MODE_POSITION_CONTROL);
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzControllerFootBot::TurretDisable() {
+   m_pcTurretA->SetMode(CCI_FootBotTurretActuator::MODE_OFF);
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzControllerFootBot::TurretSet(Real f_rotation) {
+   m_pcTurretA->SetRotation(CRadians(f_rotation));
+}
+
+/****************************************/
+/****************************************/
+
 buzzvm_state CBuzzControllerFootBot::RegisterFunctions() {
    /* Register base functions */
    CBuzzController::RegisterFunctions();
@@ -469,6 +527,20 @@ buzzvm_state CBuzzControllerFootBot::RegisterFunctions() {
       /* BuzzGripperUnlock */
       buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "gripper_unlock", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzGripperUnlock));
+      buzzvm_gstore(m_tBuzzVM);
+   }
+   if(m_pcTurretA) {
+      /* BuzzTurretEnable */
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "turret_enable", 1));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzTurretEnable));
+      buzzvm_gstore(m_tBuzzVM);
+      /* BuzzTurretDisable */
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "turret_disable", 1));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzTurretDisable));
+      buzzvm_gstore(m_tBuzzVM);
+      /* BuzzTurretSet */
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "turret_set", 1));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzTurretSet));
       buzzvm_gstore(m_tBuzzVM);
    }
    return m_tBuzzVM->state;

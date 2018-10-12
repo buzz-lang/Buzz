@@ -7,6 +7,7 @@
 #include <argos3/plugins/robots/generic/control_interface/ci_colored_blob_omnidirectional_camera_sensor.h>
 #include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_proximity_sensor.h>
 #include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_gripper_actuator.h>
+#include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_turret_actuator.h>
 
 using namespace argos;
 
@@ -54,6 +55,9 @@ public:
    void CameraDisable();
    void GripperLock();
    void GripperUnlock();
+   void TurretEnable();
+   void TurretDisable();
+   void TurretSet(Real f_rotation);
 
 private:
 
@@ -67,6 +71,8 @@ protected:
    CCI_LEDsActuator* m_pcLEDs;
    /* Pointer to the foot-bot gripper actuator */
    CCI_FootBotGripperActuator* m_pcGripper;
+   /* Pointer to the foot-bot turret actuator */
+   CCI_FootBotTurretActuator* m_pcTurretA;
    /* Pointer to the proximity sensor */
    CCI_FootBotProximitySensor* m_pcProximity;
    /* Pointer to the camera sensor */
