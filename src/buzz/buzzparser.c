@@ -325,10 +325,22 @@ void chunk_print(uint32_t pos, void* data, void* params) {
 /****************************************/
 
 #define fetchtok()                                                      \
-   buzzlex_destroytok(&par->tok);                                       \
-   par->tok = buzzlex_nexttok(par->lex);                                \
-   if(!par->tok)                                                        \
-      return PARSE_ERROR;
+   {                                                                    \
+      if(!par->tok) {                                                   \
+         fprintf(stderr,                                                \
+                 "%s: Syntax error: expected token, found end of file\n", \
+                 par->scriptfn);                                        \
+         return PARSE_ERROR;                                            \
+      }                                                                 \
+      buzzlex_destroytok(&par->tok);                                    \
+      par->tok = buzzlex_nexttok(par->lex);                             \
+      if(!par->tok) {                                                   \
+         fprintf(stderr,                                                \
+                 "%s: Syntax error: expected token, found end of file\n", \
+                 par->scriptfn);                                        \
+         return PARSE_ERROR;                                            \
+      }                                                                 \
+   }
 
 int match(buzzparser_t par,
           buzztok_type_e type) {
@@ -642,8 +654,12 @@ int parse_if(buzzparser_t par) {
    while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
    if(!parse_blockstat(par)) return PARSE_ERROR;
    /* Eat away the newlines, if any */
-   while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
-   if(par->tok->type == BUZZTOK_ELSE) {
+   while(par->tok &&
+         par->tok->type == BUZZTOK_STATEND && !par->tok->value) {
+      buzzlex_destroytok(&par->tok);
+      par->tok = buzzlex_nexttok(par->lex);
+   }
+   if(par->tok && par->tok->type == BUZZTOK_ELSE) {
       fetchtok();
       /* Make true branch jump to label 2 => if end */
       chunk_append("\tjump " LABELREF "%u", lab2);
