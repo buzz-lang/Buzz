@@ -866,14 +866,16 @@ void CBuzzQTMainWindow::PopulateBuzzControllers() {
       for(int i = 0; i < cScripts.size(); ++i)
          OpenFile(cScripts[i]);
       /* If more than one script has been opened, set one that contains main in the name or set none */
-      if(cScripts.size() != 1)  {
-         QString file = "";
+      if(cScripts.size() > 1)  {
          for(int i = 0; i < cScripts.size(); ++i) {
-            bool found = cScripts[i].contains("main") || cScripts[i].contains("Main");
-            if(found) 
-               file = cScripts[i];
+            if(cScripts[i].contains("main") || cScripts[i].contains("Main")) {
+               /* Main file found - set it as main script */
+               SetMainScript(cScripts[i]);
+               return;
+            }
          }
-         SetMainScript(file);
+         /* No main file found */
+         SetMainScript("");
       }
       /* If exactly one script has been opened, that is the main one */
       else
