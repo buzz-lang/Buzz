@@ -193,10 +193,20 @@ int buzzobj_cmp(const buzzobj_t a,
       return strcmp(str, b->s.value.str);
    }
    /* Tables */
-   if(a->o.type == BUZZTYPE_TABLE && b->o.type == BUZZTYPE_TABLE) {
-      if((uintptr_t)(a->t.value) < (uintptr_t)(b->t.value)) return -1;
-      if((uintptr_t)(a->t.value) > (uintptr_t)(b->t.value)) return 1;
-      return 0;
+   if(a->o.type == BUZZTYPE_TABLE || b->o.type == BUZZTYPE_TABLE) {
+      /* Both operands are tables */
+      if(a->o.type == BUZZTYPE_TABLE && b->o.type == BUZZTYPE_TABLE) {
+         if((uintptr_t)(a->t.value) < (uintptr_t)(b->t.value)) return -1;
+         if((uintptr_t)(a->t.value) > (uintptr_t)(b->t.value)) return 1;
+         return 0;
+      }
+      /* Anything is smaller than a table */
+      if(a->o.type == BUZZTYPE_TABLE) {
+         return 1;
+      }
+      if(b->o.type == BUZZTYPE_TABLE) {
+         return -1;
+      }
    }
    /* Userdata */
    if(a->o.type == BUZZTYPE_USERDATA && b->o.type == BUZZTYPE_USERDATA) {
