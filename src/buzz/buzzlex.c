@@ -568,17 +568,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
          last2 = last1;
          last1 = lexf->buf[lexf->cur_c];
          /* Keep parsing the string */
-         if(lexf->buf[lexf->cur_c] != '\n') {
-            nextchar();
-         }
-         else {
-            fprintf(stderr,
-                    "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: string closing quote not found\n",
-                    lexf->fname,
-                    lexf->cur_line,
-                    tokstart);
-            return eoftok;
-         }
+         nextchar();
       }
       /* End of stream? Syntax error */
       if(lexf->cur_c >= lexf->buf_size) {
