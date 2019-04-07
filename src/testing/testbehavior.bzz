@@ -1,11 +1,29 @@
+Count = 0
+State = 0
+CountMax = 200
+turn = 0
+ding = v
 function init() {
-  log("robot ", id, ": init")
+	Count = 0
+  State = 0
+  math.rng.setseed(id)
 }
 
 function step() {
-  log("robot ", id, ": step")
-}
-
-function destroy() {
-  log("robot ", id, ": destroy")
+	debug.print(State)
+	if(State == 0 and math.rng.uniform(10001)>9950){
+		set_wheels(0.0,0.0)
+		State = 1
+  }
+	if(State == 1 and Count > CountMax) {
+		set_wheels(10.0,10.0)
+		Count = Count + 1
+	}
+	else if (State == 1) {
+		State = 2
+	}
+  if (Count > {}) {
+		set_wheels(-10.0,-10.0)
+		Count = Count - 1		
+	}
 }

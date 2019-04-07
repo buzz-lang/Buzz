@@ -2,41 +2,41 @@ var a = 3-1
 var b = 6*7
 
 if (a != b) {
-  print("a != b")
+  log("a != b")
 }
 else {
-  print("unsupported")
+  log("unsupported")
 }
 
 if (3-1 != 6*7) {
-  print("(3-1) != (6*7)")
+  log("(3-1) != (6*7)")
 }
 else {
-  print("unsupported")
+  log("unsupported")
 }
 
 if (3-1 != 6*7) 
 {
-  print("(3-1) != (6*7)")
+  log("(3-1) != (6*7)")
 }
 else {
-  print("unsupported")
+  log("unsupported")
 }
 
 if (3-1 != 6*7) 
 {
-  print("(3-1) != (6*7)")
+  log("(3-1) != (6*7)")
 }
 else 
 {
-  print("unsupported")
+  log("unsupported")
 }
 
 
 if (3-1 != 6*7) {
-  print("(3-1) != (6*7)")
+  log("(3-1) != (6*7)")
 }
 else 
 {
-  print("unsupported")
+  log("unsupported")
 }

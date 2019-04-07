@@ -3,22 +3,22 @@ t = {.x = 1, .y = 2, .z = 3, .7 = 6, .3.5 = 9}
 # t.y = 2
 # t.z = 3
 
-print("size = ", size(t))
+log("size = ", size(t))
 foreach(t, function(k, v) {
-    print(" ", k, " -> ", v)
+    log(" ", k, " -> ", v)
   })
 
 t.y = nil
 
-print("size = ", size(t))
+log("size = ", size(t))
 foreach(t, function(k, v) {
-    print(" ", k, " -> ", v)
+    log(" ", k, " -> ", v)
   })
 
 function f(tbl) {
-  print("tbl size = ", size(tbl))
+  log("tbl size = ", size(tbl))
   foreach(tbl, function(k, v) {
-      print(" ", k, " -> ", v)
+      log(" ", k, " -> ", v)
     })
 }
 
@@ -30,4 +30,4 @@ f(map({.a = 1, .b = 2},
     }))
 
 t = {.a = 1., .b = 4., .c = 8.}
-print(reduce(t, function(k,v,a) { return v+a }, 0) / size(t))
+log(reduce(t, function(k,v,a) { return v+a }, 0) / size(t))

@@ -1,0 +1,13 @@
+function nodocstring(a,b)
+{
+  log("no docstring")
+}
+
+function yesdocstring(a,b) "this is the docstring"
+{
+  log("yes docstring")
+}
+
+function longdocstring(a,b) "this is a long docstring" {
+  log("long docstring")
+}

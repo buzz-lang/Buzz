@@ -1,14 +1,14 @@
-print(1 << 0)
-print(1 << 4)
-print(1 << 7)
+log(1 << 0)
+log(1 << 4)
+log(1 << 7)
 
-print(256 >> 1)
-print(256 >> 3)
-print(256 >> 6)
+log(256 >> 1)
+log(256 >> 3)
+log(256 >> 6)
 
-print(!1)
+log(!1)
 
-print(!!1)
+log(!!1)
 
-print(255 & (1 << 5))
-print(32 | (1 << 4))
+log(255 & (1 << 5))
+log(32 | (1 << 4))

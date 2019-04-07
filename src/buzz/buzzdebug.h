@@ -28,6 +28,8 @@ extern "C" {
       int64_t off;
       /* Function name, NULL for anonymous functions */
       char* fname;
+      /* Docstring associated with this function, or NULL */
+      char* docstring;
       /* Parameter names */
       buzzdarray_t params;
    };
@@ -136,7 +138,7 @@ extern "C" {
                                           buzzdebug_t dbg);
 
    /*
-    * Calls a Buzz closure, stopping for beakpoints.
+    * Calls a Buzz closure, stopping for breakpoints.
     * It expects the stack to be as follows:
     * #1   arg1
     * #2   arg2
@@ -154,7 +156,7 @@ extern "C" {
                                               buzzdebug_t dbg);
 
    /*
-    * Calls a function defined in Buzz, stopping for beakpoints.
+    * Calls a function defined in Buzz, stopping for breakpoints.
     * It expects the stack to be as follows:
     * #1 arg1
     * #2 arg2

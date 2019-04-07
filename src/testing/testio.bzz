@@ -1,21 +1,21 @@
-print("this", " ", "is", " ", "a", " ", "test")
+log("this", " ", "is", " ", "a", " ", "test")
 
 f = io.fopen("../../src/testing/testhexagon.bzz", "r")
 
 if(not f) {
-  print(io.error_message, "(", io.errno, ")")
+  log(io.error_message, "(", io.errno, ")")
 }
 else {
-  print(io.error_message, "(", io.errno, ")")
+  log(io.error_message, "(", io.errno, ")")
   io.fforeach(f, function(line) {
-      print(f.name, ": ", line)
+      log(f.name, ": ", line)
     })
 }
 io.fclose(f)
 
 g = io.fopen("blurb", "w")
 if(not g) {
-  print(io.error_message, "(", io.errno, ")")
+  log(io.error_message, "(", io.errno, ")")
 }
 else {
   io.fwrite(g, "Ma", "Porca", "Puttana", "Maiala")

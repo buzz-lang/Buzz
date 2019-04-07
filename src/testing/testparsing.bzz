@@ -45,14 +45,14 @@ else {
 # f()
 
 function foo() {
-  print("foo(); ", self)
+  log("foo(); ", self)
   return { # Table with 2 elements
     .x = { # Table with 3 elements
       .y = { # Table with 4 elements
         .c = function(s) {
-          print(".x.y['c'](); ", self)
+          log(".x.y['c'](); ", self)
           return function(s) {
-            print("<anonymous>(); ", self)
+            log("<anonymous>(); ", self)
           }
         },
         .d = 1,

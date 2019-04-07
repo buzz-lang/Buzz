@@ -307,6 +307,9 @@ void buzzobj_foreach_entry(const void* key, void* data, void* params) {
    buzzvm_push(p->vm, *(buzzobj_t*)data);
    /* Call closure */
    p->vm->state = buzzvm_closure_call(p->vm, 2);
+   if(p->vm->state != BUZZVM_STATE_READY) return;
+   /* Get rid of return value */
+   buzzvm_pop(p->vm);
 }
 
 int buzzobj_foreach(buzzvm_t vm) {

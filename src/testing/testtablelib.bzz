@@ -8,16 +8,16 @@ while(i < 10) {
 }
 
 table.print(t)
-print("")
+log("")
 
 table.sort(t, table.cmp_number)
 table.print(t)
-print("")
+log("")
 
 table.sort(t, function(a,b) { return not table.cmp_number(a,b) })
 table.print(t)
-print("")
+log("")
 
 table.shuffle(t)
 table.print(t)
-print("")
+log("")
