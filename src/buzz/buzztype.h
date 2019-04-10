@@ -251,4 +251,17 @@ extern "C" {
 }
 #endif
 
+#define buzzobj_isnil(OBJ) ((OBJ)->o.type == BUZZTYPE_NIL)
+#define buzzobj_isint(OBJ) ((OBJ)->o.type == BUZZTYPE_INT)
+#define buzzobj_isfloat(OBJ) ((OBJ)->o.type == BUZZTYPE_FLOAT)
+#define buzzobj_isstring(OBJ) ((OBJ)->o.type == BUZZTYPE_STRING)
+#define buzzobj_istable(OBJ) ((OBJ)->o.type == BUZZTYPE_TABLE)
+#define buzzobj_isclosure(OBJ) ((OBJ)->o.type == BUZZTYPE_CLOSURE)
+#define buzzobj_isuserdata(OBJ) ((OBJ)->o.type == BUZZTYPE_USERDATA)
+
+#define buzzobj_getint(OBJ) ((OBJ)->i.value)
+#define buzzobj_getfloat(OBJ) ((OBJ)->f.value)
+#define buzzobj_getstring(OBJ) ((OBJ)->s.value.str)
+#define buzzobj_getuserdata(OBJ) ((OBJ)->y.value)
+
 #endif
