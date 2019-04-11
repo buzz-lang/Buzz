@@ -29,7 +29,7 @@ static int SCOPE_AUTO     =  2;
 /*
  * At the end of parsing, the strings are output in the bytecode
  * file. The writing occurs in order, where the order is dictated by
- * the increasing string pos field. 
+ * the increasing string pos field.
  * To achieve this, the contents of the string dictionary are copied
  * to an array, which is later sorted.
  */
@@ -325,14 +325,16 @@ void chunk_print(uint32_t pos, void* data, void* params) {
 /****************************************/
 
 #define fetchtok()                                                      \
-   buzzlex_destroytok(&par->tok);                                       \
-   par->tok = buzzlex_nexttok(par->lex);                                \
-   if(!par->tok)                                                        \
-      return PARSE_ERROR;
+   {                                                                    \
+      do {                                                              \
+         buzzlex_destroytok(&par->tok);                                 \
+         par->tok = buzzlex_nexttok(par->lex);                          \
+      } while(par->tok->type != BUZZTOK_EOF && par->tok->type == BUZZTOK_STATEND); \
+   }
 
 int match(buzzparser_t par,
           buzztok_type_e type) {
-   if(!par->tok) {
+   if(par->tok->type == BUZZTOK_EOF) {
       fprintf(stderr,
               "%s: Syntax error: expected %s, found end of file\n",
               par->scriptfn,
@@ -401,7 +403,12 @@ int parse_lambda(buzzparser_t par);
 int parse_script(buzzparser_t par) {
    /* Fetch the first token */
    par->tok = buzzlex_nexttok(par->lex);
-   if(!par->tok) return PARSE_ERROR;
+   while(par->tok->type != BUZZTOK_EOF &&
+         par->tok->type == BUZZTOK_STATEND) {
+      buzzlex_destroytok(&par->tok);
+      par->tok = buzzlex_nexttok(par->lex);
+   }
+   if(par->tok->type == BUZZTOK_EOF) return PARSE_OK;
    /* Add a symbol table */
    symt_push();
    /* Add the first chunk for the global scope */
@@ -422,16 +429,16 @@ int parse_statlist(buzzparser_t par) {
    /* Parse first statement */
    if(!parse_stat(par)) return PARSE_ERROR;
    /* Keep parsing statements as long as you find tokens */
-   while(par->tok && par->tok->type != BUZZTOK_BLOCKCLOSE) {
-      while(par->tok && par->tok->type == BUZZTOK_STATEND) {
+   while(par->tok->type != BUZZTOK_EOF && par->tok->type != BUZZTOK_BLOCKCLOSE) {
+      while(par->tok->type != BUZZTOK_EOF && par->tok->type == BUZZTOK_STATEND) {
          buzzlex_destroytok(&par->tok);
          par->tok = buzzlex_nexttok(par->lex);
       }
       /* Make sure a file inclusion error did not happen */
-      if(!par->tok && !buzzlex_done(par->lex))
+      if(par->tok->type == BUZZTOK_EOF && !buzzlex_done(par->lex))
          return PARSE_ERROR;
       /* Parse the statement */
-      if(par->tok && !parse_stat(par)) return PARSE_ERROR;
+      if(!parse_stat(par)) return PARSE_ERROR;
    }
    return PARSE_OK;
 }
@@ -513,7 +520,6 @@ int parse_blockstat(buzzparser_t par) {
    }
    else {
       /* It's a single statement, eat extra statement end characters */
-      while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
       return parse_stat(par);
    }
 }
@@ -592,13 +598,14 @@ int parse_fun(buzzparser_t par) {
       return PARSE_ERROR;
    }
    /* Look it up in the symbol table */
-   const struct sym_s* s = sym_lookup(par->tok->value, par->symstack);
+   char* funname = strdup(par->tok->value);
+   const struct sym_s* s = sym_lookup(funname, par->symstack);
    if(!s) {
       /* Add a symbol for this function */
-      sym_add(par, par->tok->value, SCOPE_AUTO);
+      sym_add(par, funname, SCOPE_AUTO);
    }
    /* Make a new chunk for this function and get the associated symbol */
-   chunk_push(sym_lookup(par->tok->value, par->symstack));
+   chunk_push(sym_lookup(funname, par->symstack));
    fetchtok();
    tokmatch(BUZZTOK_PAROPEN);
    fetchtok();
@@ -611,6 +618,11 @@ int parse_fun(buzzparser_t par) {
    if(!parse_idlist(par)) return PARSE_ERROR;
    tokmatch(BUZZTOK_PARCLOSE);
    fetchtok();
+   /* Check for docstring, if any */
+   if(par->tok->type == BUZZTOK_STRING) {
+      /* DEBUG("found docstring '%s' for function %s()\n", par->tok->value, funname); */
+      fetchtok();
+   }
    /* Parse block */
    if(!parse_block(par)) return PARSE_ERROR;
    /* Add a default return */
@@ -618,6 +630,7 @@ int parse_fun(buzzparser_t par) {
    /* Get rid of symbol table and close chunk */
    symt_pop();
    chunk_pop();
+   free(funname);
    return PARSE_OK;
 }
 
@@ -638,19 +651,14 @@ int parse_if(buzzparser_t par) {
    /* Jamp to label 1 if the condition is false */
    /* Label 1 is either if end (in case of no else branch) or else branch */
    chunk_append("\tjumpz " LABELREF "%u", lab1);
-   /* Allow the use of non-cuddled brackets */
-   while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
    if(!parse_blockstat(par)) return PARSE_ERROR;
    /* Eat away the newlines, if any */
-   while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
-   if(par->tok->type == BUZZTOK_ELSE) {
+   if(par->tok && par->tok->type == BUZZTOK_ELSE) {
       fetchtok();
       /* Make true branch jump to label 2 => if end */
       chunk_append("\tjump " LABELREF "%u", lab2);
       /* Mark this place as label 1 and keep parsing */
       chunk_append(LABELREF "%u", lab1);
-      /* Allow the use of non-cuddled brackets */
-      while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
       if(!parse_blockstat(par)) return PARSE_ERROR;
       /* Mark the if end as label 2 */
       chunk_append(LABELREF "%u", lab2);
@@ -668,7 +676,7 @@ int parse_if(buzzparser_t par) {
 int parse_for(buzzparser_t par) {
    /*
     * for(init, cond, update) body
-    * 
+    *
     *          <init>
     * Lcond:   <cond>
     *          jumpnz Lbody
@@ -710,8 +718,6 @@ int parse_for(buzzparser_t par) {
    if(!parse_command(par)) return PARSE_ERROR;
    tokmatch(BUZZTOK_PARCLOSE);
    fetchtok();
-   /* Allow the use of non-cuddled brackets */
-   while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
    /* Jump to the condition */
    chunk_append("\tjump " LABELREF "%u", lcond);
    /* Place body label */
@@ -746,8 +752,6 @@ int parse_while(buzzparser_t par) {
    fetchtok();
    /* If the condition is false, jump to the end */
    chunk_append("\tjumpz " LABELREF "%u", wend);
-   /* Allow the use of non-cuddled brackets */
-   while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
    /* Parse block */
    if(!parse_blockstat(par)) return PARSE_ERROR;
    /* Jump back to while start */
@@ -762,18 +766,14 @@ int parse_while(buzzparser_t par) {
 
 int parse_conditionlist(buzzparser_t par,
                         int* numargs) {
-   while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
    *numargs = 0;
    if(par->tok->type == BUZZTOK_PARCLOSE) return PARSE_OK;
    if(!parse_condition(par)) return PARSE_ERROR;
    ++(*numargs);
-   while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
    while(par->tok->type == BUZZTOK_LISTSEP) {
       fetchtok();
-      while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
       if(!parse_condition(par)) return PARSE_ERROR;
       ++(*numargs);
-      while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
    }
    return PARSE_OK;
 }
@@ -822,8 +822,6 @@ int parse_expression(buzzparser_t par) {
       /* Table definition */
       /* Consume the { */
       fetchtok();
-      /* Eat away the newlines, if any */
-      while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
       /* Make sure either id = expression or } follow */
       if(par->tok->type != BUZZTOK_DOT &&
          par->tok->type != BUZZTOK_BLOCKCLOSE) {
@@ -870,16 +868,12 @@ int parse_expression(buzzparser_t par) {
          if(!parse_expression(par)) return PARSE_ERROR;
          /* Store expression in the table */
          chunk_append("\ttput");
-         /* Eat away the newlines, if any */
-         while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
          /* Is there a , following? */
          while(par->tok->type == BUZZTOK_LISTSEP) {
             /* Duplicate table on top of stack */
             chunk_append("\tdup");
             /* Consume the , */
             fetchtok();
-            /* Eat away the newlines, if any */
-            while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
             /* Make sure .id is present */
             tokmatch(BUZZTOK_DOT);
             fetchtok();
@@ -910,8 +904,6 @@ int parse_expression(buzzparser_t par) {
             if(!parse_expression(par)) return PARSE_ERROR;
             /* Store expression in the table */
             chunk_append("\ttput");
-            /* Eat away the newlines, if any */
-            while(par->tok->type == BUZZTOK_STATEND && !par->tok->value) { fetchtok(); }
          }
       }
       tokmatch(BUZZTOK_BLOCKCLOSE);
@@ -999,7 +991,7 @@ int parse_bitwisenot(buzzparser_t par) {
    if(par->tok->type == BUZZTOK_BNOT) {
       fetchtok();
       if(!parse_bitwisenot(par)) return PARSE_ERROR;
-      chunk_append("\tbnot");      
+      chunk_append("\tbnot");
       return PARSE_OK;
    }
    if(!parse_operand(par)) return PARSE_ERROR;
@@ -1013,7 +1005,7 @@ int parse_operand(buzzparser_t par) {
       return PARSE_OK;
    }
    else if(par->tok->type == BUZZTOK_NIL) {
-      chunk_append("\tpushnil");      
+      chunk_append("\tpushnil");
       fetchtok();
       return PARSE_OK;
    }
@@ -1121,8 +1113,11 @@ int parse_command(buzzparser_t par) {
          }
          return PARSE_OK;
       }
-      else if(idrefinfo.info == TYPE_CLOSURE)
+      else if(idrefinfo.info == TYPE_CLOSURE) {
+         /* Function call, discarded return value */
+         chunk_append("\tpop");
          return PARSE_OK;
+      }
       fprintf(stderr,
               "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: expected function call or assignment\n",
               buzzlex_getfile(par->lex)->fname,
@@ -1167,17 +1162,16 @@ int parse_idlist(buzzparser_t par) {
 }
 
 int parse_idreflist(buzzparser_t par) {
-   while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
+   fetchtok();
    if(par->tok->type == BUZZTOK_PARCLOSE)
       return PARSE_OK;
    struct idrefinfo_s idrefinfo;
    if(!parse_idref(par, 0, &idrefinfo)) return PARSE_ERROR;
-   while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
+   fetchtok();
    while(par->tok->type == BUZZTOK_LISTSEP) {
       fetchtok();
-      while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
       if(!parse_idref(par, 0, &idrefinfo)) return PARSE_ERROR;
-      while(par->tok->type == BUZZTOK_STATEND) { fetchtok(); }
+      fetchtok();
    }
    if(par->tok && par->tok->type == BUZZTOK_PARCLOSE) {
       return PARSE_OK;

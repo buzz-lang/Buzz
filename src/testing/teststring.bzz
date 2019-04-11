@@ -1,37 +1,37 @@
-include "../include/string.bzz"
+include "include/string.bzz"
 
 x = "le osterie, di fuori porta"
 i = 0
 while(i < string.length(x)) {
   var y = string.sub(x, i)
-  print("'", y, "' ", string.length(y), " characters")
+  log("'", y, "' ", string.length(y), " characters")
   i = i + 1
 }
 
-print(string.charat(x, 0))
-print(string.charat(x, 5))
-print(string.charat(x, 10))
-print(string.charat(x, 15))
-print(string.charat(x, 20))
-print(string.charat(x, 25))
+log(string.charat(x, 0))
+log(string.charat(x, 5))
+log(string.charat(x, 10))
+log(string.charat(x, 15))
+log(string.charat(x, 20))
+log(string.charat(x, 25))
 
-print(string.indexoffirst(x, "porta"))
-print(string.indexoffirst(x, "pizza"))
+log(string.indexoffirst(x, "porta"))
+log(string.indexoffirst(x, "pizza"))
 
-print(string.indexoflast(x, "osterie"))
-print(string.indexoflast(x, "pizza"))
+log(string.indexoflast(x, "osterie"))
+log(string.indexoflast(x, "pizza"))
 
 z = string.split(x, " ,")
-print(size(z), " tokens found")
+log(size(z), " tokens found")
 foreach(z, function(k, v) {
-    print("<", k, ",", v, ">")
+    log("<", k, ",", v, ">")
   })
 
 x = "   ,,,   , ,"
 z = string.split(x, " ,")
-print(size(z), " tokens found")
+log(size(z), " tokens found")
 foreach(z, function(k, v) {
-    print("<", k, ",", v, ">")
+    log("<", k, ",", v, ">")
   })
 
-print("'", string.concat("ciao", " ", "peppe", "!"), "'")
+log("'", string.concat("ciao", " ", "peppe", "!"), "'")

@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
    /* Set byte code */
    buzzvm_set_bcode(vm, bcode_buf, bcode_size);
    /* Register hook functions */
-   buzzvm_pushs(vm, buzzvm_string_register(vm, "print", 1));
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "log", 1));
    buzzvm_pushcc(vm, buzzvm_function_register(vm, print));
    buzzvm_gstore(vm);
    /* Run byte code */

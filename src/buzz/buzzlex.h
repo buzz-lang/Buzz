@@ -44,6 +44,7 @@ extern "C" {
       BUZZTOK_ASSIGN,
       BUZZTOK_DOT,
       BUZZTOK_CMP,
+      BUZZTOK_EOF,
    } buzztok_type_e;
    extern char *buzztok_desc[];
 

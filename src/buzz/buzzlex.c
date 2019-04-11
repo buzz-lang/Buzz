@@ -15,7 +15,7 @@ char *buzztok_desc[] = {
       "for", "while", "logic and/or", "logic not", "+ or -", "* or /",
       "%", "^", "bit shift", "bitwise and/or", "bitwise not",
       "{", "}", "(", ")", "[", "]", "; or newline",
-      ",", "=", ".", "== != < <= > >=" };
+      ",", "=", ".", "== != < <= > >=", "end-of-file" };
 
 /****************************************/
 /****************************************/
@@ -199,7 +199,9 @@ static buzztok_t buzzlex_newtok(buzztok_type_e type,
    retval->value = value;
    retval->line = line;
    retval->col = col + 1;
-   retval->fname = strdup(fname);
+   retval->fname = NULL;
+   if(fname)
+      retval->fname = strdup(fname);
    return retval;
 }
 
@@ -232,6 +234,13 @@ buzzlex_t buzzlex_new(const char* fname) {
                             tokstart,            \
                             lexf->fname);        \
    }
+
+#define eoftok                                   \
+   buzzlex_newtok(BUZZTOK_EOF,                   \
+                  NULL,                          \
+                  0,                             \
+                  0,                             \
+                  NULL)
 
 #define readval(CHARCOND)                                         \
    size_t start = lexf->cur_c - 1;                                \
@@ -267,7 +276,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
             buzzdarray_pop(lex);
             if(buzzdarray_isempty(lex))
                /* No file to go back to, done parsing */
-               return NULL;
+               return eoftok;
             lexf = buzzlex_getfile(lex);
          }
          else
@@ -288,7 +297,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
             buzzdarray_pop(lex);
             if(buzzdarray_isempty(lex))
                /* No file to go back to, done parsing */
-               return NULL;
+               return eoftok;
             lexf = buzzlex_getfile(lex);
          }
          else {
@@ -315,7 +324,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
                     lexf->fname,
                     lexf->cur_line,
                     lexf->cur_col);
-            return NULL;
+            return eoftok;
          }
          /* Read string */
          char quote = lexf->buf[lexf->cur_c];
@@ -334,7 +343,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
                     lexf->fname,
                     lexf->cur_line,
                     lexf->cur_col);
-            return NULL;
+            return eoftok;
          }
          /* Copy data into a new string */
          char* fname = (char*)malloc(lexf->cur_c - start + 1);
@@ -352,7 +361,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
                     lexf->cur_col,
                     fname);
             free(fname);
-            return NULL;
+            return eoftok;
          }
          free(fname);
          /* Make sure the file hasn't been already included */
@@ -544,7 +553,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
                                   lexf->fname);
          }
          default:
-            return NULL;
+            return eoftok;
       }
    }
    else if(buzzlex_isquote(c)) {
@@ -559,17 +568,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
          last2 = last1;
          last1 = lexf->buf[lexf->cur_c];
          /* Keep parsing the string */
-         if(lexf->buf[lexf->cur_c] != '\n') {
-            nextchar();
-         }
-         else {
-            fprintf(stderr,
-                    "%s:%" PRIu64 ":%" PRIu64 ": Syntax error: string closing quote not found\n",
-                    lexf->fname,
-                    lexf->cur_line,
-                    tokstart);
-            return NULL;
-         }
+         nextchar();
       }
       /* End of stream? Syntax error */
       if(lexf->cur_c >= lexf->buf_size) {
@@ -578,7 +577,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
                  lexf->fname,
                  lexf->cur_line,
                  tokstart);
-         return NULL;
+         return eoftok;
       }
       /* We have a valid string */
       char* val = buzzlex_newstring(lexf->buf + start,
@@ -598,7 +597,7 @@ buzztok_t buzzlex_nexttok(buzzlex_t lex) {
               lexf->cur_line,
               tokstart,
               c, c, c);
-      return NULL;
+      return eoftok;
    }
 }
 

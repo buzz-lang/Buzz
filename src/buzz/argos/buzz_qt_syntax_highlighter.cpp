@@ -37,6 +37,15 @@ CBuzzQTSyntaxHighlighter::CBuzzQTSyntaxHighlighter(QTextDocument* pc_text) :
 
 void CBuzzQTSyntaxHighlighter::highlightBlock(const QString& str_text) {
    /*
+    * Comment formatting
+    */
+   QRegExp cCommExpr("#.*");
+   int nCStart = cCommExpr.indexIn(str_text);
+   if(nCStart >= 0) {
+      setFormat(nCStart, cCommExpr.matchedLength(), m_cCommentFormat);
+      return;
+   }
+   /*
     * Apply normal rules
     */
    foreach (const SHighlightingRule& sRule, m_vecHighlightingRules) {
@@ -85,13 +94,6 @@ void CBuzzQTSyntaxHighlighter::highlightBlock(const QString& str_text) {
       /* Update start index */
       nStart = nEnd + 1;
    }
-   /*
-    * Comment formatting
-    */
-   QRegExp cCommExpr("#[^[\n]*");
-   int nCStart = cCommExpr.indexIn(str_text);
-   if(nCStart >= 0)
-      setFormat(nCStart, cCommExpr.matchedLength(), m_cCommentFormat);
 }
 
 /****************************************/

@@ -193,10 +193,20 @@ int buzzobj_cmp(const buzzobj_t a,
       return strcmp(str, b->s.value.str);
    }
    /* Tables */
-   if(a->o.type == BUZZTYPE_TABLE && b->o.type == BUZZTYPE_TABLE) {
-      if((uintptr_t)(a->t.value) < (uintptr_t)(b->t.value)) return -1;
-      if((uintptr_t)(a->t.value) > (uintptr_t)(b->t.value)) return 1;
-      return 0;
+   if(a->o.type == BUZZTYPE_TABLE || b->o.type == BUZZTYPE_TABLE) {
+      /* Both operands are tables */
+      if(a->o.type == BUZZTYPE_TABLE && b->o.type == BUZZTYPE_TABLE) {
+         if((uintptr_t)(a->t.value) < (uintptr_t)(b->t.value)) return -1;
+         if((uintptr_t)(a->t.value) > (uintptr_t)(b->t.value)) return 1;
+         return 0;
+      }
+      /* Anything is smaller than a table */
+      if(a->o.type == BUZZTYPE_TABLE) {
+         return 1;
+      }
+      if(b->o.type == BUZZTYPE_TABLE) {
+         return -1;
+      }
    }
    /* Userdata */
    if(a->o.type == BUZZTYPE_USERDATA && b->o.type == BUZZTYPE_USERDATA) {
@@ -297,6 +307,9 @@ void buzzobj_foreach_entry(const void* key, void* data, void* params) {
    buzzvm_push(p->vm, *(buzzobj_t*)data);
    /* Call closure */
    p->vm->state = buzzvm_closure_call(p->vm, 2);
+   if(p->vm->state != BUZZVM_STATE_READY) return;
+   /* Get rid of return value */
+   buzzvm_pop(p->vm);
 }
 
 int buzzobj_foreach(buzzvm_t vm) {
