@@ -7,6 +7,13 @@ execute_process(
   OUTPUT_VARIABLE BUZZ_PROCESSOR_ARCH)
 
 #
+# Select ISO C++11
+#
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+#
 # General compilation flags
 #
 set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Wall -std=c99 -D_GNU_SOURCE")
