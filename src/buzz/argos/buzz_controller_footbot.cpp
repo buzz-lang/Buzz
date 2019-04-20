@@ -168,19 +168,19 @@ static int BuzzSetLEDs(buzzvm_t vm) {
 static int BuzzSetLED(buzzvm_t vm) {
    buzzvm_lnum_assert(vm, 4);
    /* Push the color components */
-   buzzvm_lload(vm, 1);
-   buzzvm_lload(vm, 2);
-   buzzvm_lload(vm, 3);
-   buzzvm_lload(vm, 4);
+   buzzvm_lload(vm, 1); // idx
+   buzzvm_lload(vm, 2); // red
+   buzzvm_lload(vm, 3); // green
+   buzzvm_lload(vm, 4); // blue
    buzzvm_type_assert_number(vm, 4);
    buzzvm_type_assert_number(vm, 3);
    buzzvm_type_assert_number(vm, 2);
    buzzvm_type_assert_number(vm, 1);
    /* Create a new color with that */
-   UInt32 unIdx = buzzvm_stack_number_to_int(vm, 1);
-   CColor cColor(buzzvm_stack_number_to_int(vm, 4),
-                 buzzvm_stack_number_to_int(vm, 3),
-                 buzzvm_stack_number_to_int(vm, 2));
+   UInt32 unIdx = buzzvm_stack_number_to_int(vm, 4);
+   CColor cColor(buzzvm_stack_number_to_int(vm, 3),
+                 buzzvm_stack_number_to_int(vm, 2),
+                 buzzvm_stack_number_to_int(vm, 1));
    /* Get pointer to the controller */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
    buzzvm_gload(vm);
