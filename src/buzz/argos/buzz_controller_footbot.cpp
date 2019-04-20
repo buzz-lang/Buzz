@@ -252,6 +252,7 @@ CBuzzControllerFootBot::CBuzzControllerFootBot() :
    m_pcLEDs(NULL),
    m_pcGripper(NULL),
    m_pcProximity(NULL),
+   m_pcLight(NULL),
    m_pcCamera(NULL) {
 }
 
@@ -279,6 +280,8 @@ void CBuzzControllerFootBot::Init(TConfigurationNode& t_node) {
       try { m_pcTurretA = GetActuator<CCI_FootBotTurretActuator>("footbot_turret"); }
       catch(CARGoSException& ex) {}
       try { m_pcProximity = GetSensor<CCI_FootBotProximitySensor>("footbot_proximity"); }
+      catch(CARGoSException& ex) {}
+      try { m_pcLight = GetSensor<CCI_FootBotLightSensor>("footbot_light"); }
       catch(CARGoSException& ex) {}
       try { m_pcCamera = GetSensor<CCI_ColoredBlobOmnidirectionalCameraSensor>("colored_blob_omnidirectional_camera"); }
       catch(CARGoSException& ex) {}
@@ -321,6 +324,31 @@ void CBuzzControllerFootBot::UpdateSensors() {
          TablePut(tProxRead, "angle", tProxReads[i].Angle);
          /* Store read table in the proximity table */
          TablePut(tProxTable, i, tProxRead);
+      }
+   }
+   /*
+    * Update proximity sensor table
+    */
+   if(m_pcLight != NULL) {
+      /* Create empty light table */
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "light", 1));
+      buzzvm_pusht(m_tBuzzVM);
+      buzzobj_t tLightTable = buzzvm_stack_at(m_tBuzzVM, 1);
+      buzzvm_gstore(m_tBuzzVM);
+      /* Get light readings */
+      const CCI_FootBotLightSensor::TReadings& tLightReads = m_pcLight->GetReadings();
+      /* Fill into the light table */
+      buzzobj_t tLightRead;
+      for(size_t i = 0; i < tLightReads.size(); ++i) {
+         /* Create table for i-th read */
+         buzzvm_pusht(m_tBuzzVM);
+         tLightRead = buzzvm_stack_at(m_tBuzzVM, 1);
+         buzzvm_pop(m_tBuzzVM);
+         /* Fill in the read */
+         TablePut(tLightRead, "value", tLightReads[i].Value);
+         TablePut(tLightRead, "angle", tLightReads[i].Angle);
+         /* Store read table in the light table */
+         TablePut(tLightTable, i, tLightRead);
       }
    }
    /*

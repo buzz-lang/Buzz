@@ -6,6 +6,7 @@
 #include <argos3/plugins/robots/generic/control_interface/ci_leds_actuator.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_colored_blob_omnidirectional_camera_sensor.h>
 #include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_proximity_sensor.h>
+#include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_light_sensor.h>
 #include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_gripper_actuator.h>
 #include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_turret_actuator.h>
 
@@ -75,6 +76,8 @@ protected:
    CCI_FootBotTurretActuator* m_pcTurretA;
    /* Pointer to the proximity sensor */
    CCI_FootBotProximitySensor* m_pcProximity;
+   /* Pointer to the light sensor */
+   CCI_FootBotLightSensor* m_pcLight;
    /* Pointer to the camera sensor */
    CCI_ColoredBlobOmnidirectionalCameraSensor* m_pcCamera;
 

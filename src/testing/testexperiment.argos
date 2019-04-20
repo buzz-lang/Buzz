@@ -24,6 +24,7 @@
       </actuators>
       <sensors>
         <range_and_bearing implementation="medium" medium="rab" show_rays="true" noise_std_dev="0" />
+        <footbot_light implementation="rot_z_only" />
       </sensors>
       <params>
         <wheel_turning hard_turn_angle_threshold="90"
