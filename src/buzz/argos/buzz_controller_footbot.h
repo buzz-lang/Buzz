@@ -52,6 +52,7 @@ public:
    void SetWheels(Real f_left_speed, Real f_right_speed);
    void SetWheelSpeedsFromVector(const CVector2& c_heading);
    void SetLEDs(const CColor& c_color);
+   void SetLED(UInt32 un_idx, const CColor& c_color);
    void CameraEnable();
    void CameraDisable();
    void GripperLock();
