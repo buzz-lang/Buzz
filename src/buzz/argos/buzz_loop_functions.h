@@ -213,6 +213,56 @@ void BuzzTablePut(buzzvm_t t_vm,
                   const std::string& str_key,
                   const std::string& str_val);
 
+/**
+ * Opens a table nested in the currently open table.
+ *
+ * The BuzzTableGet() and BuzzTablePut() functions require an open table to
+ * operate correctly.
+ *
+ * @param t_vm The Buzz VM.
+ * @param n_key The key.
+ * @see BuzzTableCloseNested
+ */
+void BuzzTableOpenNested(buzzvm_t t_vm,
+                         int n_key);
+
+/**
+ * Opens a table nested in the currently open table.
+ *
+ * The BuzzTableGet() and BuzzTablePut() functions require an open table to
+ * operate correctly.
+ *
+ * @param t_vm The Buzz VM.
+ * @param f_key The key.
+ * @see BuzzTableCloseNested
+ */
+void BuzzTableOpenNested(buzzvm_t t_vm,
+                         float f_key);
+
+/**
+ * Opens a table nested in the currently open table.
+ *
+ * The BuzzTableGet() and BuzzTablePut() functions require an open table to
+ * operate correctly.
+ *
+ * @param t_vm The Buzz VM.
+ * @param str_key The key.
+ * @see BuzzTableCloseNested
+ */
+void BuzzTableOpenNested(buzzvm_t t_vm,
+                         const std::string& str_key);
+
+/**
+ * Closes the currently open table and stores it in the parent table.
+ *
+ * The BuzzTableGet() and BuzzTablePut() functions require an open table to
+ * operate correctly, so after this method you can't use them anymore.
+ *
+ * @param t_vm The Buzz VM.
+ * @see BuzzTableOpenNested
+ */
+void BuzzTableCloseNested(buzzvm_t t_vm);
+
 /****************************************/
 /****************************************/
 
@@ -234,7 +284,7 @@ public:
     * If your operations are stateless, consider using BuzzForeachVM(std::function) instead.
     */
    struct COperation {
-      virtual void operator()(const std::string str_robot_id,
+      virtual void operator()(const std::string& str_robot_id,
                               buzzvm_t t_vm) = 0;
    };
 
@@ -251,7 +301,7 @@ protected:
    /**
     * Loops through all the VMs and executes the given function.
     */
-   void BuzzForeachVM(std::function<void(const std::string str_robot_id, buzzvm_t)> c_function);
+   void BuzzForeachVM(std::function<void(const std::string&, buzzvm_t)> c_function);
 
    /**
     * Loops through all the VMs and executes the given operation.

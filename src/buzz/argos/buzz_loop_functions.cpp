@@ -168,6 +168,61 @@ void BuzzTablePut(buzzvm_t t_vm,
 /****************************************/
 /****************************************/
 
+void BuzzTableOpenNested(buzzvm_t t_vm,
+                         int n_key) {
+   buzzvm_dup(t_vm);
+   buzzvm_pushi(t_vm, n_key);
+   buzzvm_push(t_vm, buzzvm_stack_at(t_vm, 2));
+   buzzvm_pushi(t_vm, n_key);
+   buzzvm_tget(t_vm);
+   if(!buzzobj_istable(buzzvm_stack_at(t_vm, 1))) {
+      buzzvm_pop(t_vm);
+      buzzvm_pusht(t_vm);
+   }
+}
+
+/****************************************/
+/****************************************/
+
+void BuzzTableOpenNested(buzzvm_t t_vm,
+                         float f_key) {
+   buzzvm_dup(t_vm);
+   buzzvm_pushf(t_vm, f_key);
+   buzzvm_push(t_vm, buzzvm_stack_at(t_vm, 2));
+   buzzvm_pushf(t_vm, f_key);
+   buzzvm_tget(t_vm);
+   if(!buzzobj_istable(buzzvm_stack_at(t_vm, 1))) {
+      buzzvm_pop(t_vm);
+      buzzvm_pusht(t_vm);
+   }
+}
+
+/****************************************/
+/****************************************/
+
+void BuzzTableOpenNested(buzzvm_t t_vm,
+                         const std::string& str_key) {
+   buzzvm_dup(t_vm);
+   buzzvm_pushs(t_vm, buzzvm_string_register(t_vm, str_key.c_str(), 0));
+   buzzvm_push(t_vm, buzzvm_stack_at(t_vm, 2));
+   buzzvm_pushs(t_vm, buzzvm_string_register(t_vm, str_key.c_str(), 0));
+   buzzvm_tget(t_vm);
+   if(!buzzobj_istable(buzzvm_stack_at(t_vm, 1))) {
+      buzzvm_pop(t_vm);
+      buzzvm_pusht(t_vm);
+   }
+}
+
+/****************************************/
+/****************************************/
+
+void BuzzTableCloseNested(buzzvm_t t_vm) {
+   buzzvm_tput(t_vm);
+}
+
+/****************************************/
+/****************************************/
+
 void CBuzzLoopFunctions::Init(TConfigurationNode& t_tree) {
    BuzzRegisterVMs();
 }
@@ -184,7 +239,7 @@ buzzvm_t CBuzzLoopFunctions::BuzzGetVM(const std::string& str_robot_id) {
 /****************************************/
 
 void CBuzzLoopFunctions::BuzzForeachVM(
-   std::function<void(const std::string str_robot_id,
+   std::function<void(const std::string& str_robot_id,
                       buzzvm_t)> c_function) {
    for(std::map<std::string, CBuzzController*>::iterator it = m_mapBuzzVMs.begin();
        it != m_mapBuzzVMs.end();

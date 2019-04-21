@@ -49,6 +49,12 @@
 
   </controllers>
 
+  <!-- ****************** -->
+  <!-- * Loop functions * -->
+  <!-- ****************** -->
+  <loop_functions library="build/testing/libtestloopfunctions"
+                  label="test_loop_functions" />
+
   <!-- *********************** -->
   <!-- * Arena configuration * -->
   <!-- *********************** -->
