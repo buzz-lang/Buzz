@@ -552,7 +552,7 @@ int parse_var(buzzparser_t par) {
    tokmatch(BUZZTOK_ID);
    /* Look it up in the symbol table */
    const struct sym_s* s = sym_lookup(par->tok->value, par->symstack);
-   if(s) {
+   if(s && s->global == SCOPE_LOCAL) {
       fprintf(stderr,
               "%s:%" PRIu64 ":%" PRIu64 ": Duplicated symbol '%s'\n",
               buzzlex_getfile(par->lex)->fname,
