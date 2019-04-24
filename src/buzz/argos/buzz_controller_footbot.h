@@ -3,6 +3,7 @@
 
 #include <buzz/argos/buzz_controller.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_differential_steering_actuator.h>
+#include <argos3/plugins/robots/generic/control_interface/ci_differential_steering_sensor.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_leds_actuator.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_colored_blob_omnidirectional_camera_sensor.h>
 #include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_proximity_sensor.h>
@@ -68,7 +69,7 @@ private:
 protected:
 
    /* Pointer to the differential steering actuator */
-   CCI_DifferentialSteeringActuator* m_pcWheels;
+   CCI_DifferentialSteeringActuator* m_pcWheelsA;
    /* Pointer to the LEDs actuator */
    CCI_LEDsActuator* m_pcLEDs;
    /* Pointer to the foot-bot gripper actuator */
@@ -81,6 +82,8 @@ protected:
    CCI_FootBotLightSensor* m_pcLight;
    /* Pointer to the camera sensor */
    CCI_ColoredBlobOmnidirectionalCameraSensor* m_pcCamera;
+   /* Pointer to the differential steering actuator */
+   CCI_DifferentialSteeringSensor* m_pcWheelsS;
 
    /* The turning parameters. */
    SWheelTurningParams m_sWheelTurningParams;

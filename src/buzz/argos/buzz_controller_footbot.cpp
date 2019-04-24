@@ -276,12 +276,13 @@ static int BuzzTurretSet(buzzvm_t vm) {
 /****************************************/
 
 CBuzzControllerFootBot::CBuzzControllerFootBot() :
-   m_pcWheels(NULL),
+   m_pcWheelsA(NULL),
    m_pcLEDs(NULL),
    m_pcGripper(NULL),
    m_pcProximity(NULL),
    m_pcLight(NULL),
-   m_pcCamera(NULL) {
+   m_pcCamera(NULL),
+   m_pcWheelsS(NULL) {
 }
 
 /****************************************/
@@ -297,7 +298,7 @@ void CBuzzControllerFootBot::Init(TConfigurationNode& t_node) {
    try {
       /* Get pointers to devices */
       try {
-         m_pcWheels = GetActuator<CCI_DifferentialSteeringActuator>("differential_steering");
+         m_pcWheelsA = GetActuator<CCI_DifferentialSteeringActuator>("differential_steering");
          m_sWheelTurningParams.Init(GetNode(t_node, "wheel_turning"));
       }
       catch(CARGoSException& ex) {}
@@ -312,6 +313,8 @@ void CBuzzControllerFootBot::Init(TConfigurationNode& t_node) {
       try { m_pcLight = GetSensor<CCI_FootBotLightSensor>("footbot_light"); }
       catch(CARGoSException& ex) {}
       try { m_pcCamera = GetSensor<CCI_ColoredBlobOmnidirectionalCameraSensor>("colored_blob_omnidirectional_camera"); }
+      catch(CARGoSException& ex) {}
+      try { m_pcWheelsS = GetSensor<CCI_DifferentialSteeringSensor>("differential_steering"); }
       catch(CARGoSException& ex) {}
       /* Initialize the rest */
       CBuzzController::Init(t_node);
@@ -357,7 +360,7 @@ void CBuzzControllerFootBot::UpdateSensors() {
    /*
     * Update proximity sensor table
     */
-   if(m_pcLight != NULL) {
+   if(m_pcLight) {
       /* Create empty light table */
       buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "light", 1));
       buzzvm_pusht(m_tBuzzVM);
@@ -397,6 +400,33 @@ void CBuzzControllerFootBot::UpdateSensors() {
          TablePut(tEntry, "angle",    sBlobs.BlobList[i]->Angle);
          TablePut(tEntry, "color",    sBlobs.BlobList[i]->Color);
       }
+   }
+   /*
+    * Differential steering sensor
+    */
+   if(m_pcWheelsS) {
+      /* Make "wheels" table */
+      const CCI_DifferentialSteeringSensor::SReading& sWheels = m_pcWheelsS->GetReading();
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "wheels", 1));
+      buzzvm_pusht(m_tBuzzVM);
+      buzzobj_t tWheels = buzzvm_stack_at(m_tBuzzVM, 1);
+      buzzvm_gstore(m_tBuzzVM);
+      /* Make "velocity" table */
+      buzzvm_pusht(m_tBuzzVM);
+      buzzobj_t tVelocity = buzzvm_stack_at(m_tBuzzVM, 1);
+      buzzvm_pop(m_tBuzzVM);
+      TablePut(tWheels, "velocity", tVelocity);
+      TablePut(tVelocity, "left", sWheels.VelocityLeftWheel);
+      TablePut(tVelocity, "right", sWheels.VelocityRightWheel);
+      /* Make "covered_distance" table */
+      buzzvm_pusht(m_tBuzzVM);
+      buzzobj_t tCoveredDistance = buzzvm_stack_at(m_tBuzzVM, 1);
+      buzzvm_pop(m_tBuzzVM);
+      TablePut(tWheels, "covered_distance", tCoveredDistance);
+      TablePut(tCoveredDistance, "left", sWheels.CoveredDistanceLeftWheel);
+      TablePut(tCoveredDistance, "right", sWheels.CoveredDistanceRightWheel);
+      /* Axis length */
+      TablePut(tWheels, "axis_length", sWheels.WheelAxisLength);
    }
 }
 
@@ -468,7 +498,7 @@ void CBuzzControllerFootBot::SetWheelSpeedsFromVector(const CVector2& c_heading)
       fRightWheelSpeed = fSpeed1;
    }
    /* Finally, set the wheel speeds */
-   m_pcWheels->SetLinearVelocity(fLeftWheelSpeed, fRightWheelSpeed);
+   m_pcWheelsA->SetLinearVelocity(fLeftWheelSpeed, fRightWheelSpeed);
 }
 
 /****************************************/
@@ -476,8 +506,8 @@ void CBuzzControllerFootBot::SetWheelSpeedsFromVector(const CVector2& c_heading)
 
 void CBuzzControllerFootBot::SetWheels(Real f_left_speed,
                                        Real f_right_speed) {
-   m_pcWheels->SetLinearVelocity(f_left_speed,
-                                 f_right_speed);
+   m_pcWheelsA->SetLinearVelocity(f_left_speed,
+                                  f_right_speed);
 }
 
 /****************************************/
@@ -550,7 +580,7 @@ void CBuzzControllerFootBot::TurretSet(Real f_rotation) {
 buzzvm_state CBuzzControllerFootBot::RegisterFunctions() {
    /* Register base functions */
    CBuzzController::RegisterFunctions();
-   if(m_pcWheels) {
+   if(m_pcWheelsA) {
       /* BuzzSetWheels */
       buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "set_wheels", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzSetWheels));
