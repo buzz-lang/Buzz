@@ -506,6 +506,7 @@ int parse_block(buzzparser_t par, int pushsymt) {
       return PARSE_OK;
    }
    else {
+      if(pushsymt) symt_push();
       /* Save the current number of variables */
       uint32_t numvars = buzzdict_size(par->syms);
       if(parse_statlist(par)) {
@@ -519,6 +520,7 @@ int parse_block(buzzparser_t par, int pushsymt) {
          buzzdict_foreach(par->syms, buzzparser_symtodel, &symdeldata);
          buzzdarray_foreach(symdeldata.dellist, buzzparser_symdel, par->syms);
          buzzdarray_destroy(&(symdeldata.dellist));
+         if(pushsymt) symt_pop();
          return PARSE_OK;
       }
       else {
