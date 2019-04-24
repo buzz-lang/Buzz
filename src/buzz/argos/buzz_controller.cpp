@@ -482,9 +482,10 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
       }
       if(strBCFName != "" && strDbgFName != "")
          SetBytecode(strBCFName, strDbgFName);
-      else
+      else {
          m_tBuzzVM = buzzvm_new(m_unRobotId);
-      UpdateSensors();
+         UpdateSensors();
+      }
       /* Set initial robot message (id and then all zeros) */
       CByteArray cData;
       cData << m_tBuzzVM->robot;
@@ -520,7 +521,8 @@ void CBuzzController::Reset() {
       /* Set the bytecode again */
       if(m_strBytecodeFName != "" && m_strDbgInfoFName != "")
          SetBytecode(m_strBytecodeFName, m_strDbgInfoFName);
-      UpdateSensors();
+      else
+         UpdateSensors();
    }
    catch(CARGoSException& ex) {
       LOGERR << ex.what();
@@ -611,6 +613,7 @@ void CBuzzController::SetBytecode(const std::string& str_bc_fname,
    if(RegisterFunctions() != BUZZVM_STATE_READY) {
       THROW_ARGOSEXCEPTION("Error while registering functions: " << ErrorInfo());
    }
+   UpdateSensors();
    /* Execute the global part of the script */
    buzzvm_execute_script(m_tBuzzVM);
    /* Call the Init() function */
