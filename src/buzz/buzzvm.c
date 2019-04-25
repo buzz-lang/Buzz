@@ -154,6 +154,7 @@ void buzzvm_process_inmsgs(buzzvm_t vm) {
             buzzvm_push(vm, value);
             buzzvm_push(vm, rido);
             buzzvm_closure_call(vm, 3);
+            buzzvm_pop(vm);
             break;
          }
          case BUZZMSG_VSTIG_PUT: {
