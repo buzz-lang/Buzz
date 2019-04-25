@@ -506,7 +506,15 @@ int parse_block(buzzparser_t par, int pushsymt) {
       return PARSE_OK;
    }
    else {
-      if(pushsymt) symt_push();
+      if(pushsymt) {
+         if(buzzdarray_size(par->symstack) == 1) {
+            /* Add new symtable */
+            symt_push();
+         }
+         else {
+            symt_clone();
+         }
+      }
       /* Save the current number of variables */
       uint32_t numvars = buzzdict_size(par->syms);
       if(parse_statlist(par)) {
