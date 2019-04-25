@@ -308,8 +308,10 @@ protected:
     */
    void BuzzForeachVM(COperation& c_operation);
 
-private:
-
+   /**
+    * Registers the BuzzVMs, so the BuzzForeachVM methods can do their work.
+    * @see BuzzForeachVM
+    */
    void BuzzRegisterVMs();
 
 protected:
