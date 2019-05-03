@@ -683,7 +683,7 @@ int buzzvm_set_bcode(buzzvm_t vm,
       if(buzzvm_step(vm) != BUZZVM_STATE_READY) return vm->state;
    buzzvm_step(vm);
    /* Initialize empty neighbors */
-   buzzneighbors_reset(vm);
+   buzzneighbors_new(vm);
    /* Register robot id */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id", 1));
    buzzvm_pushi(vm, vm->robot);

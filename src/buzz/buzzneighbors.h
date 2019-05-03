@@ -14,6 +14,15 @@ extern "C" {
    struct buzzvm_s;
 
    /*
+    * Creates the neighbor structure.
+    * Add new neighbor data with buzzneighbor_add().
+    * @param vm The Buzz VM data.
+    * @return The updated VM state.
+    * @see buzzneighbor_add()
+    */
+   extern int buzzneighbors_new(struct buzzvm_s* vm);
+
+   /*
     * Clears the neighbor structure.
     * Add new neighbor data with buzzneighbor_add().
     * @param vm The Buzz VM data.
