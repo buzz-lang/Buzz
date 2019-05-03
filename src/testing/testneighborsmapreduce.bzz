@@ -10,13 +10,23 @@ function init() {
 
 function step() {
   neighbors.broadcast(TOPIC, id)
-  log("ROBOT", id)
-  log("neighbors.msgs = ")
   if(neighbors.msgs) {
-    table.print(neighbors.msgs)
     log("neighbors.msgs.", TOPIC, " = ")
-    if(neighbors.msgs[TOPIC])
+    if(neighbors.msgs[TOPIC]) {
       table.print(neighbors.msgs[TOPIC])
+      x =
+      reduce(
+        map(
+          neighbors.msgs[TOPIC],
+          function(robot, value) {
+            return value + 100
+          }),
+        function(robot, value, accum) {
+          return accum + value
+        },
+        0)
+      log("x = ", x)
+    }
     neighbors.reset(TOPIC)
   }
 }
