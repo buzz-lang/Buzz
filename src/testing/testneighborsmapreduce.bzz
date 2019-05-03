@@ -1,0 +1,25 @@
+include "include/neighbors.bzz"
+include "include/table.bzz"
+
+TOPIC = "topic"
+
+function init() {
+  neighbors.collect(TOPIC)
+  neighbors.broadcast(TOPIC, id)
+}
+
+function step() {
+  neighbors.broadcast(TOPIC, id)
+  log("ROBOT", id)
+  log("neighbors.msgs = ")
+  if(neighbors.msgs) {
+    table.print(neighbors.msgs)
+    log("neighbors.msgs.", TOPIC, " = ")
+    if(neighbors.msgs[TOPIC])
+      table.print(neighbors.msgs[TOPIC])
+    neighbors.reset(TOPIC)
+  }
+}
+
+function destroy() {
+}
