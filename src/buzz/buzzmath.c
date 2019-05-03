@@ -432,7 +432,8 @@ int buzzmath_min(buzzvm_t vm) {
    buzzvm_lload(vm, 2);
    buzzobj_t b = buzzvm_stack_at(vm, 1);
    /* Compare them and return the smaller one */
-   if(buzzobj_cmp(a, b) <= 0)
+   int cmp = buzzobj_cmp(a, b);
+   if(cmp != 1)
       buzzvm_push(vm, a);
    else
       buzzvm_push(vm, b);
@@ -450,7 +451,8 @@ int buzzmath_max(buzzvm_t vm) {
    buzzvm_lload(vm, 2);
    buzzobj_t b = buzzvm_stack_at(vm, 1);
    /* Compare them and return the bigger one */
-   if(buzzobj_cmp(a, b) >= 0)
+   int cmp = buzzobj_cmp(a, b);
+   if(cmp >= 0)
       buzzvm_push(vm, a);
    else
       buzzvm_push(vm, b);

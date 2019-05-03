@@ -139,11 +139,8 @@ int buzzobj_cmp(const buzzobj_t a,
    if(a->o.type == BUZZTYPE_NIL && b->o.type == BUZZTYPE_NIL) {
       return 0;
    }
-   if(a->o.type == BUZZTYPE_NIL) {
-      return -1;
-   }
-   if(b->o.type == BUZZTYPE_NIL) {
-      return 1;
+   if(a->o.type == BUZZTYPE_NIL || b->o.type == BUZZTYPE_NIL) {
+      return 2;
    }
    /* Numeric types */
    if(a->o.type == BUZZTYPE_INT && b->o.type == BUZZTYPE_INT) {

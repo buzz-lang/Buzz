@@ -615,7 +615,7 @@ void CBuzzController::SetBytecode(const std::string& str_bc_fname,
    }
    UpdateSensors();
    /* Execute the global part of the script */
-   if(buzzvm_execute_script(m_tBuzzVM) != BUZZVM_STATE_READY) {
+   if(buzzvm_execute_script(m_tBuzzVM) != BUZZVM_STATE_DONE) {
       THROW_ARGOSEXCEPTION("Error while executing global portion of Buzz script: " << ErrorInfo());
    }
    /* Call the Init() function */
