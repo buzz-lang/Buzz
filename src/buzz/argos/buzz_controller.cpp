@@ -615,7 +615,9 @@ void CBuzzController::SetBytecode(const std::string& str_bc_fname,
    }
    UpdateSensors();
    /* Execute the global part of the script */
-   buzzvm_execute_script(m_tBuzzVM);
+   if(buzzvm_execute_script(m_tBuzzVM) != BUZZVM_STATE_READY) {
+      THROW_ARGOSEXCEPTION("Error while executing global portion of Buzz script: " << ErrorInfo());
+   }
    /* Call the Init() function */
    if(buzzvm_function_call(m_tBuzzVM, "init", 0) != BUZZVM_STATE_READY) {
       fprintf(stderr, "[ROBOT %u] %s: execution terminated abnormally: %s\n\n",
