@@ -1,0 +1,23 @@
+#
+# Creates the namespace
+#
+neighbors.msgs = {}
+
+#
+# Collects messages on a specific topic into a table.
+# PARAM topic: The topic to listen to
+#
+neighbors.collect = function(topic) {
+  neighbors.listen(topic, function(top, value, robot) {
+      if(not neighbors.msgs[top]) neighbors.msgs[top] = {}
+      neighbors.msgs[top][robot] = value
+    })
+}
+
+#
+# Empties the list of messages corresponding to the given topic.
+# PARAM topic: The topic
+#
+neighbors.reset = function(topic) {
+  neighbors.msgs[topic] = nil
+}
