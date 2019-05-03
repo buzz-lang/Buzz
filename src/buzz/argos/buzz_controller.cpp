@@ -501,8 +501,7 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
 /****************************************/
 
 void CBuzzController::Reset() {
-   buzzvm_function_call(m_tBuzzVM, "reset", 0);
-   if(buzzvm_function_call(m_tBuzzVM, "step", 0) != BUZZVM_STATE_READY) {
+   if(buzzvm_function_call(m_tBuzzVM, "reset", 0) != BUZZVM_STATE_READY) {
       fprintf(stderr, "[ROBOT %u] %s: execution terminated abnormally: %s\n\n",
               m_tBuzzVM->robot,
               m_strBytecodeFName.c_str(),
