@@ -12,7 +12,9 @@ if(ARGOS_FOUND)
   link_directories(${ARGOS_LIBRARY_DIRS})
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ARGOS_PREFIX}/share/argos3/cmake)
   include(ARGoSCheckQTOpenGL)
-  # Look for Lua52
-  find_package(Lua52 REQUIRED)
-  include_directories(${LUA_INCLUDE_DIR})
+  # Look for Lua53
+  find_package(Lua53)
+  if(Lua53_FOUND)
+    include_directories(${LUA_INCLUDE_DIR})
+  endif(Lua53_FOUND)
 endif(ARGOS_FOUND)
