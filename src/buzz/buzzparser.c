@@ -647,7 +647,6 @@ int parse_fun(buzzparser_t par) {
    fetchtok();
    /* Check for docstring, if any */
    if(par->tok->type == BUZZTOK_STRING) {
-      /* DEBUG("found docstring '%s' for function %s()\n", par->tok->value, funname); */
       fetchtok();
    }
    /* Parse block */
