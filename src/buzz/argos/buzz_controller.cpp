@@ -482,9 +482,10 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
       }
       if(strBCFName != "" && strDbgFName != "")
          SetBytecode(strBCFName, strDbgFName);
-      else
+      else {
          m_tBuzzVM = buzzvm_new(m_unRobotId);
-      UpdateSensors();
+         UpdateSensors();
+      }
       /* Set initial robot message (id and then all zeros) */
       CByteArray cData;
       cData << m_tBuzzVM->robot;
@@ -500,8 +501,7 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
 /****************************************/
 
 void CBuzzController::Reset() {
-   buzzvm_function_call(m_tBuzzVM, "reset", 0);
-   if(buzzvm_function_call(m_tBuzzVM, "step", 0) != BUZZVM_STATE_READY) {
+   if(buzzvm_function_call(m_tBuzzVM, "reset", 0) != BUZZVM_STATE_READY) {
       fprintf(stderr, "[ROBOT %u] %s: execution terminated abnormally: %s\n\n",
               m_tBuzzVM->robot,
               m_strBytecodeFName.c_str(),
@@ -520,7 +520,8 @@ void CBuzzController::Reset() {
       /* Set the bytecode again */
       if(m_strBytecodeFName != "" && m_strDbgInfoFName != "")
          SetBytecode(m_strBytecodeFName, m_strDbgInfoFName);
-      UpdateSensors();
+      else
+         UpdateSensors();
    }
    catch(CARGoSException& ex) {
       LOGERR << ex.what();
@@ -611,8 +612,11 @@ void CBuzzController::SetBytecode(const std::string& str_bc_fname,
    if(RegisterFunctions() != BUZZVM_STATE_READY) {
       THROW_ARGOSEXCEPTION("Error while registering functions: " << ErrorInfo());
    }
+   UpdateSensors();
    /* Execute the global part of the script */
-   buzzvm_execute_script(m_tBuzzVM);
+   if(buzzvm_execute_script(m_tBuzzVM) != BUZZVM_STATE_DONE) {
+      THROW_ARGOSEXCEPTION("Error while executing global portion of Buzz script: " << ErrorInfo());
+   }
    /* Call the Init() function */
    if(buzzvm_function_call(m_tBuzzVM, "init", 0) != BUZZVM_STATE_READY) {
       fprintf(stderr, "[ROBOT %u] %s: execution terminated abnormally: %s\n\n",

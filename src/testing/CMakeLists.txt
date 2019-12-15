@@ -17,6 +17,9 @@ target_link_libraries(testbuzzlex buzz)
 add_executable(testbuzzstrman testbuzzstrman.c)
 target_link_libraries(testbuzzstrman buzz)
 
+add_library(testloopfunctions MODULE testloopfunctions.h testloopfunctions.cpp)
+target_link_libraries(testloopfunctions argos3plugin_simulator_buzz buzz argos3core_simulator)
+
 #
 # Test scripts
 #
@@ -61,4 +64,6 @@ if(NOT CMAKE_CROSSCOMPILING)
   buzz_make(testmobilecode.bzz)
   buzz_make(testbattery.bzz)
   buzz_make(testtablelib.bzz INCLUDES ${CMAKE_SOURCE_DIR}/include/table.bzz)
+  buzz_make(testneighborsmapreduce.bzz INCLUDES ${CMAKE_SOURCE_DIR}/include/neighbors.bzz ${CMAKE_SOURCE_DIR}/include/table.bzz)
+  buzz_make(testtype.bzz)
 endif(NOT CMAKE_CROSSCOMPILING)

@@ -60,6 +60,7 @@ buzzlex_file_t buzzlex_file_new(const char* fname) {
       /* Did we find the file? */
       if(!dir && !fd) {
          /* Nope */
+         fprintf(stderr, "Can't find file '%s'\n", fname);
          return NULL;
       }
    }
@@ -79,14 +80,13 @@ buzzlex_file_t buzzlex_file_new(const char* fname) {
       fclose(fd);
       free(x->buf);
       free(x);
+      fprintf(stderr, "'%s': read error\n", fname);
       return NULL;
    }
    x->buf[x->buf_size] = '\n';
    x->buf[x->buf_size+1] = '\0';
-
    /* Add the extra '\n' to the buffer to make sure it ends with a newline */
    x->buf_size += 1;
-
    /* Done reading, close file */
    fclose(fd);
    /* Store the file name */

@@ -4,6 +4,46 @@
 table = {}
 
 #
+# Returns the maximum value in the table
+#
+table.max = function(t) {
+  return reduce(t, function(k, v, a) {
+      return math.max(v, a)
+    },
+    nil)
+}
+
+#
+# Returns the maximum key in the table
+#
+table.maxkey = function(t) {
+  return reduce(t, function(k, v, a) {
+      return math.max(k, a)
+    },
+    nil)
+}
+
+#
+# Returns the minimum value in the table
+#
+table.min = function(t) {
+  return reduce(t, function(k, v, a) {
+      return math.min(v, a)
+    },
+    nil)
+}
+
+#
+# Returns the minimum key in the table
+#
+table.minkey = function(t) {
+  return reduce(t, function(k, v, a) {
+      return math.min(k, a)
+    },
+    nil)
+}
+
+#
 # Prints the contents of a table.
 # PARAM t: The table
 #

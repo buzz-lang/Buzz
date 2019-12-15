@@ -37,7 +37,7 @@ extern "C" {
     */
    typedef enum {
       BUZZVM_ERROR_NONE = 0, // No error
-      BUZZVM_ERROR_INSTR,    // Unknown instruction 
+      BUZZVM_ERROR_INSTR,    // Unknown instruction
       BUZZVM_ERROR_STACK,    // Stack error
       BUZZVM_ERROR_LNUM,     // Wrong number of local variables
       BUZZVM_ERROR_PC,       // Program counter out of range
@@ -278,7 +278,7 @@ extern "C" {
     * @return The updated VM state.
     */
    extern buzzvm_state buzzvm_execute_script(buzzvm_t vm);
-   
+
    /*
     * Calls a Buzz closure.
     * It expects the stack to be as follows:
@@ -439,7 +439,7 @@ extern "C" {
     * @param vm The VM data.
     */
    extern buzzvm_state buzzvm_tput(buzzvm_t vm);
-   
+
    /*
     * Fetches a (idx,value) pair from a table.
     * Internally checks whether the operation is valid.
@@ -502,6 +502,195 @@ extern "C" {
    extern buzzvm_state buzzvm_ret1(buzzvm_t vm);
 
    /*
+    * Pushes stack(#2) + stack(#1) and pops the operands.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_add(buzzvm_t vm);
+
+   /*
+    * Pushes stack(#2) - stack(#1) and pops the operands.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_sub(buzzvm_t vm);
+
+   /*
+    * Pushes stack(#2) * stack(#1) and pops the operands.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_mul(buzzvm_t vm);
+
+   /*
+    * Pushes stack(#2) / stack(#1) and pops the operands.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_div(buzzvm_t vm);
+
+   /*
+    * Pushes stack(#2) % stack(#1) and pops the operands.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_mod(buzzvm_t vm);
+
+   /*
+    * Pushes stack(#2) ^ stack(#1) and pops the operands.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_pow(buzzvm_t vm);
+
+   /*
+    * Unary minus operator of the value currently at the top of the stack.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_unm(buzzvm_t vm);
+
+   /*
+    * Pushes stack(#2) & stack(#1) and pops the operands.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_land(buzzvm_t vm);
+
+   /*
+    * Pushes stack(#2) | stack(#1) and pops the operands.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_lor(buzzvm_t vm);
+
+   /*
+    * Negates the value currently at the top of the stack.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_lnot(buzzvm_t vm);
+
+   /*
+    * Pushes stack(#2) & stack(#1) and pops the operands.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_band(buzzvm_t vm);
+
+   /*
+    * Pushes stack(#2) | stack(#1) and pops the operands.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_bor(buzzvm_t vm);
+
+   /*
+    * Negates the value currently at the top of the stack.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_bnot(buzzvm_t vm);
+
+   /*
+    * Pushes stack(#2) << stack(#1) and pops the operands.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_lshift(buzzvm_t vm);
+
+   /*
+    * Pushes stack(#2) << stack(#1) and pops the operands.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_rshift(buzzvm_t vm);
+
+   /*
+    * Pushes stack(#2) == stack(#1) and pops the operands.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_eq(buzzvm_t vm);
+
+   /*
+    * Pushes stack(#2) != stack(#1) and pops the operands.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_neq(buzzvm_t vm);
+
+   /*
+    * Pushes stack(#2) > stack(#1) and pops the operands.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_gt(buzzvm_t vm);
+
+   /*
+    * Pushes stack(#2) >= stack(#1) and pops the operands.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_gte(buzzvm_t vm);
+
+   /*
+    * Pushes stack(#2) < stack(#1) and pops the operands.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_lt(buzzvm_t vm);
+
+   /*
+    * Pushes stack(#2) <= stack(#1) and pops the operands.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    */
+   extern buzzvm_state buzzvm_lte(buzzvm_t vm);
+
+   /*
     * Pushes the local variable located at the given stack index.
     * Internally checks whether the operation is valid.
     * This function is designed to be used within int-returning functions such as
@@ -510,7 +699,17 @@ extern "C" {
     * @param idx The local variable index.
     */
    extern buzzvm_state buzzvm_lload(buzzvm_t vm, uint32_t idx);
-   
+
+   /*
+    * Stores the object located at the stack top into the a local variable, pops operand.
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    * @param idx The local variable index.
+    */
+   extern buzzvm_state buzzvm_lstore(buzzvm_t vm, uint32_t idx);
+
 #ifdef __cplusplus
 }
 #endif
@@ -593,11 +792,11 @@ extern "C" {
  * @param vm The VM data.
  * @param idx The stack index, where 0 is the stack top and >0 goes down the stack.
  */
-#define buzzvm_stack_number_to_int(vm, idx)                       \
+#define buzzvm_stack_number_to_int(vm, idx)                 \
    (buzzvm_stack_at((vm), (idx))->o.type == BUZZTYPE_INT ?  \
     buzzvm_stack_at((vm), (idx))->i.value :                 \
     (int32_t)buzzvm_stack_at((vm), (idx))->f.value)
-   
+
 /*
  * Converts a number at the given position in the stack to float.
  * It does not internally check whether the element to convert is a number or not.
@@ -609,7 +808,7 @@ extern "C" {
    (buzzvm_stack_at((vm), (idx))->o.type == BUZZTYPE_FLOAT ?  \
     buzzvm_stack_at((vm), (idx))->f.value :                   \
     (float)buzzvm_stack_at((vm), (idx))->i.value)
-   
+
 /*
  * Terminates the current Buzz script.
  * This function is designed to be used within int-returning functions such as
@@ -655,426 +854,6 @@ extern "C" {
  * @param num The number of expected local variables.
  */
 #define buzzvm_lnum_assert(vm, num) if(buzzvm_lnum(vm) != num) { (vm)->state = BUZZVM_STATE_ERROR; (vm)->error = BUZZVM_ERROR_LNUM; asprintf(&(vm)->errormsg, "%s: expected %d parameters, got %" PRId64, buzzvm_error_desc[(vm)->error], num, buzzvm_lnum(vm)); return (vm)->state; }
-
-/*
- * Stores the object located at the stack top into the a local variable, pops operand.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- * @param idx The local variable index.
- */
-#define buzzvm_lstore(vm, idx) {                                  \
-      buzzvm_stack_assert((vm), 1);                               \
-      buzzobj_t o = buzzvm_stack_at(vm, 1);                       \
-      buzzvm_pop(vm);                                             \
-      buzzdarray_set((vm)->lsyms->syms, idx, &o);                 \
-   }
-
-/*
- * Pops two numeric operands from the stack and pushes the result of a binary arithmethic operation on them.
- * The order of the operation is stack(#2) oper stack(#1).
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- * @param oper The binary operation, e.g. & |
- */
-#define buzzvm_binary_op_arith(vm, oper)                                \
-   buzzvm_stack_assert((vm), 2);                                        \
-   buzzobj_t op1 = buzzvm_stack_at(vm, 1);                              \
-   buzzobj_t op2 = buzzvm_stack_at(vm, 2);                              \
-   if((op1->o.type != BUZZTYPE_INT &&                                   \
-       op1->o.type != BUZZTYPE_FLOAT) ||                                \
-      (op2->o.type != BUZZTYPE_INT &&                                   \
-       op2->o.type != BUZZTYPE_FLOAT))  {                               \
-      (vm)->state = BUZZVM_STATE_ERROR;                                 \
-      (vm)->error = BUZZVM_ERROR_TYPE;                                  \
-      return (vm)->state;                                               \
-   }                                                                    \
-   buzzdarray_pop(vm->stack);                                           \
-   buzzdarray_pop(vm->stack);                                           \
-   if(op1->o.type == BUZZTYPE_INT &&                                    \
-      op2->o.type == BUZZTYPE_INT) {                                    \
-      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_INT);              \
-      res->i.value = op2->i.value oper op1->i.value;                    \
-      buzzvm_push(vm, res);                                             \
-   }                                                                    \
-   else if(op1->o.type == BUZZTYPE_INT &&                               \
-           op2->o.type == BUZZTYPE_FLOAT) {                             \
-      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_FLOAT);            \
-      res->f.value = op2->f.value oper op1->i.value;                    \
-      buzzvm_push(vm, res);                                             \
-   }                                                                    \
-   else if(op1->o.type == BUZZTYPE_FLOAT &&                             \
-           op2->o.type == BUZZTYPE_INT) {                               \
-      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_FLOAT);            \
-      res->f.value = op2->i.value oper op1->f.value;                    \
-      buzzvm_push(vm, res);                                             \
-   }                                                                    \
-   else {                                                               \
-      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_FLOAT);            \
-      res->f.value = op2->f.value oper op1->f.value;                    \
-      buzzvm_push(vm, res);                                             \
-   }
-
-/*
- * Pops two operands from the stack and pushes the result of a binary logic operation on them.
- * The order of the operation is stack(#2) oper stack(#1).
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- * @param oper The binary logic operation, e.g. && ||
- */
-#define buzzvm_binary_op_logic(vm, oper)                                \
-   buzzvm_stack_assert((vm), 2);                                        \
-   buzzobj_t op1 = buzzvm_stack_at(vm, 1);                              \
-   buzzobj_t op2 = buzzvm_stack_at(vm, 2);                              \
-   buzzdarray_pop(vm->stack);                                           \
-   buzzdarray_pop(vm->stack);                                           \
-   buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_INT);           \
-   res->i.value =                                                       \
-      !(op2->o.type == BUZZTYPE_NIL ||                                  \
-        (op2->i.type == BUZZTYPE_INT && op2->i.value == 0))             \
-      oper                                                              \
-      !(op1->o.type == BUZZTYPE_NIL ||                                  \
-        (op1->i.type == BUZZTYPE_INT && op1->i.value == 0));            \
-   buzzvm_push(vm, res);
-
-/*
- * Pops two operands from the stack and pushes the result of a bitwise operation on them.
- * The order of the operation is stack(#2) oper stack(#1).
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- * @param oper The binary operation, e.g. & |
- */
-#define buzzvm_binary_op_bitwise(vm, oper)                              \
-   buzzvm_stack_assert((vm), 2);                                        \
-   buzzvm_type_assert((vm), 1, BUZZTYPE_INT);                           \
-   buzzvm_type_assert((vm), 2, BUZZTYPE_INT);                           \
-   buzzobj_t op1 = buzzvm_stack_at(vm, 1);                              \
-   buzzobj_t op2 = buzzvm_stack_at(vm, 2);                              \
-   buzzdarray_pop(vm->stack);                                           \
-   buzzdarray_pop(vm->stack);                                           \
-   buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_INT);                 \
-   res->i.value = op2->i.value oper op1->i.value;                       \
-   buzzvm_push(vm, res);
-
-/*
- * Pops two numeric operands from the stack and pushes the result of a comparison operation on them.
- * The order of the operation is stack(#2) oper stack(#1).
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- * @param oper The binary operation, e.g. == > >= < <=
- */
-#define buzzvm_binary_op_cmp(vm, oper)                                  \
-   buzzvm_stack_assert((vm), 2);                                        \
-   buzzobj_t op1 = buzzvm_stack_at(vm, 1);                              \
-   buzzobj_t op2 = buzzvm_stack_at(vm, 2);                              \
-   buzzdarray_pop(vm->stack);                                           \
-   buzzdarray_pop(vm->stack);                                           \
-   buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_INT);           \
-   res->i.value = (buzzobj_cmp(op2, op1) oper 0);                       \
-   buzzvm_push(vm, res);
-
-/*
- * Pushes stack(#2) + stack(#1) and pops the operands.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_add(vm) buzzvm_binary_op_arith(vm, +);
-
-/*
- * Pushes stack(#2) - stack(#1) and pops the operands.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_sub(vm) buzzvm_binary_op_arith(vm, -);
-
-/*
- * Pushes stack(#2) * stack(#1) and pops the operands.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_mul(vm) buzzvm_binary_op_arith(vm, *);
-
-/*
- * Pushes stack(#2) / stack(#1) and pops the operands.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_div(vm) buzzvm_binary_op_arith(vm, /);
-
-/*
- * Pushes stack(#2) % stack(#1) and pops the operands.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_mod(vm)                                                  \
-   buzzvm_stack_assert((vm), 2);                                        \
-   buzzobj_t op1 = buzzvm_stack_at(vm, 1);                              \
-   buzzobj_t op2 = buzzvm_stack_at(vm, 2);                              \
-   buzzdarray_pop(vm->stack);                                           \
-   buzzdarray_pop(vm->stack);                                           \
-   if(op1->o.type == BUZZTYPE_INT &&                                    \
-      op2->o.type == BUZZTYPE_INT) {                                    \
-      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_INT);        \
-      res->i.value = op2->i.value % op1->i.value;                       \
-      if(res->i.value < 0) res->i.value += op1->i.value;                \
-      buzzvm_push(vm, res);                                             \
-   }                                                                    \
-   else if(op1->o.type == BUZZTYPE_FLOAT &&                             \
-           op2->o.type == BUZZTYPE_FLOAT) {                             \
-      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_FLOAT);      \
-      res->f.value = fmodf(op2->f.value, op1->f.value);                 \
-      if(res->f.value < 0.) res->f.value += op1->f.value;               \
-      buzzvm_push(vm, res);                                             \
-   }                                                                    \
-   else if(op1->o.type == BUZZTYPE_INT &&                               \
-           op2->o.type == BUZZTYPE_FLOAT) {                             \
-      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_FLOAT);      \
-      res->f.value = fmodf(op2->f.value, op1->i.value);                 \
-      if(res->f.value < 0.) res->f.value += op1->f.value;               \
-      buzzvm_push(vm, res);                                             \
-   }                                                                    \
-   else if(op1->o.type == BUZZTYPE_FLOAT &&                             \
-           op2->o.type == BUZZTYPE_INT) {                               \
-      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_FLOAT);      \
-      res->f.value = fmodf(op2->i.value, op1->f.value);                 \
-      if(res->f.value < 0.) res->f.value += op1->i.value;               \
-      buzzvm_push(vm, res);                                             \
-   }                                                                    \
-   else {                                                               \
-      (vm)->state = BUZZVM_STATE_ERROR;                                 \
-      (vm)->error = BUZZVM_ERROR_TYPE;                                  \
-      return (vm)->state;                                               \
-   }
-
-/*
- * Pushes stack(#2) ^ stack(#1) and pops the operands.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_pow(vm)                                                  \
-   buzzvm_stack_assert((vm), 2);                                        \
-   buzzobj_t op1 = buzzvm_stack_at(vm, 1);                              \
-   buzzobj_t op2 = buzzvm_stack_at(vm, 2);                              \
-   buzzdarray_pop(vm->stack);                                           \
-   buzzdarray_pop(vm->stack);                                           \
-   if(op1->o.type == BUZZTYPE_INT &&                                    \
-      op2->o.type == BUZZTYPE_INT) {                                    \
-      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_FLOAT);      \
-      res->f.value = powf(op2->i.value, op1->i.value);                  \
-      buzzvm_push(vm, res);                                             \
-   }                                                                    \
-   else if(op1->o.type == BUZZTYPE_FLOAT &&                             \
-           op2->o.type == BUZZTYPE_FLOAT) {                             \
-      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_FLOAT);      \
-      res->f.value = powf(op2->f.value, op1->f.value);                  \
-      buzzvm_push(vm, res);                                             \
-   }                                                                    \
-   else if(op1->o.type == BUZZTYPE_INT &&                               \
-           op2->o.type == BUZZTYPE_FLOAT) {                             \
-      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_FLOAT);      \
-      res->f.value = powf(op2->f.value, op1->i.value);                  \
-      buzzvm_push(vm, res);                                             \
-   }                                                                    \
-   else if(op1->o.type == BUZZTYPE_FLOAT &&                             \
-           op2->o.type == BUZZTYPE_INT) {                               \
-      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_FLOAT);      \
-      res->f.value = powf(op2->i.value, op1->f.value);                  \
-      buzzvm_push(vm, res);                                             \
-   }                                                                    \
-   else {                                                               \
-      (vm)->state = BUZZVM_STATE_ERROR;                                 \
-      (vm)->error = BUZZVM_ERROR_TYPE;                                  \
-      return (vm)->state;                                               \
-   }
-
-/*
- * Unary minus operator of the value currently at the top of the stack.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_unm(vm)                                                  \
-   buzzvm_stack_assert(vm, 1);                                          \
-   buzzobj_t op = buzzvm_stack_at(vm, 1);                               \
-   buzzdarray_pop(vm->stack);                                           \
-   if(op->o.type == BUZZTYPE_INT) {                                     \
-      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_INT);        \
-      res->i.value = -op->i.value;                                      \
-      buzzvm_push(vm, res);                                             \
-   }                                                                    \
-   else if(op->o.type == BUZZTYPE_FLOAT) {                              \
-      buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_FLOAT);      \
-      res->f.value = -op->f.value;                                      \
-      buzzvm_push(vm, res);                                             \
-   }                                                                    \
-   else {                                                               \
-      (vm)->state = BUZZVM_STATE_ERROR;                                 \
-      (vm)->error = BUZZVM_ERROR_TYPE;                                  \
-      return (vm)->state;                                               \
-   }
-
-/*
- * Pushes stack(#2) & stack(#1) and pops the operands.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_land(vm) buzzvm_binary_op_logic(vm, &&);
-
-/*
- * Pushes stack(#2) | stack(#1) and pops the operands.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_lor(vm) buzzvm_binary_op_logic(vm, ||);
-
-/*
- * Negates the value currently at the top of the stack.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_lnot(vm)                                                 \
-   buzzvm_stack_assert((vm), 1);                                        \
-   buzzobj_t op = buzzvm_stack_at(vm, 1);                               \
-   buzzdarray_pop(vm->stack);                                           \
-   buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_INT);                 \
-   res->i.value =                                                       \
-      (op->o.type == BUZZTYPE_NIL ||                                    \
-       (op->i.type == BUZZTYPE_INT && op->i.value == 0));               \
-   buzzvm_push(vm, res);
-   
-/*
- * Pushes stack(#2) << stack(#1) and pops the operands.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_lshift(vm) buzzvm_binary_op_bitwise(vm, <<);
-
-/*
- * Pushes stack(#2) << stack(#1) and pops the operands.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_rshift(vm) buzzvm_binary_op_bitwise(vm, >>);
-
-/*
- * Pushes stack(#2) & stack(#1) and pops the operands.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_band(vm) buzzvm_binary_op_bitwise(vm, &);
-
-/*
- * Pushes stack(#2) | stack(#1) and pops the operands.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_bor(vm) buzzvm_binary_op_bitwise(vm, |);
-
-/*
- * Negates the value currently at the top of the stack.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_bnot(vm)                                                 \
-   buzzvm_stack_assert((vm), 1);                                        \
-   buzzvm_type_assert((vm), 1, BUZZTYPE_INT);                           \
-   buzzobj_t op = buzzvm_stack_at(vm, 1);                               \
-   buzzdarray_pop(vm->stack);                                           \
-   buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_INT);                 \
-   res->i.value = ~op->i.value;                                         \
-   buzzvm_push(vm, res);
-
-/*
- * Pushes stack(#2) == stack(#1) and pops the operands.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_eq(vm) buzzvm_binary_op_cmp(vm, ==);
-
-/*
- * Pushes stack(#2) != stack(#1) and pops the operands.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_neq(vm) buzzvm_binary_op_cmp(vm, !=);
-
-/*
- * Pushes stack(#2) > stack(#1) and pops the operands.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_gt(vm) buzzvm_binary_op_cmp(vm, >);
-
-/*
- * Pushes stack(#2) >= stack(#1) and pops the operands.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_gte(vm) buzzvm_binary_op_cmp(vm, >=);
-
-/*
- * Pushes stack(#2) < stack(#1) and pops the operands.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_lt(vm) buzzvm_binary_op_cmp(vm, <);
-
-/*
- * Pushes stack(#2) <= stack(#1) and pops the operands.
- * Internally checks whether the operation is valid.
- * This function is designed to be used within int-returning functions such as
- * BuzzVM hook functions or buzzvm_step().
- * @param vm The VM data.
- */
-#define buzzvm_lte(vm) buzzvm_binary_op_cmp(vm, <=);
 
 /**
  * Calls a normal closure.

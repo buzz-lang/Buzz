@@ -1,10 +1,9 @@
 include "include/table.bzz"
 
 t = {}
-i = 0
-while(i < 10) {
+
+for(i = 0, i < 10, i = i + 1) {
   t[i] = math.rng.uniform(1.0)
-  i = i + 1
 }
 
 table.print(t)
@@ -21,3 +20,8 @@ log("")
 table.shuffle(t)
 table.print(t)
 log("")
+
+log("max = ", table.max(t))
+log("maxkey = ", table.maxkey(t))
+log("min = ", table.min(t))
+log("minkey = ", table.minkey(t))

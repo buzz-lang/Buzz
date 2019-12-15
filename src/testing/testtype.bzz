@@ -1,0 +1,38 @@
+t = {
+  .0 = nil,
+  .1 = 6,
+  .2 = 3.0,
+  .3 = function() { return },
+  .4 = "test",
+  .5 = {}
+}
+
+foreach(t, function(k, v) {
+    log(k, " -> ", type(v))
+  })
+
+log("nil -> isnil? ", isnil(nil))
+
+foreach(t, function(k, v) {
+    log(k, " -> isnil ? ", isnil(v))
+  })
+
+foreach(t, function(k, v) {
+    log(k, " -> isint ? ", isint(v))
+  })
+
+foreach(t, function(k, v) {
+    log(k, " -> isfloat ? ", isfloat(v))
+  })
+
+foreach(t, function(k, v) {
+    log(k, " -> isclosure ? ", isclosure(v))
+  })
+
+foreach(t, function(k, v) {
+    log(k, " -> isstring ? ", isstring(v))
+  })
+
+foreach(t, function(k, v) {
+    log(k, " -> istable ? ", istable(v))
+  })

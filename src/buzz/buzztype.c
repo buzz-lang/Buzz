@@ -139,11 +139,8 @@ int buzzobj_cmp(const buzzobj_t a,
    if(a->o.type == BUZZTYPE_NIL && b->o.type == BUZZTYPE_NIL) {
       return 0;
    }
-   if(a->o.type == BUZZTYPE_NIL) {
-      return -1;
-   }
-   if(b->o.type == BUZZTYPE_NIL) {
-      return 1;
+   if(a->o.type == BUZZTYPE_NIL || b->o.type == BUZZTYPE_NIL) {
+      return 2;
    }
    /* Numeric types */
    if(a->o.type == BUZZTYPE_INT && b->o.type == BUZZTYPE_INT) {
@@ -634,21 +631,56 @@ int64_t buzzobj_deserialize(buzzobj_t* data,
 /****************************************/
 /****************************************/
 
-#define function_register(FNAME)                                        \
+#define make_buzzobj_closure_is(TYPE)                               \
+   int buzzobj_closure_is ## TYPE(buzzvm_t vm) {                    \
+      /* Make sure there's a parameter */                           \
+      buzzvm_lnum_assert(vm, 1);                                    \
+      /* Get parameter */                                           \
+      buzzvm_lload(vm, 1);                                          \
+      /* Push return value */                                       \
+      buzzvm_pushi(vm, buzzobj_is ## TYPE(buzzvm_stack_at(vm, 1))); \
+      /* Return it */                                               \
+      return buzzvm_ret1(vm);                                       \
+   }
+
+make_buzzobj_closure_is(nil);
+make_buzzobj_closure_is(int);
+make_buzzobj_closure_is(float);
+make_buzzobj_closure_is(string);
+make_buzzobj_closure_is(table);
+make_buzzobj_closure_is(closure);
+make_buzzobj_closure_is(userdata);
+
+/****************************************/
+/****************************************/
+
+#define function_register_base(FNAME)                                   \
    buzzvm_pushs(vm, buzzvm_string_register(vm, #FNAME, 1));             \
    buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzobj_ ## FNAME));  \
    buzzvm_gstore(vm);
 
+#define function_register_istype(FNAME)                                 \
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "is" #FNAME, 1));        \
+   buzzvm_pushcc(vm, buzzvm_function_register(vm, buzzobj_closure_is ## FNAME)); \
+   buzzvm_gstore(vm);
+
 int buzzobj_register(struct buzzvm_s* vm) {
-   function_register(type);
-   function_register(int);
-   function_register(float);
-   function_register(clone);
-   function_register(size);
-   function_register(foreach);
-   function_register(map);
-   function_register(reduce);
-   function_register(filter);
+   function_register_base(type);
+   function_register_base(int);
+   function_register_base(float);
+   function_register_base(clone);
+   function_register_base(size);
+   function_register_base(foreach);
+   function_register_base(map);
+   function_register_base(reduce);
+   function_register_base(filter);
+   function_register_istype(nil);
+   function_register_istype(int);
+   function_register_istype(float);
+   function_register_istype(string);
+   function_register_istype(table);
+   function_register_istype(closure);
+   function_register_istype(userdata);
    return vm->state;
 }
 

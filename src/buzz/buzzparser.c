@@ -161,11 +161,28 @@ void sym_destroy(const void* key,
 
 #define SYMT_BUCKETS 100
 
-#define symt_push() par->syms = buzzdict_new(SYMT_BUCKETS, sizeof(char*), sizeof(struct sym_s), buzzdict_strkeyhash, buzzdict_strkeycmp, sym_destroy); buzzdarray_push(par->symstack, &(par->syms));
+void sym_print(const void* key, void* data, void* params) {
+   fprintf(stderr, "   symbol: '%s'\n", (*(char**)key));
+}
+
+void symt_print(uint32_t pos, void* data, void* params) {
+   fprintf(stderr, "symbol stack level %u\n", pos);
+   buzzdict_foreach(*((buzzdict_t*)data), sym_print, NULL);
+}
+
+void symstack_print(buzzparser_t par) {
+   fprintf(stderr, "===\n");
+   buzzdarray_foreach(par->symstack, symt_print, NULL);
+   fprintf(stderr, "===\n\n");
+}
+
+#define symt_print() { symstack_print(par); }
+
+#define symt_push() { par->syms = buzzdict_new(SYMT_BUCKETS, sizeof(char*), sizeof(struct sym_s), buzzdict_strkeyhash, buzzdict_strkeycmp, sym_destroy); buzzdarray_push(par->symstack, &(par->syms)); }
 
 #define symt_clone() { buzzdict_t toclone = buzzdarray_last(par->symstack, buzzdict_t); symt_push(); buzzdict_foreach(toclone, sym_clone, par); }
 
-#define symt_pop() buzzdarray_pop(par->symstack); par->syms = buzzdarray_last(par->symstack, buzzdict_t);
+#define symt_pop() { buzzdarray_pop(par->symstack); par->syms = buzzdarray_last(par->symstack, buzzdict_t); }
 
 void symt_destroy(uint32_t pos, void* data, void* params) {
    buzzdict_destroy((buzzdict_t*)data);
@@ -363,7 +380,7 @@ int parse_script(buzzparser_t par);
 
 int parse_statlist(buzzparser_t par);
 int parse_stat(buzzparser_t par);
-int parse_block(buzzparser_t par);
+int parse_block(buzzparser_t par, int pushsymt);
 int parse_blockstat(buzzparser_t par);
 
 int parse_var(buzzparser_t par);
@@ -481,7 +498,7 @@ void buzzparser_symdel(uint32_t pos, void* data, void* params) {
    buzzdict_remove((buzzdict_t)params, (char**)data);
 }
 
-int parse_block(buzzparser_t par) {
+int parse_block(buzzparser_t par, int pushsymt) {
    tokmatch(BUZZTOK_BLOCKOPEN);
    fetchtok();
    if(par->tok->type == BUZZTOK_BLOCKCLOSE) {
@@ -489,6 +506,15 @@ int parse_block(buzzparser_t par) {
       return PARSE_OK;
    }
    else {
+      if(pushsymt) {
+         if(buzzdarray_size(par->symstack) == 1) {
+            /* Add new symtable */
+            symt_push();
+         }
+         else {
+            symt_clone();
+         }
+      }
       /* Save the current number of variables */
       uint32_t numvars = buzzdict_size(par->syms);
       if(parse_statlist(par)) {
@@ -502,6 +528,7 @@ int parse_block(buzzparser_t par) {
          buzzdict_foreach(par->syms, buzzparser_symtodel, &symdeldata);
          buzzdarray_foreach(symdeldata.dellist, buzzparser_symdel, par->syms);
          buzzdarray_destroy(&(symdeldata.dellist));
+         if(pushsymt) symt_pop();
          return PARSE_OK;
       }
       else {
@@ -516,7 +543,7 @@ int parse_block(buzzparser_t par) {
 int parse_blockstat(buzzparser_t par) {
    if(par->tok->type == BUZZTOK_BLOCKOPEN) {
       /* It's a block */
-      return parse_block(par);
+      return parse_block(par, 1);
    }
    else {
       /* It's a single statement, eat extra statement end characters */
@@ -535,7 +562,7 @@ int parse_var(buzzparser_t par) {
    tokmatch(BUZZTOK_ID);
    /* Look it up in the symbol table */
    const struct sym_s* s = sym_lookup(par->tok->value, par->symstack);
-   if(s) {
+   if(s && s->global == SCOPE_LOCAL) {
       fprintf(stderr,
               "%s:%" PRIu64 ":%" PRIu64 ": Duplicated symbol '%s'\n",
               buzzlex_getfile(par->lex)->fname,
@@ -620,11 +647,10 @@ int parse_fun(buzzparser_t par) {
    fetchtok();
    /* Check for docstring, if any */
    if(par->tok->type == BUZZTOK_STRING) {
-      /* DEBUG("found docstring '%s' for function %s()\n", par->tok->value, funname); */
       fetchtok();
    }
    /* Parse block */
-   if(!parse_block(par)) return PARSE_ERROR;
+   if(!parse_block(par, 0)) return PARSE_ERROR;
    /* Add a default return */
    chunk_append("\tret0");
    /* Get rid of symbol table and close chunk */
@@ -648,7 +674,7 @@ int parse_if(buzzparser_t par) {
    tokmatch(BUZZTOK_PARCLOSE);
    fetchtok();
    /* True branch follows condition; false branch follows true one */
-   /* Jamp to label 1 if the condition is false */
+   /* Jump to label 1 if the condition is false */
    /* Label 1 is either if end (in case of no else branch) or else branch */
    chunk_append("\tjumpz " LABELREF "%u", lab1);
    if(!parse_blockstat(par)) return PARSE_ERROR;
@@ -1309,7 +1335,7 @@ int parse_lambda(buzzparser_t par) {
    tokmatch(BUZZTOK_PARCLOSE);
    fetchtok();
    /* Parse block */
-   if(!parse_block(par)) return PARSE_ERROR;
+   if(!parse_block(par, 0)) return PARSE_ERROR;
    /* Add a default return */
    chunk_append("\tret0");
    /* Get rid of symbol table and close chunk */

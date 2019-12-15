@@ -153,12 +153,13 @@ extern "C" {
     * -1 if a  < b
     *  1 if a  > b
     *  0 if a == b
+    *  2 if a == nil or b == nil but not both
     * To be comparable, two objects must have the same type and equal value.
     * For numeric types, value comparison is as expected; for closures and
     * tables, equality is undefined and an error is issued.
     * @param a The first object.
     * @param b The second object.
-    * @return 1 if two Buzz objects are equal, 0 otherwise.
+    * @return -1,0,1,2 depending on types and values
     */
    extern int buzzobj_cmp(const buzzobj_t a,
                           const buzzobj_t b);

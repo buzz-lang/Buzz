@@ -165,6 +165,34 @@ static int BuzzSetLEDs(buzzvm_t vm) {
 /****************************************/
 /****************************************/
 
+static int BuzzSetLED(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 4);
+   /* Push the color components */
+   buzzvm_lload(vm, 1); // idx
+   buzzvm_lload(vm, 2); // red
+   buzzvm_lload(vm, 3); // green
+   buzzvm_lload(vm, 4); // blue
+   buzzvm_type_assert_number(vm, 4);
+   buzzvm_type_assert_number(vm, 3);
+   buzzvm_type_assert_number(vm, 2);
+   buzzvm_type_assert_number(vm, 1);
+   /* Create a new color with that */
+   UInt32 unIdx = buzzvm_stack_number_to_int(vm, 4);
+   CColor cColor(buzzvm_stack_number_to_int(vm, 3),
+                 buzzvm_stack_number_to_int(vm, 2),
+                 buzzvm_stack_number_to_int(vm, 1));
+   /* Get pointer to the controller */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
+   buzzvm_gload(vm);
+   /* Call function */
+   reinterpret_cast<CBuzzControllerFootBot*>(buzzvm_stack_at(vm, 1)->u.value)->
+      SetLED(unIdx, cColor);
+   return buzzvm_ret0(vm);
+}
+
+/****************************************/
+/****************************************/
+
 static int BuzzCameraEnable(buzzvm_t vm) {
    /* Get pointer to the controller */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
@@ -248,11 +276,13 @@ static int BuzzTurretSet(buzzvm_t vm) {
 /****************************************/
 
 CBuzzControllerFootBot::CBuzzControllerFootBot() :
-   m_pcWheels(NULL),
+   m_pcWheelsA(NULL),
    m_pcLEDs(NULL),
    m_pcGripper(NULL),
    m_pcProximity(NULL),
-   m_pcCamera(NULL) {
+   m_pcLight(NULL),
+   m_pcCamera(NULL),
+   m_pcWheelsS(NULL) {
 }
 
 /****************************************/
@@ -268,7 +298,7 @@ void CBuzzControllerFootBot::Init(TConfigurationNode& t_node) {
    try {
       /* Get pointers to devices */
       try {
-         m_pcWheels = GetActuator<CCI_DifferentialSteeringActuator>("differential_steering");
+         m_pcWheelsA = GetActuator<CCI_DifferentialSteeringActuator>("differential_steering");
          m_sWheelTurningParams.Init(GetNode(t_node, "wheel_turning"));
       }
       catch(CARGoSException& ex) {}
@@ -280,7 +310,11 @@ void CBuzzControllerFootBot::Init(TConfigurationNode& t_node) {
       catch(CARGoSException& ex) {}
       try { m_pcProximity = GetSensor<CCI_FootBotProximitySensor>("footbot_proximity"); }
       catch(CARGoSException& ex) {}
+      try { m_pcLight = GetSensor<CCI_FootBotLightSensor>("footbot_light"); }
+      catch(CARGoSException& ex) {}
       try { m_pcCamera = GetSensor<CCI_ColoredBlobOmnidirectionalCameraSensor>("colored_blob_omnidirectional_camera"); }
+      catch(CARGoSException& ex) {}
+      try { m_pcWheelsS = GetSensor<CCI_DifferentialSteeringSensor>("differential_steering"); }
       catch(CARGoSException& ex) {}
       /* Initialize the rest */
       CBuzzController::Init(t_node);
@@ -324,6 +358,31 @@ void CBuzzControllerFootBot::UpdateSensors() {
       }
    }
    /*
+    * Update proximity sensor table
+    */
+   if(m_pcLight) {
+      /* Create empty light table */
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "light", 1));
+      buzzvm_pusht(m_tBuzzVM);
+      buzzobj_t tLightTable = buzzvm_stack_at(m_tBuzzVM, 1);
+      buzzvm_gstore(m_tBuzzVM);
+      /* Get light readings */
+      const CCI_FootBotLightSensor::TReadings& tLightReads = m_pcLight->GetReadings();
+      /* Fill into the light table */
+      buzzobj_t tLightRead;
+      for(size_t i = 0; i < tLightReads.size(); ++i) {
+         /* Create table for i-th read */
+         buzzvm_pusht(m_tBuzzVM);
+         tLightRead = buzzvm_stack_at(m_tBuzzVM, 1);
+         buzzvm_pop(m_tBuzzVM);
+         /* Fill in the read */
+         TablePut(tLightRead, "value", tLightReads[i].Value);
+         TablePut(tLightRead, "angle", tLightReads[i].Angle);
+         /* Store read table in the light table */
+         TablePut(tLightTable, i, tLightRead);
+      }
+   }
+   /*
     * Camera
     */
    if(m_pcCamera) {
@@ -341,6 +400,33 @@ void CBuzzControllerFootBot::UpdateSensors() {
          TablePut(tEntry, "angle",    sBlobs.BlobList[i]->Angle);
          TablePut(tEntry, "color",    sBlobs.BlobList[i]->Color);
       }
+   }
+   /*
+    * Differential steering sensor
+    */
+   if(m_pcWheelsS) {
+      /* Make "wheels" table */
+      const CCI_DifferentialSteeringSensor::SReading& sWheels = m_pcWheelsS->GetReading();
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "wheels", 1));
+      buzzvm_pusht(m_tBuzzVM);
+      buzzobj_t tWheels = buzzvm_stack_at(m_tBuzzVM, 1);
+      buzzvm_gstore(m_tBuzzVM);
+      /* Make "velocity" table */
+      buzzvm_pusht(m_tBuzzVM);
+      buzzobj_t tVelocity = buzzvm_stack_at(m_tBuzzVM, 1);
+      buzzvm_pop(m_tBuzzVM);
+      TablePut(tWheels, "velocity", tVelocity);
+      TablePut(tVelocity, "left", sWheels.VelocityLeftWheel);
+      TablePut(tVelocity, "right", sWheels.VelocityRightWheel);
+      /* Make "covered_distance" table */
+      buzzvm_pusht(m_tBuzzVM);
+      buzzobj_t tCoveredDistance = buzzvm_stack_at(m_tBuzzVM, 1);
+      buzzvm_pop(m_tBuzzVM);
+      TablePut(tWheels, "covered_distance", tCoveredDistance);
+      TablePut(tCoveredDistance, "left", sWheels.CoveredDistanceLeftWheel);
+      TablePut(tCoveredDistance, "right", sWheels.CoveredDistanceRightWheel);
+      /* Axis length */
+      TablePut(tWheels, "axis_length", sWheels.WheelAxisLength);
    }
 }
 
@@ -412,7 +498,7 @@ void CBuzzControllerFootBot::SetWheelSpeedsFromVector(const CVector2& c_heading)
       fRightWheelSpeed = fSpeed1;
    }
    /* Finally, set the wheel speeds */
-   m_pcWheels->SetLinearVelocity(fLeftWheelSpeed, fRightWheelSpeed);
+   m_pcWheelsA->SetLinearVelocity(fLeftWheelSpeed, fRightWheelSpeed);
 }
 
 /****************************************/
@@ -420,8 +506,8 @@ void CBuzzControllerFootBot::SetWheelSpeedsFromVector(const CVector2& c_heading)
 
 void CBuzzControllerFootBot::SetWheels(Real f_left_speed,
                                        Real f_right_speed) {
-   m_pcWheels->SetLinearVelocity(f_left_speed,
-                                 f_right_speed);
+   m_pcWheelsA->SetLinearVelocity(f_left_speed,
+                                  f_right_speed);
 }
 
 /****************************************/
@@ -429,6 +515,14 @@ void CBuzzControllerFootBot::SetWheels(Real f_left_speed,
 
 void CBuzzControllerFootBot::SetLEDs(const CColor& c_color) {
    m_pcLEDs->SetAllColors(c_color);
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzControllerFootBot::SetLED(UInt32 un_idx,
+                                    const CColor& c_color) {
+   m_pcLEDs->SetSingleColor(un_idx, c_color);
 }
 
 /****************************************/
@@ -486,7 +580,7 @@ void CBuzzControllerFootBot::TurretSet(Real f_rotation) {
 buzzvm_state CBuzzControllerFootBot::RegisterFunctions() {
    /* Register base functions */
    CBuzzController::RegisterFunctions();
-   if(m_pcWheels) {
+   if(m_pcWheelsA) {
       /* BuzzSetWheels */
       buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "set_wheels", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzSetWheels));
@@ -507,6 +601,10 @@ buzzvm_state CBuzzControllerFootBot::RegisterFunctions() {
       /* BuzzSetLEDs */
       buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "set_leds", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzSetLEDs));
+      buzzvm_gstore(m_tBuzzVM);
+      /* BuzzSetLED */
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "set_led", 1));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzSetLED));
       buzzvm_gstore(m_tBuzzVM);
    }
    if(m_pcCamera) {
