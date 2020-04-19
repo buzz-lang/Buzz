@@ -1,5 +1,21 @@
-#+OPTIONS: H:3
 #+TITLE: Buzz Language Reference
+#+OPTIONS: H:3
+
+#+LATEX_HEADER_EXTRA: \lstdefinelanguage{buzz}{
+#+LATEX_HEADER_EXTRA:   keywords={unit, int, real, type, append, signal, let, in, if, while, map, reduce, filter, lift, smap, sreduce, sfilter, neighbors},
+#+LATEX_HEADER_EXTRA:   otherkeywords={., \{, \}, (, ), [, ], \\, \:, ->, |},
+#+LATEX_HEADER_EXTRA:   sensitive=true,
+#+LATEX_HEADER_EXTRA:   comment=[l]\#,
+#+LATEX_HEADER_EXTRA:   string=[b]",
+#+LATEX_HEADER_EXTRA:   morestring=[b]',
+#+LATEX_HEADER_EXTRA:   basicstyle=\ttfamily\scriptsize,
+#+LATEX_HEADER_EXTRA:   keywordstyle=\color{black}\bfseries,
+#+LATEX_HEADER_EXTRA:   identifierstyle=\color{black},
+#+LATEX_HEADER_EXTRA:   commentstyle=\color{black!55}\itshape,
+#+LATEX_HEADER_EXTRA:   showstringspaces=false
+#+LATEX_HEADER_EXTRA: }
+#+LATEX_HEADER_EXTRA: \lstset{frame=single}
+#+LATEX_HEADER_EXTRA: \newcommand{\bzz}{\lstinline[language=buzz,basicstyle=\ttfamily\normalsize]}
 
 * Variables
   :PROPERTIES:
