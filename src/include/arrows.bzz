@@ -1,0 +1,54 @@
+#
+# Example usage
+# -------------
+#
+# Assuming three functions f(), g(), and h() have been defined, you can create
+# a sequence of operations as
+#
+#   seq = arrows.begin(f).next(g).next(h)
+#
+# And then run it with
+#
+#   arrows.run(seq)
+#
+
+#
+# Make 'arrows' namespace
+#
+arrows = {}
+
+#
+# Used to wrap a function into an arrow
+# PARAM f: The function
+# RETURN: A new arrow
+#
+arrows.wrap = function(f) {
+  return {
+    .f = f,
+    .next = function(f) {
+      self.n = arrows.wrap(f)
+      return self.n
+    }
+  }
+}
+
+#
+# Used to start a new arrow.
+# This is an alias that makes the arrow syntax more readable.
+# SEE: arrows.wrap()
+#
+arrows.begin = arrows.wrap
+
+#
+# Runs the sequence of operations in the arrow
+# PARAM a: The arrow
+#
+arrows.run = function(a) {
+  var cur = a
+  cur.f()
+  cur = cur.n
+  while(cur) {
+    cur.f()
+    cur = cur.n
+  }
+}
