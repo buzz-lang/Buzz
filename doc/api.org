@@ -339,12 +339,12 @@ the same, and internally the virtual machine does not distinguish between these
 two scenarios.
 
 However, when a function is meant to be interpreted as a class method, the
-keyword ~this~ becomes important. The ~this~ keyword is interpreted upon
+keyword ~self~ becomes important. The ~self~ keyword is interpreted upon
 function call as shown in this example:
 #+begin_src buzz
   # Function definition
   function myfunction() {
-    log(this)
+    log(self)
   }
 
   # Using the function standalone
@@ -357,19 +357,19 @@ function call as shown in this example:
   # Prints [table with 1 element]
   t.f()
 #+end_src
-In other words, the keyword ~this~ points to the context in which the function is
-called. When the function is called standalone, there is no context and ~this~ is
-~nil~. When a function is called from a table, the ~this~ keyword points to the
+In other words, the keyword ~self~ points to the context in which the function is
+called. When the function is called standalone, there is no context and ~self~ is
+~nil~. When a function is called from a table, the ~self~ keyword points to the
 table.
 
-Using the ~this~ keyword, you can write methods that access class attributes:
+Using the ~self~ keyword, you can write methods that access class attributes:
 #+begin_src buzz
   # Class definition
   myclass = {
     .myattribute = 1
 
     .mymethod = function(x) {
-      return x + this.myattribute
+      return x + self.myattribute
     }
   }
 
@@ -395,7 +395,7 @@ You can make full-fledged classes with constructors as follows:
 
     # Method definition
     .mymethod = function(x) {
-      return this.myattribute + x
+      return self.myattribute + x
     }
   }
 
