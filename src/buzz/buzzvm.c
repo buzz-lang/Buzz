@@ -16,7 +16,7 @@ const char *buzzvm_state_desc[] = { "no code", "ready", "done", "error", "stoppe
 
 const char *buzzvm_error_desc[] = { "none", "unknown instruction", "stack error", "wrong number of local variables", "pc out of range", "function id out of range", "type mismatch", "unknown string id", "unknown swarm id" };
 
-const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "dup", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "land", "lor", "lnot", "band", "bor", "bnot", "lshift", "rshift", "eq", "neq", "gt", "gte", "lt", "lte", "gload", "gstore", "pusht", "tput", "tget", "callc", "calls", "pushf", "pushi", "pushs", "pushcn", "pushcc", "pushl", "lload", "lstore", "jump", "jumpz", "jumpnz"};
+const char *buzzvm_instr_desc[] = {"nop", "done", "pushnil", "dup", "pop", "ret0", "ret1", "add", "sub", "mul", "div", "mod", "pow", "unm", "land", "lor", "lnot", "band", "bor", "bnot", "lshift", "rshift", "eq", "neq", "gt", "gte", "lt", "lte", "gload", "gstore", "pusht", "tput", "tget", "callc", "calls", "pushf", "pushi", "pushs", "pushcn", "pushcc", "pushl", "lload", "lstore", "lremove", "jump", "jumpz", "jumpnz"};
 
 static uint16_t SWARM_BROADCAST_PERIOD = 10;
 
@@ -946,6 +946,12 @@ buzzvm_state buzzvm_step(buzzvm_t vm) {
          buzzvm_lstore(vm, arg);
          break;
       }
+      case BUZZVM_INSTR_LREMOVE: {
+         inc_pc();
+         get_arg(uint32_t);
+         buzzvm_lremove(vm, arg);
+         break;
+      }
       case BUZZVM_INSTR_JUMP: {
          inc_pc();
          get_arg(uint32_t);
@@ -1691,6 +1697,18 @@ buzzvm_state buzzvm_lstore(buzzvm_t vm, uint32_t idx) {
    buzzdarray_set((vm)->lsyms->syms, idx, &o);
    return vm->state;
 }
+
+buzzvm_state buzzvm_lremove(buzzvm_t vm, uint32_t num) {
+   if(buzzvm_lnum(vm) < num)
+      buzzvm_seterror(vm,
+                      BUZZVM_ERROR_LNUM,
+                      "not enough local symbols in stack"
+         );
+  for( uint32_t i =0 ; i < num ; i++ )
+    buzzdarray_pop((vm)->lsyms->syms);
+   return vm->state;
+}
+
 
 /****************************************/
 /****************************************/
