@@ -1,5 +1,22 @@
-#+OPTIONS: H:3
 #+TITLE: Buzz Language Reference
+#+OPTIONS: H:3
+
+#+LATEX_HEADER: \usepackage[margin=2cm]{geometry}
+#+LATEX_HEADER_EXTRA: \lstdefinelanguage{buzz}{
+#+LATEX_HEADER_EXTRA:   keywords={unit, int, real, type, append, signal, let, in, if, while, map, reduce, filter, lift, smap, sreduce, sfilter, neighbors},
+#+LATEX_HEADER_EXTRA:   otherkeywords={., \{, \}, (, ), [, ], \\, \:, ->, |},
+#+LATEX_HEADER_EXTRA:   sensitive=true,
+#+LATEX_HEADER_EXTRA:   comment=[l]\#,
+#+LATEX_HEADER_EXTRA:   string=[b]",
+#+LATEX_HEADER_EXTRA:   morestring=[b]',
+#+LATEX_HEADER_EXTRA:   basicstyle=\ttfamily\scriptsize,
+#+LATEX_HEADER_EXTRA:   keywordstyle=\color{black}\bfseries,
+#+LATEX_HEADER_EXTRA:   identifierstyle=\color{black},
+#+LATEX_HEADER_EXTRA:   commentstyle=\color{black!55}\itshape,
+#+LATEX_HEADER_EXTRA:   showstringspaces=false
+#+LATEX_HEADER_EXTRA: }
+#+LATEX_HEADER_EXTRA: \lstset{frame=single}
+#+LATEX_HEADER_EXTRA: \newcommand{\bzz}{\lstinline[language=buzz,basicstyle=\ttfamily\normalsize]}
 
 * Variables
   :PROPERTIES:
@@ -189,15 +206,205 @@
   :CUSTOM_ID: functions
   :END:
 
-** Function Definition
+** Defining and Calling Functions
    :PROPERTIES:
    :CUSTOM_ID: fundef
    :END:
+To define and call functions in Buzz, use this syntax:
+#+begin_src buzz
+  # Function definition
+  function myadd(x,y) {
+    return x + y
+  }
+
+
+  # Function call: z = 1 + 2 = 3
+  z = myadd(1,2)
+#+end_src
+
+Functions that do not return an explicit value implicitly return ~nil~:
+#+begin_src buzz
+  function myvoidfunction(x,y) {
+    log(x + y)
+  }
+
+  # Function call ignoring return value
+  # Prints 3
+  myvoidfunction(1,2)
+
+  # Function call assigning return value
+  # Prints 3
+  # z is nil after the call
+  z = myvoidfunction(1,2)
+#+end_src
+
+Function definitions can be nested:
+#+begin_src buzz
+  # Outer definition
+  function myouter(x) {
+    # Inner definition
+    function myinner(y) {
+      return x + y
+    }
+    # Call the internally defined function
+    return myinner(2)
+  }
+
+  # Function call: z = 1 + 2 = 3
+  z = myouter(1)
+#+end_src
 
 ** Function Pointers
    :PROPERTIES:
    :CUSTOM_ID: funpoint
    :END:
+Buzz supports function pointers. This means that you can define anonymous
+functions and pass them as arguments or assign to variables. To define a
+function pointer, use this syntax:
+#+begin_src buzz
+  # Function definition
+  myadd = function(x, y) {
+    return x + y
+  }
+
+  # Function call: z =  1 + 2 = 3
+  z = myadd(1,2)
+#+end_src
+
+For all effects and purposes, this is identical to the definition we saw
+above:
+#+begin_src buzz
+  function myadd(x,y) {
+    return x + y
+  }
+#+end_src
+
+Using function pointers allows you pass functions as parameters to higher-level functions:
+#+begin_src buzz
+  # Some table...
+  t = { ... }
+
+  # Print all the table elements
+  foreach(t, function(k,v) { log("k=",k,"; v=",v) })
+#+end_src
+
+You can mix inner function definition with function pointers:
+#+begin_src buzz
+# Function definition
+function myouter(x) {
+  return function(y) {
+    return x + y
+  }
+}
+
+# Function call
+f = myouter(1)
+
+# Using the returned function
+# z = 1 + 2 = 3
+z = f(2)
+#+end_src
+In the above example, the statement ~myouter(1)~ creates a function in which
+ parameter ~x~ of ~myouter(x)~ is bound to 1. This means that the returned function
+ sums 1 to the parameter given to it.
+
+** Namespaces
+Using tables and function pointers, it is possible to define namespaces. This is
+used extensively in the core libraries, such as ~string~ and ~math~. A namespace is
+nothing but a table:
+#+begin_src buzz
+  # Define the namespace
+  mynamespace = {}
+
+  # Define a constant
+  mynamespace.CONST = 3.14
+
+  # Define a function
+  mynamespace.myadd = function(x,y) {
+    return x + y
+  }
+
+  # Use the namespace
+  log(mynamespace.CONST)
+  z = mynamespace.myadd(1, 2)
+#+end_src
+
+** Classes and methods
+:PROPERTIES:
+:CUSTOM_ID: classes
+:END:
+By using tables and function pointers it is also possible to define classes and
+methods. In Buzz, the syntax to define namespaces and classes is, effectively,
+the same, and internally the virtual machine does not distinguish between these
+two scenarios.
+
+However, when a function is meant to be interpreted as a class method, the
+keyword ~self~ becomes important. The ~self~ keyword is interpreted upon
+function call as shown in this example:
+#+begin_src buzz
+  # Function definition
+  function myfunction() {
+    log(self)
+  }
+
+  # Using the function standalone
+  # Prints nil
+  myfunction()
+
+  # Using the function within a table
+  t = {}
+  t.f = myfunction
+  # Prints [table with 1 element]
+  t.f()
+#+end_src
+In other words, the keyword ~self~ points to the context in which the function is
+called. When the function is called standalone, there is no context and ~self~ is
+~nil~. When a function is called from a table, the ~self~ keyword points to the
+table.
+
+Using the ~self~ keyword, you can write methods that access class attributes:
+#+begin_src buzz
+  # Class definition
+  myclass = {
+    .myattribute = 1
+
+    .mymethod = function(x) {
+      return x + self.myattribute
+    }
+  }
+
+  # Method call: z = 1 + 2 = 3
+  z = myclass.mymethod(2)
+#+end_src
+
+You can make full-fledged classes with constructors as follows:
+#+begin_src buzz
+  # Class definition
+  myclass = {
+
+    # Class constructor
+    .new = function(x) {
+      # Return a new table
+      return {
+        # Bind the attribute values
+        .myattribute = x
+        # Bind the methods
+        .mymethod = mymethod
+      }
+    }
+
+    # Method definition
+    .mymethod = function(x) {
+      return self.myattribute + x
+    }
+  }
+
+  # Usage
+  # Create the object
+  myobject = myclass.new(1)
+  # Call the method: z = 1 + 2 = 3
+  z = myobject.mymethod(2)
+#+end_src
 
 * Math
   :PROPERTIES:
@@ -341,7 +548,7 @@
    counter of strings created so far. Every time a string is used in a
    script, only the identifier is used. The actual value of the string
    is stored only once in the data structure. To make string lookup
-   operations fast, strings are stored in binary tree ordered by
+   operations fast, strings are stored in a binary tree ordered by
    identifier.
 
    String manipulation often creates large numbers of intermediate
@@ -361,7 +568,7 @@
    different robots might execute different parts of a script, and
    strings might be created in different order. Therefore, when two
    robots exchange strings, the full value of the string must be
-   communicated, rather then their identifier.
+   communicated, rather than their identifier.
 
 * Files
   :PROPERTIES:

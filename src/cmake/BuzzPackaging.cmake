@@ -1,9 +1,4 @@
 #
-# Project name
-#
-project(buzz)
-
-#
 # General CPack configuration
 #
 # Version information
