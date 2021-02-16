@@ -219,9 +219,8 @@ bool CBuzzControllerEyeBot::Land() {
 
 void CBuzzControllerEyeBot::SetDirection(const CVector3& c_heading) {
    CVector3 cDir = c_heading;
-   if(cDir.SquareLength() > 0.01f) {
+   if(cDir.SquareLength() > 1.0) {
       cDir.Normalize();
-      cDir *= 0.01;
    }
    m_pcPropellers->SetRelativePosition(cDir);
 }
