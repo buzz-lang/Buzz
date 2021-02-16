@@ -9,6 +9,7 @@ set(ARGOS_BUZZ_SOURCES
   buzz_controller.h         buzz_controller.cpp
   buzz_controller_footbot.h buzz_controller_footbot.cpp
   buzz_controller_spiri.h   buzz_controller_spiri.cpp
+  buzz_controller_eyebot.h  buzz_controller_eyebot.cpp
   buzz_loop_functions.h     buzz_loop_functions.cpp)
 if(ARGOS_COMPILE_QTOPENGL)
   set(ARGOS_BUZZ_SOURCES
