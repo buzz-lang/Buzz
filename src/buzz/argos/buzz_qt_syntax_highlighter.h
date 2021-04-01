@@ -4,6 +4,7 @@
 class CBuzzQTSyntaxHighlighter;
 
 #include <QHash>
+#include <QRegularExpression>
 #include <QSyntaxHighlighter>
 #include <QTextCharFormat>
 
@@ -30,7 +31,7 @@ private:
       
    struct SHighlightingRule
    {
-      QRegExp Pattern;
+      QRegularExpression Pattern;
       QTextCharFormat Format;
    };
    QVector<SHighlightingRule> m_vecHighlightingRules;

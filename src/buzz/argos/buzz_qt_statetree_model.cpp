@@ -40,7 +40,7 @@ QVariant CBuzzQTStateTreeModel::data(const QModelIndex& c_index,
 /****************************************/
 
 Qt::ItemFlags CBuzzQTStateTreeModel::flags(const QModelIndex& c_index) const {
-   if (!c_index.isValid()) return 0;
+   if (!c_index.isValid()) return Qt::NoItemFlags;
    else return Qt::ItemIsEnabled;
 }
 

@@ -12,6 +12,7 @@ set(ARGOS_BUZZ_SOURCES
   buzz_controller_eyebot.h  buzz_controller_eyebot.cpp
   buzz_loop_functions.h     buzz_loop_functions.cpp)
 if(ARGOS_COMPILE_QTOPENGL)
+  include_directories(${ARGOS_QTOPENGL_INCLUDE_DIRS})
   set(ARGOS_BUZZ_SOURCES
     ${ARGOS_BUZZ_SOURCES}
     buzz_qt.h buzz_qt.cpp

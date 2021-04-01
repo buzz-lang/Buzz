@@ -439,9 +439,10 @@ bool CBuzzQTMainWindow::Compile() {
       m_pcCompilationMsg->setPlainText(
          cBuzzCompiler.readAllStandardError());
       /* Jump to error line, if error message allows it */
-      QRegExp cRE("^[a-zA-Z0-9_/.-]+:[0-9]+:[0-9]+");
       QString strErrorMsg = m_pcCompilationMsg->toPlainText();
-      if(cRE.indexIn(strErrorMsg) == 0) {
+      QRegularExpression cRE("^[a-zA-Z0-9_/.-]+:[0-9]+:[0-9]+");
+      QRegularExpressionMatch cMatch = cRE.match(strErrorMsg);
+      if(cMatch.hasMatch()) {
          /* Parse file, line, column */
          QStringList cFields = strErrorMsg.split(":");
          /* Open file */
@@ -653,8 +654,9 @@ void CBuzzQTMainWindow::HandleRunTimeErrorSelection() {
             cSel[0]->data(Qt::DisplayRole).toString().toStdString()));
       /* Get error position field */
       QString strPos = cSel[1]->data(Qt::DisplayRole).toString();
-      QRegExp cRE("^[a-zA-Z0-9_/.-]+:[0-9]+:[0-9]+");
-      if(cRE.indexIn(strPos) == 0) {
+      QRegularExpression cRE("^[a-zA-Z0-9_/.-]+:[0-9]+:[0-9]+");
+      QRegularExpressionMatch cMatch = cRE.match(strPos);
+      if(cMatch.hasMatch()) {
          /* Parse file, line, column */
          QStringList cFields = strPos.split(":");
          /* Open file */
@@ -1177,7 +1179,11 @@ void CBuzzQTMainWindow::SetRunTimeError(int n_row,
    /* Split the error message in its parts */
    QStringList listFields = str_message.split(
       ":",
+#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+      Qt::KeepEmptyParts,
+#else
       QString::KeepEmptyParts,
+#endif
       Qt::CaseInsensitive);
    /* Set position and error message (byte offset or file/line/col */
    if(str_message == "Script not loaded!") {
