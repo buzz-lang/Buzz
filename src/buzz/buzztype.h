@@ -16,6 +16,8 @@
 #define BUZZTYPE_CLOSURE  5
 #define BUZZTYPE_USERDATA 6
 
+#define BUZZTYPE_NILCMP -63
+
 #ifdef __cplusplus
 extern "C" {
 #endif
