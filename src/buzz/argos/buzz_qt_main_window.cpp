@@ -1179,7 +1179,7 @@ void CBuzzQTMainWindow::SetRunTimeError(int n_row,
    /* Split the error message in its parts */
    QStringList listFields = str_message.split(
       ":",
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
       Qt::KeepEmptyParts,
 #else
       QString::KeepEmptyParts,

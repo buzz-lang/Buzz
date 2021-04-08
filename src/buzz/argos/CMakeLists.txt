@@ -1,6 +1,9 @@
 #
 # Compile libbuzzargos
 #
+include_directories(${ARGOS_INCLUDE_DIRS})
+link_directories(${ARGOS_LIBRARY_DIR})
+link_libraries(${ARGOS_LDFLAGS})
 set(ARGOS_BUZZ_SOURCES
   ../buzzlex.h              ../buzzlex.c
   ../buzzparser.h           ../buzzparser.c
@@ -11,8 +14,7 @@ set(ARGOS_BUZZ_SOURCES
   buzz_controller_spiri.h   buzz_controller_spiri.cpp
   buzz_controller_eyebot.h  buzz_controller_eyebot.cpp
   buzz_loop_functions.h     buzz_loop_functions.cpp)
-if(ARGOS_COMPILE_QTOPENGL)
-  include_directories(${ARGOS_QTOPENGL_INCLUDE_DIRS})
+if(ARGOS_QTOPENGL_FOUND)
   set(ARGOS_BUZZ_SOURCES
     ${ARGOS_BUZZ_SOURCES}
     buzz_qt.h buzz_qt.cpp
@@ -21,9 +23,8 @@ if(ARGOS_COMPILE_QTOPENGL)
     buzz_qt_main_window.h buzz_qt_main_window.cpp
     buzz_qt_statetree_item.h buzz_qt_statetree_item.cpp
     buzz_qt_statetree_model.h buzz_qt_statetree_model.cpp
-    buzz_qt_syntax_highlighter.h buzz_qt_syntax_highlighter.cpp
-    )
-endif(ARGOS_COMPILE_QTOPENGL)
+    buzz_qt_syntax_highlighter.h buzz_qt_syntax_highlighter.cpp)
+endif(ARGOS_QTOPENGL_FOUND)
 
 add_library(argos3plugin_simulator_buzz SHARED ${ARGOS_BUZZ_SOURCES})
 target_link_libraries(argos3plugin_simulator_buzz
@@ -32,12 +33,11 @@ target_link_libraries(argos3plugin_simulator_buzz
   argos3plugin_simulator_footbot
   argos3plugin_simulator_spiri
   buzz)
-if(ARGOS_COMPILE_QTOPENGL)
+if(ARGOS_QTOPENGL_FOUND)
   target_link_libraries(argos3plugin_simulator_buzz
-    argos3plugin_simulator_qtopengl
-    ${ARGOS_QTOPENGL_LIBRARIES})
-endif(ARGOS_COMPILE_QTOPENGL)
+    argos3plugin_simulator_qtopengl)
+endif(ARGOS_QTOPENGL_FOUND)
 
-install(TARGETS argos3plugin_simulator_buzz LIBRARY DESTINATION ${ARGOS_PREFIX}/lib/argos3)
+install(TARGETS argos3plugin_simulator_buzz LIBRARY DESTINATION ${ARGOS_LIBRARY_DIR})
 install(DIRECTORY . DESTINATION include/buzz/argos FILES_MATCHING PATTERN "*.h")
 
