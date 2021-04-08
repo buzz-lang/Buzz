@@ -62,7 +62,7 @@ public:
    void TurretDisable();
    void TurretSet(Real f_rotation);
 
-private:
+protected:
 
    virtual buzzvm_state RegisterFunctions();
 

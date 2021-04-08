@@ -103,6 +103,7 @@ extern "C" {
       BUZZVM_INSTR_PUSHL,    // Push native closure lambda onto stack
       BUZZVM_INSTR_LLOAD,    // Push local variable at given position
       BUZZVM_INSTR_LSTORE,   // Store stack-top value into local variable at given position, pop operand
+      BUZZVM_INSTR_LREMOVE,  // Remove the last N local symbols
       BUZZVM_INSTR_JUMP,     // Set PC to argument
       BUZZVM_INSTR_JUMPZ,    // Set PC to argument if stack top is zero, pop operand
       BUZZVM_INSTR_JUMPNZ,   // Set PC to argument if stack top is not zero, pop operand
@@ -709,6 +710,17 @@ extern "C" {
     * @param idx The local variable index.
     */
    extern buzzvm_state buzzvm_lstore(buzzvm_t vm, uint32_t idx);
+
+   /*
+    * Removes the last N local variables
+    * Internally checks whether the operation is valid.
+    * This function is designed to be used within int-returning functions such as
+    * BuzzVM hook functions or buzzvm_step().
+    * @param vm The VM data.
+    * @param num The number of symbols to delete
+    */
+   extern buzzvm_state buzzvm_lremove(buzzvm_t vm, uint32_t num);
+
 
 #ifdef __cplusplus
 }

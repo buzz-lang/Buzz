@@ -17,8 +17,10 @@ target_link_libraries(testbuzzlex buzz)
 add_executable(testbuzzstrman testbuzzstrman.c)
 target_link_libraries(testbuzzstrman buzz)
 
-add_library(testloopfunctions MODULE testloopfunctions.h testloopfunctions.cpp)
-target_link_libraries(testloopfunctions argos3plugin_simulator_buzz buzz argos3core_simulator)
+if(ARGOS_FOUND)
+  add_library(testloopfunctions MODULE testloopfunctions.h testloopfunctions.cpp)
+  target_link_libraries(testloopfunctions argos3plugin_simulator_buzz buzz argos3core_simulator)
+endif(ARGOS_FOUND)
 
 #
 # Test scripts

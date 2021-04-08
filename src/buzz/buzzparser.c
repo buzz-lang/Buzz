@@ -525,10 +525,15 @@ int parse_block(buzzparser_t par, int pushsymt) {
             .dellist = buzzdarray_new(1, sizeof(char*), NULL),
             .maxpos = numvars
          };
+         /* Free the stack from the new local variables */
+	 if( buzzdict_size(par->syms) - numvars ) 
+	   chunk_append("\tlremove %" PRId32, buzzdict_size(par->syms) - numvars); 
+
          buzzdict_foreach(par->syms, buzzparser_symtodel, &symdeldata);
          buzzdarray_foreach(symdeldata.dellist, buzzparser_symdel, par->syms);
          buzzdarray_destroy(&(symdeldata.dellist));
          if(pushsymt) symt_pop();
+	 
          return PARSE_OK;
       }
       else {

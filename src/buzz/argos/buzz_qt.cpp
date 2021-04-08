@@ -19,7 +19,14 @@ CBuzzQT::~CBuzzQT() {
 
 void CBuzzQT::Init(TConfigurationNode& t_tree) {
    m_pcEditor = new CBuzzQTMainWindow(&GetMainWindow());
-   m_pcEditor->show();
+   bool showEditor = true;
+   if (NodeAttributeExists(t_tree, "show_buzz_editor"))
+   {
+      GetNodeAttribute(t_tree, "show_buzz_editor", showEditor);
+   }
+   if (showEditor) {
+      m_pcEditor->show();
+   }
 }
 
 /****************************************/

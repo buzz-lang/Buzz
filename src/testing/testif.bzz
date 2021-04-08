@@ -40,3 +40,14 @@ else
 {
   log("unsupported")
 }
+
+if ( "AA" == "BB" )
+  log( "String issue" )
+
+state = "IDLE"
+
+if( state == "GOHOME") {
+  log("String issue")
+} else {
+  log("IDLE != GOHOME")
+}

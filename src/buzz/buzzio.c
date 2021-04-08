@@ -172,9 +172,10 @@ int buzzio_fforeach(buzzvm_t vm) {
       buzzvm_pushs(vm, buzzvm_string_register(vm, line, 0));
       /* Call closure */
       vmstate = buzzvm_closure_call(vm, 1);
-      buzzvm_pop(vm);
       /* Next line */
       len = getline(&line, &cap, f);
+      /* Remove the nil (return value) left by closure_call */
+      buzzvm_pop(vm);
    }
    /* Register error information */
    buzzio_update_error(vm);

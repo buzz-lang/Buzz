@@ -300,6 +300,7 @@ int buzz_asm(const char* fname,
       i_arg_instr(BUZZVM_INSTR_PUSHL);
       i_arg_instr(BUZZVM_INSTR_LLOAD);
       i_arg_instr(BUZZVM_INSTR_LSTORE);
+      i_arg_instr(BUZZVM_INSTR_LREMOVE);
       l_arg_instr(BUZZVM_INSTR_JUMP);
       l_arg_instr(BUZZVM_INSTR_JUMPZ);
       l_arg_instr(BUZZVM_INSTR_JUMPNZ);
