@@ -6,7 +6,12 @@ project(buzz)
 #
 # Set minimum required version
 #
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.8.0)
+
+# Set the compilation type
+if(CMAKE_BUILD_TYPE STREQUAL "")
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel ..." FORCE)
+endif(CMAKE_BUILD_TYPE STREQUAL "")
 
 #
 # Set the path additional cmake files must be searched for

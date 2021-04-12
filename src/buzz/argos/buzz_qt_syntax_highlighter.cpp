@@ -14,7 +14,7 @@ CBuzzQTSyntaxHighlighter::CBuzzQTSyntaxHighlighter(QTextDocument* pc_text) :
                     << "\\breturn\\b" << "\\bfor\\b" << "\\bwhile\\b" << "\\band\\b" << "\\bor\\b"
                     << "\\bnot\\b" << "\\bsize\\b" << "\\bforeach\\b" << "\\binclude\\b";
    foreach (const QString& cPattern, cKeywordPatterns) {
-      sRule.Pattern = QRegExp(cPattern);
+      sRule.Pattern = QRegularExpression(cPattern);
       sRule.Format = m_cKeywordFormat;
       m_vecHighlightingRules.append(sRule);
    }
@@ -36,48 +36,39 @@ CBuzzQTSyntaxHighlighter::CBuzzQTSyntaxHighlighter(QTextDocument* pc_text) :
 /****************************************/
 
 void CBuzzQTSyntaxHighlighter::highlightBlock(const QString& str_text) {
-   /*
-    * Comment formatting
-    */
-   QRegExp cCommExpr("#.*");
-   int nCStart = cCommExpr.indexIn(str_text);
-   if(nCStart >= 0) {
-      setFormat(nCStart, cCommExpr.matchedLength(), m_cCommentFormat);
-      return;
-   }
+   QRegularExpressionMatchIterator cMatchIt;
    /*
     * Apply normal rules
     */
    foreach (const SHighlightingRule& sRule, m_vecHighlightingRules) {
-      QRegExp cExpression(sRule.Pattern);
-      int i = cExpression.indexIn(str_text);
-      int nLength;
-      while(i >= 0) {
-         nLength = cExpression.matchedLength();
-         setFormat(i, nLength, sRule.Format);
-         i = cExpression.indexIn(str_text, i + nLength);
+      QRegularExpression cExpression(sRule.Pattern);
+      cMatchIt = cExpression.globalMatch(str_text);
+      while(cMatchIt.hasNext()) {
+         QRegularExpressionMatch cMatch = cMatchIt.next();
+         setFormat(cMatch.capturedStart(), cMatch.capturedLength(), sRule.Format);
       }
    }
    /*
     * Function formatting
     */
-   QRegExp cFunExpr("([A-Za-z_][A-Za-z0-9_]*)(?:\\s*)(\\()(?:.*)(\\))");
-   int nFStart = cFunExpr.indexIn(str_text);
-   while(nFStart >= 0) {
-      setFormat(nFStart, cFunExpr.capturedTexts()[1].length(), m_cFunctionFormat);
-      setFormat(cFunExpr.pos(2), 1, m_cFunctionFormat);
-      setFormat(cFunExpr.pos(3), 1, m_cFunctionFormat);
-      nFStart = cFunExpr.indexIn(str_text, nFStart + cFunExpr.matchedLength());
+   QRegularExpression cFunExpr("([A-Za-z_][A-Za-z0-9_]*)(?:\\s*)(\\()(?:.*)(\\))");
+   cMatchIt = cFunExpr.globalMatch(str_text);
+   while(cMatchIt.hasNext()) {
+      QRegularExpressionMatch cMatch = cMatchIt.next();
+      setFormat(cMatch.capturedStart(1), cMatch.capturedLength(1), m_cFunctionFormat);
+      setFormat(cMatch.capturedStart(2), cMatch.capturedLength(2), m_cFunctionFormat);
+      setFormat(cMatch.capturedStart(3), cMatch.capturedLength(3), m_cFunctionFormat);
    }
    /*
     * Table formatting
     */
-   QRegExp cTblExpr("([A-Za-z_][A-Za-z0-9_]*)(?:\\s*)(\\.)");
-   int nTStart = cTblExpr.indexIn(str_text);
-   while(nTStart >= 0) {
-      setFormat(nTStart, cTblExpr.capturedTexts()[1].length(), m_cTableFormat);
-      setFormat(cTblExpr.pos(2), 1, m_cTableFormat);
-      nTStart = cTblExpr.indexIn(str_text, nTStart + cTblExpr.matchedLength());
+   QRegularExpression cTblExpr("([A-Za-z_][A-Za-z0-9_]*)(?:\\s*)(\\.)");
+   cMatchIt = cTblExpr.globalMatch(str_text);
+   while(cMatchIt.hasNext()) {
+      QRegularExpressionMatch cMatch = cMatchIt.next();
+      setFormat(cMatch.capturedStart(1), cMatch.capturedLength(1), m_cTableFormat);
+      setFormat(cMatch.capturedStart(2), cMatch.capturedLength(2), m_cTableFormat);
+      setFormat(cMatch.capturedStart(3), cMatch.capturedLength(3), m_cTableFormat);
    }
    /*
     * String formatting
@@ -93,6 +84,14 @@ void CBuzzQTSyntaxHighlighter::highlightBlock(const QString& str_text) {
       setFormat(nStart, nEnd - nStart + 1, m_cStringFormat);
       /* Update start index */
       nStart = nEnd + 1;
+   }
+   /*
+    * Comment formatting
+    */
+   QRegularExpression cCommExpr("#.*");
+   QRegularExpressionMatch cMatch = cCommExpr.match(str_text);
+   if(cMatch.hasMatch()) {
+      setFormat(cMatch.capturedStart(), cMatch.capturedLength(), m_cCommentFormat);
    }
 }
 

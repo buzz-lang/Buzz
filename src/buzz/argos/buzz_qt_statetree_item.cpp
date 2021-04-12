@@ -62,8 +62,13 @@ size_t CBuzzQTStateTreeItem::GetNumChildren() const {
 
 bool ItemLessThan(const CBuzzQTStateTreeItem* pc_i1,
                   const CBuzzQTStateTreeItem* pc_i2) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+      if(pc_i1->GetData(0).typeId() == QMetaType::Double &&
+         pc_i2->GetData(0).typeId() == QMetaType::Double) {
+#else
    if(pc_i1->GetData(0).type() == QVariant::Double &&
       pc_i2->GetData(0).type() == QVariant::Double) {
+#endif
       return pc_i1->GetData(0).toDouble() < pc_i2->GetData(0).toDouble();
    }
    else {
@@ -72,7 +77,7 @@ bool ItemLessThan(const CBuzzQTStateTreeItem* pc_i1,
 }
 
 void CBuzzQTStateTreeItem::SortChildren() {
-   qSort(m_listChildren.begin(), m_listChildren.end(), ItemLessThan);
+   std::sort(m_listChildren.begin(), m_listChildren.end(), ItemLessThan);
    foreach(CBuzzQTStateTreeItem* pcItem, m_listChildren) {
       pcItem->SortChildren();
    }
