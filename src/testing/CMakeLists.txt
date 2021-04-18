@@ -29,6 +29,21 @@ endif(ARGOS_FOUND)
 # Test scripts
 #
 
+function(_buzz_make_test _script)
+  if(ARGN)
+    if(NOT ARGV1 STREQUAL "INCLUDES")
+      message(FATAL_ERROR "Expected INCLUDES in _buzz_make_test(script INCLUDES ...), got ${ARGV1}")
+    endif(NOT ARGV1 STREQUAL "INCLUDES")
+    if(ARGC LESS 3)
+      message(FATAL_ERROR "Expected scripts to include in _buzz_make_test(script INCLUDES ...)")
+    endif(ARGC LESS 3)
+    buzz_make(${_script} ${ARGN})
+  else(ARGN)
+    buzz_make(${_script})
+  endif(ARGN)
+  add_dependencies(${_script} bzzasm bzzdeasm bzzparse)
+endfunction(_buzz_make_test)
+
 if(NOT CMAKE_CROSSCOMPILING)
   # Make sure only the locally compiled tools are used
   set(BUZZ_COMPILER ${CMAKE_BINARY_DIR}/utility/bzzc)
@@ -41,93 +56,34 @@ if(NOT CMAKE_CROSSCOMPILING)
   set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/utility)
   include(UseBuzz)
 
-  buzz_make(test_takeoff_divide_flock.bzz)
-  add_dependencies(test_takeoff_divide_flock.bzz bzzparse)
-  
-  buzz_make(testempty.bzz)
-  add_dependencies(testempty.bzz bzzparse)
-  
-  buzz_make(testif.bzz)
-  add_dependencies(testif.bzz bzzparse)
-  
-  buzz_make(testdebug.bzz)
-  add_dependencies(testdebug.bzz bzzparse)
-  
-  buzz_make(testdocstring.bzz)
-  add_dependencies(testdocstring.bzz bzzparse)
-  
-  buzz_make(testbehavior.bzz)
-  add_dependencies(testbehavior.bzz bzzparse)
-  
-  buzz_make(testclosure.bzz)
-  add_dependencies(testclosure.bzz bzzparse)
-  
-  buzz_make(testhexagon.bzz)
-  add_dependencies(testhexagon.bzz bzzparse)
-  
-  buzz_make(testsquare.bzz)
-  add_dependencies(testsquare.bzz bzzparse)
-  
-  buzz_make(testgradient.bzz)
-  add_dependencies(testgradient.bzz bzzparse)
-  
-  buzz_make(testinclude1.bzz INCLUDES testinclude2.bzz)
-  add_dependencies(testinclude1.bzz bzzparse)
-  
-  buzz_make(testio.bzz)
-  add_dependencies(testio.bzz bzzparse)
-  
-  buzz_make(testleds.bzz)
-  add_dependencies(testleds.bzz bzzparse)
-  
-  buzz_make(testmath.bzz)
-  add_dependencies(testmath.bzz bzzparse)
-  
-  buzz_make(testexpressions.bzz)
-  add_dependencies(testexpressions.bzz bzzparse)
-  
-  buzz_make(testmsg.bzz)
-  add_dependencies(testmsg.bzz bzzparse)
-  
-  buzz_make(testneighbors.bzz)
-  add_dependencies(testneighbors.bzz bzzparse)
-  
-  buzz_make(testparsing.bzz)
-  add_dependencies(testparsing.bzz bzzparse)
-  
-  buzz_make(teststigmergy.bzz)
-  add_dependencies(teststigmergy.bzz bzzparse)
-  
-  buzz_make(teststring.bzz INCLUDES ${CMAKE_SOURCE_DIR}/include/string.bzz)
-  add_dependencies(teststring.bzz bzzparse)
-  
-  buzz_make(testswarm.bzz)
-  add_dependencies(testswarm.bzz bzzparse)
-  
-  buzz_make(testtable.bzz)
-  add_dependencies(testtable.bzz bzzparse)
-  
-  buzz_make(testvec2.bzz INCLUDES ${CMAKE_SOURCE_DIR}/include/vec2.bzz)
-  add_dependencies(testvec2.bzz bzzparse)
-  
-  buzz_make(testwhile.bzz)
-  add_dependencies(testwhile.bzz bzzparse)
-  
-  buzz_make(testfor.bzz)
-  add_dependencies(testfor.bzz bzzparse)
-  
-  buzz_make(testmobilecode.bzz)
-  add_dependencies(testmobilecode.bzz bzzparse)
-  
-  buzz_make(testbattery.bzz)
-  add_dependencies(testbattery.bzz bzzparse)
-  
-  buzz_make(testtablelib.bzz INCLUDES ${CMAKE_SOURCE_DIR}/include/table.bzz)
-  add_dependencies(testtablelib.bzz bzzparse)
-  
-  buzz_make(testneighborsmapreduce.bzz INCLUDES ${CMAKE_SOURCE_DIR}/include/neighbors.bzz ${CMAKE_SOURCE_DIR}/include/table.bzz)
-  add_dependencies(testneighborsmapreduce.bzz bzzparse)
-  
-  buzz_make(testtype.bzz)
-  add_dependencies(testtype.bzz bzzparse)  
+  _buzz_make_test(test_takeoff_divide_flock.bzz)
+  _buzz_make_test(testempty.bzz)
+  _buzz_make_test(testif.bzz)
+  _buzz_make_test(testdebug.bzz)
+  _buzz_make_test(testdocstring.bzz)
+  _buzz_make_test(testbehavior.bzz)
+  _buzz_make_test(testclosure.bzz)
+  _buzz_make_test(testhexagon.bzz)
+  _buzz_make_test(testsquare.bzz)
+  _buzz_make_test(testgradient.bzz)
+  _buzz_make_test(testinclude1.bzz INCLUDES testinclude2.bzz)
+  _buzz_make_test(testio.bzz)
+  _buzz_make_test(testleds.bzz)
+  _buzz_make_test(testmath.bzz)
+  _buzz_make_test(testexpressions.bzz)
+  _buzz_make_test(testmsg.bzz)
+  _buzz_make_test(testneighbors.bzz)
+  _buzz_make_test(testparsing.bzz)
+  _buzz_make_test(teststigmergy.bzz)
+  _buzz_make_test(teststring.bzz INCLUDES ${CMAKE_SOURCE_DIR}/include/string.bzz)
+  _buzz_make_test(testswarm.bzz)
+  _buzz_make_test(testtable.bzz)
+  _buzz_make_test(testvec2.bzz INCLUDES ${CMAKE_SOURCE_DIR}/include/vec2.bzz)
+  _buzz_make_test(testwhile.bzz)
+  _buzz_make_test(testfor.bzz)
+  _buzz_make_test(testmobilecode.bzz)
+  _buzz_make_test(testbattery.bzz)
+  _buzz_make_test(testtablelib.bzz INCLUDES ${CMAKE_SOURCE_DIR}/include/table.bzz)
+  _buzz_make_test(testneighborsmapreduce.bzz INCLUDES ${CMAKE_SOURCE_DIR}/include/neighbors.bzz ${CMAKE_SOURCE_DIR}/include/table.bzz)
+  _buzz_make_test(testtype.bzz)
 endif(NOT CMAKE_CROSSCOMPILING)
