@@ -1,5 +1,5 @@
 # .rst:
-# FindBuzz
+# BuzzConfig
 # --------
 #
 # Find Module for Buzz
@@ -130,10 +130,26 @@ find_path(BUZZ_BZZ_INCLUDE_DIR
   PATHS ${_BUZZ_BZZ_INCLUDE_PATHS}
   DOC "Location of the Buzz BZZ include files")
 
-# Handle the QUIETLY and REQUIRED arguments and set BUZZ_FOUND to TRUE
-# if all listed variables are TRUE
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(BUZZ
-  REQUIRED_VARS BUZZ_COMPILER BUZZ_PARSER BUZZ_ASSEMBLER BUZZ_LIBRARY BUZZ_LIBRARY_DEBUG BUZZ_C_INCLUDE_DIR BUZZ_BZZ_INCLUDE_DIR)
+# # Handle the QUIETLY and REQUIRED arguments and set BUZZ_FOUND to TRUE
+# # if all listed variables are TRUE
+# include(FindPackageHandleStandardArgs)
+# find_package_handle_standard_args(BUZZ
+#   REQUIRED_VARS BUZZ_COMPILER BUZZ_PARSER BUZZ_ASSEMBLER BUZZ_LIBRARY BUZZ_LIBRARY_DEBUG BUZZ_C_INCLUDE_DIR BUZZ_BZZ_INCLUDE_DIR)
+
+set(BUZZ_FOUND 0)
+if(BUZZ_COMPILER AND BUZZ_PARSER AND BUZZ_ASSEMBLER AND BUZZ_LIBRARY AND BUZZ_LIBRARY_DEBUG AND BUZZ_C_INCLUDE_DIR AND BUZZ_BZZ_INCLUDE_DIR)
+  set(BUZZ_FOUND 1)
+endif(BUZZ_COMPILER AND BUZZ_PARSER AND BUZZ_ASSEMBLER AND BUZZ_LIBRARY AND BUZZ_LIBRARY_DEBUG AND BUZZ_C_INCLUDE_DIR AND BUZZ_BZZ_INCLUDE_DIR)
+if(NOT QUIET)
+  if(BUZZ_FOUND)
+    message(STATUS "Buzz compiler found: ${BUZZ_COMPILER}")
+    message(STATUS "Buzz library found: ${BUZZ_LIBRARY}")
+    message(STATUS "Buzz C headers include path found: ${BUZZ_C_INCLUDE_DIR}")
+    message(STATUS "Buzz Buzz headers include path found: ${BUZZ_BZZ_INCLUDE_DIR}")
+  else(BUZZ_FOUND)
+    message(STATUS "Buzz not found")
+  endif(BUZZ_FOUND)
+endif(NOT QUIET)
+set(BUZZ_FOUND ${BUZZ_FOUND} CACHE BOOL "Whether Buzz was found")
 
 mark_as_advanced(BUZZ_COMPILER BUZZ_PARSER BUZZ_ASSEMBLER BUZZ_LIBRARY BUZZ_LIBRARY_DEBUG BUZZ_C_INCLUDE_DIR BUZZ_BZZ_INCLUDE_DIR)

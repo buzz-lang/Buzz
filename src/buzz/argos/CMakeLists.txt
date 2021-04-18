@@ -27,6 +27,7 @@ if(ARGOS_QTOPENGL_FOUND)
 endif(ARGOS_QTOPENGL_FOUND)
 
 add_library(argos3plugin_simulator_buzz SHARED ${ARGOS_BUZZ_SOURCES})
+add_dependencies(argos3plugin_simulator_buzz buzz)
 target_link_libraries(argos3plugin_simulator_buzz
   argos3core_simulator
   argos3plugin_simulator_genericrobot
