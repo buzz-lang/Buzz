@@ -96,12 +96,15 @@ function(buzz_make _SCRIPT)
     set(_buzz_make_BUZZ_INCLUDE_PATH "-I" "${_buzz_make_BUZZ_INCLUDE_PATH}")
   endif(NOT _buzz_make_BUZZ_INCLUDE_PATH STREQUAL "")
   # Define compilation command
+  if(_buzz_make_INCLUDES)
+    set(_buzz_make_INCLUDES_msg ", including \"${_buzz_make_INCLUDES}\"")
+  endif(_buzz_make_INCLUDES)
   add_custom_command(
     OUTPUT "${_buzz_make_BYTECODE}" "${_buzz_make_BASM}" "${_buzz_make_DEBUG}"
     COMMAND "BZZPARSE=${BUZZ_PARSER}" "BZZASM=${BUZZ_ASSEMBLER}" "${BUZZ_COMPILER}" ${_buzz_make_BUZZ_INCLUDE_PATH} -b "${_buzz_make_BYTECODE}" -d "${_buzz_make_DEBUG}" -a "${_buzz_make_BASM}" "${CMAKE_CURRENT_SOURCE_DIR}/${_SCRIPT}"
     MAIN_DEPENDENCY "${CMAKE_CURRENT_SOURCE_DIR}/${_SCRIPT}"
     DEPENDS ${_buzz_make_INCLUDES}
-    COMMENT "Compiling Buzz script ${_SCRIPT}, including '${_buzz_make_INCLUDES}'")
+    COMMENT "Compiling Buzz script ${_SCRIPT}${_buzz_make_INCLUDES_msg}")
   # Add target, so compilation is executed
   add_custom_target("${_SCRIPT}" ALL DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${_SCRIPT}" "${_buzz_make_BYTECODE}" "${_buzz_make_DEBUG}" ${_buzz_make_INCLUDES})
 endfunction(buzz_make)
