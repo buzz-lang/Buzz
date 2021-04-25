@@ -288,8 +288,6 @@ public:
                               buzzvm_t t_vm) = 0;
    };
 
-protected:
-
    /**
     * Returns the VM of the robot with the given id.
     * If no robot with the given id exists, it returns NULL.
@@ -313,6 +311,11 @@ protected:
     * @see BuzzForeachVM
     */
    void BuzzRegisterVMs();
+
+   /**
+    * Called every time the bytecode is updated in the VMs.
+    */
+   virtual void BuzzBytecodeUpdated() {}
 
 protected:
 
