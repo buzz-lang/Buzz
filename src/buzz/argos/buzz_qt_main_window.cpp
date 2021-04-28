@@ -492,7 +492,8 @@ void CBuzzQTMainWindow::Execute() {
                                        m_strMainDbgInfo.toStdString());
    }
    /* Call the Buzz loop functions */
-   m_pcBuzzLoopFunctions->BuzzBytecodeUpdated();
+   if(m_pcBuzzLoopFunctions)
+      m_pcBuzzLoopFunctions->BuzzBytecodeUpdated();
    QApplication::restoreOverrideCursor();
    /* Clear the error table */
    m_pcRunTimeErrorTable->clearContents();
