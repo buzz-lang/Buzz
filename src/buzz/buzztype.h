@@ -180,7 +180,7 @@ extern "C" {
    /*
     * C-closure to convert an int to float.
     */
-   extern int buzzobj_tofloat(struct buzzvm_s* vm);
+   extern int buzzobj_float(struct buzzvm_s* vm);
 
    /*
     * C-closure to clone a Buzz object.
