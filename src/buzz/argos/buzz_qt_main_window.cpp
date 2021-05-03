@@ -3,6 +3,7 @@
  */
 #include "../buzzparser.h"
 #include "buzz_controller.h"
+#include "buzz_loop_functions.h"
 #include "buzz_qt_main_window.h"
 #include "buzz_qt_editor.h"
 #include "buzz_qt_statetree_model.h"
@@ -490,6 +491,9 @@ void CBuzzQTMainWindow::Execute() {
       m_vecControllers[i]->SetBytecode(m_strMainBcode.toStdString(),
                                        m_strMainDbgInfo.toStdString());
    }
+   /* Call the Buzz loop functions */
+   if(m_pcBuzzLoopFunctions)
+      m_pcBuzzLoopFunctions->BuzzBytecodeUpdated();
    QApplication::restoreOverrideCursor();
    /* Clear the error table */
    m_pcRunTimeErrorTable->clearContents();
@@ -817,6 +821,8 @@ void GetBuzzScriptFromDbgInfo(const void* key, void* data, void* params) {
 }
 
 void CBuzzQTMainWindow::PopulateBuzzControllers() {
+   /* Get pointer to Buzz Loop Functions */
+   m_pcBuzzLoopFunctions = dynamic_cast<CBuzzLoopFunctions*>(&CSimulator::GetInstance().GetLoopFunctions());
    /* Get list of controllable entities */
    CSpace& cSpace = CSimulator::GetInstance().GetSpace();
    CSpace::TMapPerType& tControllables = cSpace.GetEntitiesByType("controller");

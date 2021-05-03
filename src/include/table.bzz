@@ -4,6 +4,15 @@
 table = {}
 
 #
+# Appends an element to the table
+# NOTE: this only works with integer keys.
+#
+table.append = function(t, x) {
+  if(size(t) == 0) t[0] = x
+  else t[table.maxkey(t)+1] = x
+}
+
+#
 # Returns the maximum value in the table
 #
 table.max = function(t) {

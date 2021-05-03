@@ -9,6 +9,7 @@ namespace argos {
    class CComposableEntity;
    class CEntity;
 }
+class CBuzzLoopFunctions;
 class CBuzzQTMainWindow;
 class CBuzzController;
 class CBuzzQTTabWidget;
@@ -308,6 +309,8 @@ private:
    std::vector<CBuzzController*> m_vecControllers;
    /** The robots */
    std::vector<CComposableEntity*> m_vecRobots;
+   /** The Buzz loop functions */
+   CBuzzLoopFunctions* m_pcBuzzLoopFunctions;
 
    /** The status bar */
    QStatusBar* m_pcStatusbar;

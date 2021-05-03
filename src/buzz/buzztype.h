@@ -16,8 +16,6 @@
 #define BUZZTYPE_CLOSURE  5
 #define BUZZTYPE_USERDATA 6
 
-#define BUZZTYPE_NILCMP -63
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -180,7 +178,7 @@ extern "C" {
    /*
     * C-closure to convert an int to float.
     */
-   extern int buzzobj_tofloat(struct buzzvm_s* vm);
+   extern int buzzobj_float(struct buzzvm_s* vm);
 
    /*
     * C-closure to clone a Buzz object.

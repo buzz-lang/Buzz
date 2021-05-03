@@ -3,6 +3,7 @@
 
 #include <buzz/argos/buzz_controller.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_quadrotor_position_actuator.h>
+#include <argos3/plugins/robots/generic/control_interface/ci_leds_actuator.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_colored_blob_perspective_camera_sensor.h>
 
 using namespace argos;
@@ -21,6 +22,8 @@ public:
    bool Land();
    void SetDirection(const CVector3& c_heading);
    void SetYaw(const CRadians& c_yaw);
+   void SetLEDs(const CColor& c_color);
+   void SetLED(UInt32 un_idx, const CColor& c_color);
    void CameraEnable();
    void CameraDisable();
 
@@ -32,6 +35,8 @@ protected:
 
    /* Pointer to the position actuator */
    CCI_QuadRotorPositionActuator* m_pcPropellers;
+   /* Pointer to the LEDs actuator */
+   CCI_LEDsActuator* m_pcLEDs;
    /* Pointer to the camera sensor */
    CCI_ColoredBlobPerspectiveCameraSensor* m_pcCamera;
 

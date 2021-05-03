@@ -133,7 +133,7 @@ static uint16_t SWARM_BROADCAST_PERIOD = 10;
    buzzdarray_pop(vm->stack);                                           \
    buzzobj_t res = buzzheap_newobj((vm), BUZZTYPE_INT);                 \
    int cmp = buzzobj_cmp(op2, op1);                                     \
-   res->i.value = (cmp == BUZZTYPE_NILCMP || cmp oper 0);               \
+   res->i.value = (cmp oper 0);                                         \
    return buzzvm_push(vm, res);
 
 /****************************************/

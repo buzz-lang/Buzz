@@ -113,6 +113,52 @@ static int BuzzRotate(buzzvm_t vm) {
    return buzzvm_ret0(vm);
 }
 
+static int BuzzSetLEDs(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 3);
+   /* Push the color components */
+   buzzvm_lload(vm, 1);
+   buzzvm_lload(vm, 2);
+   buzzvm_lload(vm, 3);
+   buzzvm_type_assert_number(vm, 3);
+   buzzvm_type_assert_number(vm, 2);
+   buzzvm_type_assert_number(vm, 1);
+   /* Create a new color with that */
+   CColor cColor(buzzvm_stack_number_to_int(vm, 3),
+                 buzzvm_stack_number_to_int(vm, 2),
+                 buzzvm_stack_number_to_int(vm, 1));
+   /* Get pointer to the controller */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
+   buzzvm_gload(vm);
+   /* Call function */
+   reinterpret_cast<CBuzzControllerEyeBot*>(buzzvm_stack_at(vm, 1)->u.value)->SetLEDs(cColor);
+   return buzzvm_ret0(vm);
+}
+
+static int BuzzSetLED(buzzvm_t vm) {
+   buzzvm_lnum_assert(vm, 4);
+   /* Push the color components */
+   buzzvm_lload(vm, 1); // idx
+   buzzvm_lload(vm, 2); // red
+   buzzvm_lload(vm, 3); // green
+   buzzvm_lload(vm, 4); // blue
+   buzzvm_type_assert_number(vm, 4);
+   buzzvm_type_assert_number(vm, 3);
+   buzzvm_type_assert_number(vm, 2);
+   buzzvm_type_assert_number(vm, 1);
+   /* Create a new color with that */
+   UInt32 unIdx = buzzvm_stack_number_to_int(vm, 4);
+   CColor cColor(buzzvm_stack_number_to_int(vm, 3),
+                 buzzvm_stack_number_to_int(vm, 2),
+                 buzzvm_stack_number_to_int(vm, 1));
+   /* Get pointer to the controller */
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
+   buzzvm_gload(vm);
+   /* Call function */
+   reinterpret_cast<CBuzzControllerEyeBot*>(buzzvm_stack_at(vm, 1)->u.value)->
+      SetLED(unIdx, cColor);
+   return buzzvm_ret0(vm);
+}
+
 static int BuzzCameraEnable(buzzvm_t vm) {
    /* Get pointer to the controller */
    buzzvm_pushs(vm, buzzvm_string_register(vm, "controller", 1));
@@ -136,6 +182,7 @@ static int BuzzCameraDisable(buzzvm_t vm) {
 
 CBuzzControllerEyeBot::CBuzzControllerEyeBot() :
    m_pcPropellers(NULL),
+   m_pcLEDs(NULL),
    m_pcCamera(NULL) {
 }
 
@@ -151,6 +198,8 @@ CBuzzControllerEyeBot::~CBuzzControllerEyeBot() {
 void CBuzzControllerEyeBot::Init(TConfigurationNode& t_node) {
    /* Get pointers to devices */
    try { m_pcPropellers = GetActuator<CCI_QuadRotorPositionActuator>("quadrotor_position"); }
+   catch(CARGoSException& ex) {}
+   try { m_pcLEDs = GetActuator<CCI_LEDsActuator>("leds"); }
    catch(CARGoSException& ex) {}
    try { m_pcCamera = GetSensor<CCI_ColoredBlobPerspectiveCameraSensor>("colored_blob_perspective_camera"); }
    catch(CARGoSException& ex) {}
@@ -235,6 +284,21 @@ void CBuzzControllerEyeBot::SetYaw(const CRadians& c_yaw) {
 /****************************************/
 /****************************************/
 
+void CBuzzControllerEyeBot::SetLEDs(const CColor& c_color) {
+   m_pcLEDs->SetAllColors(c_color);
+}
+
+/****************************************/
+/****************************************/
+
+void CBuzzControllerEyeBot::SetLED(UInt32 un_idx,
+                                   const CColor& c_color) {
+   m_pcLEDs->SetSingleColor(un_idx, c_color);
+}
+
+/****************************************/
+/****************************************/
+
 void CBuzzControllerEyeBot::CameraEnable() {
    m_pcCamera->Enable();
 }
@@ -283,6 +347,16 @@ buzzvm_state CBuzzControllerEyeBot::RegisterFunctions() {
    if(m_pcPropellers) {
       buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "rotate", 1));
       buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzRotate));
+      buzzvm_gstore(m_tBuzzVM);
+   }
+   if(m_pcLEDs) {
+      /* BuzzSetLEDs */
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "set_leds", 1));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzSetLEDs));
+      buzzvm_gstore(m_tBuzzVM);
+      /* BuzzSetLED */
+      buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "set_led", 1));
+      buzzvm_pushcc(m_tBuzzVM, buzzvm_function_register(m_tBuzzVM, BuzzSetLED));
       buzzvm_gstore(m_tBuzzVM);
    }
    /* BuzzCameraEnable */
