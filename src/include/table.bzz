@@ -8,7 +8,7 @@ table = {}
 # NOTE: this only works with integer keys.
 #
 table.append = function(t, x) {
-  if(t.size == 0) t[0] = x
+  if(size(t) == 0) t[0] = x
   else t[table.maxkey(t)+1] = x
 }
 

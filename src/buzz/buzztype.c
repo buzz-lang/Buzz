@@ -133,14 +133,24 @@ int buzzobj_eq(const buzzobj_t a,
 /****************************************/
 /****************************************/
 
+static int buzzobj_strcmp(const char* s1, const char* s2) {
+   int c = strcmp(s1, s2);
+   if(c > 0) return 1;
+   if(c < 0) return -1;
+   return 0;
+}
+
 int buzzobj_cmp(const buzzobj_t a,
                 const buzzobj_t b) {
    /* Nil */
    if(a->o.type == BUZZTYPE_NIL && b->o.type == BUZZTYPE_NIL) {
       return 0;
    }
-   if(a->o.type == BUZZTYPE_NIL || b->o.type == BUZZTYPE_NIL) {
-      return BUZZTYPE_NILCMP;
+   if(a->o.type == BUZZTYPE_NIL) {
+      return -1;
+   }
+   if(b->o.type == BUZZTYPE_NIL) {
+      return 1;
    }
    /* Numeric types */
    if(a->o.type == BUZZTYPE_INT && b->o.type == BUZZTYPE_INT) {
@@ -165,29 +175,28 @@ int buzzobj_cmp(const buzzobj_t a,
    }
    /* String and other types */
    if(a->o.type == BUZZTYPE_STRING && b->o.type == BUZZTYPE_STRING) {
-      return strcmp(a->s.value.str, b->s.value.str);
+      return buzzobj_strcmp(a->s.value.str, b->s.value.str);
    }
-
    if(a->o.type == BUZZTYPE_STRING && b->o.type == BUZZTYPE_INT) {
       char str[30];
       sprintf(str, "%d", b->i.value);
-      return strcmp(a->s.value.str, str);
+      return buzzobj_strcmp(a->s.value.str, str);
    }
    if(a->o.type == BUZZTYPE_STRING && b->o.type == BUZZTYPE_FLOAT) {
       char str[30];
       sprintf(str, "%f", b->f.value);
-      return strcmp(a->s.value.str, str);
+      return buzzobj_strcmp(a->s.value.str, str);
    }
 
    if(a->o.type == BUZZTYPE_INT && b->o.type == BUZZTYPE_STRING) {
       char str[30];
       sprintf(str, "%d", a->i.value);
-      return strcmp(str, b->s.value.str);
+      return buzzobj_strcmp(str, b->s.value.str);
    }
    if(a->o.type == BUZZTYPE_FLOAT && b->o.type == BUZZTYPE_STRING) {
       char str[30];
       sprintf(str, "%f", a->f.value);
-      return strcmp(str, b->s.value.str);
+      return buzzobj_strcmp(str, b->s.value.str);
    }
    /* Tables */
    if(a->o.type == BUZZTYPE_TABLE || b->o.type == BUZZTYPE_TABLE) {
