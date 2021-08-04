@@ -154,3 +154,22 @@ table.shuffle = function(t) {
     i = i + 1
   }
 }
+
+#
+# Deep copies a table through recursion.
+# PARAM t: The table
+#
+table.copy = function(t) {
+    # Base case
+    if (type(t) != "table") {
+        return t
+    }
+
+    # Recursive copy of elements
+    var t2 = {}
+    foreach(t, function(key, value) {
+        t2[key] = table.copy(value)
+    })
+
+    return t2
+}
