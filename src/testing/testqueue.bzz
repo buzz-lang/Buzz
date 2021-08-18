@@ -1,0 +1,89 @@
+include "include/queue.bzz"
+include "include/table.bzz"
+
+
+################################################################################
+# Initialization tests
+################################################################################
+
+test_new = queue.new(1)
+queue.print(test_new)
+table.print(test_new)  # To verify attribute initialization
+
+
+################################################################################
+# Empty tests
+################################################################################
+
+test_empty = queue.new(1)
+log(queue.empty(test_empty))
+
+queue.push(test_empty, 0)
+log(queue.empty(test_empty))
+
+
+################################################################################
+# Full tests
+################################################################################
+
+test_full = queue.new(1)
+log(queue.full(test_full))
+
+queue.push(test_full, 0)
+log(queue.full(test_full))
+
+
+################################################################################
+# Size tests
+################################################################################
+
+test_size = queue.new(3)
+log(queue.size(test_size))
+
+queue.push(test_size, 0)
+log(queue.size(test_size))
+
+
+################################################################################
+# Push tests
+################################################################################
+
+test_push = queue.new(3)
+
+# Test push until full (and try one more)
+queue.push(test_push, 0)
+queue.push(test_push, 1)
+queue.push(test_push, 2)
+queue.push(test_push, 3)
+queue.print(test_push)
+table.print(test_push)  # To verify if pointers incremented correctly
+
+# Test push after pop
+queue.pop(test_push)
+queue.push(test_push, 3)
+queue.print(test_push)
+table.print(test_push)  # To verify if pointers incremented correctly
+
+
+################################################################################
+# Pop tests
+################################################################################
+
+test_pop = queue.new(3)
+
+# Test pop when empty
+queue.pop(test_pop)
+
+# Test pop with front < rear
+queue.push(test_pop, 0)
+queue.push(test_pop, 1)
+queue.push(test_pop, 2)
+log("Popped: ", queue.pop(test_pop))
+queue.print(test_pop)
+table.print(test_pop)  # To verify if pointers incremented correctly
+
+# Test pop with rear < front
+queue.push(test_pop, 3)
+log("Popped: ", queue.pop(test_pop))
+queue.print(test_pop)
+table.print(test_pop)  # To verify if pointers incremented correctly
