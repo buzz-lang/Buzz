@@ -30,12 +30,21 @@
   Buzz does not include the concept of constant. Every variable is
   always mutable.
 
+  A variable can be created in three ways, which will affect its [[#scope][scope]]:
+  #+BEGIN_SRC buzz
+  # Declared, but not initialized (var keyword mandatory)
+  var x
+  # Declared and initialized (with var keyword)
+  var i = 5
+  # Declared and initialized (without var keyword)
+  #+END_SRC
+
 ** Primitive Types
    :PROPERTIES:
    :CUSTOM_ID: primtypes
    :END:
    Buzz supports the following primitive types:
-   - ~nil~ :: encodes an unknown value for a variable, or a ~false~
+   - nil :: encodes an unknown value for a variable, or a ~false~
         [[#contrstruct][condition]]
    - integer :: a 32-bit signed integer (e.g., ~90~)
    - float :: a 32-bit floating-point value (e.g., ~1.0~, ~0.25~,
@@ -49,7 +58,12 @@
         externally to Buzz. See [[#userdata][User Data]] for more
         information.
 
+    The type of a variable can be checked with ~type(my_variable)~.
+
 ** Scope
+  :PROPERTIES:
+  :CUSTOM_ID: scope
+  :END:
   Buzz variables can be /global/ or /local/. To declare a variable as
   /local/ to a code block (e.g., a [[#functions][function]]), you
   need to prepend its first definition with the keyword ~var~:
@@ -78,15 +92,66 @@
    :CUSTOM_ID: if
    :END:
 
+   Buzz supports conditionals.
+
+   #+BEGIN_SRC buzz
+   # simple if statement
+   if (x > 3) {
+     log("x is too big")
+   }
+   
+   # if / else if / else
+   if (x > 3)
+     log("x is too big")
+   else if (x < 3)
+     log("x is too small")
+   else
+     log("maybe I just don't like x")
+   #+END_SRC
+
 ** ~while~ Statement
    :PROPERTIES:
    :CUSTOM_ID: while
    :END:
 
+   #+BEGIN_SRC buzz
+   var i = 10
+   while(i < 20) {
+     log(i)
+     i = i + 1
+   }
+  
+   #+END_SRC
+
 ** ~for~ Statement
    :PROPERTIES:
    :CUSTOM_ID: for
    :END:
+
+   Buzz supports standard for loops.
+   Note that statements defining the loop (like ~i=0~) are separated by /commas/.
+
+   #+BEGIN_SRC buzz
+   for (i = 0, i < 10, i = i + 1) {
+     log(i)
+   }
+   #+END_SRC
+
+** ~foreach~ Statement
+   :PROPERTIES:
+   :CUSTOM_ID: foreach
+   :END:
+
+   The foreach statement allows to iterate over tables, and as such is more extensively
+   described in the [[#tables][tables section]].
+
+   #+BEGIN_SRC buzz
+   var my_table = { .x = 3, .y = 5 }
+   foreach(my_table, function(key, value) {
+     log(key, " -> ", value)
+   })
+  
+   #+END_SRC
 
 * Tables
   :PROPERTIES:
@@ -142,8 +207,12 @@
   t[1.0] = nil
   #+END_SRC
 
-  Table contents can be handled through a number of dedicated
-  commands.
+  Table contents can be handled through a number of dedicated functions.
+
+  Buzz also offers a library to handle more table operations. The library is
+  stored in =INSTALL_PREFIX/share/buzz/include/table.bzz=, so to use
+  it a script must first include it. The complete reference of these
+  functions is included in the file.
 
   - ~size(t)~ :: returns the current number of elements in table ~t~:
        #+BEGIN_SRC buzz
@@ -512,7 +581,14 @@ You can make full-fledged classes with constructors as follows:
 ** The ~math.vec2~ library
    When dealing with the robots, it is often useful to manipulate
    vectors. Buzz offers a library to handle 2D vectors. The library is
-   stored in =INSTALL_PREFIX/ share/buzz/include/vec2.bzz=, so to use
+   stored in =INSTALL_PREFIX/share/buzz/include/vec2.bzz=, so to use
+   it a script must first include it. The complete reference of these
+   functions is included in the file.
+
+** The ~math.matrix~ Library
+   The ~math~ library also includes a collection of functions for
+   manipulating matrices. The library is stored
+   in =INSTALL_PREFIX/share/buzz/include/matrix.bzz=, so to use
    it a script must first include it. The complete reference of these
    functions is included in the file.
 
@@ -538,7 +614,7 @@ You can make full-fledged classes with constructors as follows:
 ** Additional String Operations
    A number of additional string operations is available as a library
    that must be included. The library is stored in
-   =INSTALL_PREFIX/share/buzz/include/ string.bzz=, so to use it a
+   =INSTALL_PREFIX/share/buzz/include/string.bzz=, so to use it a
    script must first include it. The complete reference of these
    functions is included in the file.
 ** String Implementation in Buzz
@@ -591,6 +667,19 @@ You can make full-fledged classes with constructors as follows:
   - ~f.fforeach(fun)~ executes function ~fun~ for each line of file ~f~.
   - ~f.fwrite(s1, s2, ...)~ writes the concatenation of strings ~s1~,
     ~s2~, ... into file ~f~.
+
+* Queues
+  :PROPERTIES:
+  :CUSTOM_ID: queues
+  :END:
+
+  Because it is often necessary to prioritize treating some data before other data,
+  Buzz offers the possibility to store data in fixed-size queues.
+  The Buzz queue is essentially a fized-size circular buffer implemented using tables.
+  The library is stored in =INSTALL_PREFIX/share/buzz/include/queue.bzz=, so to use
+  it a script must first include it. The complete reference of these
+  functions is included in the file.
+
 * Swarm Management
   :PROPERTIES:
   :CUSTOM_ID: swarm
