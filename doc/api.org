@@ -18,6 +18,29 @@
 #+LATEX_HEADER_EXTRA: \lstset{frame=single}
 #+LATEX_HEADER_EXTRA: \newcommand{\bzz}{\lstinline[language=buzz,basicstyle=\ttfamily\normalsize]}
 
+* Comments
+  :PROPERTIES:
+  :CUSTOM_ID: comments
+  :END:
+  Buzz code can be commented with ~#~.
+  #+BEGIN_SRC buzz
+  # This is a comment
+  #+END_SRC
+
+* File inclusion
+  :PROPERTIES:
+  :CUSTOM_ID: inclusion
+  :END:
+  To allow cleaner code structure as well as library usage, .bzz files can be included with the following syntax:
+  #+BEGIN_SRC buzz
+  # include "otherfile.bzz"
+  #+END_SRC
+  NOTE: A specific file can be included only once.
+  Any 'include' statement for a file is ignored after the first inclusion
+  occurred.
+  Relative paths are automatically transformed into absolute paths before
+  including a file.
+
 * Variables
   :PROPERTIES:
   :CUSTOM_ID: variables
@@ -209,11 +232,6 @@
 
   Table contents can be handled through a number of dedicated functions.
 
-  Buzz also offers a library to handle more table operations. The library is
-  stored in =INSTALL_PREFIX/share/buzz/include/table.bzz=, so to use
-  it a script must first include it. The complete reference of these
-  functions is included in the file.
-
   - ~size(t)~ :: returns the current number of elements in table ~t~:
        #+BEGIN_SRC buzz
        t = { .x = 4 }
@@ -269,6 +287,11 @@
                0.0) / size(t)
        # avg is now 2.0
        #+END_SRC
+
+  Buzz also offers a library to handle more table operations. The library is
+  stored in =INSTALL_PREFIX/share/buzz/include/table.bzz=, so to use
+  it a script must first include it. The complete reference of these
+  functions is included in the file.
 
 * Functions
   :PROPERTIES:
@@ -684,6 +707,47 @@ You can make full-fledged classes with constructors as follows:
   :PROPERTIES:
   :CUSTOM_ID: swarm
   :END:
+
+  Because Buzz is a DSL specifically aimed at swarm management, it includes functions dedicated to this purpose.
+  It allows the creation of swarms as sets of robots to facilitate coordination, task allocation, etc.
+
+  There are two categories of functions exposed by the swarm API: 
+  those who can be likened to static functions in Python, and those which are instance functions.
+
+  ** Static swarm functions
+  These functions are inspired from typical set operations.
+  They are used with the syntax ~swarm.a_function()~, where ~swarm~ is a builtin class.
+  For example:
+
+  #+begin_src buzz
+    s = swarm.create(1)
+  #+end_src
+
+  - ~create(i)~ :: Creates a swarm with identifier ~i~.
+  - ~intersection(i, a, b)~ :: Creates a new swarm with identifier ~i~ with the intersection
+    of previously created swarms ~a~ and ~b~. 
+  - ~union(i, a, b)~ :: Creates a new swarm with identifier ~i~ with the union
+    of previously created swarms ~a~ and ~b~.
+  - ~difference(i, a, b)~ :: Creates a new swarm with identifier ~i~ with the robots
+    from swarm ~a~ who are not in swarm ~b~. 
+
+  ** Instance swarm functions
+  These functions are called on an instance of a swarm.
+  They are used with the syntax ~s.a_function()~ where ~s~ is an instance of ~swarm~.
+  For example:
+
+  #+begin_src buzz
+    s = swarm.create(1)
+    s.join()
+  #+end_src
+
+  - ~join()~ :: Join the swarm unconditionally.
+  - ~select(conditonal_statement)~ :: Join the swarm only if ~conditonal_statement~ is true.
+  - ~unselect(conditonal_statement)~ :: Leave the swarm only if ~conditonal_statement~ is true.
+  - ~leave()~ :: Leave the swarm unconditionally.
+  - ~in()~ :: Checks if the current robots belongs to the swarm.
+  - ~exec(function() {...} )~ :: Assigns a task to the swarm.
+  - ~others(1)~ :: Creates a new swarm with identifier ~i~ wich is a negation of ~s~.
 
 * Virtual Stigmergy
   :PROPERTIES:
