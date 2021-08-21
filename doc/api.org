@@ -746,18 +746,75 @@ You can make full-fledged classes with constructors as follows:
   - ~unselect(conditonal_statement)~ :: Leave the swarm only if ~conditonal_statement~ is true.
   - ~leave()~ :: Leave the swarm unconditionally.
   - ~in()~ :: Checks if the current robots belongs to the swarm.
-  - ~exec(function() {...} )~ :: Assigns a task to the swarm.
+  - ~exec(function() {...})~ :: Assigns a task to the swarm.
   - ~others(1)~ :: Creates a new swarm with identifier ~i~ wich is a negation of ~s~.
+
+  ** Instance swarm attributes
+  These are the attributes on each swarm instance.
+  They are used with the syntax ~s.property~ where ~s~ is an instance of ~swarm~.
+
+  - ~id~ The id of the current swarm.
 
 * Virtual Stigmergy
   :PROPERTIES:
   :CUSTOM_ID: vstig
   :END:
 
+  The virtual stigmergy is a conflict-free replicated data type (CRDT) and is implemented directly into Buzz as key-value distributed storage system.
+  It can be used to share information between the members of a swarm. The virtual stigmergy whitepaper can be found [[https://doi.org/10.4108/eai.3-12-2015.2262503][here]].
+
+  There are two categories of functions exposed by the virtual stigmergy API: 
+  those who can be likened to static functions in Python, and those which are instance functions.
+
+  ** Static virtual stigmergy functions
+  This function is used with the syntax ~stigmergy.a_function()~, where ~stigmergy~ is a builtin class.
+  For example:
+
+  #+begin_src buzz
+    s = stigmergy.create(1)
+  #+end_src
+
+  - ~create(i)~ :: Creates a virtual stigmergy with identifier ~i~.
+
+  ** Instance virtual stigmergy functions
+  - ~get(key)~ :: Gets the element at position ~key~ in the virtual stigmergy.
+    If there is no element at position ~key~, returns ~nil~.
+  - ~put(key, value)~ :: Inserts element ~value~ at position ~key~ in the virtual stigmergy.
+  - ~size()~ :: Gets the number of elements in the virtual stigmergy.
+  - ~onconflict(i)~ :: Creates a virtual stigmergy with identifier ~i~.
+  - ~onconflictlost(i)~ :: Creates a virtual stigmergy with identifier ~i~.
+  - ~foreach(function(key, value, robot_id) {...})~ :: Iterates over each element contained in the stigmergy and applies a lambda function to it.
+
+  ** Instance virtual stigmergy attributes
+  These are the attributes on each stigmergy instance.
+  They are used with the syntax ~s.property~ where ~s~ is an instance of ~stigmergy~.
+
+  - ~id~ The id of the current stigmergy.
+
+
 * Neighbor Management
   :PROPERTIES:
   :CUSTOM_ID: neighbors
   :END:
+
+  Buzz allows interactions with neighboring robots. This is especially useful for exchanging messages.
+  All neighbor management functions are static members of the ~neighbors~ class,
+  and are therefore used with the syntax ~neighbors.a_function()~ where ~neighbors~ is the builtin class.
+
+  - ~get(robot_id)~ :: Gets the data associated with the robot with ~robot_id~.
+    This data is a table with attributes representing the ~elevation~, ~distance~ and ~azimuth~ of the given robot.
+  - ~kin()~ :: Gets a table of the robots belonging to the same swarm as the current robot.
+  - ~nonkin()~ :: Gets a table of the robots /not/ belonging to the same swarm as the current robot.
+  - ~map(function(robot_id, data) {...})~ :: Makes a new neighbor structure in which each element is transformed by the passed function.
+  - ~reduce(function(robot_id, data, accumulator) {...}, init_value)~ :: Performs a left fold/accumulation/reduction operation on the neighbors' data.
+    The ~init_value~ must have a format compatible with ~data~'s format.
+  - ~filter(function(robot_id, data) {...})~ :: Filters the neighbors according to a predicate ('boolean' function).
+  - ~foreach(function(robot_id, data) {...})~ :: Calls a function for each neighbor.
+  - ~count()~ :: Gets the number of neighbors.
+  - ~broadcast(topic, value)~ :: Broadcasts a ~value~ on ~topic~ across the neighbors.
+  - ~listen(topic, function(value_id, value, robot_id) {...})~ :: Installs a listener function for messages broadcast on ~topic~ by neighbors.
+    When a message is received on ~topic~, the listner function is called. The listner function must have parameters ~value_id~, ~value~, and ~robot_id~.
+  - ~ignore(topic)~ :: Removes the listener for a ~topic~ across the neighbors.
 
 * User Data
   :PROPERTIES:
