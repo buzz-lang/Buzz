@@ -458,7 +458,7 @@ Using the ~self~ keyword, you can write methods that access class attributes:
 #+begin_src buzz
   # Class definition
   myclass = {
-    .myattribute = 1
+    .myattribute = 1,
 
     .mymethod = function(x) {
       return x + self.myattribute
@@ -483,7 +483,7 @@ You can make full-fledged classes with constructors as follows:
         # Bind the methods
         .mymethod = mymethod
       }
-    }
+    },
 
     # Method definition
     .mymethod = function(x) {
@@ -497,6 +497,8 @@ You can make full-fledged classes with constructors as follows:
   # Call the method: z = 1 + 2 = 3
   z = myobject.mymethod(2)
 #+end_src
+
+Note that because classes are essentially tables, their elements (attributes and methods) must be separated by commas as in the previous example.
 
 * Math
   :PROPERTIES:
