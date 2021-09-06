@@ -1,0 +1,121 @@
+include "string.bzz"
+include "table.bzz"
+
+
+#################################################################
+# WARNING: DO NOT USE size(q), as this will always return 4
+#          (there are 4 atributes in the data structure).
+#          USE queue.size(q)
+#################################################################
+
+
+#
+# Create a new namespace for queues.
+# Buzz queues are circular queues (ring buffers)
+# based on Buzz tables with numeric indices.
+#
+queue = {}
+
+
+#
+# Creates a new queue.
+# PARAM capacity: The maximum size of the queue.
+# RETURN: A new queue.
+#
+queue.new = function(capacity) {
+    return {
+        .capacity = capacity,
+        .front = -1,
+        .rear = -1,
+        .data = {}
+    }
+}
+
+#
+# Checks if a queue is full. 
+# PARAM q: The result of the fullness check.
+#
+queue.full = function(q) {
+    return (q.front == 0 and q.rear == q.capacity - 1) or (q.rear == q.front - 1)
+}
+
+#
+# Checks if a queue is empty. 
+# PARAM q: The result of the emptiness check.
+#
+queue.empty = function(q) {
+    return q.front == -1
+}
+
+#
+# Returns the size of the queue 
+# PARAM q: The queue on which the check is performed.
+# RETURN: The result of the size check.
+#
+queue.size = function(q) {
+    return size(q.data)
+}
+
+#
+# Pushes an item to the end of a queue. 
+# PARAM q: The queue to which an item must be appended.
+# PARAM item: The item to be pushed at the end of the queue.
+#
+queue.push = function(q, item) {
+    if (queue.full(q)) {
+        log("Item could not be inserted, queue is full.")
+    } else {
+        # Update pointers
+        q.rear = (q.rear + 1) % q.capacity
+        if (q.front == -1) {
+            q.front = 0
+        }
+        
+        q.data[q.rear] = item
+    }
+}
+
+#
+# Pops an item from the beginning of a queue. 
+# PARAM q: The queue from which an item must be removed.
+# RETURN: The the popped item.
+#
+queue.pop = function(q) {
+    if (queue.empty(q)) {
+        log("Queue is empty.")
+
+        return nil
+    } else {
+        # Get a recursive copy of item before deleting reference
+        item = table.copy(q.data[q.front])
+        q.data[q.front] = nil
+
+        # Update pointers
+        if (q.front == q.rear) {
+            q.front = -1
+            q.rear = -1
+        } else {
+            q.front = (q.front + 1) % q.capacity
+        }
+        
+        return item
+    }
+}
+
+#
+# Prints a queue's elements in a Python-like format.
+# PARAM q: The queue.
+#
+queue.print = function(q) {
+    if (queue.empty(q)) {
+        log("[]")
+    } else {
+        queue_string = "["
+
+        for (i = q.front, i != q.rear, i = (i + 1) % q.capacity) {
+            queue_string = string.concat(queue_string, string.tostring(q.data[i]), ", ")
+        }
+        
+        log(string.concat(queue_string, string.tostring(q.data[i]), "]"))
+    }
+}

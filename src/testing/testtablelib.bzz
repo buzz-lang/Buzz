@@ -25,3 +25,9 @@ log("max = ", table.max(t))
 log("maxkey = ", table.maxkey(t))
 log("min = ", table.min(t))
 log("minkey = ", table.minkey(t))
+
+# Test deep copy
+t1 = {.0 = 12, .1 = { .0 = 3, .1 = {.0 = 2 } } }
+t2 = table.copy(t1)
+t2[1][1][0] = 4
+log("Tables after deep copy + element modification: ", t2[1][1][0], " ", t1[1][1][0])
