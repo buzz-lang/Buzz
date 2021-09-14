@@ -18,13 +18,13 @@ add_executable(testbuzzstrman testbuzzstrman.c)
 target_link_libraries(testbuzzstrman buzz)
 
 if(ARGOS_FOUND)
-  if(ARGoS_BUILD_FOR STREQUAL "simulator")
+  if(ARGOS_BUILD_FOR STREQUAL "simulator")
     include_directories(${ARGOS_INCLUDE_DIRS})
     link_directories(${ARGOS_LIBRARY_DIR})
     link_libraries(${ARGOS_LDFLAGS})
     add_library(testloopfunctions MODULE testloopfunctions.h testloopfunctions.cpp)
-    target_link_libraries(testloopfunctions argos3plugin_${ARGoS_BUILD_FOR}_buzz buzz argos3core_${ARGoS_BUILD_FOR})
-  endif(ARGoS_BUILD_FOR STREQUAL "simulator")
+    target_link_libraries(testloopfunctions argos3plugin_${ARGOS_BUILD_FOR}_buzz buzz argos3core_${ARGOS_BUILD_FOR})
+  endif(ARGOS_BUILD_FOR STREQUAL "simulator")
 endif(ARGOS_FOUND)
 
 #
