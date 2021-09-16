@@ -3,7 +3,7 @@
 ## Development, Compilation, and Deployment of Buzz Scripts
 
 ### Dynamic extension language
-Buzz is a [dynamic language](https://en.wikipedia.org/wiki/Dynamic_programming_language) that allows one to express complex swarm behaviors with concise scripts. Buzz is designed as an //extension language//. The task of an extension language is to allow the programmer to work at a higher level of abstraction with respect to that of the underlying system. Thanks to its [C interface](../integration.org), Buzz can be used with any kind of robot software that can interoperate with C or C++. This makes it very simple to install Buzz on practically any existing robot, and also integrate it with frameworks such as [Robot Operating System](http://www.ros.org/).
+Buzz is a [dynamic language](https://en.wikipedia.org/wiki/Dynamic_programming_language) that allows one to express complex swarm behaviors with concise scripts. Buzz is designed as an *extension language*. The task of an extension language is to allow the programmer to work at a higher level of abstraction with respect to that of the underlying system. Thanks to its [C interface](../integration.org), Buzz can be used with any kind of robot software that can interoperate with C or C++. This makes it very simple to install Buzz on practically any existing robot, and also integrate it with frameworks such as [Robot Operating System](http://www.ros.org/).
 
 ![](../diagrams/deployment.png)
 
