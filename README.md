@@ -14,8 +14,12 @@ The language can be extended to add new primitives (thus supporting heterogeneou
 
 More information is available at http://the.swarming.buzz/wiki/doku.php?id=start.
 
-# Documentation contents
+# Documentation Contents
+The documentation is structured as follows:
 1. [Installation](doc/installation.md)
 2. [ARGoS Integration](doc/argos-integration.md)
-3. [Buzz API](doc/api.org)
-4. [Extending Buzz](doc/integration.org)
+3. Buzz Concepts\
+3.1 [Basics](doc/concepts/basics.md)\
+3.2 [Virtual Machine](doc/concepts/vm.md)
+4. [Buzz API](doc/api.org)
+5. [Extending Buzz](doc/integration.org)
