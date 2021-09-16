@@ -676,8 +676,9 @@ Note that because classes are essentially tables, their elements (attributes and
   :CUSTOM_ID: files
   :END:
   To handle files, Buzz offers a number of built-in functions
-  collected in the ~io~ table.
-  - ~f = io.fopen(path,mode)~ opens a file located at ~path~. Parameter
+  collected in the ~io~ table. All file management functions are static members of the ~io~ class,
+  and are therefore used with the syntax ~io.a_function()~ where ~io~ is the builtin class.
+  - ~fopen(path, mode)~ opens a file located at ~path~. Both parameters are strings. Parameter
     ~mode~ encodes how the file is opened:
     - ~"r"~ opens the file read-only;
     - ~"w"~ opens the file write-only and truncates the file;
@@ -687,11 +688,16 @@ Note that because classes are essentially tables, their elements (attributes and
     This function returns ~nil~ in case of error, and a table in case
     of success. The table contains the methods listed in the
     following.
-  - ~f.fclose()~ closes file ~f~.
-  - ~f.size()~ returns the size of file ~f~.
-  - ~f.fforeach(fun)~ executes function ~fun~ for each line of file ~f~.
-  - ~f.fwrite(s1, s2, ...)~ writes the concatenation of strings ~s1~,
-    ~s2~, ... into file ~f~.
+  - ~fclose(f)~ closes file ~f~.
+  - ~fsize(f)~ returns the size of file ~f~.
+  - ~fforeach(f, func)~ executes function ~func~ for each line of file ~f~.
+  - ~fwrite(f, s1, s2, ...)~ writes the concatenation of strings ~s1~, ~s2~, ... into file ~f~.
+  
+  Additionally, two attributes are available on the ~io~ class and are accessed with the syntax ~io.an_attribute~:
+  - ~errno~ returns an integer representing the last error id.
+    If there is no error, returns 0.
+  - ~error_message~ returns a message describing the last error.
+    If there is no error, returns "No error".  
 
 * Queues
   :PROPERTIES:
