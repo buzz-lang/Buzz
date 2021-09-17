@@ -31,6 +31,8 @@ The documentation is structured as follows:
 7. Technical Specifications\
 7.1 [Assembly Language](doc/technical-specifications/assembler.md)\
 7.2 [Backus-Naur Form Syntax](doc/technical-specifications/syntax.md)
+8. Robot Integration\
+8.1 [Khepera IV](robot-integration/kheperaiv.md)
 
 # Who Made Buzz?
 Buzz is a research project conducted at [NESTLab](https://www.nestlab.net), [Worcester Polytechnic Institute](https://www.wpi.edu), and [MIST](https://www.mistlab.ca), [École Polytechnique de Montréal](https://www.polymtl.ca). It is funded by the [Natural Sciences and Engineering Research Council of Canada](https://www.nserc-crsng.gc.ca).
