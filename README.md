@@ -12,7 +12,6 @@ Self-organization results from the fact that the Buzz run-time platform is purel
 
 The language can be extended to add new primitives (thus supporting heterogeneous robot swarms) and can be laid on top of other frameworks, such as ROS.
 
-More information is available at http://the.swarming.buzz/wiki/doku.php?id=start.
 
 # Documentation Contents
 The documentation is structured as follows:
@@ -23,3 +22,10 @@ The documentation is structured as follows:
 3.2 [Virtual Machine](doc/concepts/vm.md)
 4. [Buzz API](doc/api.org)
 5. [Extending Buzz](doc/integration.org)
+6. Examples\
+6.1 [Distance Gradient](doc/examples/distance_gradient.md)\
+6.2 [Pattern Formation](doc/examples/pattern_formation.md)\
+6.3 [Message API](doc/examples/message_api.md)
+7. Technical Specifications\
+7.1 [Assembly Language](doc/technical-specifications/assembler.md)\
+7.2 [Backus-Naur Form Syntax](doc/technical-specifications/syntax.md)
