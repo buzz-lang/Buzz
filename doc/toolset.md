@@ -71,7 +71,7 @@ This tool takes as input a bytecode file `infile.bo` and the corresponding debug
 bzzrun [--trace] file.bo file.bdb
 ```
 
-This is a simple interpreter that executes the given Buzz bytecode file `file.bo`. Its main purpose is to provide a starting point for projects that [integrate Buzz as extension language](integration.org).
+This is a simple interpreter that executes the given Buzz bytecode file `file.bo`. Its main purpose is to provide a starting point for projects that [integrate Buzz as extension language](integration.md).
 
 As such, the [source code of `bzzrun`](https://github.com/MISTLab/Buzz/blob/master/src/buzz/buzzrun.c) is more interesting than what the command actually does. `bzzrun` can also be used as a simple interpreter for standalone Buzz scripts that do not use any messaging (e.g., neighbors, groups, virtual stigmergy, etc.).
 

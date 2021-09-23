@@ -60,6 +60,7 @@
   # Declared and initialized (with var keyword)
   var i = 5
   # Declared and initialized (without var keyword)
+  n = 7
   #+END_SRC
 
 ** Primitive Types
@@ -143,7 +144,6 @@
      log(i)
      i = i + 1
    }
-  
    #+END_SRC
 
 ** ~for~ Statement
@@ -173,7 +173,6 @@
    foreach(my_table, function(key, value) {
      log(key, " -> ", value)
    })
-  
    #+END_SRC
 
 * Tables
@@ -237,7 +236,7 @@
        t = { .x = 4 }
        print(size(t)) # prints 1
        #+END_SRC
-  - ~foreach(t,f)~ :: applies a function ~f(key,value)~ to each
+  - ~foreach(t, f)~ :: applies a function ~f(key, value)~ to each
        element of table ~t~:
        #+BEGIN_SRC buzz
        t = { .x = 4, .y = 5, .z = 6 }
@@ -250,12 +249,12 @@
        #   (y, 5)
        #   (z, 6)
        #+END_SRC
-       It is important to notice that ~foreach(t,f)~ is not meant to
+       It is important to notice that ~foreach(t, f)~ is not meant to
        modify the values of the table. It is only meant to go through
        the elements of ~t~ and use its values in a read-only
        fashion. If you want to modify the elements of a table, use
-       ~map(t,f).~
-  - ~map(t,f)~ :: applies a function ~f(key,value)~ to each element
+       ~map(t, f).~
+  - ~map(t, f)~ :: applies a function ~f(key, value)~ to each element
        of table ~t~ and returns a new table. For each element,
        function ~f~ must return a value, which is used to populate
        the new table. For instance:
@@ -269,19 +268,19 @@
        #   ("x", 101)
        #   ("y", 102)
        #+END_SRC
-  - ~reduce(t,f,a)~ :: applies a function ~f(key,value,accumulator)~
+  - ~reduce(t, f, a)~ :: applies a function ~f(key, value, accumulator)~
        to each element of table ~t~. Function ~f~ must accept three
        parameters: the current key, the corresponding value, and an
        accumulator. Function ~f~ must also return a value, that is
        passed as accumulator to the invocation of ~f~ on the next
-       table element. Parameter ~a~ of ~reduce(t,f,a)~ is the initial
+       table element. Parameter ~a~ of ~reduce(t, f, a)~ is the initial
        value of the accumulator. For instance, if you want to
        calculate the average of the values in a table, write the
        following code:
        #+BEGIN_SRC buzz
        t = { .1 = 1.0, .2 = 2.0, 3. = 3.0 }
        avg = reduce(t,
-               function(key,value,accumulator) {
+               function(key, value, accumulator) {
                  return value + accumulator
                },
                0.0) / size(t)
@@ -305,29 +304,29 @@
 To define and call functions in Buzz, use this syntax:
 #+begin_src buzz
   # Function definition
-  function myadd(x,y) {
+  function myadd(x, y) {
     return x + y
   }
 
 
   # Function call: z = 1 + 2 = 3
-  z = myadd(1,2)
+  z = myadd(1, 2)
 #+end_src
 
 Functions that do not return an explicit value implicitly return ~nil~:
 #+begin_src buzz
-  function myvoidfunction(x,y) {
+  function myvoidfunction(x, y) {
     log(x + y)
   }
 
   # Function call ignoring return value
   # Prints 3
-  myvoidfunction(1,2)
+  myvoidfunction(1, 2)
 
   # Function call assigning return value
   # Prints 3
   # z is nil after the call
-  z = myvoidfunction(1,2)
+  z = myvoidfunction(1, 2)
 #+end_src
 
 Function definitions can be nested:
@@ -360,13 +359,13 @@ function pointer, use this syntax:
   }
 
   # Function call: z =  1 + 2 = 3
-  z = myadd(1,2)
+  z = myadd(1, 2)
 #+end_src
 
 For all effects and purposes, this is identical to the definition we saw
 above:
 #+begin_src buzz
-  function myadd(x,y) {
+  function myadd(x, y) {
     return x + y
   }
 #+end_src
@@ -377,7 +376,7 @@ Using function pointers allows you pass functions as parameters to higher-level 
   t = { ... }
 
   # Print all the table elements
-  foreach(t, function(k,v) { log("k=",k,"; v=",v) })
+  foreach(t, function(k, v) { log("k=", k, "; v=", v) })
 #+end_src
 
 You can mix inner function definition with function pointers:
@@ -548,11 +547,11 @@ Note that because classes are essentially tables, their elements (attributes and
    - ~math.tan(x)~ returns the tangent of ~x~ as a float.
    - ~math.asin(x)~ returns the arc sine of ~x~ as a float.
    - ~math.acos(x)~ returns the arc cosine of ~x~ as a float.
-   - ~math.atan2(y,x)~ returns the arc tangent of ~y,x~ as a float.
-   - ~math.min(x,y)~ returns the minimum between ~x~ and ~y~. The
+   - ~math.atan2(y, x)~ returns the arc tangent of ~y,x~ as a float.
+   - ~math.min(x, y)~ returns the minimum between ~x~ and ~y~. The
      type of the return value corresponds to the type of the minimum
      value: ~min(1.0, 2)~ is ~1.0~, and ~min(1,2.0)~ is ~1~.
-   - ~math.max(x,y)~ returns the maximum between ~x~ and ~y~. The
+   - ~math.max(x, y)~ returns the maximum between ~x~ and ~y~. The
      type of the return value corresponds to the type of the maximum
      value: ~max(1.0, 2)~ is ~2~, and ~max(1,2.0)~ is ~2.0~.
 

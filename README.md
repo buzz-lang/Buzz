@@ -25,7 +25,7 @@ The documentation is structured as follows:
 3.1 [Basics](doc/concepts/basics.md)\
 3.2 [Virtual Machine](doc/concepts/vm.md)
 4. [Buzz API](doc/api.org)
-5. [Extending Buzz](doc/integration.org)
+5. [Extending Buzz](doc/integration.md)
 6. Examples\
 6.1 [Distance Gradient](doc/examples/distance_gradient.md)\
 6.2 [Pattern Formation](doc/examples/pattern_formation.md)\
