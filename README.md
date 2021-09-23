@@ -24,7 +24,7 @@ The documentation is structured as follows:
 3. Buzz Concepts\
 3.1 [Basics](doc/concepts/basics.md)\
 3.2 [Virtual Machine](doc/concepts/vm.md)
-4. [Buzz API](doc/api.org)
+4. [Buzz API](doc/api.md)
 5. [Extending Buzz](doc/integration.md)
 6. Examples\
 6.1 [Distance Gradient](doc/examples/distance_gradient.md)\
