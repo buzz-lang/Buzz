@@ -291,9 +291,7 @@ Table contents can be handled through a number of dedicated functions.
 - `foreach(t, f)` : applies a function `f(key, value)` to each element of table `t`:
   ```ruby
   t = { .x = 4, .y = 5, .z = 6 }
-  foreach(t, function(key,value) {
-      print("(", key, ", ", value, ")")
-    })
+  foreach(t, function(key,value) { log(key, ", ", value) })
 
   # prints
   #   (x, 4)
@@ -311,10 +309,8 @@ Table contents can be handled through a number of dedicated functions.
   the new table. For instance:
   ```ruby
   t = { .x = 1, .y = 2 }
-  u = map(t,
-        function(key,value) {
-          return value + 100
-        })
+  u = map(t, function(key,value) { return value + 100 })
+
   # now u contains:
   #   ("x", 101)
   #   ("y", 102)
@@ -331,7 +327,7 @@ Table contents can be handled through a number of dedicated functions.
   ```ruby
   t = { .1 = 1.0, .2 = 2.0, 3. = 3.0 }
   average = reduce(t, function(key, value, accumulator) {
-      return value + accumulator
+        return value + accumulator
     }, 0.0) / size(t)
   # avg is now 2.0
   ```
@@ -352,7 +348,7 @@ To define and call functions in Buzz, use this syntax:
 ```ruby
 # Function definition
 function my_add(x, y) {
-  return x + y
+    return x + y
 }
 
 # Function call: z = 1 + 2 = 3
@@ -362,7 +358,7 @@ z = myadd(1, 2)
 Functions that do not return an explicit value implicitly return `nil`:
 ```ruby
 function my_void_function(x, y) {
-  log(x + y)
+    log(x + y)
 }
 
 # Function call ignoring return value
@@ -379,12 +375,13 @@ Function definitions can be nested:
 ```ruby
 # Outer definition
 function my_outer(x) {
-  # Inner definition
-  function my_inner(y) {
-    return x + y
-  }
-  # Call the internally defined function
-  return my_inner(2)
+    # Inner definition
+    function my_inner(y) {
+        return x + y
+    }
+    
+    # Call the internally defined function
+    return my_inner(2)
 }
 
 # Function call: z = 1 + 2 = 3
@@ -399,7 +396,7 @@ functions and pass them as arguments or assign to variables. These are also refe
 ```ruby
 # Function definition
 my_add = function(x, y) {
-  return x + y
+    return x + y
 }
 
 # Function call: z =  1 + 2 = 3
@@ -410,7 +407,7 @@ For all effects and purposes, this is identical to the definition we saw
 above:
 ```ruby
 function my_add(x, y) {
-  return x + y
+    return x + y
 }
 ```
 
@@ -427,9 +424,9 @@ You can mix inner function definition with function pointers:
 ```ruby
 # Function definition
 function my_outer(x) {
-  return function(y) {
-    return x + y
-  }
+    return function(y) {
+        return x + y
+    }
 }
 
 # Function call
@@ -456,7 +453,7 @@ mynamespace.CONST = 3.14
 
 # Define a function
 mynamespace.myadd = function(x,y) {
-  return x + y
+    return x + y
 }
 
 # Use the namespace
@@ -475,7 +472,7 @@ function call as shown in this example:
 ```ruby
 # Function definition
 function my_function() {
-  log(self)
+    log(self)
 }
 
 # Using the function standalone
@@ -494,11 +491,11 @@ Using the `self` keyword, you can write methods that access class attributes:
 ```ruby
 # Class definition
 MyClass = {
-  .my_attribute = 1,
+    .my_attribute = 1,
 
-  .my_method = function(x) {
-    return x + self.my_attribute
-  }
+    .my_method = function(x) {
+        return x + self.my_attribute
+    }
 }
 
 # Method call: z = 1 + 2 = 3
@@ -509,22 +506,21 @@ You can make full-fledged classes with constructors as follows:
 ```ruby
 # Class definition
 MyClass = {
+    # Class constructor
+    .new = function(x) {
+        # Return a new table
+        return {
+            # Bind the attribute values
+            .my_attribute = x,
+            # Bind the methods
+            .my_method = my_method
+        }
+    },
 
-  # Class constructor
-  .new = function(x) {
-    # Return a new table
-    return {
-      # Bind the attribute values
-      .my_attribute = x,
-      # Bind the methods
-      .my_method = my_method
+    # Method definition
+    .my_method = function(x) {
+        return self.my_attribute + x
     }
-  },
-
-  # Method definition
-  .my_method = function(x) {
-    return self.my_attribute + x
-  }
 }
 
 # Usage
