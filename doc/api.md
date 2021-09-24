@@ -111,8 +111,11 @@ x = 7.8
 To declare a *global* variable, you simply assign its value without
 using the `var` keyword:
 ```ruby
-# A global variable definition
-j = 5
+# Local variables
+function f() {
+    var x = 42  # x is a local variable
+    j = 5       # j is a global variable
+}
 ```
 
 <a name="contrstruct"></a>
@@ -121,7 +124,7 @@ j = 5
 <a name="booleanoperators"></a>
 
 ### Boolean Operators
-Buzz has three basic boolean operators to allow the combination of conditional statements. These operators are the standard `and`, `or` and `not` operators, which follow regular truth tables and order of priority.
+Buzz has three basic boolean operators to allow the combination of conditional statements. These operators are the standard `and`, `or` and `not` operators, which follow regular truth tables and operator precedence.
 
 Because there is no explicit boolean type (unlike in Python for example, which has True and False as possible boolean values), we remind the reader that in Buzz, 0 and `nil` both evaluate as fasly values (represented by 0), while any other numeric value evaluates as truthy (represented by 1).
 
@@ -135,12 +138,13 @@ log(1 and 1)  # 1
 <a name="comparisonoperators"></a>
 
 ### Comparison Operators
-Along with boolean operators, Buzz also provides comparison operators: `<`, `<=`, `=>`, `>`, `==` and `!=`. Again, these follow standard order of priority when combined with other operators.
+Along with boolean operators, Buzz also provides comparison operators: `<`, `<=`, `=>`, `>`, `==` and `!=`. Again, these follow standard operator precedence.
 
 ```ruby
 log(1 < 2)   # 1
 log(2 <= 2)  # 1
 log(0 == 2)  # 0
+log(0 or 0 == 0)  # 1
 ```
 
 ### Boolean Operators
@@ -151,18 +155,43 @@ log(0 == 2)  # 0
 Buzz supports conditional code execution through `if`, `if/else` and `if/else if/else` statements. The parentheses around the condition are required. The brackets surrounding the block are not mandatory if said block is only one line long (much like in C++), but they are nevertheless recommended for clarity.
 
 ```ruby
-# simple if statement
+# Simple if statement
 if (x > 3) {
-  log("x is too big")
+    log("x is too big")
 }
 
 # if / else if / else
 if (x > 3) {
-  log("x is too big")
+    log("x is too big")
 } else if (x < 3) {
-  log("x is too small")
+    log("x is too small")
 } else {
-  log("maybe I just don't like x")
+    log("maybe I just don't like x")
+}
+
+# Checking for equality
+if (x == 3) {
+    log("x is equal to 3")
+}
+ 
+# Checking for inequality
+if (x != 4) {
+    log("x is different from 4")
+}
+ 
+# Combining conditions with OR
+if (x < 3) or (x > 3) {
+    log("x is not 3")
+}
+ 
+# Combining conditions with AND
+if ((x > 3) and (y > 3)) {
+    log("x and y are too big")
+}
+ 
+# Negating a condition
+if (not (x < 3)) {
+    log("x is <= 3")
 }
 ```
 
@@ -171,9 +200,9 @@ if (x > 3) {
 ### `while` Statement
 ```ruby
 var i = 10
-while(i < 20) {
-  log(i)
-  i = i + 1
+while (i < 20) {
+    log(i)
+    i = i + 1
 }
 ```
 
@@ -185,7 +214,7 @@ Note that statements defining the loop (like `i=0`) are separated by *commas*.
 
 ```ruby
 for (i = 0, i < 10, i = i + 1) {
-  log(i)
+    log(i)
 }
 ```
 
@@ -197,7 +226,7 @@ The foreach statement allows to iterate over tables, and as such is more extensi
 ```ruby
 var my_table = { .x = 3, .y = 5 }
 foreach(my_table, function(key, value) {
-  log(key, " -> ", value)
+    log(key, " -> ", value)
 })
 ```
 
@@ -206,7 +235,7 @@ foreach(my_table, function(key, value) {
 ## Tables
 Tables are the only structured type available in Buzz. Tables are
 quite flexible: you can use them both as a hash map or as a
-classical array.
+classical array. Tables are **always passed by reference**, whether it is through assignment or through parameters in a function call.
 
 To create an empty table, use this syntax:
 ```ruby
@@ -264,10 +293,10 @@ Table contents can be handled through a number of dedicated functions.
 - `foreach(t, f)` : applies a function `f(key, value)` to each element of table `t`:
   ```ruby
   t = { .x = 4, .y = 5, .z = 6 }
-  foreach(t,
-    function(key,value) {
+  foreach(t, function(key,value) {
       print("(", key, ", ", value, ")")
     })
+
   # prints
   #   (x, 4)
   #   (y, 5)
@@ -303,7 +332,7 @@ Table contents can be handled through a number of dedicated functions.
   following code:
   ```ruby
   t = { .1 = 1.0, .2 = 2.0, 3. = 3.0 }
-  avg = reduce(t, function(key, value, accumulator) {
+  average = reduce(t, function(key, value, accumulator) {
       return value + accumulator
     }, 0.0) / size(t)
   # avg is now 2.0
@@ -324,7 +353,7 @@ functions is included in the file.
 To define and call functions in Buzz, use this syntax:
 ```ruby
 # Function definition
-function myadd(x, y) {
+function my_add(x, y) {
   return x + y
 }
 
@@ -334,56 +363,55 @@ z = myadd(1, 2)
 
 Functions that do not return an explicit value implicitly return `nil`:
 ```ruby
-function myvoidfunction(x, y) {
+function my_void_function(x, y) {
   log(x + y)
 }
 
 # Function call ignoring return value
 # Prints 3
-myvoidfunction(1, 2)
+my_void_function(1, 2)
 
 # Function call assigning return value
 # Prints 3
 # z is nil after the call
-z = myvoidfunction(1, 2)
+z = my_void_function(1, 2)
 ```
 
 Function definitions can be nested:
 ```ruby
 # Outer definition
-function myouter(x) {
+function my_outer(x) {
   # Inner definition
-  function myinner(y) {
+  function my_inner(y) {
     return x + y
   }
   # Call the internally defined function
-  return myinner(2)
+  return my_inner(2)
 }
 
 # Function call: z = 1 + 2 = 3
-z = myouter(1)
+z = my_outer(1)
 ```
 
 <a name="funpoint"></a>
 
 ### Function Pointers
 Buzz supports function pointers. This means that you can define anonymous
-functions and pass them as arguments or assign to variables. To define a
-function pointer, use this syntax:
+functions and pass them as arguments or assign to variables. These are also referred to as lambdas. To define a function pointer, use this syntax:
 ```ruby
 # Function definition
-myadd = function(x, y) {
+my_add = function(x, y) {
   return x + y
 }
 
 # Function call: z =  1 + 2 = 3
-z = myadd(1, 2)
+z = my_add(1, 2)
 ```
 
 For all effects and purposes, this is identical to the definition we saw
 above:
 ```ruby
-function myadd(x, y) {
+function my_add(x, y) {
   return x + y
 }
 ```
@@ -400,21 +428,21 @@ foreach(t, function(k, v) { log("k=", k, "; v=", v) })
 You can mix inner function definition with function pointers:
 ```ruby
 # Function definition
-function myouter(x) {
+function my_outer(x) {
   return function(y) {
     return x + y
   }
 }
 
 # Function call
-f = myouter(1)
+f = my_outer(1)
 
 # Using the returned function
 # z = 1 + 2 = 3
 z = f(2)
 ```
-In the above example, the statement `myouter(1)` creates a function in which
- parameter `x` of `myouter(x)` is bound to 1. This means that the returned function
+In the above example, the statement `my_outer(1)` creates a function in which
+ parameter `x` of `my_outer(x)` is bound to 1. This means that the returned function
  sums 1 to the parameter given to it.
 
 <a name="namespaces"></a>
@@ -448,17 +476,17 @@ keyword `self` becomes important. The `self` keyword is interpreted upon
 function call as shown in this example:
 ```ruby
 # Function definition
-function myfunction() {
+function my_function() {
   log(self)
 }
 
 # Using the function standalone
 # Prints nil
-myfunction()
+my_function()
 
 # Using the function within a table
 t = {}
-t.f = myfunction
+t.f = my_function
 # Prints [table with 1 element]
 t.f()
 ```
@@ -467,45 +495,45 @@ In other words, the keyword `self` points to the context in which the function i
 Using the `self` keyword, you can write methods that access class attributes:
 ```ruby
 # Class definition
-myclass = {
-  .myattribute = 1,
+MyClass = {
+  .my_attribute = 1,
 
-  .mymethod = function(x) {
-    return x + self.myattribute
+  .my_method = function(x) {
+    return x + self.my_attribute
   }
 }
 
 # Method call: z = 1 + 2 = 3
-z = myclass.mymethod(2)
+z = MyClass.my_method(2)
 ```
 
 You can make full-fledged classes with constructors as follows:
 ```ruby
 # Class definition
-myclass = {
+MyClass = {
 
   # Class constructor
   .new = function(x) {
     # Return a new table
     return {
       # Bind the attribute values
-      .myattribute = x,
+      .my_attribute = x,
       # Bind the methods
-      .mymethod = mymethod
+      .my_method = my_method
     }
   },
 
   # Method definition
-  .mymethod = function(x) {
-    return self.myattribute + x
+  .my_method = function(x) {
+    return self.my_attribute + x
   }
 }
 
 # Usage
 # Create the object
-myobject = myclass.new(1)
+my_object = MyClass.new(1)
 # Call the method: z = 1 + 2 = 3
-z = myobject.mymethod(2)
+z = my_object.my_method(2)
 ```
 
 Note that because classes are essentially tables, their elements (attributes and methods) must be separated by commas as in the previous example.
@@ -572,6 +600,52 @@ complete list of functions is as follows:
 In addition to these functions, the math table also includes the
 constant `math.pi`.
 
+As an example of how mathematical operators and the math library can be combined, take a look at an excerpt of the `math.vec2` library implementation:
+
+```ruby
+#
+# Create a new namespace for vector2 functions
+#
+math.vec2 = {}
+
+#
+# Creates a new vector2.
+# PARAM x: The x coordinate.
+# PARAM y: The y coordinate.
+# RETURN: A new vector2.
+#
+math.vec2.new = function(x, y) {
+    return { .x = x, .y = y }
+}
+
+#
+# Creates a new vector2 from polar coordinates.
+# PARAM l: The length of the vector2.
+# PARAM a: The angle of the vector2.
+# RETURN: A new vector2.
+#
+math.vec2.newp = function(l, a) {
+    return {
+        .x = l * math.cos(a),
+        .y = l * math.sin(a)
+    }
+}
+
+#
+# Rotates v by angle a (in radians)
+# PARAM v: A vector2
+# PARAM a: An angle (in radians)
+# RETURN: the rotated vector
+#
+math.vec2.rotate = function(v, a) {
+    return {
+        .x = v.x * math.cos(a) - v.y * math.sin(a),
+        .y = v.x * math.sin(a) + v.y * math.cos(a)
+    }
+}
+
+```
+
 <a name="mathrnglib"></a>
 
 ### The `math.rng` Library
@@ -596,7 +670,7 @@ the number and type of parameters passed.
   $+2^{31}-1$.
 - `math.rng.uniform(x)` : returns a value between 0 and `x`.
   The type of the returned value matches the type of `x`.
-- `math.rng.uniform(x,y)` : returns a value between `x` and `y`.
+- `math.rng.uniform(x, y)` : returns a value between `x` and `y`.
   If both `x` and `y` are integers, the returned value is an integer; if either or both are floats, the returned value is a float.
 
 #### Gaussian Distribution
@@ -607,13 +681,26 @@ the number and type of parameters passed.
   mean and standard deviation 1.
 - `math.rng.gaussian(x)` : returns a float from a Gaussian with 0
   mean and standard deviation `x`.
-- `math.rng.gaussian(x,y)` : returns a float from a Gaussian with
+- `math.rng.gaussian(x, y)` : returns a float from a Gaussian with
   mean `y` and standard deviation `x`.
 
 #### Exponential Distribution
 To draw numbers from an exponential distribution, use
 `math.rng.exponential(x)`, where `x` is the mean. The returned
 value is a float.
+
+### Random Library Usage Example
+
+```ruby
+# Sets the seed with current robot id
+math.rng.setseed(id)
+
+# Samples randomly from a uniform distribution
+math.rng.uniform(-1.0, 1.0)
+
+# Samples randomly from a exponential distribution
+math.rng.exponential(-1.0)
+```
 
 <a name="mathvec2lib"></a>
 
@@ -624,6 +711,20 @@ stored in `INSTALL_PREFIX/share/buzz/include/vec2.bzz`, so to use
 it a script must first include it. The complete reference of these
 functions is included in the file.
 
+#### Vec2 Library Usage Example
+
+```ruby
+# Vector creation
+my_vec = math.vec2.new(1.0, 1.0)
+my_other_vec = math.vec2.new(1.0, 1.0)
+
+# Vector scaling
+scaled_vec = math.vec2.scale(vec, 2.0)
+
+# Vector addition
+added = math.vec2.add(my_vec, my_other_vec)
+```
+
 <a name="mathmatrixlib"></a>
 
 ### The `math.matrix` Library
@@ -632,6 +733,20 @@ manipulating matrices. The library is stored
 in `INSTALL_PREFIX/share/buzz/include/matrix.bzz`, so to use
 it a script must first include it. The complete reference of these
 functions is included in the file.
+
+### Usage Example
+
+```ruby
+# Empty (zeros) matrix creation
+my_matrix = math.matrix.new(3, 3)
+
+# Identity matrix creation
+my_identity = math.matrix.identity(3)
+
+# Matrix subtraction
+math.matrix.sub(my_identity, my_matrix)
+
+```
 
 <a name="strings"></a>
 
@@ -711,7 +826,21 @@ Additionally, two attributes are available on the `io` class and are accessed wi
 - `errno` returns an integer representing the last error id.
   If there is no error, returns 0.
 - `error_message` returns a message describing the last error.
-  If there is no error, returns "No error".  
+  If there is no error, returns "No error".
+
+### Usage Example
+This example appends a line into an existing csv file.
+
+```ruby
+# Open file in append mode
+result_file = io.fopen("results.csv", "a")
+
+# Write a line in the file
+io.fwrite(result_file, x_key, ",", y_key, ",", radiation)
+
+# Close the file
+io.fclose(result_file)
+```
 
 <a name="queues"></a>
 
@@ -720,6 +849,24 @@ Because it is often necessary to prioritize treating some data before other data
 The Buzz queue is essentially a fized-size circular buffer implemented using tables.
 The library is stored in `INSTALL_PREFIX/share/buzz/include/queue.bzz`, so to use it a script must first include it. The complete reference of these
 functions is included in the file.
+
+### Usage Example
+```ruby
+# Queue creation, with max size of 3
+my_queue = queue.new(3)
+
+# Adding elements to queue
+queue.push(my_queue, 0)
+queue.push(my_queue, 1)
+queue.push(my_queue, 2)
+
+# Removing an element
+queue.pop(my_queue)
+
+# Printing the contents of the queue
+queue.print(my_queue)
+
+```
 
 <a name="swarm"></a>
 
@@ -768,6 +915,20 @@ They are used with the syntax `s.property` where `s` is an instance of `swarm`.
 
 - `id` The id of the current swarm.
 
+### Usage Example
+
+```ruby
+# Create a swarm and join it
+my_swarm = swarm.create(1)
+my_swarm.join()
+
+# Assign a task to the swarm
+my_swarm.exec(function() { log("I'm in a swarm!") })
+
+# Leave the swarm
+s.leave()
+```
+
 <a name="vstig"></a>
 
 ## Virtual Stigmergy
@@ -802,6 +963,22 @@ They are used with the syntax `s.property` where `s` is an instance of `stigmerg
 
 - `id` The id of the current stigmergy.
 
+### Usage Example
+
+```ruby
+# Create a new virtual stigmergy
+v = stigmergy.create(1)
+ 
+# Write a (key, value) entry into the stigmergy
+v.put("a", 6)
+ 
+# Read a value from the stigmergy
+x = v.get("a")
+ 
+# Get the number of keys in the structure
+log("The vstig has ", v.size(), " elements")
+```
+
 
 <a name="neighbors"></a>
 
@@ -823,6 +1000,55 @@ All neighbor management functions are static members of the `neighbors` class, a
 - `listen(topic, function(value_id, value, robot_id) {...})` : Installs a listener function for messages broadcast on `topic` by neighbors.
   When a message is received on `topic`, the listner function is called. The listner function must have parameters `value_id`, `value`, and `robot_id`.
 - `ignore(topic)` : Removes the listener for a `topic` across the neighbors.
+
+### Usage Example
+
+```ruby
+# Iteration (rid is the neighbor's id)
+neighbors.foreach(function(rid, data) {
+    log("robot ", rid, ": ",
+        "distance  = ", data.distance, ", ",
+        "azimuth   = ", data.azimuth, ", ",
+        "elevation = ", data.elevation)
+})
+ 
+# Transformation
+cartesian = neighbors.map(function(rid, data) {
+    var c = {}
+    c.x = data.distance * math.cos(data.elevation) * math.cos(data.azimuth)
+    c.y = data.distance * math.cos(data.elevation) * math.sin(data.azimuth)
+    c.z = data.distance * math.sin(data.elevation)
+
+    return c
+})
+ 
+# Reduction (accum is a table) with values x, y, and z, initialized to 0
+result = cartesian.reduce(function(rid, data, accum) {
+    accum.x = accum.x + data.x
+    accum.y = accum.y + data.y
+    accum.z = accum.z + data.z
+
+    return accum
+}, { .x = 0, .y = 0, .z = 0 })
+ 
+# Filtering
+one_meter = neighbors.filter(function(rid, data) {
+    # We assume the distance is expressed in centimeters
+    return data.distance < 100
+})
+ 
+# Listening to a topic
+neighbors.listen("key", function(vid, value, rid) {
+    log("Got (", vid, ",", value, ") from robot #", rid)
+})
+ 
+# Stopping listening to a topic
+neighbors.ignore("topic")
+ 
+# Broadcasting a value on a topic
+neighbors.broadcast("topic", value)
+```
+
 
 <a name="userdata"></a>
 
