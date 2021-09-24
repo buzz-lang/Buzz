@@ -587,13 +587,13 @@ complete list of functions is as follows:
 - `math.tan(x)` returns the tangent of `x` as a float.
 - `math.asin(x)` returns the arc sine of `x` as a float.
 - `math.acos(x)` returns the arc cosine of `x` as a float.
-- `math.atan2(y, x)` returns the arc tangent of `y,x` as a float.
+- `math.atan2(y, x)` returns the arc tangent of `y, x` as a float.
 - `math.min(x, y)` returns the minimum between `x` and `y`. The
   type of the return value corresponds to the type of the minimum
-  value: `min(1.0, 2)` is `1.0`, and `min(1,2.0)` is `1`.
+  value: `min(1.0, 2)` is `1.0`, and `min(1, 2.0)` is `1`.
 - `math.max(x, y)` returns the maximum between `x` and `y`. The
   type of the return value corresponds to the type of the maximum
-  value: `max(1.0, 2)` is `2`, and `max(1,2.0)` is `2.0`.
+  value: `max(1.0, 2)` is `2`, and `max(1, 2.0)` is `2.0`.
 
 In addition to these functions, the math table also includes the
 constant `math.pi`.
@@ -712,6 +712,8 @@ functions is included in the file.
 ### Usage Example
 
 ```ruby
+include "vec2.bzz"
+
 # Vector creation
 my_vec = math.vec2.new(1.0, 1.0)
 my_other_vec = math.vec2.new(1.0, 1.0)
@@ -735,6 +737,8 @@ functions is included in the file.
 ### Usage Example
 
 ```ruby
+include "matrix.bzz"
+
 # Empty (zeros) matrix creation
 my_matrix = math.matrix.new(3, 3)
 
@@ -751,12 +755,12 @@ math.matrix.sub(my_identity, my_matrix)
 # Strings
 ## Built-in String Operations
 - `string.length(s)` returns the length of string `s`
-- `string.sub(s,...)` returns a substring of the given string. Two
-  signatures are possible: `string.sub(s,n)` returns the substring
+- `string.sub(s, ...)` returns a substring of the given string. Two
+  signatures are possible: `string.sub(s, n)` returns the substring
   starting at character `n` (`0` is the first character);
-  `string.sub(s,n,m)` returns the substring starting at character
+  `string.sub(s, n, m)` returns the substring starting at character
   `n` and ending at `m`.
-- `string.concat(s1,s2,...)` returns a new string that is the
+- `string.concat(s1, s2, ...)` returns a new string that is the
   concatenation of the given strings.
 - `string.tostring(o)` transforms object `o` into a new string.
 - `string.toint(x)` converts a string into an integer. If the
@@ -799,6 +803,21 @@ different robots might execute different parts of a script, and
 strings might be created in different order. Therefore, when two
 robots exchange strings, the full value of the string must be
 communicated, rather than their identifier.
+
+## Usage Example
+
+```ruby
+include "string.bzz"
+
+# String creation
+my_string = "hello"
+
+# String concatenation
+my_other_string = string.concat(my_string, " world!")
+
+# Conversion of int to string
+my_number_string = string.tostring(3)
+```
 
 <a name="files"></a>
 
@@ -850,6 +869,8 @@ functions is included in the file.
 
 ## Usage Example
 ```ruby
+include "queue.bzz"
+
 # Queue creation, with max size of 3
 my_queue = queue.new(3)
 
