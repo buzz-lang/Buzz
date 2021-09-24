@@ -34,7 +34,7 @@ The API documentation presents Buzz's syntax and available functions. It is stru
 14. [User Data](#userdata)
 <a name="comments"></a>
 
-## Comments
+# Comments
 Buzz code can be commented with `#`.
 ```ruby
 # This is a comment
@@ -42,7 +42,7 @@ Buzz code can be commented with `#`.
 
 <a name="inclusion"></a>
 
-## File inclusion
+# File inclusion
 To allow cleaner code structure as well as library usage, .bzz files can be included with the following syntax:
 ```ruby
 include "otherfile.bzz"
@@ -55,7 +55,7 @@ including a file.
 
 <a name="variables"></a>
 
-## Variables
+# Variables
 Buzz is a dynamically typed language. This means that the type of a
 variable can change during the execution of a script, and it
 depends on the type of the value stored by a variable at any
@@ -76,7 +76,7 @@ n = 7
 
 <a name="primtypes"></a>
 
-### Primitive Types
+## Primitive Types
 Buzz supports the following primitive types:
 - `nil` : encodes an unknown value for a variable, or a `false`
     [condition](#contrstruct)
@@ -96,7 +96,7 @@ The type of a variable can be checked with `type(my_variable)`.
 
 <a name="scope"></a>
 
-### Scope
+## Scope
 Buzz variables can be *global* or *local*. To declare a variable as
 *local* to a code block (e.g., a [functions](#function), you
 need to prepend its first definition with the keyword `var`:
@@ -120,10 +120,10 @@ function f() {
 
 <a name="contrstruct"></a>
 
-## Control Structures
+# Control Structures
 <a name="booleanoperators"></a>
 
-### Boolean Operators
+## Boolean Operators
 Buzz has three basic boolean operators to allow the combination of conditional statements. These operators are the standard `and`, `or` and `not` operators, which follow regular truth tables and operator precedence.
 
 Because there is no explicit boolean type (unlike in Python for example, which has True and False as possible boolean values), we remind the reader that in Buzz, 0 and `nil` both evaluate as fasly values (represented by 0), while any other numeric value evaluates as truthy (represented by 1).
@@ -137,7 +137,7 @@ log(1 and 1)  # 1
 
 <a name="comparisonoperators"></a>
 
-### Comparison Operators
+## Comparison Operators
 Along with boolean operators, Buzz also provides comparison operators: `<`, `<=`, `=>`, `>`, `==` and `!=`. Again, these follow standard operator precedence.
 
 ```ruby
@@ -147,11 +147,9 @@ log(0 == 2)  # 0
 log(0 or 0 == 0)  # 1
 ```
 
-### Boolean Operators
-
 <a name="if"></a>
 
-### `if` Statement
+## `if` Statement
 Buzz supports conditional code execution through `if`, `if/else` and `if/else if/else` statements. The parentheses around the condition are required. The brackets surrounding the block are not mandatory if said block is only one line long (much like in C++), but they are nevertheless recommended for clarity.
 
 ```ruby
@@ -197,7 +195,7 @@ if (not (x < 3)) {
 
 <a name="while"></a>
 
-### `while` Statement
+## `while` Statement
 ```ruby
 var i = 10
 while (i < 20) {
@@ -208,7 +206,7 @@ while (i < 20) {
 
 <a name="for"></a>
 
-### `for` Statement
+## `for` Statement
 Buzz supports standard for loops.
 Note that statements defining the loop (like `i=0`) are separated by *commas*.
 
@@ -220,7 +218,7 @@ for (i = 0, i < 10, i = i + 1) {
 
 <a name="foreach"></a>
 
-### `foreach` Statement
+## `foreach` Statement
 The foreach statement allows to iterate over tables, and as such is more extensively described in the [tables section](#tables).
 
 ```ruby
@@ -232,7 +230,7 @@ foreach(my_table, function(key, value) {
 
 <a name="tables"></a>
 
-## Tables
+# Tables
 Tables are the only structured type available in Buzz. Tables are
 quite flexible: you can use them both as a hash map or as a
 classical array. Tables are **always passed by reference**, whether it is through assignment or through parameters in a function call.
@@ -345,11 +343,11 @@ functions is included in the file.
 
 <a name="functions"></a>
 
-## Functions
+# Functions
 
 <a name="fundef"></a>
 
-### Defining and Calling Functions
+## Defining and Calling Functions
 To define and call functions in Buzz, use this syntax:
 ```ruby
 # Function definition
@@ -395,7 +393,7 @@ z = my_outer(1)
 
 <a name="funpoint"></a>
 
-### Function Pointers
+## Function Pointers
 Buzz supports function pointers. This means that you can define anonymous
 functions and pass them as arguments or assign to variables. These are also referred to as lambdas. To define a function pointer, use this syntax:
 ```ruby
@@ -447,7 +445,7 @@ In the above example, the statement `my_outer(1)` creates a function in which
 
 <a name="namespaces"></a>
 
-### Namespaces
+## Namespaces
 Using tables and function pointers, it is possible to define namespaces. This is used extensively in the core libraries, such as `string` and `math`. A namespace is nothing but a table:
 ```ruby
 # Define the namespace
@@ -468,7 +466,7 @@ z = mynamespace.myadd(1, 2)
 
 <a name="classes"></a>
 
-### Classes and methods
+## Classes and methods
 By using tables and function pointers it is also possible to define classes and methods. In Buzz, the syntax to define namespaces and classes is, effectively, the same, and internally the virtual machine does not distinguish between these two scenarios.
 
 However, when a function is meant to be interpreted as a class method, the
@@ -540,10 +538,10 @@ Note that because classes are essentially tables, their elements (attributes and
 
 <a name="math"></a>
 
-## Math
+# Math
 <a name="operators"></a>
 
-### Basic Math Operations
+## Basic Math Operations
 Math works similarly to most programming languages you are used
 to. The basic math operations, in decreasing order of precedence,
 are:
@@ -569,7 +567,7 @@ raised if the operands are not integers nor floats.
 
 <a name="mathlib"></a>
 
-### The `math` Library
+## The `math` Library
 A wider set of mathematical functions is available. These
 functions are stored into the `math` table. The `math` table is
 set up upon initialization of the Buzz VM, so no `include`
@@ -648,7 +646,7 @@ math.vec2.rotate = function(v, a) {
 
 <a name="mathrnglib"></a>
 
-### The `math.rng` Library
+## The `math.rng` Library
 The `math` library also includes a collection of functions for
 random number generation. These functions are stored into the
 `math.rng` table and, similarly to `math`, do not require an `include` statement to be used.
@@ -656,13 +654,13 @@ random number generation. These functions are stored into the
 The random number generator is based on the well-known Mersenne
 Twister algorithm.
 
-#### Setting the Seed
+### Setting the Seed
 Upon initialization, the Buzz VM sets a random seed taken from the
 current clock. If you wish to set the random seed explicitly to a
 value `s`, use the function `math.rng.setseed(s)`. The value of
 `s` must be an integer, or a type error is raised.
 
-#### Uniform Distribution
+### Uniform Distribution
 To draw numbers from a uniform distribution, use
 `math.rng.uniform(...)`. The behavior of this function depends on
 the number and type of parameters passed.
@@ -673,7 +671,7 @@ the number and type of parameters passed.
 - `math.rng.uniform(x, y)` : returns a value between `x` and `y`.
   If both `x` and `y` are integers, the returned value is an integer; if either or both are floats, the returned value is a float.
 
-#### Gaussian Distribution
+### Gaussian Distribution
 To draw numbers from a Gaussian distribution, use
 `math.rng.gaussian(...)`. The behavior of this function depends on
 the number and type of parameters passed.
@@ -684,12 +682,12 @@ the number and type of parameters passed.
 - `math.rng.gaussian(x, y)` : returns a float from a Gaussian with
   mean `y` and standard deviation `x`.
 
-#### Exponential Distribution
+### Exponential Distribution
 To draw numbers from an exponential distribution, use
 `math.rng.exponential(x)`, where `x` is the mean. The returned
 value is a float.
 
-### Random Library Usage Example
+### Usage Example
 
 ```ruby
 # Sets the seed with current robot id
@@ -704,14 +702,14 @@ math.rng.exponential(-1.0)
 
 <a name="mathvec2lib"></a>
 
-### The `math.vec2` library
+## The `math.vec2` library
 When dealing with the robots, it is often useful to manipulate
 vectors. Buzz offers a library to handle 2D vectors. The library is
 stored in `INSTALL_PREFIX/share/buzz/include/vec2.bzz`, so to use
 it a script must first include it. The complete reference of these
 functions is included in the file.
 
-#### Vec2 Library Usage Example
+### Usage Example
 
 ```ruby
 # Vector creation
@@ -727,7 +725,7 @@ added = math.vec2.add(my_vec, my_other_vec)
 
 <a name="mathmatrixlib"></a>
 
-### The `math.matrix` Library
+## The `math.matrix` Library
 The `math` library also includes a collection of functions for
 manipulating matrices. The library is stored
 in `INSTALL_PREFIX/share/buzz/include/matrix.bzz`, so to use
@@ -750,8 +748,8 @@ math.matrix.sub(my_identity, my_matrix)
 
 <a name="strings"></a>
 
-## Strings
-### Built-in String Operations
+# Strings
+## Built-in String Operations
 - `string.length(s)` returns the length of string `s`
 - `string.sub(s,...)` returns a substring of the given string. Two
   signatures are possible: `string.sub(s,n)` returns the substring
@@ -766,14 +764,14 @@ math.matrix.sub(my_identity, my_matrix)
 - `string.tofloat(x)` converts a string into a float. If the
   conversion fails, this function returns `nil`.
 
-### Additional String Operations
+## Additional String Operations
 A number of additional string operations is available as a library
 that must be included. The library is stored in
 `INSTALL_PREFIX/share/buzz/include/string.bzz`, so to use it a
 script must first include it. The complete reference of these
 functions is included in the file.
 
-### String Implementation in Buzz
+## String Implementation in Buzz
 The Buzz VM maintains a data structure that stores every string
 that was ever encountered during the execution of a script. Each
 string is associated with a unique identifier, which is simply a
@@ -804,7 +802,7 @@ communicated, rather than their identifier.
 
 <a name="files"></a>
 
-## Files
+# Files
 To handle files, Buzz offers a number of built-in functions
 collected in the `io` table. All file management functions are static members of the `io` class,
 and are therefore used with the syntax `io.a_function()` where `io` is the builtin class.
@@ -828,7 +826,7 @@ Additionally, two attributes are available on the `io` class and are accessed wi
 - `error_message` returns a message describing the last error.
   If there is no error, returns "No error".
 
-### Usage Example
+## Usage Example
 This example appends a line into an existing csv file.
 
 ```ruby
@@ -844,13 +842,13 @@ io.fclose(result_file)
 
 <a name="queues"></a>
 
-## Queues
+# Queues
 Because it is often necessary to prioritize treating some data before other data, Buzz offers the possibility to store data in fixed-size queues.
 The Buzz queue is essentially a fized-size circular buffer implemented using tables.
 The library is stored in `INSTALL_PREFIX/share/buzz/include/queue.bzz`, so to use it a script must first include it. The complete reference of these
 functions is included in the file.
 
-### Usage Example
+## Usage Example
 ```ruby
 # Queue creation, with max size of 3
 my_queue = queue.new(3)
@@ -870,14 +868,14 @@ queue.print(my_queue)
 
 <a name="swarm"></a>
 
-## Swarm Management
+# Swarm Management
 Because Buzz is a DSL specifically aimed at swarm management, it includes functions dedicated to this purpose.
 It allows the creation of swarms as sets of robots to facilitate coordination, task allocation, etc.
 
 There are two categories of functions exposed by the swarm API: 
 those who can be likened to static functions in Python, and those which are instance functions.
 
-### Static swarm functions
+## Static swarm functions
 These functions are inspired from typical set operations.
 They are used with the syntax `swarm.a_function()`, where `swarm` is a builtin class. For example:
 
@@ -892,7 +890,7 @@ s = swarm.create(1)
   of previously created swarms `a` and `b`.
 - `difference(i, a, b)` : Creates a new swarm with identifier `i` with the robots from swarm `a` who are not in swarm `b`. 
 
-### Instance swarm functions
+## Instance swarm functions
 These functions are called on an instance of a swarm.
 They are used with the syntax `s.a_function()` where `s` is an instance of `swarm`. For example:
 
@@ -909,13 +907,13 @@ s.join()
 - `exec(function() {...})` : Assigns a task to the swarm.
 - `others(1)` : Creates a new swarm with identifier `i` wich is a negation of `s`.
 
-### Instance swarm attributes
+## Instance swarm attributes
 These are the attributes on each swarm instance.
 They are used with the syntax `s.property` where `s` is an instance of `swarm`.
 
 - `id` The id of the current swarm.
 
-### Usage Example
+## Usage Example
 
 ```ruby
 # Create a swarm and join it
@@ -931,14 +929,14 @@ s.leave()
 
 <a name="vstig"></a>
 
-## Virtual Stigmergy
+# Virtual Stigmergy
 The virtual stigmergy is a conflict-free replicated data type (CRDT) and is implemented directly into Buzz as key-value distributed storage system.
 It can be used to share information between the members of a swarm. The virtual stigmergy whitepaper can be found [here](https://doi.org/10.4108/eai.3-12-2015.2262503).
 
 There are two categories of functions exposed by the virtual stigmergy API: 
 those who can be likened to static functions in Python, and those which are instance functions.
 
-### Static virtual stigmergy functions
+## Static virtual stigmergy functions
 This function is used with the syntax `stigmergy.a_function()`, where `stigmergy` is a builtin class.
 For example:
 
@@ -948,7 +946,7 @@ s = stigmergy.create(1)
 
 - `create(i)` : Creates a virtual stigmergy with identifier `i`.
 
-### Instance virtual stigmergy functions
+## Instance virtual stigmergy functions
 - `get(key)` : Gets the element at position `key` in the virtual stigmergy.
   If there is no element at position `key`, returns `nil`.
 - `put(key, value)` : Inserts element `value` at position `key` in the virtual stigmergy.
@@ -957,13 +955,13 @@ s = stigmergy.create(1)
 - `onconflictlost(i)` : Creates a virtual stigmergy with identifier `i`.
 - `foreach(function(key, value, robot_id) {...})` : Iterates over each element contained in the stigmergy and applies a lambda function to it.
 
-### Instance virtual stigmergy attributes
+## Instance virtual stigmergy attributes
 These are the attributes on each stigmergy instance.
 They are used with the syntax `s.property` where `s` is an instance of `stigmergy`.
 
 - `id` The id of the current stigmergy.
 
-### Usage Example
+## Usage Example
 
 ```ruby
 # Create a new virtual stigmergy
@@ -982,7 +980,7 @@ log("The vstig has ", v.size(), " elements")
 
 <a name="neighbors"></a>
 
-## Neighbor Management
+# Neighbor Management
 Buzz allows interactions with neighboring robots. This is especially useful for exchanging messages.
 All neighbor management functions are static members of the `neighbors` class, and are therefore used with the syntax `neighbors.a_function()` where `neighbors` is the builtin class.
 
@@ -1001,7 +999,7 @@ All neighbor management functions are static members of the `neighbors` class, a
   When a message is received on `topic`, the listner function is called. The listner function must have parameters `value_id`, `value`, and `robot_id`.
 - `ignore(topic)` : Removes the listener for a `topic` across the neighbors.
 
-### Usage Example
+## Usage Example
 
 ```ruby
 # Iteration (rid is the neighbor's id)
@@ -1052,4 +1050,4 @@ neighbors.broadcast("topic", value)
 
 <a name="userdata"></a>
 
-## User Data
+# User Data
