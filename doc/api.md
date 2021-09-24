@@ -7,10 +7,12 @@ The API documentation presents Buzz's syntax and available functions. It is stru
 3.1 [Primitive Types](#primtypes)\
 3.2 [Scope](#scope)
 4. [Control Structures](#contrstruct)\
-4.1 [If Statements](#if)\
-4.2 [While Loops](#while)\
-4.3 [For Loops](#for)\
-4.3 [Foreach Loops](#foreach)
+4.1 [Boolean Operators](#booleanoperators)\
+4.2 [Comparison Operators](#comparisonoperators)\
+4.3 [If Statements](#if)\
+4.4 [While Loops](#while)\
+4.5 [For Loops](#for)\
+4.6 [Foreach Loops](#foreach)
 5. [Tables](#tables)
 6. [Functions](#function)\
 6.1 [Function Definition](#fundef)\
@@ -116,11 +118,37 @@ j = 5
 <a name="contrstruct"></a>
 
 ## Control Structures
+<a name="booleanoperators"></a>
+
+### Boolean Operators
+Buzz has three basic boolean operators to allow the combination of conditional statements. These operators are the standard `and`, `or` and `not` operators, which follow regular truth tables and order of priority.
+
+Because there is no explicit boolean type (unlike in Python for example, which has True and False as possible boolean values), we remind the reader that in Buzz, 0 and `nil` both evaluate as fasly values (represented by 0), while any other numeric value evaluates as truthy (represented by 1).
+
+```ruby
+log(not 1)    # 0
+log(2 or 0)   # 1
+log(1 or 0)   # 1
+log(1 and 1)  # 1
+```
+
+<a name="comparisonoperators"></a>
+
+### Comparison Operators
+Along with boolean operators, Buzz also provides comparison operators: `<`, `<=`, `=>`, `>`, `==` and `!=`. Again, these follow standard order of priority when combined with other operators.
+
+```ruby
+log(1 < 2)   # 1
+log(2 <= 2)  # 1
+log(0 == 2)  # 0
+```
+
+### Boolean Operators
 
 <a name="if"></a>
 
 ### `if` Statement
-Buzz supports conditionals.
+Buzz supports conditional code execution through `if`, `if/else` and `if/else if/else` statements. The parentheses around the condition are required. The brackets surrounding the block are not mandatory if said block is only one line long (much like in C++), but they are nevertheless recommended for clarity.
 
 ```ruby
 # simple if statement
@@ -129,12 +157,13 @@ if (x > 3) {
 }
 
 # if / else if / else
-if (x > 3)
+if (x > 3) {
   log("x is too big")
-else if (x < 3)
+} else if (x < 3) {
   log("x is too small")
-else
+} else {
   log("maybe I just don't like x")
+}
 ```
 
 <a name="while"></a>
