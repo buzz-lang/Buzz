@@ -513,7 +513,7 @@ MyClass = {
             # Bind the attribute values
             .my_attribute = x,
             # Bind the methods
-            .my_method = my_method
+            .my_method = MyClass.my_method
         }
     },
 
