@@ -29,7 +29,7 @@ The documentation is structured as follows:
 6. Examples\
 6.1 [Distance Gradient](doc/examples/distance_gradient.md)\
 6.2 [Pattern Formation](doc/examples/pattern_formation.md)\
-6.3 [Message API](doc/examples/message_api.md)
+6.3 [REST-Like API](doc/examples/rest_api.md)
 7. Technical Specifications\
 7.1 [Assembly Language](doc/technical-specifications/assembler.md)\
 7.2 [Backus-Naur Form Syntax](doc/technical-specifications/syntax.md)
