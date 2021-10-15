@@ -1,12 +1,12 @@
 #
+# Set minimum required version
+#
+cmake_minimum_required(VERSION 3.5.1)
+
+#
 # Project name
 #
 project(buzz)
-
-#
-# Set minimum required version
-#
-cmake_minimum_required(VERSION 3.8.0)
 
 # Set the compilation type
 if(CMAKE_BUILD_TYPE STREQUAL "")
