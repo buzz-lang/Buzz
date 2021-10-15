@@ -25,7 +25,7 @@ endif(ARGOS_EYEBOT_LIBRARY)
 if(ARGOS_BUILD_FOR STREQUAL "simulator")
   set(ARGOS_BUZZ_SOURCES ${ARGOS_BUZZ_SOURCES}
     buzz_loop_functions.h buzz_loop_functions.cpp)
-  if(ARGOS_QTOPENGL_LIBRARY)
+  if(ARGOS_QTOPENGL_LIBRARIES)
     set(ARGOS_BUZZ_SOURCES
       ${ARGOS_BUZZ_SOURCES}
       buzz_qt.h buzz_qt.cpp
@@ -35,7 +35,7 @@ if(ARGOS_BUILD_FOR STREQUAL "simulator")
       buzz_qt_statetree_item.h buzz_qt_statetree_item.cpp
       buzz_qt_statetree_model.h buzz_qt_statetree_model.cpp
       buzz_qt_syntax_highlighter.h buzz_qt_syntax_highlighter.cpp)
-  endif(ARGOS_QTOPENGL_LIBRARY)
+  endif(ARGOS_QTOPENGL_LIBRARIES)
 endif(ARGOS_BUILD_FOR STREQUAL "simulator")
 
 add_library(argos3plugin_${ARGOS_BUILD_FOR}_buzz SHARED ${ARGOS_BUZZ_SOURCES})
@@ -56,10 +56,10 @@ if(ARGOS_EYEBOT_LIBRARY)
   target_link_libraries(argos3plugin_${ARGOS_BUILD_FOR}_buzz
     argos3plugin_${ARGOS_BUILD_FOR}_eyebot)
 endif(ARGOS_EYEBOT_LIBRARY)
-if(ARGOS_QTOPENGL_LIBRARY)
+if(ARGOS_QTOPENGL_LIBRARIES)
   target_link_libraries(argos3plugin_${ARGOS_BUILD_FOR}_buzz
     argos3plugin_${ARGOS_BUILD_FOR}_qtopengl)
-endif(ARGOS_QTOPENGL_LIBRARY)
+endif(ARGOS_QTOPENGL_LIBRARIES)
 
 install(TARGETS argos3plugin_${ARGOS_BUILD_FOR}_buzz LIBRARY DESTINATION ${ARGOS_LIBRARY_DIR})
 install(DIRECTORY . DESTINATION include/buzz/argos FILES_MATCHING PATTERN "*.h")
