@@ -425,7 +425,11 @@ int parse_script(buzzparser_t par) {
       buzzlex_destroytok(&par->tok);
       par->tok = buzzlex_nexttok(par->lex);
    }
-   if(par->tok->type == BUZZTOK_EOF) return PARSE_OK;
+   /* Make sure a file inclusion error did not happen */
+   if(par->tok->type == BUZZTOK_EOF) {
+      return buzzlex_done(par->lex)?PARSE_OK:PARSE_ERROR;
+   }
+
    /* Add a symbol table */
    symt_push();
    /* Add the first chunk for the global scope */
@@ -453,9 +457,14 @@ int parse_statlist(buzzparser_t par) {
       }
       /* Make sure a file inclusion error did not happen */
       if(par->tok->type == BUZZTOK_EOF && !buzzlex_done(par->lex))
-         return PARSE_ERROR;
+	  return PARSE_ERROR;
       /* Parse the statement */
       if(!parse_stat(par)) return PARSE_ERROR;
+   }
+
+   /* Make sure a file inclusion error did not happen */
+   if(par->tok->type == BUZZTOK_EOF && !buzzlex_done(par->lex)) {
+      return PARSE_ERROR;
    }
    return PARSE_OK;
 }
