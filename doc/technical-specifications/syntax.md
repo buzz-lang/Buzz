@@ -1,6 +1,6 @@
 # Buzz Syntax BNF Specification
 
-For an example-driven explanation of the Buzz syntax, see the [Buzz API](../api.org). In what follows, we report a formal [Backus-Naur Form grammar](https://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form) specification.
+For an example-driven explanation of the Buzz syntax, see the [Buzz API](../api.md). In what follows, we report a formal [Backus-Naur Form grammar](https://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form) specification.
 
 ## Tokens
 

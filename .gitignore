@@ -4,4 +4,4 @@ build*
 /src/testing/*.bdb
 /doc/api.pdf
 /doc/api.tex
-/.DS_Store
+**/.DS_Store

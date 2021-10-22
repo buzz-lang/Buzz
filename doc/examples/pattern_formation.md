@@ -4,7 +4,7 @@
 
 Hexagonal patterns can be formed in a simple way by mimicking particle interaction. A simple model of particle interaction is the [Lennard-Jones potential](https://en.wikipedia.org/wiki/Lennard-Jones_potential), which we use in the following code in a slightly modified way. Instead of the big exponents (12 and 6), we use the exponents 4 and 2, which give us smaller but more manageable numbers.
 
-The idea in the code is that every robot can use the `neighbors` structure to sense the distance and angle of every direct neighbor. Using the distance, we calculate the magnitude of the "virtual force" (attraction or repulsion) due to a neighbor (function `lj()`). We then use the force magnitude and the angle to make an interaction vector (function `to_lj()`), and proceed to sum all of these contributions together into an accumulator vector (functions `lj_sum()` and `neighbors.reduce()`). Finally, we scale the accumulator and feed it to the `goto()` function, which transforms a 2D vector into motion.
+The idea in the code is that every robot can use the `neighbors` structure to sense the distance and angle of every direct neighbor. Using the distance, we calculate the magnitude of the "virtual force" (attraction or repulsion) due to a neighbor (function `lj_magnitude()`). We then use the force magnitude and the angle to make an interaction vector (function `lj_vector()`), and proceed to sum all of these contributions together into an accumulator vector (functions `lj_sum()` and `neighbors.reduce()`). Finally, we scale the accumulator and feed it to the `goto()` function, which transforms a 2D vector into motion.
 
 ```ruby
 # We need this for 2D vectors
