@@ -14,13 +14,13 @@ occur through the stack.
 ## Adding New Functions
 
 To extend Buzz with C++, we follow the example from [this controller](examples/controller) made for ARGoS.
-The point here is not the intergation with ARGoS in itself, but rather simply adding some functions, or *closures* to Buzz.
+The point here is not the integration with ARGoS in itself, but rather simply adding some functions, or *closures* to Buzz.
 Note that the code in the example snippets below is *not* complete, but the code in the referenced files is complete.
 
 ### Defining a Closure
 In this example, we create a controller for a KheperaIV robot with radiation sensing capabilities.
 To do so, we define the [controller](examples/controller/src/argos/buzz_controller.h)
-and some [radiation sources](examples/controller/src/argos/radiation_sources.h) as well as their associated .cpp files.
+and some [radiation sources](examples/controller/src/argos/radiation_source.h) as well as their associated .cpp files.
 This controller contains the closures which will be exported to Buzz.
 
 The closures we want to add are all defined and implemented in the buzz_controller .h and .cpp files respectively.
@@ -60,7 +60,7 @@ float CBuzzControllerDroneSim::GetRadiationIntensity() {
 ```
 
 Note: For this function, we used [the jsoncpp library](http://jsoncpp.sourceforge.net)
-as well as the [RadiationSource](examples/controller/src/argos/RadiationSource) class.
+as well as the [RadiationSource](examples/controller/src/argos/radiation_source.h) class.
 
 Several other functions (some specific to ARGoS controllers) are also included in the files as additional examples.
 
@@ -118,7 +118,7 @@ buzzvm_state CBuzzControllerDroneSim::RegisterFunctions() {
 
 ### Compiling and Installing the Controller
 Once the previous steps have been followed, we can compile the closure.
-We recommend using CMake for this. The full CMakeLists.txt is provided [here](examples/controller/CMakeLists.txt).
+We recommend using CMake for this. The full CMakeLists.txt is provided [here](examples/controller/src/CMakeLists.txt).
 Again, the CMakeLists.txt contains instructions relative to ARGoS, but these are not what you should worry about.
 The essential in this file is to add the C++ sources and to link the required libraries.
 

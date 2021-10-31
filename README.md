@@ -12,7 +12,7 @@ Self-organization results from the fact that the Buzz run-time platform is purel
 
 The language can be extended to add new primitives (thus supporting heterogeneous robot swarms) and can be laid on top of other frameworks, such as ROS.
 
-A simulation demonstration is available [here](https://www.youtube.com/watch?v=WAlS7a7_BaM)
+A simulation demonstration is available [here](https://www.youtube.com/watch?v=WAlS7a7_BaM).
 
 The whitepaper on Buzz Design and Implementation is available [here](https://arxiv.org/abs/1507.05946).
 
@@ -34,7 +34,7 @@ The documentation is structured as follows:
 7.1 [Assembly Language](doc/technical-specifications/assembler.md)\
 7.2 [Backus-Naur Form Syntax](doc/technical-specifications/syntax.md)
 8. Robot Integration\
-8.1 [Khepera IV](robot-integration/kheperaiv.md)
+8.1 [Khepera IV](doc/robot-integration/kheperaiv.md)
 
 # Who Made Buzz?
 Buzz is a research project conducted at [NESTLab](https://www.nestlab.net), [Worcester Polytechnic Institute](https://www.wpi.edu), and [MIST](https://www.mistlab.ca), [École Polytechnique de Montréal](https://www.polymtl.ca). It is funded by the [Natural Sciences and Engineering Research Council of Canada](https://www.nserc-crsng.gc.ca).

@@ -54,7 +54,7 @@ sudo ldconfig
 
 The Buzz integration library for ARGoS is composed of two elements:
 
-  - A set of ARGoS controllers. At the moment, available controllers include one for the [foot-bot](http://www.swarmanoid.org/swarmanoid_hardware.php.html), one for the Khepera IV robot (both wheeled robots), and one for the [Spiri](http://pleiades.ca|Spiri) (a commercial quad-rotor). More can be added easily by subclassing `CBuzzController`, defined in `$PREFIX/include/buzz/argos/buzz_controller.h`. The variable `$PREFIX` depends on your system and is usually `/usr` or `/usr/local`.
+  - A set of ARGoS controllers. At the moment, available controllers include one for the [foot-bot](http://www.swarmanoid.org/swarmanoid_hardware.php.html), one for the Khepera IV robot (both wheeled robots), and one for the [Spiri](https://github.com/Pleiades-Spiri) (a commercial quad-rotor). More can be added easily by subclassing `CBuzzController`, defined in `$PREFIX/include/buzz/argos/buzz_controller.h`. The variable `$PREFIX` depends on your system and is usually `/usr` or `/usr/local`.
 
   - A special definition of ARGoS' QtOpenGL user functions, which allow Buzz scripts to draw in the OpenGL visualization of ARGoS.
 
@@ -231,7 +231,7 @@ The Buzz integration library offers a data structure, called `debug`, that allow
 
   * `debug.rays.add(r, g, b, x, y, z)`
     * draw a ray from the reference point of the robot to `(x, y, z)`.
-    * `(x, y, z)` is expressed wrt the robot reference frame
+    * `(x, y, z)` is expressed w.r.t. the robot reference frame
     * `(r, g, b)` is the color of the vector (0-255 for each value)
   * `debug.rays.add(r, g, b, x0, y0, z0, x1, y1, z1)`
     * draw a ray from `(x0,y0,z0)` to `(x1,y1,z1)`

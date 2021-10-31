@@ -126,7 +126,7 @@ function f() {
 ## Boolean Operators
 Buzz has three basic boolean operators to allow the combination of conditional statements. These operators are the standard `and`, `or` and `not` operators, which follow regular truth tables and operator precedence.
 
-Because there is no explicit boolean type (unlike in Python for example, which has True and False as possible boolean values), we remind the reader that in Buzz, 0 and `nil` both evaluate as fasly values (represented by 0), while any other numeric value evaluates as truthy (represented by 1).
+Because there is no explicit boolean type (unlike in Python for example, which has True and False as possible boolean values), we remind the reader that in Buzz, 0 and `nil` both evaluate as falsy values (represented by 0), while any other numeric value evaluates as truthy (represented by 1).
 
 ```ruby
 log(not 1)    # 0
@@ -793,7 +793,7 @@ from manipulation with the string operations are typically
 non-protected.
 
 When strings are communicated between robots, they must be
-serialized. It is not possible to force the string indentifiers to
+serialized. It is not possible to force the string identifiers to
 be the same across different robots. This is because (in general)
 different robots might execute different parts of a script, and
 strings might be created in different order. Therefore, when two
@@ -859,7 +859,7 @@ io.fclose(result_file)
 
 # Queues
 Because it is often necessary to prioritize treating some data before other data, Buzz offers the possibility to store data in fixed-size queues.
-The Buzz queue is essentially a fized-size circular buffer implemented using tables.
+The Buzz queue is essentially a fixed-size circular buffer implemented using tables.
 The library is stored in `INSTALL_PREFIX/share/buzz/include/queue.bzz`, so to use it a script must first include it. The complete reference of these
 functions is included in the file.
 
@@ -922,7 +922,7 @@ s.join()
 - `leave()` : Leave the swarm unconditionally.
 - `in()` : Checks if the current robots belongs to the swarm.
 - `exec(function() {...})` : Assigns a task to the swarm.
-- `others(1)` : Creates a new swarm with identifier `i` wich is a negation of `s`.
+- `others(1)` : Creates a new swarm with identifier `i` which is a negation of `s`.
 
 ## Instance swarm attributes
 These are the attributes on each swarm instance.
@@ -1013,7 +1013,7 @@ All neighbor management functions are static members of the `neighbors` class, a
 - `count()` : Gets the number of neighbors.
 - `broadcast(topic, value)` : Broadcasts a `value` on `topic` across the neighbors.
 - `listen(topic, function(value_id, value, robot_id) {...})` : Installs a listener function for messages broadcast on `topic` by neighbors.
-  When a message is received on `topic`, the listner function is called. The listner function must have parameters `value_id`, `value`, and `robot_id`.
+  When a message is received on `topic`, the listener function is called. The listener function must have parameters `value_id`, `value`, and `robot_id`.
 - `ignore(topic)` : Removes the listener for a `topic` across the neighbors.
 
 ## Usage Example

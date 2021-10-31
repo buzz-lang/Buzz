@@ -1,5 +1,5 @@
 # REST-Like API
-The puprose of this code is to provide a way of mimicking a REST API.
+The purpose of this code is to provide a way of mimicking a REST API.
 Messages/queries are received from neighbors on selected topics, and handlers are associated to those topics.
 In this case, the topics and handlers are organised in a way that emulates a REST API.
 
