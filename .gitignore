@@ -1,4 +1,4 @@
-build*
+**build
 /src/testing/*.basm
 /src/testing/*.bo
 /src/testing/*.bdb
