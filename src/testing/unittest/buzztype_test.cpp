@@ -323,39 +323,34 @@ TEST(BuzzObjCompare, String) {
     EXPECT_EQ(buzzobj_cmp(buzzobj_new_string("A string"), buzzobj_new_string("A string")), 0);
     EXPECT_EQ(buzzobj_cmp(buzzobj_new_string("A string"), buzzobj_new_string("Buzz")), -1);
     EXPECT_EQ(buzzobj_cmp(buzzobj_new_string("Test"), buzzobj_new_string("Buzz")), 1);
-
-    // Tests for left string and right integer values
-    EXPECT_EQ(buzzobj_cmp(buzzobj_new_string("1"), buzzobj_new_int(1)), 0);
-    EXPECT_EQ(buzzobj_cmp(buzzobj_new_string("100"), buzzobj_new_int(42)), -1);
-    EXPECT_EQ(buzzobj_cmp(buzzobj_new_string("34abc"), buzzobj_new_int(12)), 1);
-
-    // Tests for left integer and right string values
-    EXPECT_EQ(buzzobj_cmp(buzzobj_new_int(-9), buzzobj_new_string("-9")), 0);
-    EXPECT_EQ(buzzobj_cmp(buzzobj_new_int(2), buzzobj_new_string("23")), -1);
-    EXPECT_EQ(buzzobj_cmp(buzzobj_new_int(99), buzzobj_new_string("8a")), 1);
-
-    // Tests for left string and right float values
-    EXPECT_EQ(buzzobj_cmp(buzzobj_new_string("1"), buzzobj_new_int(1)), 0);
-    EXPECT_EQ(buzzobj_cmp(buzzobj_new_string("100"), buzzobj_new_int(42)), -1);
-    EXPECT_EQ(buzzobj_cmp(buzzobj_new_string("34abc"), buzzobj_new_int(12)), 1);
-
-    // Tests for left float and right string values
-    EXPECT_EQ(buzzobj_cmp(buzzobj_new_float(-9.0f), buzzobj_new_string("-9.0")), 0);
-    EXPECT_EQ(buzzobj_cmp(buzzobj_new_float(2.5f), buzzobj_new_string("23")), -1);
-    EXPECT_EQ(buzzobj_cmp(buzzobj_new_float(99.9f), buzzobj_new_string("8a")), 1);
 }
 
 // Tests for `buzzobj_cmp` defined in <buzz/buzztype.h>
 // Test cases for comparisons with incompatible/invalid types.
 TEST(BuzzObjCompare, IncompatibleTypes) {
     const char* errorRegex = "^(\\[TODO\\] )(.*)(: Error for comparison between Buzz objects of types [0-9]+ and [0-9]+\n)$";
+    
+    /* Tests for strings and numeric types. Should die with clear error message */
+    // Tests for left string and right integer values
+    EXPECT_DEATH(buzzobj_cmp(buzzobj_new_string("1"), buzzobj_new_int(1)), errorRegex);
+    EXPECT_DEATH(buzzobj_cmp(buzzobj_new_string("100"), buzzobj_new_int(42)), errorRegex);
+    EXPECT_DEATH(buzzobj_cmp(buzzobj_new_string("34abc"), buzzobj_new_int(12)), errorRegex);
+    EXPECT_DEATH(buzzobj_cmp(buzzobj_new_int(-9), buzzobj_new_string("-9")), errorRegex);
+    EXPECT_DEATH(buzzobj_cmp(buzzobj_new_int(2), buzzobj_new_string("23")), errorRegex);
+    EXPECT_DEATH(buzzobj_cmp(buzzobj_new_int(99), buzzobj_new_string("8a")), errorRegex);
+    EXPECT_DEATH(buzzobj_cmp(buzzobj_new_string("1"), buzzobj_new_int(1)), errorRegex);
+    EXPECT_DEATH(buzzobj_cmp(buzzobj_new_string("100"), buzzobj_new_int(42)), errorRegex);
+    EXPECT_DEATH(buzzobj_cmp(buzzobj_new_string("34abc"), buzzobj_new_int(12)), errorRegex);
+    EXPECT_DEATH(buzzobj_cmp(buzzobj_new_float(-9.0f), buzzobj_new_string("-9.0")), errorRegex);
+    EXPECT_DEATH(buzzobj_cmp(buzzobj_new_float(2.5f), buzzobj_new_string("23")), errorRegex);
+    EXPECT_DEATH(buzzobj_cmp(buzzobj_new_float(99.9f), buzzobj_new_string("8a")), errorRegex);
 
-    // Tests for closures, should die with clear error message
+    /* Tests for closures, should die with clear error message */
     EXPECT_DEATH(buzzobj_cmp(buzzobj_new(BUZZTYPE_CLOSURE), buzzobj_new(BUZZTYPE_CLOSURE)), errorRegex);
     EXPECT_DEATH(buzzobj_cmp(buzzobj_new(BUZZTYPE_CLOSURE), buzzobj_new_int(1)), errorRegex);
     EXPECT_DEATH(buzzobj_cmp(buzzobj_new_string("3abc0"), buzzobj_new(BUZZTYPE_CLOSURE)), errorRegex);
 
-    // Tests for comparison between userdata and any other type
+    /* Tests for comparison between userdata and any other type */
     EXPECT_DEATH(buzzobj_cmp(buzzobj_new_string("This is a test string."), buzzobj_new(BUZZTYPE_USERDATA)), errorRegex);
     EXPECT_DEATH(buzzobj_cmp(buzzobj_new_float(87.2f), buzzobj_new(BUZZTYPE_USERDATA)), errorRegex);
     // This comparison might be invalid (userdata should only be compared between themselves) 
