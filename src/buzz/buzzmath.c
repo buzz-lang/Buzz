@@ -640,6 +640,7 @@ int buzzmath_rng_gaussian(buzzvm_t vm) {
 int buzzmath_rng_exponential(buzzvm_t vm) {
    /* Get the mean */
    buzzvm_lnum_assert(vm, 1);
+   buzzvm_lload(vm, 1);
    buzzobj_t o = buzzvm_stack_at(vm, 1);
    float mean;
    if(o->o.type == BUZZTYPE_FLOAT)    mean = o->f.value;
