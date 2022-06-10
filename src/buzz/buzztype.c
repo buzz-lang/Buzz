@@ -246,10 +246,12 @@ int buzzobj_int(struct buzzvm_s* vm) {
    /* Get float parameter and make sure it's a float */
    buzzvm_lnum_assert(vm, 1);
    buzzvm_lload(vm, 1);
-   buzzvm_type_assert(vm, 1, BUZZTYPE_FLOAT);
-   buzzobj_t f = buzzvm_stack_at(vm, 1);
-   buzzvm_pop(vm);
-   buzzvm_pushi(vm, f->f.value);
+   buzzvm_type_assert_number(vm, 1);
+   buzzobj_t arg = buzzvm_stack_at(vm, 1);
+   if(buzzobj_isfloat(arg)) {
+      buzzvm_pop(vm);
+      buzzvm_pushi(vm, arg->f.value);
+   }
    return buzzvm_ret1(vm);
 }
 
@@ -260,10 +262,12 @@ int buzzobj_float(struct buzzvm_s* vm) {
    /* Get int parameter and make sure it's an int */
    buzzvm_lnum_assert(vm, 1);
    buzzvm_lload(vm, 1);
-   buzzvm_type_assert(vm, 1, BUZZTYPE_INT);
-   buzzobj_t i = buzzvm_stack_at(vm, 1);
-   buzzvm_pop(vm);
-   buzzvm_pushf(vm, i->i.value);
+   buzzvm_type_assert_number(vm, 1);
+   buzzobj_t arg = buzzvm_stack_at(vm, 1);
+   if(buzzobj_isint(arg)){
+      buzzvm_pop(vm);
+      buzzvm_pushf(vm, arg->i.value);
+   }
    return buzzvm_ret1(vm);
 }
 
