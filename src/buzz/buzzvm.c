@@ -711,7 +711,7 @@ int buzzvm_set_bcode(buzzvm_t vm,
 
 #define inc_pc() vm->oldpc = vm->pc; ++vm->pc; assert_pc(vm->pc);
 
-#define get_arg(TYPE) assert_pc(vm->pc + sizeof(TYPE)); TYPE arg = *((TYPE*)(vm->bcode + vm->pc)); vm->pc += sizeof(TYPE);
+#define get_arg(TYPE) assert_pc(vm->pc + sizeof(TYPE)); TYPE arg; memcpy((void*) (&arg), vm->bcode + vm->pc, sizeof(TYPE)); vm->pc += sizeof(TYPE);
 
 buzzvm_state buzzvm_step(buzzvm_t vm) {
    /* buzzvm_dump(vm); */

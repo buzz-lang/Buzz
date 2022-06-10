@@ -1,0 +1,196 @@
+# This is a minimalist matrix manipulation library for Buzz.
+# Although it uses structures derived from the vec2 library,
+# it is not necessary to import it vec2.bzz.
+
+
+#
+# Create a new namespace for matrix functions
+#
+math.matrix = {}
+
+
+#
+# Creates a new matrix.
+# PARAM m: The size of the first dimension.
+# PARAM n: The size of the second dimension.
+# RETURN: A new m by n matrix filled with zeros.
+#
+math.matrix.new = function(m, n) {
+  var A = {}
+
+  for (i = 0, i < m, i = i + 1) {
+    A[i] = {}
+    for (j = 0, j < n, j = j + 1) {
+      A[i][j] = 0
+    }
+  }
+  
+  return A
+}
+
+#
+# Creates a new matrix from a vec2 (i.e. transforms a vec2 to a matrix).
+# PARAM v: The vec2.
+# RETURN: The matricial form of v.
+#
+math.matrix.newv = function(v) {
+    return { .0 = { .0 = v.x, .1 = v.y } }
+}
+
+#
+# Creates a new identity matrix.
+# PARAM m: The size of the dimensions.
+# RETURN: A new m by m identity matrix.
+#
+math.matrix.identity = function(m) {
+  var A = math.matrix.new(m, m)
+  
+  for (i = 0, i < m, i = i + 1) {
+    A[i][i] = 1
+  }
+  
+  return A
+}
+
+#
+# Transposes a matrix.
+# PARAM A: The matrix.
+# RETURN: The transposed matrix.
+#
+math.matrix.transpose = function(A) {
+  var B = math.matrix.new(size(A[0]), size(A))
+  math.matrix.print(B)
+
+  for (i = 0, i < size(A), i = i + 1) {
+    for (j = 0, j < size(A[0]), j = j + 1) {
+      B[j][i] = A[i][j]
+    }
+  }
+
+  return B
+}
+
+#
+# Scales a matrix.
+# PARAM s: The scalar.
+# PARAM A: The matrix.
+# RETURN: The result of sA in a new matrix.
+#
+math.matrix.scale = function(s, A) {
+  var B = math.matrix.new(size(A), size(A[0]))
+
+  for (i = 0, i < size(A), i = i + 1) {
+    for (j = 0, j < size(A[0]), j = j + 1) {
+      B[i][j] = s * A[i][j]
+    }
+  }
+
+  return B
+}
+
+#
+# Adds 2 matrices.
+# PARAM A: The first matrix.
+# PARAM B: The second matrix.
+# RETURN: The result of A + B in a new matrix.
+#
+math.matrix.add = function(A, B) {
+  var C = math.matrix.new(size(A), size(A[0]))
+
+  for (i = 0, i < size(A), i = i + 1) {
+    for (j = 0, j < size(A[0]), j = j + 1) {
+      C[i][j] = A[i][j] + B[i][j]
+    }
+  }
+
+  return C
+}
+
+#
+# Subtracts 2 matrices.
+# PARAM A: The first matrix.
+# PARAM B: The second matrix.
+# RETURN: The result of A - B in a new matrix.
+#
+math.matrix.sub = function(A, B) {
+  var C = math.matrix.new(size(A), size(A[0]))
+
+  for (i = 0, i < size(A), i = i + 1) {
+    for (j = 0, j < size(A[0]), j = j + 1) {
+      C[i][j] = A[i][j] - B[i][j]
+    }
+  }
+  
+  return C
+}
+
+#
+# Multiplies 2 matrices.
+# PARAM A: The first matrix.
+# PARAM B: The second matrix.
+# RETURN: The result of AB in a new matrix.
+#
+math.matrix.multiply = function(A, B) {
+  var C = math.matrix.new(size(A), size(B[0]))
+
+  for (i = 0, i < size(A), i = i + 1) {
+    for (j = 0, j < size(B[0]), j = j + 1) {
+      for (k = 0, k < size(B), k = k + 1) {
+        C[i][j] = C[i][j] + A[i][k] * B[k][j]
+      }
+    }
+  }
+
+  return C
+}
+
+#
+# Verifies if 2 matrices are identical.
+# PARAM A: The first matrix.
+# PARAM B: The second matrix.
+# RETURN: 1 if the matrices are identical, 0 otherwise.
+#
+math.matrix.equal = function(A, B) {
+  if (size(A) != size(B) or size(A[0]) != size(B[0])) {
+    return 0
+  }
+
+  for (i = 0, i < size(A), i = i + 1) {
+    for (j = 0, j < size(A[0]), j = j + 1) {
+      if (A[i][j] != B[i][j]) {
+        return 0
+      }
+    }
+  }
+
+  return 1
+}
+
+#
+# Prints a matrix in a Python-like format.
+# PARAM A: The matrix.
+#
+math.matrix.print = function(A) {
+  var matrix_string = "["
+  var row_string
+
+  for (i = 0, i < size(A), i = i + 1) {
+    row_string = "["
+
+    for (j = 0, j < size(A[0]), j = j + 1) {
+      row_string = string.concat(row_string, string.tostring(A[i][j]))
+      
+      if (j < size(A[0]) - 1) {
+        row_string = string.concat(row_string, ", ")
+      }
+    }
+
+    matrix_string = string.concat(matrix_string, row_string, "]")
+    if (i < size(A) - 1) {
+        matrix_string = string.concat(matrix_string, ", ")
+    }
+
+  }
+
+  log(string.concat(matrix_string, "]"))
+}

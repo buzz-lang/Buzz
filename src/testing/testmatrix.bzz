@@ -1,0 +1,93 @@
+include "include/matrix.bzz"
+
+
+K = { .0 = { .0 = 20.0, .1 = 0.0 },
+      .1 = { .0 = 0.0, .1 = 40.0 }}
+
+T = { .0 = { .0 = 20.0, .1 = 0.0 },
+      .1 = { .0 = 0.0, .1 = 40.0 },
+      .2 = { .0 = 10.2, .1 = 4.0}}
+
+
+################################################################################
+# Initialization tests
+################################################################################
+
+test_new = math.matrix.new(3, 3)
+math.matrix.print(test_new)
+
+vec = { .x = 1.5, .y = 3.3}  # Table following math.vec2 format
+test_newv = math.matrix.newv(vec)
+math.matrix.print(test_newv)
+
+test_identity = math.matrix.identity(3)
+math.matrix.print(test_identity)
+
+
+################################################################################
+# Transpose tests
+################################################################################
+
+test_transpose_1 = math.matrix.transpose(K)
+math.matrix.print(test_transpose_1)
+
+test_transpose_2 = math.matrix.transpose(T)
+math.matrix.print(test_transpose_2)
+
+
+################################################################################
+# Scale tests
+################################################################################
+
+test_scale_1 = math.matrix.scale(0.5, K)
+math.matrix.print(test_scale_1)
+
+test_scale_2 = math.matrix.scale(2.0, T)
+math.matrix.print(test_scale_2)
+
+
+################################################################################
+# Addition tests
+################################################################################
+
+test_add_1 = math.matrix.add(math.matrix.identity(2), K)
+math.matrix.print(test_add_1)
+
+test_add_2 = math.matrix.add(T, T)
+math.matrix.print(test_add_2)
+
+
+################################################################################
+# Subtraction tests
+################################################################################
+
+test_sub_1 = math.matrix.sub(math.matrix.identity(2), K)
+math.matrix.print(test_sub_1)
+
+test_sub_2 = math.matrix.sub(T, T)
+math.matrix.print(test_sub_2)
+
+
+################################################################################
+# Multiply tests
+################################################################################
+
+test_multiply_1 = math.matrix.multiply(T, K)
+math.matrix.print(test_multiply_1)
+
+test_multiply_2 = math.matrix.multiply(K, math.matrix.identity(2))
+math.matrix.print(test_multiply_2)
+
+
+################################################################################
+# Equality tests
+################################################################################
+
+test_equal_1 = math.matrix.equal(T, K)
+log(test_equal_1)
+
+test_equal_2 = math.matrix.equal(K, math.matrix.identity(2))
+log(test_equal_2)
+
+test_equal_3 = math.matrix.equal(K, K)
+log(test_equal_3)

@@ -18,13 +18,13 @@ add_executable(testbuzzstrman testbuzzstrman.c)
 target_link_libraries(testbuzzstrman buzz)
 
 if(ARGOS_FOUND)
-  if(ARGoS_BUILD_FOR STREQUAL "simulator")
+  if(ARGOS_BUILD_FOR STREQUAL "simulator")
     include_directories(${ARGOS_INCLUDE_DIRS})
     link_directories(${ARGOS_LIBRARY_DIR})
     link_libraries(${ARGOS_LDFLAGS})
     add_library(testloopfunctions MODULE testloopfunctions.h testloopfunctions.cpp)
-    target_link_libraries(testloopfunctions argos3plugin_${ARGoS_BUILD_FOR}_buzz buzz argos3core_${ARGoS_BUILD_FOR})
-  endif(ARGoS_BUILD_FOR STREQUAL "simulator")
+    target_link_libraries(testloopfunctions argos3plugin_${ARGOS_BUILD_FOR}_buzz buzz argos3core_${ARGOS_BUILD_FOR})
+  endif(ARGOS_BUILD_FOR STREQUAL "simulator")
 endif(ARGOS_FOUND)
 
 #
@@ -53,7 +53,8 @@ if(NOT CMAKE_CROSSCOMPILING)
   set(BUZZ_ASSEMBLER ${CMAKE_BINARY_DIR}/buzz/bzzasm)
   set(BUZZ_BZZ_INCLUDE_DIR
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR})
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/include)
   # Initialize Buzz CMake stuff
   set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/utility)
   include(UseBuzz)
@@ -88,4 +89,6 @@ if(NOT CMAKE_CROSSCOMPILING)
   _buzz_make_test(testtablelib.bzz INCLUDES ${CMAKE_SOURCE_DIR}/include/table.bzz)
   _buzz_make_test(testneighborsmapreduce.bzz INCLUDES ${CMAKE_SOURCE_DIR}/include/neighbors.bzz ${CMAKE_SOURCE_DIR}/include/table.bzz)
   _buzz_make_test(testtype.bzz)
+  _buzz_make_test(testmatrix.bzz INCLUDES ${CMAKE_SOURCE_DIR}/include/matrix.bzz)
+  _buzz_make_test(testqueue.bzz INCLUDES ${CMAKE_SOURCE_DIR}/include/string.bzz ${CMAKE_SOURCE_DIR}/include/table.bzz)
 endif(NOT CMAKE_CROSSCOMPILING)

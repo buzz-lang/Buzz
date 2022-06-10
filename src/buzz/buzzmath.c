@@ -433,7 +433,8 @@ int buzzmath_min(buzzvm_t vm) {
    buzzobj_t b = buzzvm_stack_at(vm, 1);
    /* Compare them and return the smaller one */
    int cmp = buzzobj_cmp(a, b);
-   if(cmp != 1)
+   /* unless an operand is NIL, then return the other */
+   if( b->o.type == BUZZTYPE_NIL || (cmp != 1 && a->o.type != BUZZTYPE_NIL) )
       buzzvm_push(vm, a);
    else
       buzzvm_push(vm, b);
@@ -639,6 +640,7 @@ int buzzmath_rng_gaussian(buzzvm_t vm) {
 int buzzmath_rng_exponential(buzzvm_t vm) {
    /* Get the mean */
    buzzvm_lnum_assert(vm, 1);
+   buzzvm_lload(vm, 1);
    buzzobj_t o = buzzvm_stack_at(vm, 1);
    float mean;
    if(o->o.type == BUZZTYPE_FLOAT)    mean = o->f.value;
