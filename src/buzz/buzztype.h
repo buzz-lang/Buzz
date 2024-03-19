@@ -255,6 +255,7 @@ extern "C" {
 #define buzzobj_isnil(OBJ) ((OBJ)->o.type == BUZZTYPE_NIL)
 #define buzzobj_isint(OBJ) ((OBJ)->o.type == BUZZTYPE_INT)
 #define buzzobj_isfloat(OBJ) ((OBJ)->o.type == BUZZTYPE_FLOAT)
+#define buzzobj_isnumber(OBJ) (buzzobj_isint(OBJ) || buzzobj_isfloat(OBJ))
 #define buzzobj_isstring(OBJ) ((OBJ)->o.type == BUZZTYPE_STRING)
 #define buzzobj_istable(OBJ) ((OBJ)->o.type == BUZZTYPE_TABLE)
 #define buzzobj_isclosure(OBJ) ((OBJ)->o.type == BUZZTYPE_CLOSURE)
