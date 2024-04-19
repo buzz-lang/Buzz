@@ -583,7 +583,7 @@ complete list of functions is as follows:
 - `math.tan(x)` returns the tangent of `x` as a float.
 - `math.asin(x)` returns the arc sine of `x` as a float.
 - `math.acos(x)` returns the arc cosine of `x` as a float.
-- `math.atan2(y, x)` returns the arc tangent of `y, x` as a float.
+- `math.atan(y, x)` returns the arc tangent of `y, x` as a float.
 - `math.min(x, y)` returns the minimum between `x` and `y`. The
   type of the return value corresponds to the type of the minimum
   value: `min(1.0, 2)` is `1.0`, and `min(1, 2.0)` is `1`.
