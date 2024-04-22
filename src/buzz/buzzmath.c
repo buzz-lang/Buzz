@@ -609,7 +609,7 @@ int buzzmath_rng_gaussian(buzzvm_t vm) {
             return vm->state;
          }
       }
-      else {
+      else if(buzzvm_lnum(vm) != 1) {
          /* Error */
          buzzvm_seterror(vm,
                          BUZZVM_ERROR_LNUM,
