@@ -264,6 +264,9 @@ void CBuzzLoopFunctions::BuzzForeachVM(
 /****************************************/
 
 void CBuzzLoopFunctions::BuzzRegisterVMs() {
+   /* Start with an empty VM map to handle removals since the last call */
+   /* Additions are handled implicitly in the for loop that follows */
+   m_mapBuzzVMs.clear();
    /* Get list of controllable entities */
    CSpace::TMapPerType& tControllables = GetSpace().GetEntitiesByType("controller");
    /* Go through them and keep a pointer to each Buzz controller */
