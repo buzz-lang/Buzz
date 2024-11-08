@@ -17,6 +17,9 @@ target_link_libraries(testbuzzlex buzz)
 add_executable(testbuzzstrman testbuzzstrman.c)
 target_link_libraries(testbuzzstrman buzz)
 
+add_executable(testcallclosure testcallclosure.c)
+target_link_libraries(testcallclosure buzz)
+
 if(ARGOS_FOUND)
   if(ARGOS_BUILD_FOR STREQUAL "simulator")
     include_directories(${ARGOS_INCLUDE_DIRS})

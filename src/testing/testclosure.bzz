@@ -1,10 +1,14 @@
-function f() {
-  return self
+# function f() {
+#   return self
+# }
+
+# f()
+
+# t = {}
+# t.x = f
+
+# t.x()
+
+function g(x, y) {
+  return x - y
 }
-
-f()
-
-t = {}
-t.x = f
-
-t.x()

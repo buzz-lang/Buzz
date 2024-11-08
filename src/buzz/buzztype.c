@@ -179,23 +179,23 @@ int buzzobj_cmp(const buzzobj_t a,
    }
    if(a->o.type == BUZZTYPE_STRING && b->o.type == BUZZTYPE_INT) {
       char str[30];
-      sprintf(str, "%d", b->i.value);
+      snprintf(str, 30, "%d", b->i.value);
       return buzzobj_strcmp(a->s.value.str, str);
    }
    if(a->o.type == BUZZTYPE_STRING && b->o.type == BUZZTYPE_FLOAT) {
       char str[30];
-      sprintf(str, "%f", b->f.value);
+      snprintf(str, 30, "%f", b->f.value);
       return buzzobj_strcmp(a->s.value.str, str);
    }
 
    if(a->o.type == BUZZTYPE_INT && b->o.type == BUZZTYPE_STRING) {
       char str[30];
-      sprintf(str, "%d", a->i.value);
+      snprintf(str, 30, "%d", a->i.value);
       return buzzobj_strcmp(str, b->s.value.str);
    }
    if(a->o.type == BUZZTYPE_FLOAT && b->o.type == BUZZTYPE_STRING) {
       char str[30];
-      sprintf(str, "%f", a->f.value);
+      snprintf(str, 30, "%f", a->f.value);
       return buzzobj_strcmp(str, b->s.value.str);
    }
    /* Tables */
