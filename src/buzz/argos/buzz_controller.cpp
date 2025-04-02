@@ -428,7 +428,8 @@ CBuzzController::CBuzzController() :
    m_pcPos(NULL),
    m_pcBattery(NULL),
    m_tBuzzVM(NULL),
-   m_tBuzzDbgInfo(NULL) {}
+   m_tBuzzDbgInfo(NULL),
+   m_pcRNG(NULL) {}
 
 /****************************************/
 /****************************************/
@@ -452,6 +453,9 @@ void CBuzzController::Init(TConfigurationNode& t_node) {
          m_pcBattery = GetSensor<CCI_BatterySensor>("battery");
       }
       catch(CARGoSException& ex) {}
+      /* Create a random number generator. We use the 'argos' category so
+         that creation, reset, seeding and cleanup are managed by ARGoS. */
+      m_pcRNG = CRandom::CreateRNG("argos");
       /* Get the script name */
       std::string strBCFName;
       GetNodeAttributeOrDefault(t_node, "bytecode_file", strBCFName, strBCFName);
@@ -608,6 +612,15 @@ void CBuzzController::SetBytecode(const std::string& str_bc_fname,
    if(buzzvm_set_bcode(m_tBuzzVM, m_cBytecode.ToCArray(), m_cBytecode.Size()) != BUZZVM_STATE_READY) {
       THROW_ARGOSEXCEPTION("Error loading Buzz script \"" << str_bc_fname << "\": " << ErrorInfo());
    }
+   /* Set random seed using ARGoS RNG */
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "math", 1));
+   buzzvm_gload(m_tBuzzVM);
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "rng", 1));
+   buzzvm_tget(m_tBuzzVM);
+   buzzvm_pushs(m_tBuzzVM, buzzvm_string_register(m_tBuzzVM, "setseed", 1));
+   buzzvm_tget(m_tBuzzVM);
+   buzzvm_pushi(m_tBuzzVM, m_pcRNG->Uniform(CRange(0, 65535)));
+   buzzvm_closure_call(m_tBuzzVM, 1);
    /* Register basic function */
    if(RegisterFunctions() != BUZZVM_STATE_READY) {
       THROW_ARGOSEXCEPTION("Error while registering functions: " << ErrorInfo());
