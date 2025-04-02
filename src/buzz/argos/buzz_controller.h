@@ -10,6 +10,7 @@
 #include <argos3/plugins/robots/generic/control_interface/ci_battery_sensor.h>
 #include <argos3/core/utility/math/ray3.h>
 #include <argos3/core/utility/datatypes/set.h>
+#include <argos3/core/utility/math/rng.h>
 #include <buzz/buzzvm.h>
 #include <buzz/buzzdebug.h>
 #include <string>
@@ -232,6 +233,8 @@ protected:
    CByteArray m_cBytecode;
    /* Debugging information */
    SDebug m_sDebug;
+   /* The random number generator */
+   CRandom::CRNG* m_pcRNG;
 
 public:
    
