@@ -279,6 +279,7 @@ CBuzzControllerFootBot::CBuzzControllerFootBot() :
    m_pcWheelsA(NULL),
    m_pcLEDs(NULL),
    m_pcGripper(NULL),
+   m_pcTurretA(NULL),
    m_pcProximity(NULL),
    m_pcLight(NULL),
    m_pcCamera(NULL),
