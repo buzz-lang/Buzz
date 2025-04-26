@@ -622,7 +622,7 @@ void CBuzzController::SetBytecode(const std::string& str_bc_fname,
    buzzvm_pushi(m_tBuzzVM, m_pcRNG->Uniform(CRange(0, 65535)));
    buzzvm_closure_call(m_tBuzzVM, 1);
    /* Register basic function */
-   if(RegisterFunctions() != BUZZVM_STATE_READY) {
+   if(RegisterFunctions() == BUZZVM_STATE_ERROR) {
       THROW_ARGOSEXCEPTION("Error while registering functions: " << ErrorInfo());
    }
    UpdateSensors();
