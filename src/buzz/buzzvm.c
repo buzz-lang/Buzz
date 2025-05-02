@@ -555,7 +555,7 @@ buzzvm_t buzzvm_new(uint16_t robot) {
    vm->swarmbroadcast = SWARM_BROADCAST_PERIOD;
    /* Create message queues */
    vm->inmsgs = buzzinmsg_queue_new();
-   vm->outmsgs = buzzoutmsg_queue_new(robot);
+   vm->outmsgs = buzzoutmsg_queue_new();
    /* Create virtual stigmergy */
    vm->vstigs = buzzdict_new(10,
                              sizeof(uint16_t),
