@@ -175,6 +175,10 @@ int buzzvstig_create(buzzvm_t vm) {
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id", 1));
    buzzvm_pushi(vm, id);
    buzzvm_tput(vm);
+   buzzvm_dup(vm);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "__stigmergy", 1));
+   buzzvm_pushu(vm, nvs->data);
+   buzzvm_tput(vm);
    function_register(foreach);
    function_register(reduce);
    function_register(map);
