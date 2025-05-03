@@ -175,8 +175,13 @@ int buzzvstig_create(buzzvm_t vm) {
    buzzvm_pushs(vm, buzzvm_string_register(vm, "id", 1));
    buzzvm_pushi(vm, id);
    buzzvm_tput(vm);
+   buzzvm_dup(vm);
+   buzzvm_pushs(vm, buzzvm_string_register(vm, "__stigmergy", 1));
+   buzzvm_pushu(vm, nvs->data);
+   buzzvm_tput(vm);
    function_register(foreach);
    function_register(reduce);
+   function_register(map);
    function_register(size);
    function_register(put);
    function_register(get);
@@ -291,7 +296,7 @@ struct buzzvstig_reduce_params {
 
 void buzzvstig_reduce_entry(const void* key, void* data, void* params) {
    /* Cast params */
-   struct buzzvstig_foreach_params* p = (struct buzzvstig_foreach_params*)params;
+   struct buzzvstig_reduce_params* p = (struct buzzvstig_reduce_params*)params;
    if(p->vm->state != BUZZVM_STATE_READY) return;
    /* Save and pop accumulator from the stack */
    buzzobj_t accum = buzzvm_stack_at(p->vm, 1);
@@ -312,11 +317,11 @@ void buzzvstig_reduce_entry(const void* key, void* data, void* params) {
       /* Error */
       buzzvm_seterror(p->vm,
                       BUZZVM_ERROR_STACK,
-                      "stigmergy.reduce(function,robot,accumulator) expects the function to return a value");
+                      "stigmergy.reduce(function,accumulator) expects the function to return a value");
 }
 
 int buzzvstig_reduce(struct buzzvm_s* vm) {
-   /* Make sure you got two arguments */
+   /* Closure and initial accumulator value expected */
    buzzvm_lnum_assert(vm, 2);
    /* Get vstig id */
    id_get();
@@ -331,8 +336,81 @@ int buzzvstig_reduce(struct buzzvm_s* vm) {
       /* Put initial accumulator value on the stack */
       buzzvm_lload(vm, 2);
       /* Go through the elements and apply the closure */
-      struct buzzvstig_foreach_params p = { .vm = vm, .fun = c };
+      struct buzzvstig_reduce_params p = { .vm = vm, .fun = c };
       buzzdict_foreach((*vs)->data, buzzvstig_reduce_entry, &p);
+      /* The final value of the accumulator is on the stack */
+      return buzzvm_ret1(vm);
+   }
+   /* Return */
+   return buzzvm_ret0(vm);
+}
+
+/****************************************/
+/****************************************/
+
+struct buzzvstig_map_params {
+   buzzvm_t vm;
+   buzzobj_t fun;
+   buzzdict_t result;
+};
+
+void buzzvstig_map_entry(const void* key, void* data, void* params) {
+   /* Cast params */
+   struct buzzvstig_map_params* p = (struct buzzvstig_map_params*)params;
+   if(p->vm->state != BUZZVM_STATE_READY) return;
+   /* Save current stack size */
+   uint32_t ss = buzzvm_stack_top(p->vm);
+   /* Push closure and params (key, value, robot) */
+   buzzvm_push(p->vm, p->fun);
+   buzzvm_push(p->vm, *(buzzobj_t*)key);
+   buzzvm_push(p->vm, (*(buzzvstig_elem_t*)data)->data);
+   buzzvm_pushi(p->vm, (*(buzzvstig_elem_t*)data)->robot);
+   /* Call closure */
+   p->vm->state = buzzvm_closure_call(p->vm, 3);
+   if(p->vm->state != BUZZVM_STATE_READY) return;
+   /* Make sure a value was returned */
+   if(buzzvm_stack_top(p->vm) <= ss) {
+      /* Error */
+      buzzvm_seterror(p->vm,
+                      BUZZVM_ERROR_STACK,
+                      "stigmergy.map(function) expects the function to return a value");
+      return;
+   }
+   /* Manage return value */
+   buzzobj_t r = buzzvm_stack_at(p->vm, 1);
+   if(r->o.type != BUZZTYPE_NIL) {
+      buzzdict_set(p->result, key, &r);
+   }
+   else {
+      buzzdict_remove(p->result, key);
+   }
+   /* Get rid of return value */
+   buzzvm_pop(p->vm);
+}
+
+int buzzvstig_map(struct buzzvm_s* vm) {
+   /* Closure expected */
+   buzzvm_lnum_assert(vm, 1);
+   /* Get vstig id */
+   id_get();
+   /* Look for virtual stigmergy */
+   const buzzvstig_t* vs = buzzdict_get(vm->vstigs, &id, buzzvstig_t);
+   if(vs) {
+      /* Virtual stigmergy found */
+      /* Get closure */
+      buzzvm_lload(vm, 1);
+      buzzvm_type_assert(vm, 1, BUZZTYPE_CLOSURE);
+      buzzobj_t c = buzzvm_stack_at(vm, 1);
+      /* Create a table as the return value */
+      buzzobj_t r = buzzheap_newobj(vm, BUZZTYPE_TABLE);
+      buzzvm_push(vm, r);
+      /* Go through the elements and apply the closure */
+      struct buzzvstig_map_params p = {
+         .vm = vm,
+         .fun = c,
+         .result = r->t.value
+      };
+      buzzdict_foreach((*vs)->data, buzzvstig_map_entry, &p);
       /* The final value of the accumulator is on the stack */
       return buzzvm_ret1(vm);
    }
