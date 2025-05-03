@@ -148,6 +148,14 @@ extern "C" {
    extern int buzzvstig_reduce(struct buzzvm_s* vm);
 
    /*
+    * Buzz C closure to loop through the elements of a stigmergy object and produce a table.
+    * The produced table is not a stigmergy, just a normal table.
+    * @param vm The Buzz VM state.
+    * @return The updated VM state.
+    */
+   extern int buzzvstig_map(struct buzzvm_s* vm);
+
+   /*
     * Buzz C closure to set the function to call on write conflict.
     * @param vm The Buzz VM state.
     * @return The updated VM state.
