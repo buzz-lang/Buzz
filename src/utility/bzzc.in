@@ -25,11 +25,11 @@ function version() {
 #
 # Check tools
 #
-if [[ -z $BZZPARSE ]]; then
+if [[ -z "$BZZPARSE" ]]; then
     command -v bzzparse >/dev/null 2>&1 || { echo >&2 "$0: error: can't find bzzparse"; exit 1; }
     BZZPARSE=bzzparse
 fi
-if [[ -z $BZZASM ]]; then
+if [[ -z "$BZZASM" ]]; then
     command -v bzzasm >/dev/null 2>&1 || { echo >&2 "$0: error: can't find bzzasm"; exit 1; }
     BZZASM=bzzasm
 fi
@@ -42,10 +42,10 @@ command -v cut >/dev/null 2>&1 || { echo >&2 "$0: error: can't find cut"; exit 1
 BZZ=""
 while (($#))
 do
-    case $1 in
+    case "$1" in
         -I|--include)
-            if [[ -n $2 ]]; then
-                export BUZZ_INCLUDE_PATH=$BUZZ_INCLUDE_PATH:$2
+            if [[ -n "$2" ]]; then
+                export BUZZ_INCLUDE_PATH="$BUZZ_INCLUDE_PATH:$2"
             else
                 echo "$0: error: $1 expects a colon-separated list of paths"
                 echo "Type 'bzzc -h' or 'man bzzc' for more information."
@@ -54,8 +54,8 @@ do
             shift 2
         ;;
         -b|--bytecode)
-            if [[ -n $2 ]]; then
-                BO=$2
+            if [[ -n "$2" ]]; then
+                BO="$2"
             else
                 echo "$0: error: $1 expects a file name"
                 echo "Type 'bzzc -h' or 'man bzzc' for more information."
@@ -64,8 +64,8 @@ do
             shift 2
         ;;
         -d|--debug)
-            if [[ -n $2 ]]; then
-                BDB=$2
+            if [[ -n "$2" ]]; then
+                BDB="$2"
             else
                 echo "$0: error: $1 expects a file name"
                 echo "Type 'bzzc -h' or 'man bzzc' for more information."
@@ -74,8 +74,8 @@ do
             shift 2
         ;;
         -a|--asm)
-            if [[ -n $2 ]]; then
-                BASM=$2
+            if [[ -n "$2" ]]; then
+                BASM="$2"
             else
                 echo "$0: error: $1 expects a file name"
                 echo "Type 'bzzc -h' or 'man bzzc' for more information."
@@ -94,8 +94,8 @@ do
             exit 0
         ;;
         *)
-            if [[ -z $BZZ ]]; then
-                BZZ=$1
+            if [[ -z "$BZZ" ]]; then
+                BZZ="$1"
             else
                 echo "$0: error: unrecognized option $1"
                 echo "Type 'bzzc -h' or 'man bzzc' for more information."
@@ -105,7 +105,7 @@ do
         ;;
     esac
 done
-if [[ -z $BZZ ]]; then
+if [[ -z "$BZZ" ]]; then
     echo "$0: error: missing script file"
     echo "Type 'bzzc -h' or 'man bzzc' for more information."
     exit 1    
@@ -115,23 +115,22 @@ fi
 # Set file names
 #
 KEEPBASM=y
-if [[ -z $BASM ]]; then
+if [[ -z "$BASM" ]]; then
     KEEPBASM=n
     BASM=$(mktemp bzz.XXXXXX)
 fi
-if [[ -z $BO ]]; then
-    BO="$(echo $BZZ | rev | cut -d. -f 2- | rev).bo"
+if [[ -z "$BO" ]]; then
+    BO="${BZZ%.*}.bo"
 fi
 if [[ -z $BDB ]]; then
-    BDB="$(echo $BZZ | rev | cut -d. -f 2- | rev).bdb"
+    BDB="${BZZ%.*}.bdb"
 fi
 
 #
 # Compilation
 #
-$BZZPARSE "$BZZ" "$BASM" && $BZZASM "$BASM" "$BO" "$BDB"
-RETVAL=$?
 if [[ "${KEEPBASM}" = "n" ]]; then
-    rm -f "$BASM"
+    trap 'rm -f "$BASM"' EXIT
 fi
-exit $RETVAL
+"$BZZPARSE" "$BZZ" "$BASM" && "$BZZASM" "$BASM" "$BO" "$BDB"
+exit $?
